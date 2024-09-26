@@ -49,12 +49,6 @@ void Render(State& game_state, ClientState& client_state, double frame_percent, 
     }
 
     {
-        ImGui::Begin("Debug");
-        ImGui::Text("Mouse position: %lf %lf", client_state.mouse.x, client_state.mouse.y);
-        ImGui::End();
-    }
-
-    {
         ImGui::Begin("Properties");
         ImGui::Text("Polygons: %zu", game_state.map.GetPolygons().size());
         ImGui::Text("Sceneries: %zu/500", game_state.map.GetSceneryInstances().size());
@@ -69,6 +63,66 @@ void Render(State& game_state, ClientState& client_state, double frame_percent, 
                            game_state.map.GetBoundaries()[Map::MapBoundary::TopBoundary];
         ImGui::Text("Dimensions: %.0fx%.0f", map_dimensions.x, map_dimensions.y);
         ImGui::End();
+    }
+
+    {
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        // Set position to the top of the viewport and move it below the main menu bar
+        ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + ImGui::GetFrameHeight()));
+
+        // Extend width to viewport width
+        ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, ImGui::GetFrameHeight()));
+
+        // Add menu bar flag and disable everything else
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse |
+                                 ImGuiWindowFlags_NoSavedSettings |
+                                 ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                 ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar;
+
+        if (ImGui::Begin("MapTabBar", nullptr, flags)) {
+            if (ImGui::BeginMenuBar()) {
+                ImGui::Button("ctf_Ash.pms");
+                ImGui::Button("+");
+                ImGui::EndMenuBar();
+            }
+            ImGui::End();
+        }
+    }
+
+    {
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        // Set position to the bottom of the viewport
+        ImGui::SetNextWindowPos(
+          ImVec2(viewport->Pos.x, viewport->Pos.y + viewport->Size.y - ImGui::GetFrameHeight()));
+
+        // Extend width to viewport width
+        ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, ImGui::GetFrameHeight()));
+
+        // Add menu bar flag and disable everything else
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
+                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse |
+                                 ImGuiWindowFlags_NoSavedSettings |
+                                 ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                 ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar;
+
+        if (ImGui::Begin("StatusBar", nullptr, flags)) {
+            if (ImGui::BeginMenuBar()) {
+                ImGui::Text("Untitled.pms");
+                ImGui::SameLine(0, viewport->Size.x / 10.0F);
+                ImGui::Text("Zoom: 100%%");
+                ImGui::SameLine(0, viewport->Size.x / 10.0F);
+                ImGui::Text("Current tool/action description");
+                ImGui::SameLine(0, viewport->Size.x / 10.0F);
+                // TODO: translate mouse position to position on map.
+                ImGui::Text(
+                  "Mouse position: %.0f, %.0f", client_state.mouse.x, client_state.mouse.y);
+                ImGui::EndMenuBar();
+            }
+            ImGui::End();
+        }
     }
 
     ImGui::Render();
