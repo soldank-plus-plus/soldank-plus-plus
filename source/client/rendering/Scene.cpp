@@ -43,7 +43,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
       Calc::Lerp(client_state.camera_prev, client_state.camera, (float)frame_percent);
     camera_.Move(new_camera_position.x, new_camera_position.y);
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearColor(168.0F / 255.0F, 163.0F / 255.0F, 148.0F / 255.0F, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     background_renderer_.Render(camera_.GetView());

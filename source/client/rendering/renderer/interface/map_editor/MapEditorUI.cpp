@@ -66,6 +66,22 @@ void Render(State& game_state, ClientState& client_state, double frame_percent, 
     }
 
     {
+        static bool test = false;
+        ImGui::Begin("Display");
+        if (ImGui::Checkbox("Background", &test)) {
+        }
+        if (ImGui::Checkbox("Polygons", &test)) {
+        }
+        if (ImGui::Checkbox("Scenery", &test)) {
+        }
+        if (ImGui::Checkbox("Spawn points", &test)) {
+        }
+        if (ImGui::Checkbox("Wireframe", &test)) {
+        }
+        ImGui::End();
+    }
+
+    {
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
         // Set position to the top of the viewport and move it below the main menu bar
