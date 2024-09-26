@@ -6,7 +6,7 @@
 
 namespace Soldank::MapEditorUI
 {
-void Render(State& game_state, ClientState& client_state, double frame_percent, int fps)
+void Render(State& game_state, ClientState& client_state)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent(client_state.mouse.x, client_state.mouse.y);
@@ -34,17 +34,29 @@ void Render(State& game_state, ClientState& client_state, double frame_percent, 
 
     {
         ImGui::Begin("Tools");
-        ImGui::Text("Transform tool (A)");
-        ImGui::Text("Polygon tool (Q)");
-        ImGui::Text("Vertex selection tool (S)");
-        ImGui::Text("Selection tool (W)");
-        ImGui::Text("Vertex color tool (D)");
-        ImGui::Text("Color tool (E)");
-        ImGui::Text("Texture tool (F)");
-        ImGui::Text("Scenery tool (R)");
-        ImGui::Text("Waypoint tool (G)");
-        ImGui::Text("Spawnpoint tool (T)");
-        ImGui::Text("Color picker tool (H)");
+
+        static std::vector<std::pair<std::string, ToolType>> tool_options = {
+            { "Transform tool (A)", ToolType::Transform },
+            { "Polygon tool (Q)", ToolType::Polygon },
+            { "Vertex selection tool (S)", ToolType::VertexSelection },
+            { "Selection tool (W)", ToolType::Selection },
+            { "Vertex color tool (D)", ToolType::VertexColor },
+            { "Color tool (E)", ToolType::Color },
+            { "Texture tool (F)", ToolType::Texture },
+            { "Scenery tool (R)", ToolType::Scenery },
+            { "Waypoint tool (G)", ToolType::Waypoint },
+            { "Spawnpoint tool (T)", ToolType::Spawnpoint },
+            { "Color picker tool (H)", ToolType::ColorPicker },
+        };
+
+        for (const auto& tool_option : tool_options) {
+            if (ImGui::Selectable(tool_option.first.c_str(),
+                                  client_state.map_editor_state.selected_tool ==
+                                    tool_option.second)) {
+                client_state.map_editor_state.selected_tool = tool_option.second;
+            }
+        }
+
         ImGui::End();
     }
 
@@ -68,16 +80,13 @@ void Render(State& game_state, ClientState& client_state, double frame_percent, 
     {
         static bool test = false;
         ImGui::Begin("Display");
-        if (ImGui::Checkbox("Background", &test)) {
-        }
-        if (ImGui::Checkbox("Polygons", &test)) {
-        }
-        if (ImGui::Checkbox("Scenery", &test)) {
-        }
-        if (ImGui::Checkbox("Spawn points", &test)) {
-        }
-        if (ImGui::Checkbox("Wireframe", &test)) {
-        }
+
+        ImGui::Checkbox("Background", &client_state.draw_background);
+        ImGui::Checkbox("Polygons", &client_state.draw_polygons);
+        ImGui::Checkbox("Sceneries", &client_state.draw_sceneries);
+        ImGui::Checkbox("Spawn points", &test);
+        ImGui::Checkbox("Wireframe", &test);
+
         ImGui::End();
     }
 

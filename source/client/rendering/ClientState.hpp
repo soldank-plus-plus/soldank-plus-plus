@@ -1,6 +1,8 @@
 #ifndef __CLIENT_STATE_HPP__
 #define __CLIENT_STATE_HPP__
 
+#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
+
 #include "core/math/Glm.hpp"
 
 #include "communication/NetworkPackets.hpp"
@@ -65,6 +67,12 @@ struct ClientState
     bool draw_map_editor_interface = false;
     bool draw_game_debug_interface = false;
     bool draw_game_interface = false;
+
+    MapEditorState map_editor_state;
+
+    bool draw_background = true;
+    bool draw_polygons = true;
+    bool draw_sceneries = true;
 };
 } // namespace Soldank
 

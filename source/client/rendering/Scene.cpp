@@ -46,8 +46,14 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     glClearColor(168.0F / 255.0F, 163.0F / 255.0F, 148.0F / 255.0F, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    background_renderer_.Render(camera_.GetView());
-    sceneries_renderer_.Render(camera_.GetView(), 0, game_state.map.GetSceneryInstances());
+    if (client_state.draw_background) {
+        background_renderer_.Render(camera_.GetView());
+    }
+
+    if (client_state.draw_sceneries) {
+        sceneries_renderer_.Render(camera_.GetView(), 0, game_state.map.GetSceneryInstances());
+    }
+
     if (client_state.draw_server_pov_client_pos) {
         rectangle_renderer_.Render(camera_.GetView(), client_state.soldier_position_server_pov);
     }
@@ -129,7 +135,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     }
 
     if (client_state.draw_map_editor_interface) {
-        MapEditorUI::Render(game_state, client_state, frame_percent, fps);
+        MapEditorUI::Render(game_state, client_state);
     }
 
     if (client_state.draw_game_interface) {
