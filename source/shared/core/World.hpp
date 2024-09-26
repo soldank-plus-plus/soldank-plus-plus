@@ -18,7 +18,7 @@ namespace Soldank
 class World final : public IWorld
 {
 public:
-    World(const std::string& map_path);
+    World();
 
     void RunLoop(int fps_limit) final;
     void Update(double delta_time) final;
