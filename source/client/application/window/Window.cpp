@@ -83,7 +83,6 @@ void Window::Create()
     glfwSetScrollCallback(glfw_window_, Mouse::MouseWheelCallback);
     glfwSetMouseButtonCallback(glfw_window_, Mouse::MouseButtonCallback);
     glfwSetErrorCallback(GLFWErrorCallback);
-
     SetCursorMode(CursorMode::Locked);
 
     IMGUI_CHECKVERSION();
@@ -126,9 +125,23 @@ void Window::SetWindowSize(const uint32_t /*width*/, const uint32_t /*height*/) 
     glfwSetWindowSize(glfw_window_, width_, height_);
 }
 
+glm::ivec2 Window::GetWindowSize() const
+{
+    glm::ivec2 window_size;
+    glfwGetWindowSize(glfw_window_, &window_size.x, &window_size.y);
+    return window_size;
+}
+
 float Window::GetAspectRatio() const
 {
     return static_cast<float>(width_) / static_cast<float>(height_);
+}
+
+glm::vec2 Window::GetRealCursorPos() const
+{
+    glm::dvec2 cursor_position;
+    glfwGetCursorPos(glfw_window_, &cursor_position.x, &cursor_position.y);
+    return cursor_position;
 }
 
 void Window::MakeContextCurrent()

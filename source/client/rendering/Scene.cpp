@@ -4,6 +4,7 @@
 #include "core/types/ItemType.hpp"
 #include "rendering/renderer/ItemRenderer.hpp"
 #include "rendering/renderer/interface/debug/DebugUI.hpp"
+#include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 
 #include "application/input/Mouse.hpp"
 #include "application/config/Config.hpp"
@@ -127,40 +128,46 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
         }
     }
 
-    for (const auto& soldier : game_state.soldiers) {
-        if (client_state.client_soldier_id.has_value() &&
-            *client_state.client_soldier_id == soldier.id) {
-            text_renderer_.Render("Health: " + std::to_string((int)soldier.health),
-                                  50.0,
-                                  100.0,
-                                  1.0,
-                                  { 1.0, 1.0, 1.0 });
-            text_renderer_.Render("Jets: " + std::to_string((int)soldier.jets_count),
-                                  50.0,
-                                  50.0,
-                                  1.0,
-                                  { 1.0, 1.0, 1.0 });
-        }
+    if (client_state.draw_map_editor_interface) {
+        MapEditorUI::Render(game_state, client_state, frame_percent, fps);
     }
 
-    if (client_state.client_soldier_id.has_value()) {
+    if (client_state.draw_game_interface) {
         for (const auto& soldier : game_state.soldiers) {
-            if (*client_state.client_soldier_id == soldier.id) {
-                if (soldier.dead_meat) {
-                    text_renderer_.Render(
-                      "Respawn timer: " +
-                        std::format("{:.2f}", (float)soldier.ticks_to_respawn / 60.0F),
-                      400.0,
-                      100.0,
-                      1.0,
-                      { 1.0, 1.0, 1.0 });
+            if (client_state.client_soldier_id.has_value() &&
+                *client_state.client_soldier_id == soldier.id) {
+                text_renderer_.Render("Health: " + std::to_string((int)soldier.health),
+                                      50.0,
+                                      100.0,
+                                      1.0,
+                                      { 1.0, 1.0, 1.0 });
+                text_renderer_.Render("Jets: " + std::to_string((int)soldier.jets_count),
+                                      50.0,
+                                      50.0,
+                                      1.0,
+                                      { 1.0, 1.0, 1.0 });
+            }
+        }
+
+        if (client_state.client_soldier_id.has_value()) {
+            for (const auto& soldier : game_state.soldiers) {
+                if (*client_state.client_soldier_id == soldier.id) {
+                    if (soldier.dead_meat) {
+                        text_renderer_.Render(
+                          "Respawn timer: " +
+                            std::format("{:.2f}", (float)soldier.ticks_to_respawn / 60.0F),
+                          400.0,
+                          100.0,
+                          1.0,
+                          { 1.0, 1.0, 1.0 });
+                    }
                 }
             }
         }
-    }
 
-    if (game_state.paused) {
-        text_renderer_.Render("Game paused", 400.0, 700.0, 1.0, { 0.6, 0.7, 0.4 });
+        if (game_state.paused) {
+            text_renderer_.Render("Game paused", 400.0, 700.0, 1.0, { 0.6, 0.7, 0.4 });
+        }
     }
 
     if (Config::DEBUG_DRAW) {
