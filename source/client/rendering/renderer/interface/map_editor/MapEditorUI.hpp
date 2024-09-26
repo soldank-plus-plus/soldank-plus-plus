@@ -3,10 +3,11 @@
 
 #include "rendering/ClientState.hpp"
 #include "core/state/StateManager.hpp"
+#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
 
 namespace Soldank::MapEditorUI
 {
-void Render(State& game_state, ClientState& client_state, double frame_percent, int fps);
+void Render(State& game_state, ClientState& client_state);
 }
 
 #endif
