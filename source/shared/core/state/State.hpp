@@ -14,6 +14,7 @@ namespace Soldank
 struct State
 {
     unsigned int game_tick;
+    bool paused;
     Map map;
     float gravity = 0.06F;
     std::list<Bullet> bullets;
