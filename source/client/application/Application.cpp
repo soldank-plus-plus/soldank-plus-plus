@@ -111,6 +111,8 @@ bool Init(int argc, const char* argv[])
         application_mode = cli_parameters.application_mode;
     }
 
+    client_state = std::make_shared<ClientState>();
+
     switch (application_mode) {
         case CommandLineParameters::ApplicationMode::Default: {
             spdlog::critical("Application mode = Default. That should have never happened.");
@@ -120,6 +122,7 @@ bool Init(int argc, const char* argv[])
         case CommandLineParameters::ApplicationMode::Local: {
             spdlog::info("Application mode = Local");
             map_path = "maps/ctf_Ash.pms";
+            client_state->draw_game_debug_interface = true;
             break;
         }
         case CommandLineParameters::ApplicationMode::Online: {
@@ -129,10 +132,12 @@ bool Init(int argc, const char* argv[])
                 server_port = cli_parameters.join_server_port;
             }
             map_path = "maps/ctf_Ash.pms";
+            client_state->draw_game_debug_interface = true;
             spdlog::info("Application mode = Online");
             break;
         }
         case CommandLineParameters::ApplicationMode::MapEditor: {
+            client_state->draw_map_editor_interface = true;
             spdlog::info("Application mode = MapEditor");
             break;
         }
@@ -150,7 +155,6 @@ bool Init(int argc, const char* argv[])
     } else {
         world->GetStateManager()->GetState().map.LoadMap(map_path);
     }
-    client_state = std::make_shared<ClientState>();
     client_state->server_reconciliation = true;
     client_state->client_side_prediction = true;
     client_state->objects_interpolation = true;
@@ -224,6 +228,10 @@ bool Init(int argc, const char* argv[])
 void Run()
 {
     window->Create();
+
+    if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
+        window->SetCursorMode(CursorMode::Normal);
+    }
 
     Scene scene(world->GetStateManager());
 
