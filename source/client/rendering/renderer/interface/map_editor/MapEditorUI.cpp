@@ -54,6 +54,23 @@ void Render(State& game_state, ClientState& client_state, double frame_percent, 
         ImGui::End();
     }
 
+    {
+        ImGui::Begin("Properties");
+        ImGui::Text("Polygons: %zu", game_state.map.GetPolygons().size());
+        ImGui::Text("Sceneries: %zu/500", game_state.map.GetSceneryInstances().size());
+        ImGui::Text("Spawns: %zu/128", game_state.map.GetSpawnPoints().size());
+        ImGui::Text("Colliders: %zu/128", game_state.map.GetColliders().size());
+        ImGui::Text("Waypoints: %zu/500", game_state.map.GetWayPoints().size());
+        ImGui::Text("Connections: 0"); // TODO: Add connections of waypoints
+        glm::vec2 map_dimensions;
+        map_dimensions.x = game_state.map.GetBoundaries()[Map::MapBoundary::RightBoundary] -
+                           game_state.map.GetBoundaries()[Map::MapBoundary::LeftBoundary];
+        map_dimensions.y = game_state.map.GetBoundaries()[Map::MapBoundary::BottomBoundary] -
+                           game_state.map.GetBoundaries()[Map::MapBoundary::TopBoundary];
+        ImGui::Text("Dimensions: %.0fx%.0f", map_dimensions.x, map_dimensions.y);
+        ImGui::End();
+    }
+
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
