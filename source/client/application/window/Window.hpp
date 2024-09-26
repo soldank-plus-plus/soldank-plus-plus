@@ -1,11 +1,13 @@
 #ifndef __WINDOW_HPP__
 #define __WINDOW_HPP__
 
-#include <string>
-#include <cstdint>
+#include "core/math/Glm.hpp"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+#include <string>
+#include <cstdint>
 
 namespace Soldank
 {
@@ -31,7 +33,9 @@ public:
     void SetCursorMode(CursorMode cursor_mode) const;
     void SetTitle(const char* title) const;
     void SetWindowSize(uint32_t width, uint32_t height) const;
+    glm::ivec2 GetWindowSize() const;
     float GetAspectRatio() const;
+    glm::vec2 GetRealCursorPos() const;
 
     void Create();
     void Close();

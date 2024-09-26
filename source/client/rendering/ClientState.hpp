@@ -31,6 +31,8 @@ struct ClientState
     bool mouse_right_button_pressed;
     float game_width;
     float game_height;
+    float window_width;
+    float window_height;
 
     glm::vec2 soldier_position_server_pov;
 
@@ -62,6 +64,7 @@ struct ClientState
 
     bool draw_map_editor_interface = false;
     bool draw_game_debug_interface = false;
+    bool draw_game_interface = false;
 };
 } // namespace Soldank
 

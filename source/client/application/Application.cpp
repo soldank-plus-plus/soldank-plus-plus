@@ -231,6 +231,7 @@ void Run()
 
     if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
         window->SetCursorMode(CursorMode::Normal);
+        world->GetStateManager()->GetState().paused = true;
     }
 
     Scene scene(world->GetStateManager());
@@ -240,6 +241,10 @@ void Run()
         if (Keyboard::KeyWentDown(GLFW_KEY_ESCAPE)) {
             window->Close();
         }
+
+        glm::ivec2 window_size = window->GetWindowSize();
+        client_state->window_width = (float)window_size.x;
+        client_state->window_height = (float)window_size.y;
 
         if (application_mode == CommandLineParameters::ApplicationMode::Local) {
             if (Keyboard::KeyWentDown(GLFW_KEY_F10)) {
@@ -256,6 +261,17 @@ void Run()
                 client_state->mouse.x = mouse_position.x;
                 client_state->mouse.y = mouse_position.y;
             }
+        }
+
+        if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
+            glm::vec2 mouse_position = window->GetRealCursorPos();
+
+            client_state->game_width = 640.0;
+            client_state->game_height = 480.0;
+            client_state->camera_prev = client_state->camera;
+
+            client_state->mouse.x = mouse_position.x;
+            client_state->mouse.y = mouse_position.y;
         }
     });
     unsigned int input_sequence_id = 1;
