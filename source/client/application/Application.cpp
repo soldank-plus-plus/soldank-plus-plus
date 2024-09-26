@@ -92,6 +92,7 @@ bool Init(int argc, const char* argv[])
             } else {
                 server_ip = ip;
                 server_port = port;
+                spdlog::debug("Server_ip = {} server_port = {}", server_ip, server_port);
             }
         } else {
             spdlog::info("Online = false");
@@ -102,6 +103,8 @@ bool Init(int argc, const char* argv[])
     if (!cli_parameters.is_parsing_successful) {
         return false;
     }
+
+    std::string map_path;
 
     // If specified then override the application mode that was set from the INI file
     if (cli_parameters.application_mode != CommandLineParameters::ApplicationMode::Default) {
@@ -116,11 +119,16 @@ bool Init(int argc, const char* argv[])
         }
         case CommandLineParameters::ApplicationMode::Local: {
             spdlog::info("Application mode = Local");
+            map_path = "maps/ctf_Ash.pms";
             break;
         }
         case CommandLineParameters::ApplicationMode::Online: {
-            server_ip = cli_parameters.join_server_ip;
-            server_port = cli_parameters.join_server_port;
+            if (cli_parameters.application_mode !=
+                CommandLineParameters::ApplicationMode::Default) {
+                server_ip = cli_parameters.join_server_ip;
+                server_port = cli_parameters.join_server_port;
+            }
+            map_path = "maps/ctf_Ash.pms";
             spdlog::info("Application mode = Online");
             break;
         }
@@ -130,13 +138,18 @@ bool Init(int argc, const char* argv[])
         }
     }
 
-    std::string map_path = "maps/ctf_Ash.pms";
     if (cli_parameters.map) {
         map_path = "maps/" + *cli_parameters.map + ".pms";
     }
+    spdlog::debug("{} Map: {}", map_path.empty(), map_path);
 
     window = std::make_unique<Window>();
-    world = std::make_shared<World>(map_path);
+    world = std::make_shared<World>();
+    if (map_path.empty()) {
+        world->GetStateManager()->GetState().map.CreateEmptyMap();
+    } else {
+        world->GetStateManager()->GetState().map.LoadMap(map_path);
+    }
     client_state = std::make_shared<ClientState>();
     client_state->server_reconciliation = true;
     client_state->client_side_prediction = true;

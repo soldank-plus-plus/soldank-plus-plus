@@ -67,6 +67,7 @@ public:
     Map(MapData map_data)
         : map_data_(std::move(map_data)){};
 
+    void CreateEmptyMap();
     void LoadMap(const std::string& map_path, const IFileReader& file_reader = FileReader());
 
     static bool PointInPoly(glm::vec2 p, PMSPolygon poly);

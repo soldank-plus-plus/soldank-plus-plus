@@ -7,13 +7,38 @@
 
 #include <algorithm>
 #include <array>
-#include <math.h>
 #include <spdlog/spdlog.h>
 #include <utility>
 #include <sstream>
 
 namespace Soldank
 {
+void Map::CreateEmptyMap()
+{
+    map_data_.boundaries_xy[TopBoundary] = -MAP_BOUNDARY;
+    map_data_.boundaries_xy[BottomBoundary] = MAP_BOUNDARY;
+    map_data_.boundaries_xy[LeftBoundary] = -MAP_BOUNDARY;
+    map_data_.boundaries_xy[RightBoundary] = MAP_BOUNDARY;
+
+    map_data_.description = "New Soldank++ map";
+    map_data_.texture_name = "banana.png";
+
+    map_data_.polygons_min_x = 0.0F;
+    map_data_.polygons_max_x = 0.0F;
+    map_data_.polygons_min_y = 0.0F;
+    map_data_.polygons_max_y = 0.0F;
+
+    map_data_.sectors_size = 50;
+    map_data_.sectors_count = 50;
+    int n = 2 * map_data_.sectors_count + 1;
+    map_data_.sectors_poly = std::vector<std::vector<PMSSector>>(n, std::vector<PMSSector>(n));
+
+    map_data_.background_top_color = PMSColor(100, 200, 100, 255);
+    map_data_.background_bottom_color = PMSColor(50, 50, 50, 255);
+
+    UpdateBoundaries();
+}
+
 void Map::LoadMap(const std::string& map_path, const IFileReader& file_reader)
 {
     // TODO: Add map validation, whether the map was loaded correctly. Check the sizes of arrays
@@ -169,6 +194,7 @@ void Map::ReadSpawnPointsFromBuffer(std::stringstream& buffer)
         ReadFromBuffer(buffer, map_data_.spawn_points.back());
     }
 }
+
 void Map::ReadWayPointsFromBuffer(std::stringstream& buffer)
 {
     int way_points_count = 0;
