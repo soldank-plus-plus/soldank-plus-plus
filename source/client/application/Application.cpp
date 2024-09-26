@@ -54,7 +54,7 @@ std::shared_ptr<NetworkEventDispatcher> client_network_event_dispatcher;
 
 SteamNetworkingMicroseconds log_time_zero;
 
-bool is_online;
+CommandLineParameters::ApplicationMode application_mode;
 
 void DebugOutput(ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
 {
@@ -77,16 +77,18 @@ bool Init(int argc, const char* argv[])
     int server_port = 0;
     if (rc < 0) {
         spdlog::warn("INI File could not be loaded: debug_config.ini");
-        is_online = false;
+        application_mode = CommandLineParameters::ApplicationMode::Local;
     } else {
-        is_online = ini_config.GetBoolValue("Network", "Online");
-        if (is_online) {
+        application_mode = ini_config.GetBoolValue("Network", "Online")
+                             ? CommandLineParameters::ApplicationMode::Online
+                             : CommandLineParameters::ApplicationMode::Local;
+        if (application_mode == CommandLineParameters::ApplicationMode::Online) {
             spdlog::info("Online = true");
             const auto* ip = ini_config.GetValue("Network", "Server_IP");
             int port = ini_config.GetLongValue("Network", "Server_Port");
             if (ip == nullptr || port == 0) {
                 spdlog::warn("Server_IP or Server_Port not set, setting is_online to false");
-                is_online = false;
+                application_mode = CommandLineParameters::ApplicationMode::Local;
             } else {
                 server_ip = ip;
                 server_port = port;
@@ -101,19 +103,36 @@ bool Init(int argc, const char* argv[])
         return false;
     }
 
-    std::string map_path = "maps/ctf_Ash.pms";
+    // If specified then override the application mode that was set from the INI file
+    if (cli_parameters.application_mode != CommandLineParameters::ApplicationMode::Default) {
+        application_mode = cli_parameters.application_mode;
+    }
 
-    if (cli_parameters.is_online) {
-        is_online = *cli_parameters.is_online;
-        if (is_online) {
+    switch (application_mode) {
+        case CommandLineParameters::ApplicationMode::Default: {
+            spdlog::critical("Application mode = Default. That should have never happened.");
+            std::unreachable();
+            break;
+        }
+        case CommandLineParameters::ApplicationMode::Local: {
+            spdlog::info("Application mode = Local");
+            break;
+        }
+        case CommandLineParameters::ApplicationMode::Online: {
             server_ip = cli_parameters.join_server_ip;
             server_port = cli_parameters.join_server_port;
-        } else {
-            if (cli_parameters.map) {
-                map_path = "maps/" + *cli_parameters.map + ".pms";
-            }
+            spdlog::info("Application mode = Online");
+            break;
         }
-        spdlog::info("Online = true");
+        case CommandLineParameters::ApplicationMode::MapEditor: {
+            spdlog::info("Application mode = MapEditor");
+            break;
+        }
+    }
+
+    std::string map_path = "maps/ctf_Ash.pms";
+    if (cli_parameters.map) {
+        map_path = "maps/" + *cli_parameters.map + ".pms";
     }
 
     window = std::make_unique<Window>();
@@ -124,7 +143,7 @@ bool Init(int argc, const char* argv[])
     client_state->objects_interpolation = true;
     client_state->draw_server_pov_client_pos = true;
 
-    if (is_online) {
+    if (application_mode == CommandLineParameters::ApplicationMode::Online) {
         spdlog::info("Connecting to {}:{}", server_ip, server_port);
         std::vector<std::shared_ptr<INetworkEventHandler>> network_event_handlers{
             std::make_shared<AssignPlayerIdNetworkEventHandler>(world, client_state),
@@ -205,7 +224,7 @@ void Run()
     world->SetPreWorldUpdateCallback([&]() {
         client_state->colliding_polygon_ids.clear();
 
-        if (is_online) {
+        if (application_mode == CommandLineParameters::ApplicationMode::Online) {
             networking_client->SetLag(client_state->network_lag);
             networking_client->Update(client_network_event_dispatcher);
 
@@ -297,7 +316,7 @@ void Run()
                 client_state->camera = { 0.0F, 0.0F };
             }
 
-            if (is_online) {
+            if (application_mode == CommandLineParameters::ApplicationMode::Online) {
                 SoldierInputPacket update_soldier_state_packet{
                     .input_sequence_id = input_sequence_id,
                     .game_tick = world->GetStateManager()->GetState().game_tick,
@@ -328,8 +347,8 @@ void Run()
             client_state->camera = { 0.0F, 0.0F };
         }
     });
-    world->SetPostWorldUpdateCallback([&](const State& state) {});
-    world->SetPostGameLoopIterationCallback([&](const State& state,
+    world->SetPostWorldUpdateCallback([&](const State& /*state*/) {});
+    world->SetPostGameLoopIterationCallback([&](const State& /*state*/,
                                                 double frame_percent,
                                                 int last_fps) {
         if (!client_state->objects_interpolation) {
@@ -342,7 +361,7 @@ void Run()
     });
 
     world->SetPreSoldierUpdateCallback([&](const Soldier& soldier) {
-        if (!is_online) {
+        if (application_mode != CommandLineParameters::ApplicationMode::Online) {
             return true;
         }
 
@@ -355,10 +374,11 @@ void Run()
 
         return false;
     });
-    world->SetPreProjectileSpawnCallback(
-      [&](const BulletParams& bullet_params) { return !is_online; });
+    world->SetPreProjectileSpawnCallback([&](const BulletParams& /*bullet_params*/) {
+        return application_mode != CommandLineParameters::ApplicationMode::Online;
+    });
 
-    if (!is_online) {
+    if (application_mode == CommandLineParameters::ApplicationMode::Local) {
         const auto& soldier = world->CreateSoldier();
         client_state->client_soldier_id = soldier.id;
         world->SpawnSoldier(soldier.id);
@@ -372,7 +392,7 @@ void Free()
     window.reset(nullptr);
     networking_client.reset(nullptr);
 
-    if (is_online) {
+    if (application_mode == CommandLineParameters::ApplicationMode::Online) {
         // Give connections time to finish up.  This is an application layer protocol
         // here, it's not TCP.  Note that if you have an application and you need to be
         // more sure about cleanup, you won't be able to do this.  You will need to send

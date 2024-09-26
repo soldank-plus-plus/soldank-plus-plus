@@ -7,10 +7,18 @@
 
 namespace Soldank::CommandLineParameters
 {
+enum class ApplicationMode
+{
+    Default = 0,
+    Local,
+    Online,
+    MapEditor,
+};
+
 struct ParsedValues
 {
     bool is_parsing_successful = false;
-    std::optional<bool> is_online = std::nullopt;
+    ApplicationMode application_mode = ApplicationMode::Default;
     std::string join_server_ip;
     std::uint16_t join_server_port;
     std::optional<std::string> map;
