@@ -120,9 +120,11 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
         }
     }
 
-    DebugUI::Render(game_state, client_state, frame_percent, fps);
-    if (!DebugUI::GetWantCaptureMouse()) {
-        cursor_renderer_.Render({ client_state.mouse.x, client_state.mouse.y });
+    if (client_state.draw_game_debug_interface) {
+        DebugUI::Render(game_state, client_state, frame_percent, fps);
+        if (!DebugUI::GetWantCaptureMouse()) {
+            cursor_renderer_.Render({ client_state.mouse.x, client_state.mouse.y });
+        }
     }
 
     for (const auto& soldier : game_state.soldiers) {

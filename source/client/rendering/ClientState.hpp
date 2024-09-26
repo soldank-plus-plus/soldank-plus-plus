@@ -59,6 +59,9 @@ struct ClientState
     bool draw_bullet_hitboxes = false;
     bool draw_item_hitboxes = false;
     std::vector<unsigned int> colliding_polygon_ids;
+
+    bool draw_map_editor_interface = false;
+    bool draw_game_debug_interface = false;
 };
 } // namespace Soldank
 
