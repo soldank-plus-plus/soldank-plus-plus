@@ -118,23 +118,29 @@ void World::RunLoop(int fps_limit)
             std::chrono::duration<double> dt_in_duration{ dt };
             timeacc -= dt_in_duration;
 
-            if (pre_world_update_callback_) {
-                pre_world_update_callback_();
-            }
-            Update(delta_time.count());
-            if (post_world_update_callback_) {
-                post_world_update_callback_(state_manager_->GetState());
-            }
+            if (!state_manager_->GetState().paused) {
+                if (pre_world_update_callback_) {
+                    pre_world_update_callback_();
+                }
+                Update(delta_time.count());
+                if (post_world_update_callback_) {
+                    post_world_update_callback_(state_manager_->GetState());
+                }
 
-            world_updates++;
-            game_tick++;
-            state_manager_->GetState().game_tick = game_tick;
+                world_updates++;
+                game_tick++;
+                state_manager_->GetState().game_tick = game_tick;
+            }
 
             timecur = std::chrono::system_clock::now();
             timeacc += timecur - timeprv;
             timeprv = timecur;
         }
-        double frame_percent = std::min(1.0, std::max(0.0, timeacc.count() / dt));
+
+        double frame_percent = 1.0F;
+        if (!state_manager_->GetState().paused) {
+            frame_percent = std::min(1.0, std::max(0.0, timeacc.count() / dt));
+        }
 
         if (post_game_loop_iteration_callback_) {
             post_game_loop_iteration_callback_(state_manager_->GetState(), frame_percent, last_fps);

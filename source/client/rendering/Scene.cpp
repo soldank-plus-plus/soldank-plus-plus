@@ -157,6 +157,10 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
         }
     }
 
+    if (game_state.paused) {
+        text_renderer_.Render("Game paused", 400.0, 700.0, 1.0, { 0.6, 0.7, 0.4 });
+    }
+
     if (Config::DEBUG_DRAW) {
         for (const auto& soldier : game_state.soldiers) {
             rectangle_renderer_.Render(
