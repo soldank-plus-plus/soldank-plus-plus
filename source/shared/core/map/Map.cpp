@@ -20,6 +20,7 @@ void Map::CreateEmptyMap()
     map_data_.boundaries_xy[LeftBoundary] = -MAP_BOUNDARY;
     map_data_.boundaries_xy[RightBoundary] = MAP_BOUNDARY;
 
+    map_data_.name = "Untitled.pms";
     map_data_.description = "New Soldank++ map";
     map_data_.texture_name = "banana.png";
 
@@ -39,16 +40,18 @@ void Map::CreateEmptyMap()
     UpdateBoundaries();
 }
 
-void Map::LoadMap(const std::string& map_path, const IFileReader& file_reader)
+void Map::LoadMap(const std::filesystem::path& map_path, const IFileReader& file_reader)
 {
     // TODO: Add map validation, whether the map was loaded correctly. Check the sizes of arrays
-    auto file_data = file_reader.Read(map_path, std::ios::in | std::ios::binary);
+    auto file_data = file_reader.Read(map_path.string(), std::ios::in | std::ios::binary);
     if (!file_data.has_value()) {
-        spdlog::critical("Map not found {}", map_path);
+        spdlog::critical("Map not found {}", map_path.string());
         // TODO: should return an error
         return;
     }
     std::stringstream data_buffer{ *file_data };
+
+    map_data_.name = map_path.filename().string();
 
     map_data_.boundaries_xy[TopBoundary] = -MAP_BOUNDARY;
     map_data_.boundaries_xy[BottomBoundary] = MAP_BOUNDARY;

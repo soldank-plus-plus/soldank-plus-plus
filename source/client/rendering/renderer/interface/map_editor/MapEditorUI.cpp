@@ -120,7 +120,7 @@ void Render(State& game_state, ClientState& client_state)
 
         if (ImGui::Begin("MapTabBar", nullptr, flags)) {
             if (ImGui::BeginMenuBar()) {
-                ImGui::Button("ctf_Ash.pms");
+                ImGui::Button(game_state.map.GetName().c_str());
                 ImGui::Button("+");
                 ImGui::EndMenuBar();
             }
@@ -147,7 +147,7 @@ void Render(State& game_state, ClientState& client_state)
 
         if (ImGui::Begin("StatusBar", nullptr, flags)) {
             if (ImGui::BeginMenuBar()) {
-                ImGui::Text("Untitled.pms");
+                ImGui::Text("%s", game_state.map.GetName().c_str());
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("Zoom: 100%%");
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
