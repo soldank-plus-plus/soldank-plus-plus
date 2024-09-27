@@ -164,6 +164,12 @@ bool Init(int argc, const char* argv[])
     client_state->objects_interpolation = true;
     client_state->draw_server_pov_client_pos = true;
 
+    Mouse::SubscribeButtonObserver([&](int button, int action) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            client_state->event_left_mouse_button_clicked.Notify();
+        }
+    });
+
     if (application_mode == CommandLineParameters::ApplicationMode::Online) {
         spdlog::info("Connecting to {}:{}", server_ip, server_port);
         std::vector<std::shared_ptr<INetworkEventHandler>> network_event_handlers{
@@ -232,6 +238,7 @@ bool Init(int argc, const char* argv[])
 void Run()
 {
     window->Create();
+    glm::vec2 last_real_mouse_position = window->GetRealCursorPos();
 
     if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
         window->SetCursorMode(CursorMode::Normal);
@@ -249,6 +256,12 @@ void Run()
         glm::ivec2 window_size = window->GetWindowSize();
         client_state->window_width = (float)window_size.x;
         client_state->window_height = (float)window_size.y;
+        glm::vec2 real_mouse_position = window->GetRealCursorPos();
+        if (std::abs(last_real_mouse_position.x - real_mouse_position.x) > 0.001F ||
+            std::abs(last_real_mouse_position.y - real_mouse_position.y) > 0.001F) {
+            client_state->event_mouse_moved.Notify(real_mouse_position);
+        }
+        last_real_mouse_position = real_mouse_position;
 
         if (application_mode == CommandLineParameters::ApplicationMode::Local) {
             if (Keyboard::KeyWentDown(GLFW_KEY_F10)) {
@@ -268,14 +281,12 @@ void Run()
         }
 
         if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
-            glm::vec2 mouse_position = window->GetRealCursorPos();
-
             client_state->game_width = 640.0;
             client_state->game_height = 480.0;
             client_state->camera_prev = client_state->camera;
 
-            client_state->mouse.x = mouse_position.x;
-            client_state->mouse.y = mouse_position.y;
+            client_state->mouse.x = real_mouse_position.x;
+            client_state->mouse.y = real_mouse_position.y;
         }
     });
     unsigned int input_sequence_id = 1;

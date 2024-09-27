@@ -4,6 +4,8 @@
 #include "map_editor/tools/Tool.hpp"
 #include "rendering/ClientState.hpp"
 
+#include "core/math/Glm.hpp"
+
 #include <vector>
 #include <memory>
 
@@ -16,6 +18,8 @@ public:
 
 private:
     void OnSelectNewTool(ToolType tool_type);
+    void OnSceneLeftMouseButtonClick() const;
+    void OnMouseMove(glm::vec2 new_mouse_position) const;
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;
