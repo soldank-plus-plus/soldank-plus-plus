@@ -17,6 +17,7 @@
 #include <span>
 #include <array>
 #include <memory>
+#include <filesystem>
 
 namespace Soldank
 {
@@ -34,6 +35,7 @@ struct MapData
 
     int version;
 
+    std::string name;
     std::string description;
     std::string texture_name;
 
@@ -68,7 +70,8 @@ public:
         : map_data_(std::move(map_data)){};
 
     void CreateEmptyMap();
-    void LoadMap(const std::string& map_path, const IFileReader& file_reader = FileReader());
+    void LoadMap(const std::filesystem::path& map_path,
+                 const IFileReader& file_reader = FileReader());
 
     static bool PointInPoly(glm::vec2 p, PMSPolygon poly);
     bool PointInPolyEdges(float x, float y, int i) const;
@@ -85,6 +88,8 @@ public:
                  std::uint8_t team_id = 0);
 
     int GetVersion() const { return map_data_.version; }
+
+    std::string GetName() const { return map_data_.name; }
 
     std::string GetDescription() const { return map_data_.description; }
 
