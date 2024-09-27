@@ -137,7 +137,7 @@ float Window::GetAspectRatio() const
     return static_cast<float>(width_) / static_cast<float>(height_);
 }
 
-glm::vec2 Window::GetRealCursorPos() const
+glm::vec2 Window::GetCursorScreenPosition() const
 {
     glm::dvec2 cursor_position;
     glfwGetCursorPos(glfw_window_, &cursor_position.x, &cursor_position.y);

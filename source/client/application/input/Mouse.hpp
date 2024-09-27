@@ -27,6 +27,7 @@ public:
     static bool Button(int button);
 
     static void SubscribeButtonObserver(const std::function<void(int, int)>& observer);
+    static void SubscribeMouseMovementObserver(const std::function<void(double, double)>& observer);
 
 private:
     static double x_;
@@ -46,6 +47,7 @@ private:
     static bool buttons_changed_[];
 
     static std::vector<std::function<void(int, int)>> button_observers_;
+    static std::vector<std::function<void(double, double)>> mouse_movement_observers_;
 };
 } // namespace Soldank
 #endif

@@ -22,9 +22,14 @@ double Mouse::scroll_dy_ = 0;
 bool Mouse::buttons_[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 bool Mouse::buttons_changed_[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 std::vector<std::function<void(int, int)>> Mouse::button_observers_{};
+std::vector<std::function<void(double, double)>> Mouse::mouse_movement_observers_{};
 
 void Mouse::CursorPosCallback(GLFWwindow* window, const double x, const double y)
 {
+    for (const auto& mouse_movement_observer : mouse_movement_observers_) {
+        mouse_movement_observer(x, y);
+    }
+
     if (first_mouse_) {
         lastx_ = x;
         lasty_ = y;
@@ -106,6 +111,11 @@ bool Mouse::Button(int button)
 void Mouse::SubscribeButtonObserver(const std::function<void(int, int)>& observer)
 {
     button_observers_.push_back(observer);
+}
+
+void Mouse::SubscribeMouseMovementObserver(const std::function<void(double, double)>& observer)
+{
+    mouse_movement_observers_.push_back(observer);
 }
 
 } // namespace Soldank
