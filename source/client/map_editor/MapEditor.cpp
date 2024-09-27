@@ -11,6 +11,7 @@ namespace Soldank
 {
 MapEditor::MapEditor(ClientState& client_state)
     : selected_tool_(client_state.map_editor_state.selected_tool)
+    , is_dragging_camera_(false)
 {
     client_state.event_left_mouse_button_clicked.AddObserver([this, &client_state]() {
         if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
@@ -18,8 +19,45 @@ MapEditor::MapEditor(ClientState& client_state)
         }
     });
 
-    client_state.event_mouse_moved.AddObserver(
-      [this](glm::vec2 new_mouse_position) { OnMouseMove(new_mouse_position); });
+    client_state.event_left_mouse_button_released.AddObserver([this, &client_state]() {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+            OnSceneLeftMouseButtonRelease();
+        }
+    });
+
+    client_state.event_right_mouse_button_clicked.AddObserver([this, &client_state]() {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+            OnSceneRightMouseButtonClick();
+        }
+    });
+
+    client_state.event_right_mouse_button_released.AddObserver([this, &client_state]() {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+            OnSceneRightMouseButtonRelease();
+        }
+    });
+
+    client_state.event_middle_mouse_button_clicked.AddObserver([this, &client_state]() {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+            OnSceneMiddleMouseButtonClick(client_state);
+        }
+    });
+
+    client_state.event_middle_mouse_button_released.AddObserver([this, &client_state]() {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+            OnSceneMiddleMouseButtonRelease();
+        }
+    });
+
+    client_state.event_mouse_screen_position_changed.AddObserver(
+      [this, &client_state](glm::vec2 last_mouse_position, glm::vec2 new_mouse_position) {
+          OnMouseScreenPositionChange(client_state, last_mouse_position, new_mouse_position);
+      });
+
+    client_state.event_mouse_map_position_changed.AddObserver(
+      [this, &client_state](glm::vec2 last_mouse_position, glm::vec2 new_mouse_position) {
+          OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
+      });
 
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
       [this](ToolType tool_type) { OnSelectNewTool(tool_type); });
@@ -44,13 +82,49 @@ void MapEditor::OnSelectNewTool(ToolType tool_type)
     tools_.at(std::to_underlying(selected_tool_))->OnSelect();
 }
 
-void MapEditor::OnSceneLeftMouseButtonClick() const
+void MapEditor::OnSceneLeftMouseButtonClick()
 {
     tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonClick();
 }
 
-void MapEditor::OnMouseMove(glm::vec2 new_mouse_position) const
+void MapEditor::OnSceneLeftMouseButtonRelease() {}
+
+void MapEditor::OnSceneRightMouseButtonClick() {}
+
+void MapEditor::OnSceneRightMouseButtonRelease() {}
+
+void MapEditor::OnSceneMiddleMouseButtonClick(ClientState& client_state)
 {
+    is_dragging_camera_ = true;
+    mouse_screen_position_on_start_dragging_ = current_mouse_screen_position_;
+    camera_position_on_start_dragging_ = client_state.camera;
+}
+
+void MapEditor::OnSceneMiddleMouseButtonRelease()
+{
+    is_dragging_camera_ = false;
+}
+
+void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
+                                            glm::vec2 last_mouse_position,
+                                            glm::vec2 new_mouse_position)
+{
+    new_mouse_position.y = -new_mouse_position.y;
+    current_mouse_screen_position_ = new_mouse_position;
+
+    if (is_dragging_camera_) {
+        glm::vec2 diff = mouse_screen_position_on_start_dragging_ - new_mouse_position;
+        diff.x /= client_state.window_width / client_state.game_width;
+        diff.y /= client_state.window_height / client_state.game_height;
+        client_state.camera = camera_position_on_start_dragging_ + diff;
+    }
+
     tools_.at(std::to_underlying(selected_tool_))->OnMouseMove(new_mouse_position);
+}
+
+void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
+                                         glm::vec2 last_mouse_position,
+                                         glm::vec2 new_mouse_position)
+{
 }
 } // namespace Soldank

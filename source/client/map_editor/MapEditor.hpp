@@ -18,11 +18,26 @@ public:
 
 private:
     void OnSelectNewTool(ToolType tool_type);
-    void OnSceneLeftMouseButtonClick() const;
-    void OnMouseMove(glm::vec2 new_mouse_position) const;
+    void OnSceneLeftMouseButtonClick();
+    void OnSceneLeftMouseButtonRelease();
+    void OnSceneRightMouseButtonClick();
+    void OnSceneRightMouseButtonRelease();
+    void OnSceneMiddleMouseButtonClick(ClientState& client_state);
+    void OnSceneMiddleMouseButtonRelease();
+    void OnMouseScreenPositionChange(ClientState& client_state,
+                                     glm::vec2 last_mouse_position,
+                                     glm::vec2 new_mouse_position);
+    void OnMouseMapPositionChange(ClientState& client_state,
+                                  glm::vec2 last_mouse_position,
+                                  glm::vec2 new_mouse_position);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;
+
+    glm::vec2 current_mouse_screen_position_;
+    glm::vec2 camera_position_on_start_dragging_;
+    glm::vec2 mouse_screen_position_on_start_dragging_;
+    bool is_dragging_camera_;
 };
 } // namespace Soldank
 

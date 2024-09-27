@@ -168,6 +168,26 @@ bool Init(int argc, const char* argv[])
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             client_state->event_left_mouse_button_clicked.Notify();
         }
+
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+            client_state->event_right_mouse_button_clicked.Notify();
+        }
+
+        if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS) {
+            client_state->event_middle_mouse_button_clicked.Notify();
+        }
+
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+            client_state->event_left_mouse_button_released.Notify();
+        }
+
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+            client_state->event_right_mouse_button_released.Notify();
+        }
+
+        if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
+            client_state->event_middle_mouse_button_released.Notify();
+        }
     });
 
     if (application_mode == CommandLineParameters::ApplicationMode::Online) {
@@ -235,15 +255,69 @@ bool Init(int argc, const char* argv[])
     return true;
 }
 
+glm::vec2 GetCurrentMouseScreenPosition()
+{
+    return window->GetCursorScreenPosition();
+}
+
+glm::vec2 GetCurrentMouseMapPosition()
+{
+    glm::ivec2 window_size = window->GetWindowSize();
+    glm::vec2 mouse_map_position = window->GetCursorScreenPosition();
+
+    float ratio_x = window_size.x / 640.0F;
+    float ratio_y = window_size.y / 480.0F;
+
+    mouse_map_position.x /= ratio_x;
+    mouse_map_position.y /= ratio_y;
+    window_size.x /= ratio_x;
+    window_size.y /= ratio_y;
+
+    mouse_map_position.x =
+      (mouse_map_position.x - (float)window_size.x / 2.0F + client_state->camera.x);
+    mouse_map_position.y =
+      (mouse_map_position.y - (float)window_size.y / 2.0F + client_state->camera.y);
+    return mouse_map_position;
+}
+
+void UpdateWindowSize()
+{
+    glm::ivec2 window_size = window->GetWindowSize();
+    client_state->window_width = window_size.x;
+    client_state->window_height = window_size.y;
+}
+
 void Run()
 {
     window->Create();
-    glm::vec2 last_real_mouse_position = window->GetRealCursorPos();
+    glm::vec2 last_mouse_screen_position = GetCurrentMouseScreenPosition();
+    glm::vec2 last_mouse_map_position = GetCurrentMouseMapPosition();
+    UpdateWindowSize();
 
     if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
         window->SetCursorMode(CursorMode::Normal);
         world->GetStateManager()->GetState().paused = true;
     }
+
+    Mouse::SubscribeMouseMovementObserver([&](double x, double y) {
+        glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
+        if (std::abs(last_mouse_screen_position.x - mouse_screen_position.x) > 0.001F ||
+            std::abs(last_mouse_screen_position.y - mouse_screen_position.y) > 0.001F) {
+            client_state->event_mouse_screen_position_changed.Notify(last_mouse_screen_position,
+                                                                     mouse_screen_position);
+            mouse_screen_position = GetCurrentMouseScreenPosition();
+        }
+        last_mouse_screen_position = mouse_screen_position;
+
+        glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
+        if (std::abs(last_mouse_map_position.x - mouse_map_position.x) > 0.0000001F ||
+            std::abs(last_mouse_map_position.y - mouse_map_position.y) > 0.0000001F) {
+            client_state->event_mouse_map_position_changed.Notify(last_mouse_map_position,
+                                                                  mouse_map_position);
+            mouse_map_position = GetCurrentMouseMapPosition();
+        }
+        last_mouse_map_position = mouse_map_position;
+    });
 
     Scene scene(world->GetStateManager());
 
@@ -252,16 +326,9 @@ void Run()
         if (Keyboard::KeyWentDown(GLFW_KEY_ESCAPE)) {
             window->Close();
         }
+        UpdateWindowSize();
 
-        glm::ivec2 window_size = window->GetWindowSize();
-        client_state->window_width = (float)window_size.x;
-        client_state->window_height = (float)window_size.y;
-        glm::vec2 real_mouse_position = window->GetRealCursorPos();
-        if (std::abs(last_real_mouse_position.x - real_mouse_position.x) > 0.001F ||
-            std::abs(last_real_mouse_position.y - real_mouse_position.y) > 0.001F) {
-            client_state->event_mouse_moved.Notify(real_mouse_position);
-        }
-        last_real_mouse_position = real_mouse_position;
+        glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
 
         if (application_mode == CommandLineParameters::ApplicationMode::Local) {
             if (Keyboard::KeyWentDown(GLFW_KEY_F10)) {
@@ -285,8 +352,8 @@ void Run()
             client_state->game_height = 480.0;
             client_state->camera_prev = client_state->camera;
 
-            client_state->mouse.x = real_mouse_position.x;
-            client_state->mouse.y = real_mouse_position.y;
+            client_state->mouse.x = mouse_screen_position.x;
+            client_state->mouse.y = mouse_screen_position.y;
         }
     });
     unsigned int input_sequence_id = 1;

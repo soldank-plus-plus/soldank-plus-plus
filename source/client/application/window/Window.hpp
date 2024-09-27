@@ -35,7 +35,7 @@ public:
     void SetWindowSize(uint32_t width, uint32_t height) const;
     glm::ivec2 GetWindowSize() const;
     float GetAspectRatio() const;
-    glm::vec2 GetRealCursorPos() const;
+    glm::vec2 GetCursorScreenPosition() const;
 
     void Create();
     void Close();
