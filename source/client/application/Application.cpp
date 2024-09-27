@@ -6,9 +6,11 @@
 #include "application/input/Mouse.hpp"
 #include "application/input/PlayerInput.hpp"
 #include "cli/CommandLineParameters.hpp"
+#include "application/window/Window.hpp"
 
 #include "communication/NetworkPackets.hpp"
 #include "core/state/Control.hpp"
+#include "map_editor/MapEditor.hpp"
 #include "networking/NetworkingClient.hpp"
 #include "networking/event_handlers/AssignPlayerIdNetworkEventHandler.hpp"
 #include "networking/event_handlers/PingCheckNetworkEventHandler.hpp"
@@ -51,6 +53,7 @@ std::shared_ptr<IWorld> world;
 std::unique_ptr<INetworkingClient> networking_client;
 std::shared_ptr<ClientState> client_state;
 std::shared_ptr<NetworkEventDispatcher> client_network_event_dispatcher;
+std::unique_ptr<MapEditor> map_editor;
 
 SteamNetworkingMicroseconds log_time_zero;
 
@@ -138,6 +141,7 @@ bool Init(int argc, const char* argv[])
         }
         case CommandLineParameters::ApplicationMode::MapEditor: {
             client_state->draw_map_editor_interface = true;
+            map_editor = std::make_unique<MapEditor>(*client_state);
             spdlog::info("Application mode = MapEditor");
             break;
         }

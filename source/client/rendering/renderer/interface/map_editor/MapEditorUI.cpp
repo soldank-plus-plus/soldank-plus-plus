@@ -53,6 +53,10 @@ void Render(State& game_state, ClientState& client_state)
             if (ImGui::Selectable(tool_option.first.c_str(),
                                   client_state.map_editor_state.selected_tool ==
                                     tool_option.second)) {
+                if (client_state.map_editor_state.selected_tool != tool_option.second) {
+                    client_state.map_editor_state.event_selected_new_tool.Notify(
+                      tool_option.second);
+                }
                 client_state.map_editor_state.selected_tool = tool_option.second;
             }
         }
