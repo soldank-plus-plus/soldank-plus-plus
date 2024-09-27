@@ -27,6 +27,7 @@ struct MapEditorState
     bool is_mouse_hovering_over_ui = false;
 
     Observable<ToolType> event_selected_new_tool;
+    Observable<> event_pressed_play;
 };
 } // namespace Soldank
 

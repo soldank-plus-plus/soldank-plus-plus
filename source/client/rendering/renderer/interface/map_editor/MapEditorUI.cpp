@@ -27,6 +27,12 @@ void Render(State& game_state, ClientState& client_state)
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("Run")) {
+                if (ImGui::MenuItem("Play", "F5")) {
+                    client_state.map_editor_state.event_pressed_play.Notify();
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Windows")) {
                 ImGui::EndMenu();
             }
