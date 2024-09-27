@@ -19,7 +19,6 @@ namespace Soldank
 struct Soldier
 {
     Soldier(std::uint8_t soldier_id,
-            glm::vec2 spawn_position,
             const AnimationDataManager& animation_data_manager,
             std::shared_ptr<ParticleSystem> skeleton,
             const std::vector<Weapon>& initial_weapons);

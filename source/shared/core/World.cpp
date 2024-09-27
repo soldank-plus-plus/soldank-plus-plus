@@ -343,15 +343,6 @@ const Soldier& World::CreateSoldier(std::optional<unsigned int> force_soldier_id
         new_soldier_id = *force_soldier_id;
     }
 
-    std::uniform_int_distribution<unsigned int> spawnpoint_id_random_distribution(
-      0, state_manager_->GetState().map.GetSpawnPoints().size() - 1);
-
-    unsigned int random_spawnpoint_id = spawnpoint_id_random_distribution(mersenne_twister_engine_);
-
-    const auto& chosen_spawnpoint =
-      state_manager_->GetState().map.GetSpawnPoints().at(random_spawnpoint_id);
-    glm::vec2 spawn_position = { chosen_spawnpoint.x, chosen_spawnpoint.y };
-
     std::vector<Weapon> weapons{
         { WeaponParametersFactory::GetParameters(WeaponType::DesertEagles, false) },
         { WeaponParametersFactory::GetParameters(WeaponType::Knife, false) },
@@ -359,7 +350,6 @@ const Soldier& World::CreateSoldier(std::optional<unsigned int> force_soldier_id
     };
     state_manager_->GetState().soldiers.emplace_back(
       new_soldier_id,
-      spawn_position,
       animation_data_manager_,
       ParticleSystem::Load(ParticleSystemType::Soldier),
       weapons);

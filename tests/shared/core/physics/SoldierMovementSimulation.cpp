@@ -27,10 +27,11 @@ SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader&
     };
     state.soldiers.emplace_back(
       0,
-      glm::vec2{ 0.0F, -29.0F },
       animation_data_manager_,
       Soldank::ParticleSystem::Load(Soldank::ParticleSystemType::Soldier, 4.5F, file_reader),
       weapons);
+    state.soldiers.back().particle.position = glm::vec2{ 0.0F, -29.0F };
+    state.soldiers.back().particle.old_position = glm::vec2{ 0.0F, -29.0F };
 }
 
 void SoldierMovementSimulation::HoldRight()

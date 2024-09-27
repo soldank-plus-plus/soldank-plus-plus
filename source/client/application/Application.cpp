@@ -136,6 +136,7 @@ bool Init(int argc, const char* argv[])
             }
             map_path = "maps/ctf_Ash.pms";
             client_state->draw_game_debug_interface = true;
+            client_state->draw_server_pov_client_pos = true;
             spdlog::info("Application mode = Online");
             break;
         }
@@ -162,7 +163,6 @@ bool Init(int argc, const char* argv[])
     client_state->server_reconciliation = true;
     client_state->client_side_prediction = true;
     client_state->objects_interpolation = true;
-    client_state->draw_server_pov_client_pos = true;
 
     Mouse::SubscribeButtonObserver([&](int button, int action) {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
@@ -299,6 +299,28 @@ void Run()
         world->GetStateManager()->GetState().paused = true;
     }
 
+    client_state->map_editor_state.event_pressed_play.AddObserver([&]() {
+        std::uint8_t client_soldier_id = *client_state->client_soldier_id;
+        bool is_soldier_active = false;
+        bool is_soldier_alive = false;
+        for (const auto& soldier : world->GetStateManager()->GetState().soldiers) {
+            if (soldier.id == client_soldier_id && soldier.active) {
+                is_soldier_active = true;
+                is_soldier_alive = !soldier.dead_meat;
+            }
+        }
+
+        if (!is_soldier_active || !is_soldier_alive) {
+            world->SpawnSoldier(*client_state->client_soldier_id);
+        }
+
+        client_state->draw_game_interface = true;
+        client_state->draw_map_editor_interface = false;
+        client_state->draw_game_debug_interface = true;
+        world->GetStateManager()->GetState().paused = false;
+        window->SetCursorMode(CursorMode::Locked);
+    });
+
     Mouse::SubscribeMouseMovementObserver([&](double x, double y) {
         glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
         if (std::abs(last_mouse_screen_position.x - mouse_screen_position.x) > 0.001F ||
@@ -330,10 +352,20 @@ void Run()
 
         glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
 
-        if (application_mode == CommandLineParameters::ApplicationMode::Local) {
+        if (application_mode == CommandLineParameters::ApplicationMode::Local ||
+            (application_mode == CommandLineParameters::ApplicationMode::MapEditor &&
+             client_state->draw_game_interface)) {
             if (Keyboard::KeyWentDown(GLFW_KEY_F10)) {
                 world->GetStateManager()->GetState().paused =
                   !world->GetStateManager()->GetState().paused;
+            }
+            if (Keyboard::KeyWentDown(GLFW_KEY_F5) &&
+                application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
+                client_state->draw_game_interface = false;
+                client_state->draw_map_editor_interface = true;
+                client_state->draw_game_debug_interface = false;
+                world->GetStateManager()->GetState().paused = true;
+                window->SetCursorMode(CursorMode::Normal);
             }
             if (world->GetStateManager()->GetState().paused) {
                 glm::vec2 mouse_position = { Mouse::GetX(), Mouse::GetY() };
@@ -345,9 +377,7 @@ void Run()
                 client_state->mouse.x = mouse_position.x;
                 client_state->mouse.y = mouse_position.y;
             }
-        }
-
-        if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
+        } else if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
             client_state->game_width = 640.0;
             client_state->game_height = 480.0;
             client_state->camera_prev = client_state->camera;
@@ -514,10 +544,14 @@ void Run()
         return application_mode != CommandLineParameters::ApplicationMode::Online;
     });
 
-    if (application_mode == CommandLineParameters::ApplicationMode::Local) {
+    if (application_mode == CommandLineParameters::ApplicationMode::Local ||
+        application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
         const auto& soldier = world->CreateSoldier();
         client_state->client_soldier_id = soldier.id;
-        world->SpawnSoldier(soldier.id);
+    }
+
+    if (application_mode == CommandLineParameters::ApplicationMode::Local) {
+        world->SpawnSoldier(*client_state->client_soldier_id);
     }
 
     world->RunLoop(Config::FPS_LIMIT);

@@ -14,13 +14,12 @@ const float GRAV = 0.06F;
 namespace Soldank
 {
 Soldier::Soldier(std::uint8_t soldier_id,
-                 glm::vec2 spawn_position,
                  const AnimationDataManager& animation_data_manager,
                  std::shared_ptr<ParticleSystem> skeleton,
                  const std::vector<Weapon>& initial_weapons)
     : id(soldier_id)
-    , camera(spawn_position)
-    , camera_prev(spawn_position)
+    , camera({ 0.0F, 0.0F })
+    , camera_prev({ 0.0F, 0.0F })
     , active(false)
     , dead_meat(false)
     , style(0)
@@ -54,8 +53,8 @@ Soldier::Soldier(std::uint8_t soldier_id,
     , weapon_choices{ WeaponType::DesertEagles, WeaponType::Knife }
     , fired(0)
     , particle(false,
-               spawn_position,
-               spawn_position,
+               { 0.0F, 0.0F },
+               { 0.0F, 0.0F },
                glm::vec2(0.0F, 0.0F),
                glm::vec2(0.0F, 0.0F),
                1.0F,
