@@ -1,15 +1,15 @@
-#ifndef __DUMMY_TOOL_HPP__
-#define __DUMMY_TOOL_HPP__
+#ifndef __POLYGON_TOOL_HPP__
+#define __POLYGON_TOOL_HPP__
 
 #include "map_editor/tools/Tool.hpp"
 
 namespace Soldank
 {
-class DummyTool final : public Tool
+class PolygonTool final : public Tool
 {
 public:
-    DummyTool() = default;
-    ~DummyTool() final = default;
+    PolygonTool() = default;
+    ~PolygonTool() final = default;
 
     void OnSelect() final;
     void OnUnselect() final;

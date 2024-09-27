@@ -73,6 +73,9 @@ struct ClientState
     bool draw_background = true;
     bool draw_polygons = true;
     bool draw_sceneries = true;
+
+    Observable<glm::vec2> event_mouse_moved;
+    Observable<> event_left_mouse_button_clicked;
 };
 } // namespace Soldank
 

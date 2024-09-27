@@ -15,6 +15,8 @@ void Render(State& game_state, ClientState& client_state)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    client_state.map_editor_state.is_mouse_hovering_over_ui = io.WantCaptureMouse;
+
     {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
@@ -104,8 +106,8 @@ void Render(State& game_state, ClientState& client_state)
         ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, ImGui::GetFrameHeight()));
 
         // Add menu bar flag and disable everything else
-        ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse |
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoScrollWithMouse |
                                  ImGuiWindowFlags_NoSavedSettings |
                                  ImGuiWindowFlags_NoBringToFrontOnFocus |
                                  ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar;
@@ -131,8 +133,8 @@ void Render(State& game_state, ClientState& client_state)
         ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, ImGui::GetFrameHeight()));
 
         // Add menu bar flag and disable everything else
-        ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-                                 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse |
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                                 ImGuiWindowFlags_NoScrollWithMouse |
                                  ImGuiWindowFlags_NoSavedSettings |
                                  ImGuiWindowFlags_NoBringToFrontOnFocus |
                                  ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar;

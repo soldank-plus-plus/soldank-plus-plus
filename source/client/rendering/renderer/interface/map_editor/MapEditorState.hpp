@@ -24,6 +24,8 @@ struct MapEditorState
 {
     ToolType selected_tool = ToolType::Polygon;
 
+    bool is_mouse_hovering_over_ui = false;
+
     Observable<ToolType> event_selected_new_tool;
 };
 } // namespace Soldank

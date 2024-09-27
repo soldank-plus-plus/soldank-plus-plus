@@ -1,16 +1,12 @@
 #include "map_editor/tools/DummyTool.hpp"
 
-#include "spdlog/spdlog.h"
-
 namespace Soldank
 {
-void DummyTool::OnSelect()
-{
-    spdlog::debug("DummyTool Select");
-}
+void DummyTool::OnSelect() {}
 
-void DummyTool::OnUnselect()
-{
-    spdlog::debug("DummyTool Unselect");
-}
+void DummyTool::OnUnselect() {}
+
+void DummyTool::OnSceneLeftMouseButtonClick() {}
+
+void DummyTool::OnMouseMove(glm::vec2 new_mouse_position) {}
 } // namespace Soldank
