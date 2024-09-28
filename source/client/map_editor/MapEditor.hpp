@@ -24,6 +24,8 @@ private:
     void OnSceneRightMouseButtonRelease();
     void OnSceneMiddleMouseButtonClick(ClientState& client_state);
     void OnSceneMiddleMouseButtonRelease();
+    void OnMouseScrollUp(ClientState& client_state);
+    void OnMouseScrollDown(ClientState& client_state);
     void OnMouseScreenPositionChange(ClientState& client_state,
                                      glm::vec2 last_mouse_position,
                                      glm::vec2 new_mouse_position);

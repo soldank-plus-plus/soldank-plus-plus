@@ -41,37 +41,38 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
 {
     glm::vec2 new_camera_position =
       Calc::Lerp(client_state.camera_prev, client_state.camera, (float)frame_percent);
-    camera_.Move(new_camera_position.x, new_camera_position.y);
+    Camera& camera = client_state.camera_component;
+    camera.Move(new_camera_position.x, new_camera_position.y);
 
     glClearColor(168.0F / 255.0F, 163.0F / 255.0F, 148.0F / 255.0F, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (client_state.draw_background) {
-        background_renderer_.Render(camera_.GetView());
+        background_renderer_.Render(camera.GetView());
     }
 
     if (client_state.draw_sceneries) {
-        sceneries_renderer_.Render(camera_.GetView(), 0, game_state.map.GetSceneryInstances());
+        sceneries_renderer_.Render(camera.GetView(), 0, game_state.map.GetSceneryInstances());
     }
 
     if (client_state.draw_server_pov_client_pos) {
-        rectangle_renderer_.Render(camera_.GetView(), client_state.soldier_position_server_pov);
+        rectangle_renderer_.Render(camera.GetView(), client_state.soldier_position_server_pov);
     }
     for (const Bullet& bullet : game_state.bullets) {
-        bullet_renderer_.Render(camera_.GetView(), bullet, frame_percent);
+        bullet_renderer_.Render(camera.GetView(), bullet, frame_percent);
     }
     RenderSoldiers(game_state, client_state, frame_percent);
     for (const Item& item : game_state.items) {
-        item_renderer_.Render(camera_.GetView(), item, frame_percent, game_state.game_tick);
+        item_renderer_.Render(camera.GetView(), item, frame_percent, game_state.game_tick);
     }
-    sceneries_renderer_.Render(camera_.GetView(), 1, game_state.map.GetSceneryInstances());
-    polygons_renderer_.Render(camera_.GetView());
+    sceneries_renderer_.Render(camera.GetView(), 1, game_state.map.GetSceneryInstances());
+    polygons_renderer_.Render(camera.GetView());
     if (client_state.draw_colliding_polygons) {
         for (unsigned int polygon_id : client_state.colliding_polygon_ids) {
-            polygon_outlines_renderer_.Render(camera_.GetView(), polygon_id);
+            polygon_outlines_renderer_.Render(camera.GetView(), polygon_id);
         }
     }
-    sceneries_renderer_.Render(camera_.GetView(), 2, game_state.map.GetSceneryInstances());
+    sceneries_renderer_.Render(camera.GetView(), 2, game_state.map.GetSceneryInstances());
 
     if (client_state.draw_soldier_hitboxes) {
         const auto bullet_colliding_body_parts = std::array{ 12, 11, 10, 6, 5, 4, 3 };
@@ -82,7 +83,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
                   soldier.skeleton->GetPos(body_part_id) - soldier.particle.position;
                 auto body_part_center_position = soldier_pos + body_part_offset;
                 float radius = 7.0F;
-                circle_renderer_.Render(camera_.GetView(),
+                circle_renderer_.Render(camera.GetView(),
                                         body_part_center_position,
                                         { 1.0F, 0.0F, 0.0F, 1.0F },
                                         radius,
@@ -98,20 +99,20 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
                 glm::vec2 end_pos = item.skeleton->GetPos(2);
                 float radius = 1.0F;
                 circle_renderer_.Render(
-                  camera_.GetView(), start_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, radius);
+                  camera.GetView(), start_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, radius);
                 circle_renderer_.Render(
-                  camera_.GetView(), end_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, radius);
+                  camera.GetView(), end_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, radius);
                 line_renderer_.Render(
-                  camera_.GetView(), start_pos, end_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, 0.5F);
+                  camera.GetView(), start_pos, end_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, 0.5F);
             } else {
                 for (unsigned int i = 1; i <= 4; ++i) {
                     glm::vec2 start_pos = item.skeleton->GetPos(i);
                     glm::vec2 end_pos = item.skeleton->GetPos((i % 4) + 1);
                     float radius = 1.0F;
                     circle_renderer_.Render(
-                      camera_.GetView(), start_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, radius);
+                      camera.GetView(), start_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, radius);
                     line_renderer_.Render(
-                      camera_.GetView(), start_pos, end_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, 0.5F);
+                      camera.GetView(), start_pos, end_pos, { 1.0F, 0.0F, 0.0F, 1.0F }, 0.5F);
                 }
             }
         }
@@ -123,7 +124,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
             auto end_point = bullet.particle.position + bullet.particle.GetVelocity();
 
             line_renderer_.Render(
-              camera_.GetView(), start_point, end_point, { 1.0F, 0.0F, 0.0F, 1.0F }, 0.5F);
+              camera.GetView(), start_point, end_point, { 1.0F, 0.0F, 0.0F, 1.0F }, 0.5F);
         }
     }
 
@@ -179,7 +180,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     if (Config::DEBUG_DRAW) {
         for (const auto& soldier : game_state.soldiers) {
             rectangle_renderer_.Render(
-              camera_.GetView(),
+              camera.GetView(),
               glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y));
         }
     }
@@ -189,6 +190,8 @@ void Scene::RenderSoldiers(const State& game_state,
                            const ClientState& client_state,
                            double frame_percent)
 {
+    const Camera& camera = client_state.camera_component;
+
     for (const auto& soldier : game_state.soldiers) {
         if (client_state.client_soldier_id.has_value() &&
             *client_state.client_soldier_id == soldier.id) {
@@ -197,7 +200,7 @@ void Scene::RenderSoldiers(const State& game_state,
             continue;
         }
         if (soldier.active) {
-            soldier_renderer_.Render(camera_.GetView(), sprite_manager_, soldier, frame_percent);
+            soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
         }
     }
 
@@ -207,8 +210,7 @@ void Scene::RenderSoldiers(const State& game_state,
         unsigned int client_soldier_id = *client_state.client_soldier_id;
         for (const auto& soldier : game_state.soldiers) {
             if (soldier.id == client_soldier_id && soldier.active) {
-                soldier_renderer_.Render(
-                  camera_.GetView(), sprite_manager_, soldier, frame_percent);
+                soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
             }
         }
     }
