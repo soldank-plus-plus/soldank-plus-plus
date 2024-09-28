@@ -2,6 +2,7 @@
 #define __CLIENT_STATE_HPP__
 
 #include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
+#include "rendering/components/Camera.hpp"
 
 #include "core/math/Glm.hpp"
 
@@ -25,7 +26,8 @@ struct ClientState
      */
     std::optional<std::uint8_t> client_soldier_id;
 
-    glm::vec2 camera;
+    Camera camera_component; // TODO: change name to just camera
+    glm::vec2 camera;        // TODO: change name to camera_position or move it to the Camera class
     glm::vec2 camera_prev;
     bool smooth_camera = true;
     glm::vec2 mouse;
@@ -82,6 +84,8 @@ struct ClientState
     Observable<> event_right_mouse_button_released;
     Observable<> event_middle_mouse_button_clicked;
     Observable<> event_middle_mouse_button_released;
+    Observable<> event_mouse_wheel_scrolled_up;
+    Observable<> event_mouse_wheel_scrolled_down;
 };
 } // namespace Soldank
 

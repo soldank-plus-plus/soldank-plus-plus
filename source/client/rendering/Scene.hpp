@@ -36,7 +36,6 @@ public:
                         double frame_percent);
 
 private:
-    Camera camera_;
     Sprites::SpriteManager sprite_manager_;
     BackgroundRenderer background_renderer_;
     PolygonsRenderer polygons_renderer_;

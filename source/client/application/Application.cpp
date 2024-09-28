@@ -190,6 +190,14 @@ bool Init(int argc, const char* argv[])
         }
     });
 
+    Mouse::SubscribeMouseScrollObserver([&](double dx, double dy) {
+        if (dy < 0.0) {
+            client_state->event_mouse_wheel_scrolled_down.Notify();
+        } else if (dy > 0.0) {
+            client_state->event_mouse_wheel_scrolled_up.Notify();
+        }
+    });
+
     if (application_mode == CommandLineParameters::ApplicationMode::Online) {
         spdlog::info("Connecting to {}:{}", server_ip, server_port);
         std::vector<std::shared_ptr<INetworkEventHandler>> network_event_handlers{

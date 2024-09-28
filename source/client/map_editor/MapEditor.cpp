@@ -59,6 +59,11 @@ MapEditor::MapEditor(ClientState& client_state)
           OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
       });
 
+    client_state.event_mouse_wheel_scrolled_up.AddObserver(
+      [this, &client_state]() { OnMouseScrollUp(client_state); });
+    client_state.event_mouse_wheel_scrolled_down.AddObserver(
+      [this, &client_state]() { OnMouseScrollDown(client_state); });
+
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
       [this](ToolType tool_type) { OnSelectNewTool(tool_type); });
 
@@ -105,6 +110,16 @@ void MapEditor::OnSceneMiddleMouseButtonRelease()
     is_dragging_camera_ = false;
 }
 
+void MapEditor::OnMouseScrollUp(ClientState& client_state)
+{
+    client_state.camera_component.ZoomIn();
+}
+
+void MapEditor::OnMouseScrollDown(ClientState& client_state)
+{
+    client_state.camera_component.ZoomOut();
+}
+
 void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
                                             glm::vec2 last_mouse_position,
                                             glm::vec2 new_mouse_position)
@@ -113,10 +128,16 @@ void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
     current_mouse_screen_position_ = new_mouse_position;
 
     if (is_dragging_camera_) {
-        glm::vec2 diff = mouse_screen_position_on_start_dragging_ - new_mouse_position;
-        diff.x /= client_state.window_width / client_state.game_width;
-        diff.y /= client_state.window_height / client_state.game_height;
-        client_state.camera = camera_position_on_start_dragging_ + diff;
+        glm::vec2 mouse_position_difference =
+          mouse_screen_position_on_start_dragging_ - new_mouse_position;
+
+        // We need to scale the difference because the window size is different than the camera size
+        mouse_position_difference.x /=
+          client_state.window_width / client_state.camera_component.GetWidth();
+        mouse_position_difference.y /=
+          client_state.window_height / client_state.camera_component.GetHeight();
+
+        client_state.camera = camera_position_on_start_dragging_ + mouse_position_difference;
     }
 
     tools_.at(std::to_underlying(selected_tool_))->OnMouseMove(new_mouse_position);

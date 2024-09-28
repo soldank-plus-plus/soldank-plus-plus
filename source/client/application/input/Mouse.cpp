@@ -22,6 +22,7 @@ double Mouse::scroll_dy_ = 0;
 bool Mouse::buttons_[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 bool Mouse::buttons_changed_[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 std::vector<std::function<void(int, int)>> Mouse::button_observers_{};
+std::vector<std::function<void(double, double)>> Mouse::mouse_scroll_observers_{};
 std::vector<std::function<void(double, double)>> Mouse::mouse_movement_observers_{};
 
 void Mouse::CursorPosCallback(GLFWwindow* window, const double x, const double y)
@@ -75,6 +76,10 @@ void Mouse::MouseButtonCallback(GLFWwindow* window, const int button, const int 
 
 void Mouse::MouseWheelCallback(GLFWwindow* window, const double dx, const double dy)
 {
+    for (const auto& mouse_scroll_observer : mouse_scroll_observers_) {
+        mouse_scroll_observer(dx, dy);
+    }
+
     Mouse::scroll_dx_ = 0;
     Mouse::scroll_dy_ = 0;
 }
@@ -111,6 +116,11 @@ bool Mouse::Button(int button)
 void Mouse::SubscribeButtonObserver(const std::function<void(int, int)>& observer)
 {
     button_observers_.push_back(observer);
+}
+
+void Mouse::SubscribeMouseScrollObserver(const std::function<void(double, double)>& observer)
+{
+    mouse_scroll_observers_.push_back(observer);
 }
 
 void Mouse::SubscribeMouseMovementObserver(const std::function<void(double, double)>& observer)
