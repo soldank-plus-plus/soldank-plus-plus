@@ -24,6 +24,7 @@ void Render(State& game_state, ClientState& client_state)
             }
             if (ImGui::BeginMenu("Edit")) {
                 if (ImGui::MenuItem("Undo", "CTRL+Z")) {
+                    client_state.map_editor_state.event_pressed_undo.Notify();
                 }
                 ImGui::EndMenu();
             }

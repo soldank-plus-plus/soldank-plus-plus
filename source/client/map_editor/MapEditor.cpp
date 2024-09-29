@@ -16,6 +16,10 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     , mouse_screen_position_on_start_dragging_()
     , is_dragging_camera_(false)
 {
+    add_new_map_editor_action_ = [this, &game_state](std::unique_ptr<MapEditorAction> new_action) {
+        ExecuteNewAction(game_state.map, std::move(new_action));
+    };
+
     client_state.event_left_mouse_button_clicked.AddObserver([this, &client_state]() {
         if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
             OnSceneLeftMouseButtonClick(client_state);
@@ -70,8 +74,11 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
       [this](ToolType tool_type) { OnSelectNewTool(tool_type); });
 
+    client_state.map_editor_state.event_pressed_undo.AddObserver(
+      [this, &game_state]() { UndoLastAction(game_state.map); });
+
     tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<PolygonTool>(game_state.map));
+    tools_.emplace_back(std::make_unique<PolygonTool>(add_new_map_editor_action_));
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<DummyTool>());
@@ -162,5 +169,19 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
 {
     tools_.at(std::to_underlying(selected_tool_))
       ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
+}
+
+void MapEditor::ExecuteNewAction(Map& map, std::unique_ptr<MapEditorAction> new_action)
+{
+    new_action->Execute(map);
+    map_editor_actions_.push_back(std::move(new_action));
+}
+
+void MapEditor::UndoLastAction(Map& map)
+{
+    if (!map_editor_actions_.empty()) {
+        map_editor_actions_.back()->Undo(map);
+        map_editor_actions_.pop_back();
+    }
 }
 } // namespace Soldank

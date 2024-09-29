@@ -67,6 +67,7 @@ struct MapData
 struct MapChangeEvents
 {
     Observable<const PMSPolygon&> added_new_polygon;
+    Observable<const PMSPolygon&, const std::vector<PMSPolygon>&> removed_polygon;
 };
 
 class Map
@@ -96,14 +97,8 @@ public:
 
     MapChangeEvents& GetMapChangeEvents() { return map_change_events_; }
 
-    // TODO: This class should get the dimensions by itself
-    void SetTextureDimensions(glm::vec2 texture_dimensions)
-    {
-        texture_dimensions_ = texture_dimensions;
-    };
-    glm::vec2 GetTextureDimensions() const { return texture_dimensions_; }
-
-    void AddNewPolygon(const PMSPolygon& polygon);
+    PMSPolygon AddNewPolygon(const PMSPolygon& polygon);
+    PMSPolygon RemovePolygonById(unsigned int id);
 
     int GetVersion() const { return map_data_.version; }
 
@@ -168,7 +163,6 @@ public:
 private:
     MapData map_data_;
     MapChangeEvents map_change_events_;
-    glm::vec2 texture_dimensions_;
 
     template<typename DataType>
     static void ReadFromBuffer(std::stringstream& buffer, DataType& variable_to_save_data)
