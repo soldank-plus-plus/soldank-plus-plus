@@ -77,6 +77,9 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     client_state.map_editor_state.event_pressed_undo.AddObserver(
       [this, &game_state]() { UndoLastAction(game_state.map); });
 
+    client_state.map_editor_state.event_pressed_redo.AddObserver(
+      [this, &game_state]() { RedoUndoneAction(game_state.map); });
+
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<PolygonTool>(add_new_map_editor_action_));
     tools_.emplace_back(std::make_unique<DummyTool>());
@@ -173,15 +176,26 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
 
 void MapEditor::ExecuteNewAction(Map& map, std::unique_ptr<MapEditorAction> new_action)
 {
+    map_editor_undone_actions_.clear();
     new_action->Execute(map);
-    map_editor_actions_.push_back(std::move(new_action));
+    map_editor_executed_actions_.push_back(std::move(new_action));
 }
 
 void MapEditor::UndoLastAction(Map& map)
 {
-    if (!map_editor_actions_.empty()) {
-        map_editor_actions_.back()->Undo(map);
-        map_editor_actions_.pop_back();
+    if (!map_editor_executed_actions_.empty()) {
+        map_editor_executed_actions_.back()->Undo(map);
+        map_editor_undone_actions_.push_back(std::move(map_editor_executed_actions_.back()));
+        map_editor_executed_actions_.pop_back();
+    }
+}
+
+void MapEditor::RedoUndoneAction(Map& map)
+{
+    if (!map_editor_undone_actions_.empty()) {
+        map_editor_executed_actions_.push_back(std::move(map_editor_undone_actions_.back()));
+        map_editor_undone_actions_.pop_back();
+        map_editor_executed_actions_.back()->Execute(map);
     }
 }
 } // namespace Soldank
