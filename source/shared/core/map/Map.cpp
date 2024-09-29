@@ -416,7 +416,7 @@ std::optional<PMSSpawnPoint> Map::FindFirstSpawnPoint(PMSSpawnPointType spawn_po
     return std::nullopt;
 }
 
-void Map::AddNewPolygon(const PMSPolygon& polygon)
+PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 {
     PMSPolygon new_polygon = polygon;
     new_polygon.id = map_data_.polygons.size();
@@ -461,6 +461,18 @@ void Map::AddNewPolygon(const PMSPolygon& polygon)
     UpdateBoundaries();
     GenerateSectors();
     map_change_events_.added_new_polygon.Notify(new_polygon);
+
+    return new_polygon;
+}
+
+PMSPolygon Map::RemovePolygonById(unsigned int id)
+{
+    PMSPolygon removed_polygon = map_data_.polygons.at(id);
+    map_data_.polygons.erase(map_data_.polygons.begin() + id);
+    UpdateBoundaries();
+    GenerateSectors();
+    map_change_events_.removed_polygon.Notify(removed_polygon, map_data_.polygons);
+    return removed_polygon;
 }
 
 void Map::GenerateSectors()

@@ -36,6 +36,8 @@ public:
                         const ClientState& client_state,
                         double frame_percent);
 
+    glm::vec2 GetTextureDimensions() const { return polygons_renderer_->GetTextureDimensions(); }
+
 private:
     Sprites::SpriteManager sprite_manager_;
     BackgroundRenderer background_renderer_;

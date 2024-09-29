@@ -1,17 +1,22 @@
 #ifndef __POLYGON_TOOL_HPP__
 #define __POLYGON_TOOL_HPP__
 
-#include "core/map/Map.hpp"
+#include "map_editor/actions/MapEditorAction.hpp"
 #include "map_editor/tools/Tool.hpp"
 
+#include "core/utility/Observable.hpp"
+
 #include "core/math/Glm.hpp"
+
+#include <memory>
 
 namespace Soldank
 {
 class PolygonTool final : public Tool
 {
 public:
-    PolygonTool(Map& map);
+    PolygonTool(
+      const std::function<void(std::unique_ptr<MapEditorAction>)>& add_new_map_editor_action);
     ~PolygonTool() final = default;
 
     void OnSelect() final;
@@ -29,7 +34,7 @@ public:
                                   glm::vec2 new_mouse_position) final;
 
 private:
-    Map& map_;
+    std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
     glm::vec2 mouse_map_position_;
 };
 } // namespace Soldank

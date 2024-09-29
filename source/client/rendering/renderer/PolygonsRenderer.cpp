@@ -23,35 +23,16 @@ PolygonsRenderer::PolygonsRenderer(Map& map, const std::string& texture_name)
 
     if (texture_or_error.has_value()) {
         texture_ = texture_or_error.value().opengl_id;
-        map.SetTextureDimensions({ texture_or_error->width, texture_or_error->height });
+        texture_dimensions_ = { texture_or_error->width, texture_or_error->height };
     } else {
         texture_ = 0;
+        texture_dimensions_ = { 0, 0 };
         spdlog::critical("Texture file not found {}", texture_name);
     }
 
     std::vector<float> vertices;
 
-    for (const auto& polygon : map.GetPolygons()) {
-        for (const auto& vertex : polygon.vertices) {
-            vertices.push_back(vertex.x);
-            vertices.push_back(-vertex.y);
-            vertices.push_back(vertex.z);
-            vertices.push_back((float)vertex.color.red / 255.0F);
-            vertices.push_back((float)vertex.color.green / 255.0F);
-            vertices.push_back((float)vertex.color.blue / 255.0F);
-            vertices.push_back((float)vertex.color.alpha / 255.0F);
-            vertices.push_back(vertex.texture_s);
-            vertices.push_back(vertex.texture_t);
-        }
-    }
-
-    for (unsigned int i = 0; i < MAX_POLYGONS_COUNT - map.GetPolygonsCount(); ++i) {
-        for (unsigned int j = 0; j < 3; ++j) {
-            for (unsigned int k = 0; k < 9; ++k) {
-                vertices.push_back(0.0F);
-            }
-        }
-    }
+    GenerateGLBufferVertices(map.GetPolygons(), vertices);
 
     vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
 
@@ -65,6 +46,11 @@ PolygonsRenderer::PolygonsRenderer(Map& map, const std::string& texture_name)
 
     map.GetMapChangeEvents().added_new_polygon.AddObserver(
       [this](const PMSPolygon& new_polygon) { OnAddPolygon(new_polygon); });
+    map.GetMapChangeEvents().removed_polygon.AddObserver(
+      [this](const PMSPolygon& /*removed_polygon*/,
+             const std::vector<PMSPolygon>& polygons_after_removal) {
+          OnRemovePolygon(polygons_after_removal);
+      });
 }
 
 PolygonsRenderer::~PolygonsRenderer()
@@ -87,17 +73,7 @@ void PolygonsRenderer::RenderSinglePolygonFirstEdge(glm::mat4 transform,
                                                     const PMSPolygon& polygon) const
 {
     std::vector<float> vertices;
-    for (const auto& vertex : polygon.vertices) {
-        vertices.push_back(vertex.x);
-        vertices.push_back(-vertex.y);
-        vertices.push_back(vertex.z);
-        vertices.push_back((float)vertex.color.red / 255.0F);
-        vertices.push_back((float)vertex.color.green / 255.0F);
-        vertices.push_back((float)vertex.color.blue / 255.0F);
-        vertices.push_back((float)vertex.color.alpha / 255.0F);
-        vertices.push_back(vertex.texture_s);
-        vertices.push_back(vertex.texture_t);
-    }
+    GenerateGLBufferVerticesForPolygon(polygon, vertices);
     Renderer::ModifyVBOVertices(single_polygon_vbo_, vertices);
 
     Renderer::SetupVertexArray(single_polygon_vbo_, std::nullopt);
@@ -110,17 +86,7 @@ void PolygonsRenderer::RenderSinglePolygonFirstEdge(glm::mat4 transform,
 void PolygonsRenderer::RenderSinglePolygon(glm::mat4 transform, const PMSPolygon& polygon) const
 {
     std::vector<float> vertices;
-    for (const auto& vertex : polygon.vertices) {
-        vertices.push_back(vertex.x);
-        vertices.push_back(-vertex.y);
-        vertices.push_back(vertex.z);
-        vertices.push_back((float)vertex.color.red / 255.0F);
-        vertices.push_back((float)vertex.color.green / 255.0F);
-        vertices.push_back((float)vertex.color.blue / 255.0F);
-        vertices.push_back((float)vertex.color.alpha / 255.0F);
-        vertices.push_back(vertex.texture_s);
-        vertices.push_back(vertex.texture_t);
-    }
+    GenerateGLBufferVerticesForPolygon(polygon, vertices);
     Renderer::ModifyVBOVertices(single_polygon_vbo_, vertices);
 
     Renderer::SetupVertexArray(single_polygon_vbo_, std::nullopt);
@@ -133,20 +99,53 @@ void PolygonsRenderer::RenderSinglePolygon(glm::mat4 transform, const PMSPolygon
 void PolygonsRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
 {
     std::vector<float> vertices;
-    for (const auto& vertex : new_polygon.vertices) {
-        vertices.push_back(vertex.x);
-        vertices.push_back(-vertex.y);
-        vertices.push_back(vertex.z);
-        vertices.push_back((float)vertex.color.red / 255.0F);
-        vertices.push_back((float)vertex.color.green / 255.0F);
-        vertices.push_back((float)vertex.color.blue / 255.0F);
-        vertices.push_back((float)vertex.color.alpha / 255.0F);
-        vertices.push_back(vertex.texture_s);
-        vertices.push_back(vertex.texture_t);
-    }
+    GenerateGLBufferVerticesForPolygon(new_polygon, vertices);
 
     int offset = new_polygon.id * 9 * sizeof(GLfloat) * 3;
     Renderer::ModifyVBOVertices(vbo_, vertices, offset);
     ++polygons_count_;
+}
+
+void PolygonsRenderer::OnRemovePolygon(const std::vector<PMSPolygon>& polygons_after_removal)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(polygons_after_removal, vertices);
+    polygons_count_ = vertices.size();
+
+    if (!vertices.empty()) {
+        Renderer::ModifyVBOVertices(vbo_, vertices, 0);
+    }
+}
+
+void PolygonsRenderer::GenerateGLBufferVertices(const std::vector<PMSPolygon>& polygons,
+                                                std::vector<float>& destination_vertices)
+{
+    for (const auto& polygon : polygons) {
+        GenerateGLBufferVerticesForPolygon(polygon, destination_vertices);
+    }
+
+    for (unsigned int i = 0; i < MAX_POLYGONS_COUNT - polygons.size(); ++i) {
+        for (unsigned int j = 0; j < 3; ++j) {
+            for (unsigned int k = 0; k < 9; ++k) {
+                destination_vertices.push_back(0.0F);
+            }
+        }
+    }
+}
+
+void PolygonsRenderer::GenerateGLBufferVerticesForPolygon(const PMSPolygon& polygon,
+                                                          std::vector<float>& destination_vertices)
+{
+    for (const auto& vertex : polygon.vertices) {
+        destination_vertices.push_back(vertex.x);
+        destination_vertices.push_back(-vertex.y);
+        destination_vertices.push_back(vertex.z);
+        destination_vertices.push_back((float)vertex.color.red / 255.0F);
+        destination_vertices.push_back((float)vertex.color.green / 255.0F);
+        destination_vertices.push_back((float)vertex.color.blue / 255.0F);
+        destination_vertices.push_back((float)vertex.color.alpha / 255.0F);
+        destination_vertices.push_back(vertex.texture_s);
+        destination_vertices.push_back(vertex.texture_t);
+    }
 }
 } // namespace Soldank

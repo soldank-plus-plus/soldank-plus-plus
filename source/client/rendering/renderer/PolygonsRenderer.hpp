@@ -29,8 +29,16 @@ public:
     void RenderSinglePolygonFirstEdge(glm::mat4 transform, const PMSPolygon& polygon) const;
     void RenderSinglePolygon(glm::mat4 transform, const PMSPolygon& polygon) const;
 
+    glm::vec2 GetTextureDimensions() const { return texture_dimensions_; }
+
 private:
     void OnAddPolygon(const PMSPolygon& new_polygon);
+    void OnRemovePolygon(const std::vector<PMSPolygon>& polygons_after_removal);
+
+    static void GenerateGLBufferVertices(const std::vector<PMSPolygon>& polygons,
+                                         std::vector<float>& destination_vertices);
+    static void GenerateGLBufferVerticesForPolygon(const PMSPolygon& polygon,
+                                                   std::vector<float>& destination_vertices);
 
     Shader shader_;
     unsigned int polygons_count_;
@@ -38,6 +46,8 @@ private:
     unsigned int texture_;
     unsigned int vbo_;
     unsigned int single_polygon_vbo_;
+
+    glm::vec2 texture_dimensions_;
 };
 } // namespace Soldank
 

@@ -76,6 +76,8 @@ struct ClientState
     bool draw_polygons = true;
     bool draw_sceneries = true;
 
+    glm::vec2 current_polygon_texture_dimensions;
+
     Observable<glm::vec2, glm::vec2> event_mouse_screen_position_changed;
     Observable<glm::vec2, glm::vec2> event_mouse_map_position_changed;
     Observable<> event_left_mouse_button_clicked;

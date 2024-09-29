@@ -33,6 +33,7 @@ struct MapEditorState
 
     Observable<ToolType> event_selected_new_tool;
     Observable<> event_pressed_play;
+    Observable<> event_pressed_undo;
 
     // If specified, we render first edge of the polygon
     // that is being created with the polygon tool

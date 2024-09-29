@@ -41,6 +41,9 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state)
 
 void Scene::Render(State& game_state, ClientState& client_state, double frame_percent, int fps)
 {
+    // TODO: handle it better, this is not a good place for this to be
+    client_state.current_polygon_texture_dimensions = polygons_renderer_->GetTextureDimensions();
+
     glm::vec2 new_camera_position =
       Calc::Lerp(client_state.camera_prev, client_state.camera, (float)frame_percent);
     Camera& camera = client_state.camera_component;
