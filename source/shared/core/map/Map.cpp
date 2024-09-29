@@ -29,8 +29,6 @@ void Map::CreateEmptyMap()
     map_data_.polygons_min_y = 0.0F;
     map_data_.polygons_max_y = 0.0F;
 
-    map_data_.sectors_size = 50;
-    map_data_.sectors_count = 50;
     int n = 2 * map_data_.sectors_count + 1;
     map_data_.sectors_poly = std::vector<std::vector<PMSSector>>(n, std::vector<PMSSector>(n));
 
@@ -38,6 +36,7 @@ void Map::CreateEmptyMap()
     map_data_.background_bottom_color = PMSColor(50, 50, 50, 255);
 
     UpdateBoundaries();
+    GenerateSectors();
 }
 
 void Map::LoadMap(const std::filesystem::path& map_path, const IFileReader& file_reader)
@@ -415,5 +414,179 @@ std::optional<PMSSpawnPoint> Map::FindFirstSpawnPoint(PMSSpawnPointType spawn_po
     }
 
     return std::nullopt;
+}
+
+void Map::AddNewPolygon(const PMSPolygon& polygon)
+{
+    PMSPolygon new_polygon = polygon;
+    new_polygon.id = map_data_.polygons.size();
+
+    // Polygons' vertices have to be arranged in clock-wise order.
+    if (!new_polygon.AreVerticesClockwise()) {
+        PMSVertex tmp = new_polygon.vertices[1];
+        new_polygon.vertices[1] = new_polygon.vertices[2];
+        new_polygon.vertices[2] = tmp;
+    }
+
+    for (int j = 0; j < 3; ++j) {
+        unsigned int k = j + 1;
+        if (k > 2) {
+            k = 0;
+        }
+
+        float diff_x = new_polygon.vertices.at(k).x - new_polygon.vertices.at(j).x;
+        float diff_y = new_polygon.vertices.at(j).y - new_polygon.vertices.at(k).y;
+        float length = NAN;
+        if (fabs(diff_x) < 0.0001F && fabs(diff_y) < 0.0001F) {
+            length = 1.0F;
+        } else {
+            length = hypotf(diff_x, diff_y);
+        }
+
+        if (new_polygon.polygon_type == PMSPolygonType::Bouncy) {
+            if (new_polygon.perpendiculars.at(j).z < 1.0F) {
+                new_polygon.perpendiculars.at(j).z = 1.0F;
+            }
+        } else {
+            new_polygon.perpendiculars.at(j).z = 1.0F;
+        }
+
+        new_polygon.perpendiculars.at(j).x = (diff_y / length) * new_polygon.perpendiculars.at(j).z;
+        new_polygon.perpendiculars.at(j).y = (diff_x / length) * new_polygon.perpendiculars.at(j).z;
+        new_polygon.perpendiculars.at(j).z = 1.0F;
+    }
+
+    map_data_.polygons.push_back(new_polygon);
+
+    UpdateBoundaries();
+    GenerateSectors();
+    map_change_events_.added_new_polygon.Notify(new_polygon);
+}
+
+void Map::GenerateSectors()
+{
+    map_data_.sectors_count = 25;
+    int n = 2 * map_data_.sectors_count + 1;
+    map_data_.sectors_poly = std::vector<std::vector<PMSSector>>(n, std::vector<PMSSector>(n));
+
+    if (map_data_.width > map_data_.height) {
+        map_data_.sectors_size = floor((map_data_.width + 2.0 * 100.0F) / (float)(n - 1));
+    } else {
+        map_data_.sectors_size = floor((map_data_.height + 2.0 * 100.0F) / (float)(n - 1));
+    }
+
+    for (int x = 0; x < n; ++x) {
+        for (int y = 0; y < n; ++y) {
+            for (unsigned int i = 0; i < map_data_.polygons.size(); ++i) {
+                if (IsPolygonInSector(i,
+                                      floor((float)map_data_.sectors_size *
+                                              ((float)x - (float)map_data_.sectors_count - 0.5F) -
+                                            1.0F + map_data_.center_x),
+                                      floor((float)map_data_.sectors_size *
+                                              ((float)y - (float)map_data_.sectors_count - 0.5F) -
+                                            1.0F + map_data_.center_y),
+                                      (float)map_data_.sectors_size + 2)) {
+
+                    map_data_.sectors_poly[x][y].polygons.push_back(i + 1);
+                }
+            }
+        }
+    }
+}
+
+bool Map::IsPolygonInSector(unsigned short polygon_index,
+                            float sector_x,
+                            float sector_y,
+                            float sector_size)
+{
+    if (map_data_.polygons[polygon_index].polygon_type == PMSPolygonType::NoCollide) {
+        return false;
+    }
+
+    if ((map_data_.polygons[polygon_index].vertices[0].x < sector_x &&
+         map_data_.polygons[polygon_index].vertices[1].x < sector_x &&
+         map_data_.polygons[polygon_index].vertices[2].x < sector_x) ||
+        (map_data_.polygons[polygon_index].vertices[0].x > sector_x + sector_size &&
+         map_data_.polygons[polygon_index].vertices[1].x > sector_x + sector_size &&
+         map_data_.polygons[polygon_index].vertices[2].x > sector_x + sector_size) ||
+        (map_data_.polygons[polygon_index].vertices[0].y < sector_y &&
+         map_data_.polygons[polygon_index].vertices[1].y < sector_y &&
+         map_data_.polygons[polygon_index].vertices[2].y < sector_y) ||
+        (map_data_.polygons[polygon_index].vertices[0].y > sector_y + sector_size &&
+         map_data_.polygons[polygon_index].vertices[1].y > sector_y + sector_size &&
+         map_data_.polygons[polygon_index].vertices[2].y > sector_y + sector_size)) {
+        return false;
+    }
+
+    // Check if any of the polygon's vertices is inside the sector.
+    unsigned int i = 0;
+    for (i = 0; i < 3; ++i) {
+        if (map_data_.polygons[polygon_index].vertices.at(i).x >= sector_x &&
+            map_data_.polygons[polygon_index].vertices.at(i).x <= sector_x + sector_size &&
+            map_data_.polygons[polygon_index].vertices.at(i).y >= sector_y &&
+            map_data_.polygons[polygon_index].vertices.at(i).y <= sector_y + sector_size) {
+            return true;
+        }
+    }
+
+    // Check if any of the 4 sector's corners is inside the polygon.
+    if (PointInPoly({ sector_x, sector_y }, map_data_.polygons[polygon_index]) ||
+        PointInPoly({ sector_x + sector_size, sector_y }, map_data_.polygons[polygon_index]) ||
+        PointInPoly({ sector_x + sector_size, sector_y + sector_size },
+                    map_data_.polygons[polygon_index]) ||
+        PointInPoly({ sector_x, sector_y + sector_size }, map_data_.polygons[polygon_index])) {
+        return true;
+    }
+
+    /**
+     * Check intersections between polygon's sides and sector's sides.
+     * AB is polygon's side, CD is sector's side.
+     */
+    unsigned int j = 0;
+    glm::vec2 a;
+    glm::vec2 b;
+    glm::vec2 c;
+    glm::vec2 d;
+    for (i = 0; i < 3; ++i) {
+        j = i + 1;
+        if (j > 2) {
+            j = 0;
+        }
+
+        a = { map_data_.polygons[polygon_index].vertices.at(i).x,
+              map_data_.polygons[polygon_index].vertices.at(i).y };
+        b = { map_data_.polygons[polygon_index].vertices.at(j).x,
+              map_data_.polygons[polygon_index].vertices.at(j).y };
+
+        // Top side of sector.
+        c = { sector_x, sector_y };
+        d = { sector_x + sector_size, sector_y };
+        if (Calc::SegmentsIntersect(a, b, c, d)) {
+            return true;
+        }
+
+        // Right side of sector.
+        c = { sector_x + sector_size, sector_y };
+        d = { sector_x + sector_size, sector_y + sector_size };
+        if (Calc::SegmentsIntersect(a, b, c, d)) {
+            return true;
+        }
+
+        // Bottom side of sector.
+        c = { sector_x, sector_y + sector_size };
+        d = { sector_x + sector_size, sector_y + sector_size };
+        if (Calc::SegmentsIntersect(a, b, c, d)) {
+            return true;
+        }
+
+        // Left side of sector.
+        c = { sector_x, sector_y };
+        d = { sector_x, sector_y + sector_size };
+        if (Calc::SegmentsIntersect(a, b, c, d)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 } // namespace Soldank

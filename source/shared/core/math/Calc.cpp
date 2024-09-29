@@ -1,5 +1,7 @@
 #include "Calc.hpp"
 
+#include <math.h>
+
 #include <cmath>
 
 namespace Soldank::Calc
@@ -192,5 +194,22 @@ std::optional<glm::vec2> LineCircleCollision(const glm::vec2& start_point,
         return intersection_result[0];
     }
     return std::nullopt;
+}
+
+bool SegmentsIntersect(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d)
+{
+    float segment_ab_center_x = b.x - a.x;
+    float segment_ab_center_y = b.y - a.y;
+    float segment_cd_center_x = d.x - c.x;
+    float segment_cd_center_y = d.y - c.y;
+
+    float s = NAN;
+    float t = NAN;
+    s = (-segment_ab_center_y * (a.x - c.x) + segment_ab_center_x * (a.y - c.y)) /
+        (-segment_cd_center_x * segment_ab_center_y + segment_ab_center_x * segment_cd_center_y);
+    t = (segment_cd_center_x * (a.y - c.y) - segment_cd_center_y * (a.x - c.x)) /
+        (-segment_cd_center_x * segment_ab_center_y + segment_ab_center_x * segment_cd_center_y);
+
+    return s >= 0 && s <= 1 && t >= 0 && t <= 1;
 }
 } // namespace Soldank::Calc

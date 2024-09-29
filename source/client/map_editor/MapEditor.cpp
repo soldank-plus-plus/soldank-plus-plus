@@ -9,13 +9,16 @@
 
 namespace Soldank
 {
-MapEditor::MapEditor(ClientState& client_state)
+MapEditor::MapEditor(ClientState& client_state, State& game_state)
     : selected_tool_(client_state.map_editor_state.selected_tool)
+    , current_mouse_screen_position_()
+    , camera_position_on_start_dragging_()
+    , mouse_screen_position_on_start_dragging_()
     , is_dragging_camera_(false)
 {
     client_state.event_left_mouse_button_clicked.AddObserver([this, &client_state]() {
         if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
-            OnSceneLeftMouseButtonClick();
+            OnSceneLeftMouseButtonClick(client_state);
         }
     });
 
@@ -60,15 +63,15 @@ MapEditor::MapEditor(ClientState& client_state)
       });
 
     client_state.event_mouse_wheel_scrolled_up.AddObserver(
-      [this, &client_state]() { OnMouseScrollUp(client_state); });
+      [&client_state]() { OnMouseScrollUp(client_state); });
     client_state.event_mouse_wheel_scrolled_down.AddObserver(
-      [this, &client_state]() { OnMouseScrollDown(client_state); });
+      [&client_state]() { OnMouseScrollDown(client_state); });
 
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
       [this](ToolType tool_type) { OnSelectNewTool(tool_type); });
 
     tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<PolygonTool>());
+    tools_.emplace_back(std::make_unique<PolygonTool>(game_state.map));
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<DummyTool>());
@@ -87,16 +90,25 @@ void MapEditor::OnSelectNewTool(ToolType tool_type)
     tools_.at(std::to_underlying(selected_tool_))->OnSelect();
 }
 
-void MapEditor::OnSceneLeftMouseButtonClick()
+void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state)
 {
-    tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonClick();
+    tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonClick(client_state);
 }
 
-void MapEditor::OnSceneLeftMouseButtonRelease() {}
+void MapEditor::OnSceneLeftMouseButtonRelease()
+{
+    tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonRelease();
+}
 
-void MapEditor::OnSceneRightMouseButtonClick() {}
+void MapEditor::OnSceneRightMouseButtonClick()
+{
+    tools_.at(std::to_underlying(selected_tool_))->OnSceneRightMouseButtonClick();
+}
 
-void MapEditor::OnSceneRightMouseButtonRelease() {}
+void MapEditor::OnSceneRightMouseButtonRelease()
+{
+    tools_.at(std::to_underlying(selected_tool_))->OnSceneRightMouseButtonRelease();
+}
 
 void MapEditor::OnSceneMiddleMouseButtonClick(ClientState& client_state)
 {
@@ -140,12 +152,15 @@ void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
         client_state.camera = camera_position_on_start_dragging_ + mouse_position_difference;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnMouseMove(new_mouse_position);
+    tools_.at(std::to_underlying(selected_tool_))
+      ->OnMouseScreenPositionChange(client_state, last_mouse_position, new_mouse_position);
 }
 
 void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
                                          glm::vec2 last_mouse_position,
                                          glm::vec2 new_mouse_position)
 {
+    tools_.at(std::to_underlying(selected_tool_))
+      ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
 }
 } // namespace Soldank

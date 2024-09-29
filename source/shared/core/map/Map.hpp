@@ -9,6 +9,8 @@
 #include "core/data/IFileReader.hpp"
 #include "core/data/FileReader.hpp"
 
+#include "core/utility/Observable.hpp"
+
 #include <optional>
 #include <utility>
 #include <vector>
@@ -62,6 +64,11 @@ struct MapData
     std::vector<PMSWayPoint> way_points;
 };
 
+struct MapChangeEvents
+{
+    Observable<const PMSPolygon&> added_new_polygon;
+};
+
 class Map
 {
 public:
@@ -86,6 +93,17 @@ public:
                  bool bullet = true,
                  bool check_collider = false,
                  std::uint8_t team_id = 0);
+
+    MapChangeEvents& GetMapChangeEvents() { return map_change_events_; }
+
+    // TODO: This class should get the dimensions by itself
+    void SetTextureDimensions(glm::vec2 texture_dimensions)
+    {
+        texture_dimensions_ = texture_dimensions;
+    };
+    glm::vec2 GetTextureDimensions() const { return texture_dimensions_; }
+
+    void AddNewPolygon(const PMSPolygon& polygon);
 
     int GetVersion() const { return map_data_.version; }
 
@@ -149,6 +167,8 @@ public:
 
 private:
     MapData map_data_;
+    MapChangeEvents map_change_events_;
+    glm::vec2 texture_dimensions_;
 
     template<typename DataType>
     static void ReadFromBuffer(std::stringstream& buffer, DataType& variable_to_save_data)
@@ -182,6 +202,11 @@ private:
     void ReadWayPointsFromBuffer(std::stringstream& buffer);
 
     void UpdateBoundaries();
+    void GenerateSectors();
+    bool IsPolygonInSector(unsigned short polygon_index,
+                           float sector_x,
+                           float sector_y,
+                           float sector_size);
 };
 } // namespace Soldank
 
