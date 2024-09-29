@@ -153,7 +153,7 @@ void Render(State& game_state, ClientState& client_state)
             if (ImGui::BeginMenuBar()) {
                 ImGui::Text("%s", game_state.map.GetName().c_str());
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
-                ImGui::Text("Zoom: 100%%");
+                ImGui::Text("Zoom: %.0f%%", client_state.camera_component.GetZoom());
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("Current tool/action description");
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);

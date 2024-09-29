@@ -20,6 +20,9 @@ class MapEditor
 public:
     MapEditor(ClientState& client_state, State& game_state);
 
+    void Lock();
+    void Unlock();
+
 private:
     void OnSelectNewTool(ToolType tool_type);
     void OnSceneLeftMouseButtonClick(ClientState& client_state);
@@ -28,8 +31,8 @@ private:
     void OnSceneRightMouseButtonRelease();
     void OnSceneMiddleMouseButtonClick(ClientState& client_state);
     void OnSceneMiddleMouseButtonRelease();
-    static void OnMouseScrollUp(ClientState& client_state);
-    static void OnMouseScrollDown(ClientState& client_state);
+    void OnMouseScrollUp(ClientState& client_state) const;
+    void OnMouseScrollDown(ClientState& client_state) const;
     void OnMouseScreenPositionChange(ClientState& client_state,
                                      glm::vec2 last_mouse_position,
                                      glm::vec2 new_mouse_position);
@@ -51,6 +54,7 @@ private:
     glm::vec2 camera_position_on_start_dragging_;
     glm::vec2 mouse_screen_position_on_start_dragging_;
     bool is_dragging_camera_;
+    bool locked_;
 };
 } // namespace Soldank
 

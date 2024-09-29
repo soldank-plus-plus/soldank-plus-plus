@@ -4,7 +4,7 @@ namespace Soldank
 {
 Camera::Camera()
     : camera_position_({ 0.0, 0.0 })
-    , zoom_(ZOOM_MAX_VALUE)
+    , zoom_(ZOOM_INITIAL_VALUE)
 {
 }
 
@@ -30,6 +30,11 @@ void Camera::ZoomOut()
     if (zoom_ <= ZOOM_MIN_VALUE) {
         zoom_ = ZOOM_MIN_VALUE;
     }
+}
+
+void Camera::ResetZoom()
+{
+    zoom_ = ZOOM_INITIAL_VALUE;
 }
 
 void Camera::Move(float new_x, float new_y)
