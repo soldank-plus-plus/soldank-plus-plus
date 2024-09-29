@@ -70,14 +70,20 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     for (const Item& item : game_state.items) {
         item_renderer_.Render(camera.GetView(), item, frame_percent, game_state.game_tick);
     }
-    sceneries_renderer_.Render(camera.GetView(), 1, game_state.map.GetSceneryInstances());
-    polygons_renderer_->Render(camera.GetView());
+    if (client_state.draw_sceneries) {
+        sceneries_renderer_.Render(camera.GetView(), 1, game_state.map.GetSceneryInstances());
+    }
+    if (client_state.draw_polygons) {
+        polygons_renderer_->Render(camera.GetView());
+    }
     if (client_state.draw_colliding_polygons) {
         for (unsigned int polygon_id : client_state.colliding_polygon_ids) {
             polygon_outlines_renderer_.Render(camera.GetView(), polygon_id);
         }
     }
-    sceneries_renderer_.Render(camera.GetView(), 2, game_state.map.GetSceneryInstances());
+    if (client_state.draw_sceneries) {
+        sceneries_renderer_.Render(camera.GetView(), 2, game_state.map.GetSceneryInstances());
+    }
 
     if (client_state.draw_soldier_hitboxes) {
         const auto bullet_colliding_body_parts = std::array{ 12, 11, 10, 6, 5, 4, 3 };
