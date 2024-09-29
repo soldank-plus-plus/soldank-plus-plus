@@ -318,8 +318,10 @@ void Run()
         client_state->draw_game_interface = true;
         client_state->draw_map_editor_interface = false;
         client_state->draw_game_debug_interface = true;
+        client_state->camera_component.ResetZoom();
         world->GetStateManager()->GetState().paused = false;
         window->SetCursorMode(CursorMode::Locked);
+        map_editor->Lock();
     });
 
     Mouse::SubscribeMouseMovementObserver([&](double x, double y) {
@@ -384,6 +386,7 @@ void Run()
                 client_state->draw_game_debug_interface = false;
                 world->GetStateManager()->GetState().paused = true;
                 window->SetCursorMode(CursorMode::Normal);
+                map_editor->Unlock();
             }
             if (world->GetStateManager()->GetState().paused) {
                 glm::vec2 mouse_position = { Mouse::GetX(), Mouse::GetY() };
