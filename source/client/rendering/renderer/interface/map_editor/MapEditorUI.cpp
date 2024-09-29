@@ -26,6 +26,9 @@ void Render(State& game_state, ClientState& client_state)
                 if (ImGui::MenuItem("Undo", "CTRL+Z")) {
                     client_state.map_editor_state.event_pressed_undo.Notify();
                 }
+                if (ImGui::MenuItem("Redo", "CTRL+SHIFT+Z")) {
+                    client_state.map_editor_state.event_pressed_redo.Notify();
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Run")) {

@@ -39,11 +39,13 @@ private:
 
     void ExecuteNewAction(Map& map, std::unique_ptr<MapEditorAction> new_action);
     void UndoLastAction(Map& map);
+    void RedoUndoneAction(Map& map);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
-    std::vector<std::unique_ptr<MapEditorAction>> map_editor_actions_;
+    std::vector<std::unique_ptr<MapEditorAction>> map_editor_executed_actions_;
+    std::vector<std::unique_ptr<MapEditorAction>> map_editor_undone_actions_;
 
     glm::vec2 current_mouse_screen_position_;
     glm::vec2 camera_position_on_start_dragging_;
