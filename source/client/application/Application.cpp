@@ -114,6 +114,8 @@ bool Init(int argc, const char* argv[])
         application_mode = cli_parameters.application_mode;
     }
 
+    window = std::make_unique<Window>();
+    world = std::make_shared<World>();
     client_state = std::make_shared<ClientState>();
 
     switch (application_mode) {
@@ -142,7 +144,8 @@ bool Init(int argc, const char* argv[])
         }
         case CommandLineParameters::ApplicationMode::MapEditor: {
             client_state->draw_map_editor_interface = true;
-            map_editor = std::make_unique<MapEditor>(*client_state);
+            map_editor =
+              std::make_unique<MapEditor>(*client_state, world->GetStateManager()->GetState());
             spdlog::info("Application mode = MapEditor");
             break;
         }
@@ -153,8 +156,6 @@ bool Init(int argc, const char* argv[])
     }
     spdlog::debug("{} Map: {}", map_path.empty(), map_path);
 
-    window = std::make_unique<Window>();
-    world = std::make_shared<World>();
     if (map_path.empty()) {
         world->GetStateManager()->GetState().map.CreateEmptyMap();
     } else {
@@ -187,14 +188,6 @@ bool Init(int argc, const char* argv[])
 
         if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
             client_state->event_middle_mouse_button_released.Notify();
-        }
-    });
-
-    Mouse::SubscribeMouseScrollObserver([&](double dx, double dy) {
-        if (dy < 0.0) {
-            client_state->event_mouse_wheel_scrolled_down.Notify();
-        } else if (dy > 0.0) {
-            client_state->event_mouse_wheel_scrolled_up.Notify();
         }
     });
 
@@ -270,11 +263,11 @@ glm::vec2 GetCurrentMouseScreenPosition()
 
 glm::vec2 GetCurrentMouseMapPosition()
 {
-    glm::ivec2 window_size = window->GetWindowSize();
+    glm::vec2 window_size = window->GetWindowSize();
     glm::vec2 mouse_map_position = window->GetCursorScreenPosition();
 
-    float ratio_x = window_size.x / 640.0F;
-    float ratio_y = window_size.y / 480.0F;
+    float ratio_x = window_size.x / client_state->camera_component.GetWidth();
+    float ratio_y = window_size.y / client_state->camera_component.GetHeight();
 
     mouse_map_position.x /= ratio_x;
     mouse_map_position.y /= ratio_y;
@@ -284,7 +277,7 @@ glm::vec2 GetCurrentMouseMapPosition()
     mouse_map_position.x =
       (mouse_map_position.x - (float)window_size.x / 2.0F + client_state->camera.x);
     mouse_map_position.y =
-      (mouse_map_position.y - (float)window_size.y / 2.0F + client_state->camera.y);
+      (mouse_map_position.y - (float)window_size.y / 2.0F - client_state->camera.y);
     return mouse_map_position;
 }
 
@@ -338,6 +331,23 @@ void Run()
             mouse_screen_position = GetCurrentMouseScreenPosition();
         }
         last_mouse_screen_position = mouse_screen_position;
+
+        glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
+        if (std::abs(last_mouse_map_position.x - mouse_map_position.x) > 0.0000001F ||
+            std::abs(last_mouse_map_position.y - mouse_map_position.y) > 0.0000001F) {
+            client_state->event_mouse_map_position_changed.Notify(last_mouse_map_position,
+                                                                  mouse_map_position);
+            mouse_map_position = GetCurrentMouseMapPosition();
+        }
+        last_mouse_map_position = mouse_map_position;
+    });
+
+    Mouse::SubscribeMouseScrollObserver([&](double dx, double dy) {
+        if (dy < 0.0) {
+            client_state->event_mouse_wheel_scrolled_down.Notify();
+        } else if (dy > 0.0) {
+            client_state->event_mouse_wheel_scrolled_up.Notify();
+        }
 
         glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
         if (std::abs(last_mouse_map_position.x - mouse_map_position.x) > 0.0000001F ||

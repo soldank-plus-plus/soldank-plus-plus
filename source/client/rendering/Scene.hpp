@@ -16,6 +16,7 @@
 #include "rendering/renderer/LineRenderer.hpp"
 #include "rendering/renderer/CircleRenderer.hpp"
 #include "rendering/renderer/ItemRenderer.hpp"
+#include "rendering/renderer/interface/map_editor/MapEditorScene.hpp"
 
 #include "core/state/StateManager.hpp"
 #include "core/entities/Soldier.hpp"
@@ -38,7 +39,7 @@ public:
 private:
     Sprites::SpriteManager sprite_manager_;
     BackgroundRenderer background_renderer_;
-    PolygonsRenderer polygons_renderer_;
+    std::unique_ptr<PolygonsRenderer> polygons_renderer_;
     PolygonOutlinesRenderer polygon_outlines_renderer_;
     SceneriesRenderer sceneries_renderer_;
     SoldierRenderer soldier_renderer_;
@@ -49,6 +50,7 @@ private:
     LineRenderer line_renderer_;
     CircleRenderer circle_renderer_;
     ItemRenderer item_renderer_;
+    MapEditorScene map_editor_scene_;
 };
 } // namespace Soldank
 

@@ -3,6 +3,7 @@
 #include "core/entities/Item.hpp"
 #include "core/types/ItemType.hpp"
 #include "rendering/renderer/ItemRenderer.hpp"
+#include "rendering/renderer/PolygonsRenderer.hpp"
 #include "rendering/renderer/interface/debug/DebugUI.hpp"
 #include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 
@@ -23,8 +24,9 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state)
     : background_renderer_(game_state->GetState().map.GetBackgroundTopColor(),
                            game_state->GetState().map.GetBackgroundBottomColor(),
                            game_state->GetState().map.GetBoundaries())
-    , polygons_renderer_(game_state->GetState().map.GetPolygons(),
-                         std::string(game_state->GetState().map.GetTextureName()))
+    , polygons_renderer_(std::make_unique<PolygonsRenderer>(
+        game_state->GetState().map,
+        std::string(game_state->GetState().map.GetTextureName())))
     , polygon_outlines_renderer_(game_state->GetState().map.GetPolygons())
     , sceneries_renderer_(game_state->GetState().map.GetSceneryTypes(),
                           game_state->GetState().map.GetSceneryInstances())
@@ -66,7 +68,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
         item_renderer_.Render(camera.GetView(), item, frame_percent, game_state.game_tick);
     }
     sceneries_renderer_.Render(camera.GetView(), 1, game_state.map.GetSceneryInstances());
-    polygons_renderer_.Render(camera.GetView());
+    polygons_renderer_->Render(camera.GetView());
     if (client_state.draw_colliding_polygons) {
         for (unsigned int polygon_id : client_state.colliding_polygon_ids) {
             polygon_outlines_renderer_.Render(camera.GetView(), polygon_id);
@@ -136,7 +138,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     }
 
     if (client_state.draw_map_editor_interface) {
-        MapEditorUI::Render(game_state, client_state);
+        map_editor_scene_.Render(game_state, client_state, *polygons_renderer_);
     }
 
     if (client_state.draw_game_interface) {
