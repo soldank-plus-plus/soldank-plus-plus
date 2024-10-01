@@ -20,7 +20,7 @@ void PolygonTool::OnSelect() {}
 
 void PolygonTool::OnUnselect() {}
 
-void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state)
+void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
     if (client_state.map_editor_state.polygon_tool_wip_polygon) {
         auto add_polygon_action = std::make_unique<AddPolygonMapEditorAction>(

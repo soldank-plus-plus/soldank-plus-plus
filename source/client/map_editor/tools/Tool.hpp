@@ -2,6 +2,7 @@
 #define __TOOL_HPP__
 
 #include "rendering/ClientState.hpp"
+#include "core/state/State.hpp"
 
 #include "core/math/Glm.hpp"
 
@@ -15,7 +16,8 @@ public:
     virtual void OnSelect() = 0;
     virtual void OnUnselect() = 0;
 
-    virtual void OnSceneLeftMouseButtonClick(ClientState& client_state) = 0;
+    virtual void OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                             const State& game_state) = 0;
     virtual void OnSceneLeftMouseButtonRelease() = 0;
     virtual void OnSceneRightMouseButtonClick() = 0;
     virtual void OnSceneRightMouseButtonRelease() = 0;

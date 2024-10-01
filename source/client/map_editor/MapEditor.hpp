@@ -25,7 +25,7 @@ public:
 
 private:
     void OnSelectNewTool(ToolType tool_type);
-    void OnSceneLeftMouseButtonClick(ClientState& client_state);
+    void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state);
     void OnSceneLeftMouseButtonRelease();
     void OnSceneRightMouseButtonClick();
     void OnSceneRightMouseButtonRelease();
@@ -40,9 +40,11 @@ private:
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position);
 
-    void ExecuteNewAction(Map& map, std::unique_ptr<MapEditorAction> new_action);
-    void UndoLastAction(Map& map);
-    void RedoUndoneAction(Map& map);
+    void ExecuteNewAction(ClientState& client_state,
+                          Map& map,
+                          std::unique_ptr<MapEditorAction> new_action);
+    void UndoLastAction(ClientState& client_state, Map& map);
+    void RedoUndoneAction(ClientState& client_state, Map& map);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;

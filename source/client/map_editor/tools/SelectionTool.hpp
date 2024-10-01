@@ -1,15 +1,21 @@
-#ifndef __DUMMY_TOOL_HPP__
-#define __DUMMY_TOOL_HPP__
+#ifndef __SELECTION_TOOL_HPP__
+#define __SELECTION_TOOL_HPP__
 
+#include "map_editor/actions/MapEditorAction.hpp"
 #include "map_editor/tools/Tool.hpp"
+
+#include "core/utility/Observable.hpp"
+
+#include "core/math/Glm.hpp"
+
+#include <memory>
 
 namespace Soldank
 {
-class DummyTool final : public Tool
+class SelectionTool final : public Tool
 {
 public:
-    DummyTool() = default;
-    ~DummyTool() final = default;
+    ~SelectionTool() final = default;
 
     void OnSelect() final;
     void OnUnselect() final;
@@ -24,6 +30,10 @@ public:
     void OnMouseMapPositionChange(ClientState& client_state,
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position) final;
+
+private:
+    glm::vec2 mouse_map_position_;
+    unsigned int start_polygon_lookup_from_id_;
 };
 } // namespace Soldank
 

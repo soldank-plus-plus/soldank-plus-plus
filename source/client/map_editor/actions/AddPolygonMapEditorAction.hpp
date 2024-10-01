@@ -12,8 +12,8 @@ class AddPolygonMapEditorAction final : public MapEditorAction
 public:
     AddPolygonMapEditorAction(const PMSPolygon& new_polygon);
 
-    void Execute(Map& map) final;
-    void Undo(Map& map) final;
+    void Execute(ClientState& client_state, Map& map) final;
+    void Undo(ClientState& client_state, Map& map) final;
 
 private:
     PMSPolygon added_polygon_;

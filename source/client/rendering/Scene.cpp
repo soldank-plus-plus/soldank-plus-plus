@@ -5,7 +5,6 @@
 #include "rendering/renderer/ItemRenderer.hpp"
 #include "rendering/renderer/PolygonsRenderer.hpp"
 #include "rendering/renderer/interface/debug/DebugUI.hpp"
-#include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 
 #include "application/input/Mouse.hpp"
 #include "application/config/Config.hpp"
@@ -27,13 +26,14 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state)
     , polygons_renderer_(std::make_unique<PolygonsRenderer>(
         game_state->GetState().map,
         std::string(game_state->GetState().map.GetTextureName())))
-    , polygon_outlines_renderer_(game_state->GetState().map.GetPolygons())
+    , polygon_outlines_renderer_(game_state->GetState().map, { 1.0F, 1.0F, 1.0F, 1.0F })
     , sceneries_renderer_(game_state->GetState().map.GetSceneryTypes(),
                           game_state->GetState().map.GetSceneryInstances())
     , soldier_renderer_(sprite_manager_)
     , text_renderer_("play-regular.ttf", 48)
     , bullet_renderer_(sprite_manager_)
     , item_renderer_(sprite_manager_)
+    , map_editor_scene_(game_state->GetState())
 {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
