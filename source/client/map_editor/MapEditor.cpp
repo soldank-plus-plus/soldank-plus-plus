@@ -14,6 +14,7 @@
 
 #include "spdlog/spdlog.h"
 
+#include <GLFW/glfw3.h>
 #include <utility>
 
 namespace Soldank
@@ -81,6 +82,11 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
       [this, &client_state]() { OnMouseScrollUp(client_state); });
     client_state.event_mouse_wheel_scrolled_down.AddObserver(
       [this, &client_state]() { OnMouseScrollDown(client_state); });
+
+    client_state.event_key_pressed.AddObserver(
+      [this, &client_state](int key) { OnKeyPressed(key, client_state); });
+    client_state.event_key_released.AddObserver(
+      [this, &client_state](int key) { OnKeyReleased(key, client_state); });
 
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
       [this](ToolType tool_type) { OnSelectNewTool(tool_type); });
@@ -239,6 +245,31 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
     tools_.at(std::to_underlying(selected_tool_))
       ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
 }
+
+void MapEditor::OnKeyPressed(int key, ClientState& client_state)
+{
+    static std::vector<std::pair<int, ToolType>> key_to_tool_type_map = {
+        { GLFW_KEY_A, ToolType::Transform },       { GLFW_KEY_Q, ToolType::Polygon },
+        { GLFW_KEY_S, ToolType::VertexSelection }, { GLFW_KEY_W, ToolType::Selection },
+        { GLFW_KEY_D, ToolType::VertexColor },     { GLFW_KEY_E, ToolType::Color },
+        { GLFW_KEY_F, ToolType::Texture },         { GLFW_KEY_R, ToolType::Scenery },
+        { GLFW_KEY_G, ToolType::Waypoint },        { GLFW_KEY_T, ToolType::Spawnpoint },
+        { GLFW_KEY_H, ToolType::ColorPicker },
+    };
+
+    for (const auto& key_to_tool_type : key_to_tool_type_map) {
+        if (key == key_to_tool_type.first) {
+            if (client_state.map_editor_state.selected_tool != key_to_tool_type.second) {
+                client_state.map_editor_state.event_selected_new_tool.Notify(
+                  key_to_tool_type.second);
+            }
+            client_state.map_editor_state.selected_tool = key_to_tool_type.second;
+            return;
+        }
+    }
+}
+
+void MapEditor::OnKeyReleased(int key, ClientState& client_state) {}
 
 void MapEditor::ExecuteNewAction(ClientState& client_state,
                                  Map& map,

@@ -40,6 +40,9 @@ private:
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position);
 
+    void OnKeyPressed(int key, ClientState& client_state);
+    void OnKeyReleased(int key, ClientState& client_state);
+
     void ExecuteNewAction(ClientState& client_state,
                           Map& map,
                           std::unique_ptr<MapEditorAction> new_action);

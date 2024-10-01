@@ -4,8 +4,9 @@
 
 namespace Soldank
 {
-std::array<bool, 348> Soldank::Keyboard::keys_ = {};
-std::array<bool, 348> Soldank::Keyboard::keys_changed_ = {};
+std::array<bool, 348> Keyboard::keys_ = {};
+std::array<bool, 348> Keyboard::keys_changed_ = {};
+std::vector<std::function<void(int, int)>> Keyboard::key_observers_{};
 
 void Keyboard::KeyCallback(GLFWwindow* /*window*/,
                            const int key,
@@ -13,6 +14,10 @@ void Keyboard::KeyCallback(GLFWwindow* /*window*/,
                            const int action,
                            const int /*mods*/)
 {
+    for (const auto& key_observer : key_observers_) {
+        key_observer(key, action);
+    }
+
     if (GLFW_RELEASE != action) {
         if (!keys_.at(key)) {
             keys_.at(key) = true;
@@ -43,5 +48,10 @@ bool Keyboard::KeyWentUp(const int key)
 bool Keyboard::KeyWentDown(const int key)
 {
     return keys_.at(key) && KeyChanged(key);
+}
+
+void Keyboard::SubscribeKeyObserver(const std::function<void(int, int)>& observer)
+{
+    key_observers_.push_back(observer);
 }
 } // namespace Soldank
