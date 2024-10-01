@@ -2,6 +2,8 @@
 #define __KEYBOARD_HPP__
 
 #include <array>
+#include <vector>
+#include <functional>
 
 struct GLFWwindow;
 
@@ -16,9 +18,12 @@ public:
     static bool KeyWentUp(int key);
     static bool KeyWentDown(int key);
 
+    static void SubscribeKeyObserver(const std::function<void(int, int)>& observer);
+
 private:
     static std::array<bool, 348> keys_;
     static std::array<bool, 348> keys_changed_;
+    static std::vector<std::function<void(int, int)>> key_observers_;
 };
 } // namespace Soldank
 

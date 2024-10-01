@@ -191,6 +191,16 @@ bool Init(int argc, const char* argv[])
         }
     });
 
+    Keyboard::SubscribeKeyObserver([&](int key, int action) {
+        if (action == GLFW_PRESS) {
+            client_state->event_key_pressed.Notify(key);
+        }
+
+        if (action == GLFW_RELEASE) {
+            client_state->event_key_released.Notify(key);
+        }
+    });
+
     if (application_mode == CommandLineParameters::ApplicationMode::Online) {
         spdlog::info("Connecting to {}:{}", server_ip, server_port);
         std::vector<std::shared_ptr<INetworkEventHandler>> network_event_handlers{
