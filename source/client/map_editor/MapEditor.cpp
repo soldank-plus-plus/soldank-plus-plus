@@ -1,9 +1,17 @@
 #include "map_editor/MapEditor.hpp"
 
+#include "map_editor/tools/ColorPickerTool.hpp"
+#include "map_editor/tools/ColorTool.hpp"
 #include "map_editor/tools/PolygonTool.hpp"
-#include "map_editor/tools/DummyTool.hpp"
-
+#include "map_editor/tools/SceneryTool.hpp"
 #include "map_editor/tools/SelectionTool.hpp"
+#include "map_editor/tools/SpawnpointTool.hpp"
+#include "map_editor/tools/TextureTool.hpp"
+#include "map_editor/tools/TransformTool.hpp"
+#include "map_editor/tools/VertexColorTool.hpp"
+#include "map_editor/tools/VertexSelectionTool.hpp"
+#include "map_editor/tools/WaypointTool.hpp"
+
 #include "spdlog/spdlog.h"
 
 #include <utility>
@@ -83,17 +91,17 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     client_state.map_editor_state.event_pressed_redo.AddObserver(
       [this, &client_state, &game_state]() { RedoUndoneAction(client_state, game_state.map); });
 
-    tools_.emplace_back(std::make_unique<DummyTool>());
+    tools_.emplace_back(std::make_unique<TransformTool>());
     tools_.emplace_back(std::make_unique<PolygonTool>(add_new_map_editor_action_));
-    tools_.emplace_back(std::make_unique<DummyTool>());
+    tools_.emplace_back(std::make_unique<VertexSelectionTool>());
     tools_.emplace_back(std::make_unique<SelectionTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
+    tools_.emplace_back(std::make_unique<VertexColorTool>());
+    tools_.emplace_back(std::make_unique<ColorTool>());
+    tools_.emplace_back(std::make_unique<TextureTool>());
+    tools_.emplace_back(std::make_unique<SceneryTool>());
+    tools_.emplace_back(std::make_unique<WaypointTool>());
+    tools_.emplace_back(std::make_unique<SpawnpointTool>());
+    tools_.emplace_back(std::make_unique<ColorPickerTool>());
 }
 
 void MapEditor::Lock()
