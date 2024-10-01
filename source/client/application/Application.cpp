@@ -334,6 +334,22 @@ void Run()
         map_editor->Lock();
     });
 
+    client_state->event_key_pressed.AddObserver([&](int key) {
+        if (key == GLFW_KEY_F5 &&
+            application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
+            if (client_state->draw_game_interface) {
+                client_state->draw_game_interface = false;
+                client_state->draw_map_editor_interface = true;
+                client_state->draw_game_debug_interface = false;
+                world->GetStateManager()->GetState().paused = true;
+                window->SetCursorMode(CursorMode::Normal);
+                map_editor->Unlock();
+            } else {
+                client_state->map_editor_state.event_pressed_play.Notify();
+            }
+        }
+    });
+
     Mouse::SubscribeMouseMovementObserver([&](double x, double y) {
         glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
         if (std::abs(last_mouse_screen_position.x - mouse_screen_position.x) > 0.001F ||
@@ -389,15 +405,7 @@ void Run()
                 world->GetStateManager()->GetState().paused =
                   !world->GetStateManager()->GetState().paused;
             }
-            if (Keyboard::KeyWentDown(GLFW_KEY_F5) &&
-                application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
-                client_state->draw_game_interface = false;
-                client_state->draw_map_editor_interface = true;
-                client_state->draw_game_debug_interface = false;
-                world->GetStateManager()->GetState().paused = true;
-                window->SetCursorMode(CursorMode::Normal);
-                map_editor->Unlock();
-            }
+
             if (world->GetStateManager()->GetState().paused) {
                 glm::vec2 mouse_position = { Mouse::GetX(), Mouse::GetY() };
 
