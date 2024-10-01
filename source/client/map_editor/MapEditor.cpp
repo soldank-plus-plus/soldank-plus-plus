@@ -3,6 +3,7 @@
 #include "map_editor/tools/PolygonTool.hpp"
 #include "map_editor/tools/DummyTool.hpp"
 
+#include "map_editor/tools/SelectionTool.hpp"
 #include "spdlog/spdlog.h"
 
 #include <utility>
@@ -17,13 +18,14 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     , is_dragging_camera_(false)
     , locked_(false)
 {
-    add_new_map_editor_action_ = [this, &game_state](std::unique_ptr<MapEditorAction> new_action) {
-        ExecuteNewAction(game_state.map, std::move(new_action));
-    };
+    add_new_map_editor_action_ =
+      [this, &client_state, &game_state](std::unique_ptr<MapEditorAction> new_action) {
+          ExecuteNewAction(client_state, game_state.map, std::move(new_action));
+      };
 
-    client_state.event_left_mouse_button_clicked.AddObserver([this, &client_state]() {
+    client_state.event_left_mouse_button_clicked.AddObserver([this, &client_state, &game_state]() {
         if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
-            OnSceneLeftMouseButtonClick(client_state);
+            OnSceneLeftMouseButtonClick(client_state, game_state);
         }
     });
 
@@ -76,15 +78,15 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
       [this](ToolType tool_type) { OnSelectNewTool(tool_type); });
 
     client_state.map_editor_state.event_pressed_undo.AddObserver(
-      [this, &game_state]() { UndoLastAction(game_state.map); });
+      [this, &client_state, &game_state]() { UndoLastAction(client_state, game_state.map); });
 
     client_state.map_editor_state.event_pressed_redo.AddObserver(
-      [this, &game_state]() { RedoUndoneAction(game_state.map); });
+      [this, &client_state, &game_state]() { RedoUndoneAction(client_state, game_state.map); });
 
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<PolygonTool>(add_new_map_editor_action_));
     tools_.emplace_back(std::make_unique<DummyTool>());
-    tools_.emplace_back(std::make_unique<DummyTool>());
+    tools_.emplace_back(std::make_unique<SelectionTool>());
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<DummyTool>());
     tools_.emplace_back(std::make_unique<DummyTool>());
@@ -115,13 +117,14 @@ void MapEditor::OnSelectNewTool(ToolType tool_type)
     tools_.at(std::to_underlying(selected_tool_))->OnSelect();
 }
 
-void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state)
+void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
     if (locked_) {
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonClick(client_state);
+    tools_.at(std::to_underlying(selected_tool_))
+      ->OnSceneLeftMouseButtonClick(client_state, game_state);
 }
 
 void MapEditor::OnSceneLeftMouseButtonRelease()
@@ -229,31 +232,33 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
       ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
 }
 
-void MapEditor::ExecuteNewAction(Map& map, std::unique_ptr<MapEditorAction> new_action)
+void MapEditor::ExecuteNewAction(ClientState& client_state,
+                                 Map& map,
+                                 std::unique_ptr<MapEditorAction> new_action)
 {
     if (locked_) {
         return;
     }
 
     map_editor_undone_actions_.clear();
-    new_action->Execute(map);
+    new_action->Execute(client_state, map);
     map_editor_executed_actions_.push_back(std::move(new_action));
 }
 
-void MapEditor::UndoLastAction(Map& map)
+void MapEditor::UndoLastAction(ClientState& client_state, Map& map)
 {
     if (locked_) {
         return;
     }
 
     if (!map_editor_executed_actions_.empty()) {
-        map_editor_executed_actions_.back()->Undo(map);
+        map_editor_executed_actions_.back()->Undo(client_state, map);
         map_editor_undone_actions_.push_back(std::move(map_editor_executed_actions_.back()));
         map_editor_executed_actions_.pop_back();
     }
 }
 
-void MapEditor::RedoUndoneAction(Map& map)
+void MapEditor::RedoUndoneAction(ClientState& client_state, Map& map)
 {
     if (locked_) {
         return;
@@ -262,7 +267,7 @@ void MapEditor::RedoUndoneAction(Map& map)
     if (!map_editor_undone_actions_.empty()) {
         map_editor_executed_actions_.push_back(std::move(map_editor_undone_actions_.back()));
         map_editor_undone_actions_.pop_back();
-        map_editor_executed_actions_.back()->Execute(map);
+        map_editor_executed_actions_.back()->Execute(client_state, map);
     }
 }
 } // namespace Soldank

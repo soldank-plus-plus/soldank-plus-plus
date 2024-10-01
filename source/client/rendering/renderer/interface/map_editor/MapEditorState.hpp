@@ -27,7 +27,7 @@ enum class ToolType
 
 struct MapEditorState
 {
-    ToolType selected_tool = ToolType::Polygon;
+    ToolType selected_tool = ToolType::Selection;
 
     bool is_mouse_hovering_over_ui = false;
 
@@ -43,6 +43,8 @@ struct MapEditorState
     // we handle it differently because we don't want to save t he polygon immediately.
     // After the Polygon Tool is done creating the polygon then we save it.
     std::optional<PMSPolygon> polygon_tool_wip_polygon;
+
+    std::vector<unsigned int> selected_polygon_ids;
 };
 } // namespace Soldank
 

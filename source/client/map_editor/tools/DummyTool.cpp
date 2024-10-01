@@ -6,7 +6,7 @@ void DummyTool::OnSelect() {}
 
 void DummyTool::OnUnselect() {}
 
-void DummyTool::OnSceneLeftMouseButtonClick(ClientState& client_state) {}
+void DummyTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) {}
 
 void DummyTool::OnSceneLeftMouseButtonRelease() {}
 
