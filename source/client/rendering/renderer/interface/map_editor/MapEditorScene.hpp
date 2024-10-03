@@ -5,6 +5,7 @@
 #include "rendering/renderer/LineRenderer.hpp"
 #include "rendering/renderer/PolygonsRenderer.hpp"
 #include "rendering/renderer/PolygonOutlinesRenderer.hpp"
+#include "rendering/renderer/SceneryOutlinesRenderer.hpp"
 
 #include "core/state/StateManager.hpp"
 
@@ -22,6 +23,7 @@ public:
 private:
     LineRenderer line_renderer_;
     PolygonOutlinesRenderer polygon_outlines_renderer_;
+    SceneryOutlinesRenderer scenery_outlines_renderer_;
 };
 } // namespace Soldank
 

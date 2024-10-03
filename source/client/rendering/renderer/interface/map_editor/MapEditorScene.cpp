@@ -1,11 +1,13 @@
 #include "rendering/renderer/interface/map_editor/MapEditorScene.hpp"
 
+#include "rendering/renderer/SceneryOutlinesRenderer.hpp"
 #include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 
 namespace Soldank
 {
 MapEditorScene::MapEditorScene(State& game_state)
     : polygon_outlines_renderer_(game_state.map, { 1.0F, 0.0F, 0.0F, 1.0F })
+    , scenery_outlines_renderer_(game_state.map, { 1.0F, 0.0F, 0.0F, 1.0F })
 {
 }
 
