@@ -128,6 +128,7 @@ bool Init(int argc, const char* argv[])
             spdlog::info("Application mode = Local");
             map_path = "maps/ctf_Ash.pms";
             client_state->draw_game_debug_interface = true;
+            client_state->draw_game_interface = true;
             break;
         }
         case CommandLineParameters::ApplicationMode::Online: {
@@ -139,11 +140,13 @@ bool Init(int argc, const char* argv[])
             map_path = "maps/ctf_Ash.pms";
             client_state->draw_game_debug_interface = true;
             client_state->draw_server_pov_client_pos = true;
+            client_state->draw_game_interface = true;
             spdlog::info("Application mode = Online");
             break;
         }
         case CommandLineParameters::ApplicationMode::MapEditor: {
             client_state->draw_map_editor_interface = true;
+            client_state->draw_game_interface = false;
             map_editor =
               std::make_unique<MapEditor>(*client_state, world->GetStateManager()->GetState());
             spdlog::info("Application mode = MapEditor");
