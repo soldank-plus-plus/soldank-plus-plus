@@ -5,6 +5,7 @@
 #include "rendering/renderer/ItemRenderer.hpp"
 #include "rendering/renderer/PolygonsRenderer.hpp"
 #include "rendering/renderer/interface/debug/DebugUI.hpp"
+#include "rendering/renderer/interface/ImGuiThemes.hpp"
 
 #include "application/input/Mouse.hpp"
 #include "application/config/Config.hpp"
@@ -37,6 +38,8 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state)
 {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    SetupImGuiTheme();
 }
 
 void Scene::Render(State& game_state, ClientState& client_state, double frame_percent, int fps)
