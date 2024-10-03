@@ -8,25 +8,36 @@ void SelectionTool::OnUnselect() {}
 
 void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
-    client_state.map_editor_state.selected_polygon_ids.clear();
     const auto& map = game_state.map;
-    auto pos = mouse_map_position_;
 
-    unsigned int i = start_polygon_lookup_from_id_;
-    // doing do while on purpose to rotate through polygons if mouse didn't move from one spot
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-do-while)
-    do {
+    unsigned int i = 0;
+    unsigned int polygon_candidates_count = 0;
+    if (client_state.map_editor_state.selected_polygon_ids.size() == 1) {
+        unsigned int selected_polygon_id = client_state.map_editor_state.selected_polygon_ids.at(0);
+        const auto& polygon = map.GetPolygons().at(selected_polygon_id);
+
+        if (Map::PointInPoly(mouse_map_position_, polygon)) {
+            // If we have only one polygon selected  and we still click inside of it then we want to
+            // "rotate" through objects
+            i = selected_polygon_id + 1;
+            i %= map.GetPolygonsCount();
+        }
+    }
+
+    client_state.map_editor_state.selected_polygon_ids.clear();
+
+    while (polygon_candidates_count < map.GetPolygonsCount()) {
         const auto& polygon = map.GetPolygons().at(i);
 
-        if (Soldank::Map::PointInPoly(pos, polygon)) {
+        if (Map::PointInPoly(mouse_map_position_, polygon)) {
             client_state.map_editor_state.selected_polygon_ids.push_back(i);
-            start_polygon_lookup_from_id_ = (i + 1) % map.GetPolygonsCount();
             break;
         }
 
-        i++;
+        ++i;
+        ++polygon_candidates_count;
         i %= map.GetPolygonsCount();
-    } while (i != start_polygon_lookup_from_id_);
+    }
 }
 
 void SelectionTool::OnSceneLeftMouseButtonRelease() {}
@@ -46,6 +57,5 @@ void SelectionTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
                                              glm::vec2 new_mouse_position)
 {
     mouse_map_position_ = new_mouse_position;
-    start_polygon_lookup_from_id_ = 0;
 }
 } // namespace Soldank

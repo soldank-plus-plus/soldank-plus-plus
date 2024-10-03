@@ -33,7 +33,6 @@ public:
 
 private:
     glm::vec2 mouse_map_position_;
-    unsigned int start_polygon_lookup_from_id_;
 };
 } // namespace Soldank
 
