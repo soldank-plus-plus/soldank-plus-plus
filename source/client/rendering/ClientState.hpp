@@ -31,6 +31,7 @@ struct ClientState
     glm::vec2 camera_prev;
     bool smooth_camera = true;
     glm::vec2 mouse;
+    glm::vec2 mouse_map_position;
     bool mouse_left_button_pressed;
     bool mouse_right_button_pressed;
     float game_width;

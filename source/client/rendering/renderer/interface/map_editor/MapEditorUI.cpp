@@ -157,9 +157,9 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("Current tool/action description");
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
-                // TODO: translate mouse position to position on map.
-                ImGui::Text(
-                  "Mouse position: %.0f, %.0f", client_state.mouse.x, client_state.mouse.y);
+                ImGui::Text("Mouse position: %.0f, %.0f",
+                            client_state.mouse_map_position.x,
+                            client_state.mouse_map_position.y);
                 ImGui::EndMenuBar();
             }
             ImGui::End();
