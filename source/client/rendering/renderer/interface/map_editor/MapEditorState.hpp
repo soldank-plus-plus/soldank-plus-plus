@@ -45,6 +45,7 @@ struct MapEditorState
     std::optional<PMSPolygon> polygon_tool_wip_polygon;
 
     std::vector<unsigned int> selected_polygon_ids;
+    std::vector<unsigned int> selected_scenery_ids;
 };
 } // namespace Soldank
 

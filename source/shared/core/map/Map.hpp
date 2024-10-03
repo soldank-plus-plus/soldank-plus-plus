@@ -83,6 +83,7 @@ public:
 
     static bool PointInPoly(glm::vec2 p, PMSPolygon poly);
     bool PointInPolyEdges(float x, float y, int i) const;
+    static bool PointInScenery(glm::vec2 p, const PMSScenery& scenery);
     glm::vec2 ClosestPerpendicular(int j, glm::vec2 pos, float* d, int* n) const;
     bool CollisionTest(glm::vec2 pos, glm::vec2& perp_vec, bool is_flag = false) const;
     bool RayCast(glm::vec2 a,
@@ -99,6 +100,8 @@ public:
 
     PMSPolygon AddNewPolygon(const PMSPolygon& polygon);
     PMSPolygon RemovePolygonById(unsigned int id);
+
+    static std::array<glm::vec2, 4> GetSceneryVertexPositions(const PMSScenery& scenery);
 
     int GetVersion() const { return map_data_.version; }
 

@@ -281,6 +281,33 @@ bool Map::PointInPolyEdges(float x, float y, int i) const
     return d >= 0.0F;
 }
 
+bool Map::PointInScenery(glm::vec2 p, const PMSScenery& scenery)
+{
+    auto scenery_vertex_positions = GetSceneryVertexPositions(scenery);
+
+    glm::vec2 a = scenery_vertex_positions.at(0);
+    glm::vec2 b = scenery_vertex_positions.at(1);
+    if (Calc::Det(a, b, p) > 0) {
+        return false;
+    }
+
+    a = scenery_vertex_positions.at(1);
+    b = scenery_vertex_positions.at(2);
+    if (Calc::Det(a, b, p) > 0) {
+        return false;
+    }
+
+    a = scenery_vertex_positions.at(2);
+    b = scenery_vertex_positions.at(3);
+    if (Calc::Det(a, b, p) > 0) {
+        return false;
+    }
+
+    a = scenery_vertex_positions.at(3);
+    b = scenery_vertex_positions.at(0);
+    return Calc::Det(a, b, p) <= 0;
+}
+
 glm::vec2 Map::ClosestPerpendicular(int j, glm::vec2 pos, float* d, int* n) const
 {
     auto px = std::array{
@@ -473,6 +500,32 @@ PMSPolygon Map::RemovePolygonById(unsigned int id)
     GenerateSectors();
     map_change_events_.removed_polygon.Notify(removed_polygon, map_data_.polygons);
     return removed_polygon;
+}
+
+std::array<glm::vec2, 4> Map::GetSceneryVertexPositions(const PMSScenery& scenery)
+{
+    glm::mat4 transform_matrix(1.0F);
+    transform_matrix = glm::rotate(transform_matrix, -scenery.rotation, glm::vec3(0.0, 0.0, 1.0));
+    transform_matrix =
+      glm::scale(transform_matrix, glm::vec3(scenery.scale_x, scenery.scale_y, 0.0));
+
+    std::array<glm::vec2, 4> vertex_positions{
+        glm::vec2{ 0.0F, scenery.height },
+        glm::vec2{ scenery.width, scenery.height },
+        glm::vec2{ scenery.width, 0.0F },
+        glm::vec2{ 0.0F, 0.0F },
+    };
+
+    for (auto& vertex_position : vertex_positions) {
+        glm::vec4 v =
+          transform_matrix * glm::vec4{ vertex_position.x, vertex_position.y, 1.0F, 1.0F };
+        vertex_position.x = v.x;
+        vertex_position.y = v.y;
+        vertex_position.x += scenery.x;
+        vertex_position.y += scenery.y;
+    }
+
+    return vertex_positions;
 }
 
 void Map::GenerateSectors()

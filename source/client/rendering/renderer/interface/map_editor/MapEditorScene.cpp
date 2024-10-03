@@ -27,6 +27,10 @@ void MapEditorScene::Render(State& game_state,
           camera.GetView(), *client_state.map_editor_state.polygon_tool_wip_polygon);
     }
 
+    for (auto selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
+        scenery_outlines_renderer_.Render(camera.GetView(), selected_scenery_id);
+    }
+
     for (auto selected_polygon_id : client_state.map_editor_state.selected_polygon_ids) {
         polygon_outlines_renderer_.Render(camera.GetView(), selected_polygon_id);
     }
