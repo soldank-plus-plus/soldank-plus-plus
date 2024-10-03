@@ -13,6 +13,8 @@ const int MAP_VERSION = 11;
 const unsigned int MAX_POLYGONS_COUNT = 5000;
 const unsigned int POLYGON_TYPES_COUNT = 24;
 
+const unsigned int MAX_SCENERIES_COUNT = 500;
+
 const int SECTORS_COUNT = 51; // Each map is a 51x51 grid of sectors.
 } // namespace Soldank
 
