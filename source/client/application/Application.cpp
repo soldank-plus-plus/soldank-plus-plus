@@ -369,6 +369,7 @@ void Run()
             client_state->event_mouse_map_position_changed.Notify(last_mouse_map_position,
                                                                   mouse_map_position);
             mouse_map_position = GetCurrentMouseMapPosition();
+            client_state->mouse_map_position = mouse_map_position;
         }
         last_mouse_map_position = mouse_map_position;
     });
@@ -386,6 +387,7 @@ void Run()
             client_state->event_mouse_map_position_changed.Notify(last_mouse_map_position,
                                                                   mouse_map_position);
             mouse_map_position = GetCurrentMouseMapPosition();
+            client_state->mouse_map_position = mouse_map_position;
         }
         last_mouse_map_position = mouse_map_position;
     });
