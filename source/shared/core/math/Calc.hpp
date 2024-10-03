@@ -30,6 +30,8 @@ std::optional<glm::vec2> LineCircleCollision(const glm::vec2& start_point,
                                              const glm::vec2& circle_center,
                                              float radius);
 bool SegmentsIntersect(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d);
+
+float Det(glm::vec2 a, glm::vec2 b, glm::vec2 c);
 } // namespace Soldank::Calc
 
 #endif

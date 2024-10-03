@@ -212,4 +212,9 @@ bool SegmentsIntersect(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d)
 
     return s >= 0 && s <= 1 && t >= 0 && t <= 1;
 }
+
+float Det(glm::vec2 a, glm::vec2 b, glm::vec2 c)
+{
+    return a.x * b.y + a.y * c.x + b.x * c.y - c.x * b.y - c.y * a.x - b.x * a.y;
+}
 } // namespace Soldank::Calc

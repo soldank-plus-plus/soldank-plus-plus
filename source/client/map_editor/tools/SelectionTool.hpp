@@ -32,6 +32,11 @@ public:
                                   glm::vec2 new_mouse_position) final;
 
 private:
+    void SelectNextObject(ClientState& client_state,
+                          const State& game_state,
+                          unsigned int start_index,
+                          bool look_for_polygon_initially);
+
     glm::vec2 mouse_map_position_;
 };
 } // namespace Soldank
