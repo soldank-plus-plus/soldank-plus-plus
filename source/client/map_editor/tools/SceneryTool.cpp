@@ -25,4 +25,16 @@ void SceneryTool::OnMouseMapPositionChange(ClientState& client_state,
                                            glm::vec2 new_mouse_position)
 {
 }
+
+void SceneryTool::OnModifierKey1Pressed() {}
+
+void SceneryTool::OnModifierKey1Released() {}
+
+void SceneryTool::OnModifierKey2Pressed() {}
+
+void SceneryTool::OnModifierKey2Released() {}
+
+void SceneryTool::OnModifierKey3Pressed() {}
+
+void SceneryTool::OnModifierKey3Released() {}
 } // namespace Soldank

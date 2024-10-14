@@ -107,4 +107,16 @@ void PolygonTool::OnMouseMapPositionChange(ClientState& client_state,
           new_mouse_position.y / client_state.current_polygon_texture_dimensions.y;
     }
 }
+
+void PolygonTool::OnModifierKey1Pressed() {}
+
+void PolygonTool::OnModifierKey1Released() {}
+
+void PolygonTool::OnModifierKey2Pressed() {}
+
+void PolygonTool::OnModifierKey2Released() {}
+
+void PolygonTool::OnModifierKey3Pressed() {}
+
+void PolygonTool::OnModifierKey3Released() {}
 } // namespace Soldank

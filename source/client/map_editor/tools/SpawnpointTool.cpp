@@ -27,4 +27,16 @@ void SpawnpointTool::OnMouseMapPositionChange(ClientState& client_state,
                                               glm::vec2 new_mouse_position)
 {
 }
+
+void SpawnpointTool::OnModifierKey1Pressed() {}
+
+void SpawnpointTool::OnModifierKey1Released() {}
+
+void SpawnpointTool::OnModifierKey2Pressed() {}
+
+void SpawnpointTool::OnModifierKey2Released() {}
+
+void SpawnpointTool::OnModifierKey3Pressed() {}
+
+void SpawnpointTool::OnModifierKey3Released() {}
 } // namespace Soldank

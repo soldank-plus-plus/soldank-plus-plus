@@ -28,4 +28,16 @@ void VertexColorTool::OnMouseMapPositionChange(ClientState& client_state,
                                                glm::vec2 new_mouse_position)
 {
 }
+
+void VertexColorTool::OnModifierKey1Pressed() {}
+
+void VertexColorTool::OnModifierKey1Released() {}
+
+void VertexColorTool::OnModifierKey2Pressed() {}
+
+void VertexColorTool::OnModifierKey2Released() {}
+
+void VertexColorTool::OnModifierKey3Pressed() {}
+
+void VertexColorTool::OnModifierKey3Released() {}
 } // namespace Soldank

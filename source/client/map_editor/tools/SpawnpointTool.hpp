@@ -24,6 +24,12 @@ public:
     void OnMouseMapPositionChange(ClientState& client_state,
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position) final;
+    void OnModifierKey1Pressed() final;
+    void OnModifierKey1Released() final;
+    void OnModifierKey2Pressed() final;
+    void OnModifierKey2Released() final;
+    void OnModifierKey3Pressed() final;
+    void OnModifierKey3Released() final;
 };
 } // namespace Soldank
 
