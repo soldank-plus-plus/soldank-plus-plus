@@ -267,9 +267,30 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state)
             return;
         }
     }
+
+    if (key == GLFW_KEY_LEFT_SHIFT) {
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Pressed();
+    }
+    if (key == GLFW_KEY_LEFT_CONTROL) {
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Pressed();
+    }
+    if (key == GLFW_KEY_LEFT_ALT) {
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Pressed();
+    }
 }
 
-void MapEditor::OnKeyReleased(int key, ClientState& client_state) {}
+void MapEditor::OnKeyReleased(int key, ClientState& /*client_state*/)
+{
+    if (key == GLFW_KEY_LEFT_SHIFT) {
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Released();
+    }
+    if (key == GLFW_KEY_LEFT_CONTROL) {
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Released();
+    }
+    if (key == GLFW_KEY_LEFT_ALT) {
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Released();
+    }
+}
 
 void MapEditor::ExecuteNewAction(ClientState& client_state,
                                  Map& map,

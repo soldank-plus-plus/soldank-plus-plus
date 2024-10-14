@@ -28,4 +28,16 @@ void VertexSelectionTool::OnMouseMapPositionChange(ClientState& client_state,
                                                    glm::vec2 new_mouse_position)
 {
 }
+
+void VertexSelectionTool::OnModifierKey1Pressed() {}
+
+void VertexSelectionTool::OnModifierKey1Released() {}
+
+void VertexSelectionTool::OnModifierKey2Pressed() {}
+
+void VertexSelectionTool::OnModifierKey2Released() {}
+
+void VertexSelectionTool::OnModifierKey3Pressed() {}
+
+void VertexSelectionTool::OnModifierKey3Released() {}
 } // namespace Soldank

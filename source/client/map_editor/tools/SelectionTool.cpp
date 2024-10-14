@@ -113,4 +113,16 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
         }
     }
 }
+
+void SelectionTool::OnModifierKey1Pressed() {}
+
+void SelectionTool::OnModifierKey1Released() {}
+
+void SelectionTool::OnModifierKey2Pressed() {}
+
+void SelectionTool::OnModifierKey2Released() {}
+
+void SelectionTool::OnModifierKey3Pressed() {}
+
+void SelectionTool::OnModifierKey3Released() {}
 } // namespace Soldank

@@ -25,4 +25,16 @@ void ColorTool::OnMouseMapPositionChange(ClientState& client_state,
                                          glm::vec2 new_mouse_position)
 {
 }
+
+void ColorTool::OnModifierKey1Pressed() {}
+
+void ColorTool::OnModifierKey1Released() {}
+
+void ColorTool::OnModifierKey2Pressed() {}
+
+void ColorTool::OnModifierKey2Released() {}
+
+void ColorTool::OnModifierKey3Pressed() {}
+
+void ColorTool::OnModifierKey3Released() {}
 } // namespace Soldank

@@ -27,4 +27,16 @@ void TransformTool::OnMouseMapPositionChange(ClientState& client_state,
                                              glm::vec2 new_mouse_position)
 {
 }
+
+void TransformTool::OnModifierKey1Pressed() {}
+
+void TransformTool::OnModifierKey1Released() {}
+
+void TransformTool::OnModifierKey2Pressed() {}
+
+void TransformTool::OnModifierKey2Released() {}
+
+void TransformTool::OnModifierKey3Pressed() {}
+
+void TransformTool::OnModifierKey3Released() {}
 } // namespace Soldank

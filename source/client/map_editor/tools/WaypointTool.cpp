@@ -27,4 +27,16 @@ void WaypointTool::OnMouseMapPositionChange(ClientState& client_state,
                                             glm::vec2 new_mouse_position)
 {
 }
+
+void WaypointTool::OnModifierKey1Pressed() {}
+
+void WaypointTool::OnModifierKey1Released() {}
+
+void WaypointTool::OnModifierKey2Pressed() {}
+
+void WaypointTool::OnModifierKey2Released() {}
+
+void WaypointTool::OnModifierKey3Pressed() {}
+
+void WaypointTool::OnModifierKey3Released() {}
 } // namespace Soldank
