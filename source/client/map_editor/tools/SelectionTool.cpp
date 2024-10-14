@@ -88,6 +88,16 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
         client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b000 });
     }
 
+    if (look_for_polygon_initially && start_index >= map.GetPolygonsCount()) {
+        start_index = 0;
+        look_for_polygon_initially = false;
+    }
+
+    if (!look_for_polygon_initially && start_index >= map.GetSceneryInstances().size()) {
+        start_index = 0;
+        look_for_polygon_initially = true;
+    }
+
     SelectNextObject(client_state, game_state, start_index, look_for_polygon_initially);
 }
 

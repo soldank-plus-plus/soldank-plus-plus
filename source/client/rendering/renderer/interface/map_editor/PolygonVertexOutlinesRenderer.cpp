@@ -66,6 +66,8 @@ void PolygonVertexOutlinesRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
         int offset = new_polygon.id * 7 * sizeof(GLfloat) * 3;
         Renderer::ModifyVBOVertices(vbo_, vertices, offset);
     }
+
+    ++polygons_count_;
 }
 
 void PolygonVertexOutlinesRenderer::OnRemovePolygon(const PMSPolygon& removed_polygon)
@@ -77,6 +79,8 @@ void PolygonVertexOutlinesRenderer::OnRemovePolygon(const PMSPolygon& removed_po
         int offset = removed_polygon.id * 7 * sizeof(GLfloat) * 3;
         Renderer::ModifyVBOVertices(vbo_, vertices, offset);
     }
+
+    --polygons_count_;
 }
 
 void PolygonVertexOutlinesRenderer::GenerateGLBufferVertices(
