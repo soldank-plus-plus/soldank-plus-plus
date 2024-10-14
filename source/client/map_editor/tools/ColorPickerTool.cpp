@@ -11,7 +11,10 @@ void ColorPickerTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
 {
 }
 
-void ColorPickerTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
+void ColorPickerTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                                    const State& game_state)
+{
+}
 
 void ColorPickerTool::OnSceneRightMouseButtonClick() {}
 

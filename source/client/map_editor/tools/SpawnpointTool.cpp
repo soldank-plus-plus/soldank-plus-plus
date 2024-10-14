@@ -10,7 +10,10 @@ void SpawnpointTool::OnSceneLeftMouseButtonClick(ClientState& client_state, cons
 {
 }
 
-void SpawnpointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
+void SpawnpointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                                   const State& game_state)
+{
+}
 
 void SpawnpointTool::OnSceneRightMouseButtonClick() {}
 

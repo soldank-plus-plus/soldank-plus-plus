@@ -15,11 +15,13 @@ void AddPolygonMapEditorAction::Execute(ClientState& client_state, Map& map)
 void AddPolygonMapEditorAction::Undo(ClientState& client_state, Map& map)
 {
     map.RemovePolygonById(added_polygon_.id);
-    for (unsigned int i = 0; i < client_state.map_editor_state.selected_polygon_ids.size(); ++i) {
-        if (client_state.map_editor_state.selected_polygon_ids.at(i) == added_polygon_.id) {
-            std::swap(client_state.map_editor_state.selected_polygon_ids[i],
-                      client_state.map_editor_state.selected_polygon_ids.back());
-            client_state.map_editor_state.selected_polygon_ids.pop_back();
+    for (unsigned int i = 0; i < client_state.map_editor_state.selected_polygon_vertices.size();
+         ++i) {
+        if (client_state.map_editor_state.selected_polygon_vertices.at(i).first ==
+            added_polygon_.id) {
+            std::swap(client_state.map_editor_state.selected_polygon_vertices[i],
+                      client_state.map_editor_state.selected_polygon_vertices.back());
+            client_state.map_editor_state.selected_polygon_vertices.pop_back();
             break;
         }
     }

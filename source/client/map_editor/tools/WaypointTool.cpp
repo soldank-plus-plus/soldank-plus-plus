@@ -10,7 +10,9 @@ void WaypointTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const 
 {
 }
 
-void WaypointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
+void WaypointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state)
+{
+}
 
 void WaypointTool::OnSceneRightMouseButtonClick() {}
 

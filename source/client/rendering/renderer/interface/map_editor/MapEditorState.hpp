@@ -46,7 +46,7 @@ struct MapEditorState
     // After the Polygon Tool is done creating the polygon then we save it.
     std::optional<PMSPolygon> polygon_tool_wip_polygon;
 
-    std::vector<unsigned int> selected_polygon_ids;
+    std::vector<std::pair<unsigned int, std::bitset<3>>> selected_polygon_vertices;
     std::vector<unsigned int> selected_scenery_ids;
 
     // If specified, render a selection box for the Vertex Selection Tool

@@ -26,7 +26,7 @@ public:
 private:
     void OnSelectNewTool(ToolType tool_type, ClientState& client_state);
     void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state);
-    void OnSceneLeftMouseButtonRelease(ClientState& client_state);
+    void OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state);
     void OnSceneRightMouseButtonClick();
     void OnSceneRightMouseButtonRelease();
     void OnSceneMiddleMouseButtonClick(ClientState& client_state);

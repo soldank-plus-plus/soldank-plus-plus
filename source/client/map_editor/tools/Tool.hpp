@@ -18,7 +18,8 @@ public:
 
     virtual void OnSceneLeftMouseButtonClick(ClientState& client_state,
                                              const State& game_state) = 0;
-    virtual void OnSceneLeftMouseButtonRelease(ClientState& client_state) = 0;
+    virtual void OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                               const State& game_state) = 0;
     virtual void OnSceneRightMouseButtonClick() = 0;
     virtual void OnSceneRightMouseButtonRelease() = 0;
     virtual void OnMouseScreenPositionChange(ClientState& client_state,

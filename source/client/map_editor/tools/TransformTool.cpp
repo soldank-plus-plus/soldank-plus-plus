@@ -10,7 +10,10 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
 {
 }
 
-void TransformTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
+void TransformTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                                  const State& game_state)
+{
+}
 
 void TransformTool::OnSceneRightMouseButtonClick() {}
 
