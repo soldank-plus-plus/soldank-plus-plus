@@ -7,6 +7,7 @@
 #include "core/map/PMSStructs.hpp"
 
 #include <optional>
+#include <bitset>
 
 namespace Soldank
 {
@@ -35,6 +36,7 @@ struct MapEditorState
     Observable<> event_pressed_play;
     Observable<> event_pressed_undo;
     Observable<> event_pressed_redo;
+    Observable<const PMSPolygon&, const std::bitset<3>&> event_polygon_selected;
 
     // If specified, we render first edge of the polygon
     // that is being created with the polygon tool

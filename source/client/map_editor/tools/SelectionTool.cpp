@@ -83,6 +83,10 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
 
     client_state.map_editor_state.selected_polygon_ids.clear();
     client_state.map_editor_state.selected_scenery_ids.clear();
+    for (const auto& polygon : map.GetPolygons()) {
+        // TODO: can be optimized
+        client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b000 });
+    }
 
     SelectNextObject(client_state, game_state, start_index, look_for_polygon_initially);
 }
@@ -104,6 +108,7 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
 
             if (Map::PointInPoly(mouse_map_position_, polygon)) {
                 client_state.map_editor_state.selected_polygon_ids.push_back(current_index);
+                client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b111 });
                 break;
             }
         } else {
@@ -159,6 +164,7 @@ bool SelectionTool::AddFirstFoundPolygonToSelection(ClientState& client_state,
 
             if (!already_selected) {
                 client_state.map_editor_state.selected_polygon_ids.push_back(polygon.id);
+                client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b111 });
                 return true;
             }
         }
@@ -216,6 +222,7 @@ void SelectionTool::RemoveLastFoundObjectFromSelection(ClientState& client_state
         if (Map::PointInPoly(mouse_map_position_, polygon)) {
             client_state.map_editor_state.selected_polygon_ids.erase(
               client_state.map_editor_state.selected_polygon_ids.begin() + i);
+            client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b000 });
             return;
         }
     }
