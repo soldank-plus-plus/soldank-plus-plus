@@ -38,12 +38,25 @@ public:
     void OnModifierKey3Released() final;
 
 private:
+    enum class SelectionMode
+    {
+        SingleSelection = 0,
+        AddToSelection,
+        RemoveFromSelection,
+    };
+
+    void SelectNextSingleObject(ClientState& client_state, const State& game_state);
     void SelectNextObject(ClientState& client_state,
                           const State& game_state,
                           unsigned int start_index,
                           bool look_for_polygon_initially);
+    void AddFirstFoundObjectToSelection(ClientState& client_state, const State& game_state);
+    bool AddFirstFoundPolygonToSelection(ClientState& client_state, const State& game_state);
+    bool AddFirstFoundSceneryToSelection(ClientState& client_state, const State& game_state);
 
     glm::vec2 mouse_map_position_;
+
+    SelectionMode current_selection_mode_;
 };
 } // namespace Soldank
 
