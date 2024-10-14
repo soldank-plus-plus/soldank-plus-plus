@@ -28,7 +28,7 @@ namespace Soldank
 class Scene
 {
 public:
-    Scene(const std::shared_ptr<StateManager>& game_state);
+    Scene(const std::shared_ptr<StateManager>& game_state, ClientState& client_state);
 
     void Render(State& game_state, ClientState& client_state, double frame_percent, int fps);
 

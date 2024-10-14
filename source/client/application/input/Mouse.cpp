@@ -27,6 +27,10 @@ std::vector<std::function<void(double, double)>> Mouse::mouse_movement_observers
 
 void Mouse::CursorPosCallback(GLFWwindow* window, const double x, const double y)
 {
+    int window_width = 0;
+    int window_height = 0;
+    glfwGetWindowSize(window, &window_width, &window_height);
+
     for (const auto& mouse_movement_observer : mouse_movement_observers_) {
         mouse_movement_observer(x, y);
     }
@@ -43,15 +47,15 @@ void Mouse::CursorPosCallback(GLFWwindow* window, const double x, const double y
     lasty_ = y;
 
     x_ += dx_;
-    if (x_ > 640.0) {
-        x_ = 640.0;
+    if (x_ > window_width) {
+        x_ = window_width;
     }
     if (x_ < 0.0) {
         x_ = 0.0;
     }
     y_ += dy_;
-    if (y_ > 480.0) {
-        y_ = 480.0;
+    if (y_ > window_height) {
+        y_ = window_height;
     }
     if (y_ < 0.0) {
         y_ = 0.0;

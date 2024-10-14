@@ -128,41 +128,11 @@ void StateManager::SoldierControlApply(
 }
 
 void StateManager::ChangeSoldierMousePosition(std::uint8_t soldier_id,
-                                              glm::vec2 new_mouse_position,
-                                              bool is_camera_smooth)
+                                              glm::ivec2 new_mouse_position)
 {
     Soldier& soldier = GetSoldierRef(soldier_id);
-    soldier.game_width = 640.0;
-    soldier.game_height = 480.0;
-    soldier.camera_prev = soldier.camera;
-
-    soldier.mouse.x = new_mouse_position.x;
-    soldier.mouse.y = 480.0F - new_mouse_position.y; // TODO: soldier.control.mouse_aim_y expects
-                                                     // top to be 0 and bottom to be game_height
-
-    if (is_camera_smooth) {
-        auto z = 1.0F;
-        glm::vec2 m{ 0.0F, 0.0F };
-
-        m.x = z * (soldier.mouse.x - soldier.game_width / 2.0F) / 7.0F *
-              ((2.0F * 640.0F / soldier.game_width - 1.0F) +
-               (soldier.game_width - 640.0F) / soldier.game_width * 0.0F / 6.8F);
-        m.y = z * (soldier.mouse.y - soldier.game_height / 2.0F) / 7.0F;
-
-        glm::vec2 cam_v = soldier.camera;
-        glm::vec2 p = { soldier.particle.position.x, soldier.particle.position.y };
-        glm::vec2 norm = p - cam_v;
-        glm::vec2 s = norm * 0.14F;
-        cam_v += s;
-        cam_v += m;
-        soldier.camera = cam_v;
-
-    } else {
-        soldier.camera.x =
-          soldier.particle.position.x + (float)(soldier.mouse.x - (soldier.game_width / 2));
-        soldier.camera.y = soldier.particle.position.y -
-                           (float)((480.0F - soldier.mouse.y) - (soldier.game_height / 2));
-    }
+    soldier.control.mouse_aim_x = new_mouse_position.x;
+    soldier.control.mouse_aim_y = new_mouse_position.y;
 }
 
 void StateManager::SwitchSoldierWeapon(std::uint8_t soldier_id)

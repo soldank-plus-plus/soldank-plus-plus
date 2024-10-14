@@ -18,25 +18,26 @@ public:
     void Move(float new_x, float new_y);
 
     float GetX() const { return camera_position_.x; }
-
     float GetY() const { return camera_position_.y; }
-
-    float GetZoom() const { return zoom_; }
 
     float GetWidth() const;
     float GetHeight() const;
 
+    float GetZoom() const { return zoom_; }
+
+    void UpdateWindowDimensions(const glm::vec2& window_dimensions);
+
 private:
-    static constexpr const unsigned int WIDTH = 640;
-    static constexpr const unsigned int HEIGHT = 480;
-    static constexpr const float ZOOM_INCREMENT = 20.0;
-    static constexpr const float ZOOM_MIN_VALUE = -400.0;
-    static constexpr const float ZOOM_INITIAL_VALUE = 0.0;
-    static constexpr const float ZOOM_MAX_VALUE = 80.0;
-    static constexpr const float ZOOM_POWER = 0.01;
+    static constexpr const float ZOOM_INCREMENT_FACTOR = 2.0;
+    static constexpr const float ZOOM_INITIAL_VALUE = 1.0;
+    static constexpr const float ZOOM_MIN_VALUE = ZOOM_INITIAL_VALUE / 16;
+    static constexpr const float ZOOM_MAX_VALUE = ZOOM_INITIAL_VALUE * 32;
+
+    float GetSoldierPOVZoomFactor() const;
 
     glm::vec2 camera_position_;
     float zoom_;
+    glm::vec2 window_dimensions_;
 };
 } // namespace Soldank
 

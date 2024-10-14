@@ -2,12 +2,15 @@
 #define __WINDOW_HPP__
 
 #include "core/math/Glm.hpp"
+#include "core/utility/Observable.hpp"
 
+#include <functional>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <string>
 #include <cstdint>
+#include <functional>
 
 namespace Soldank
 {
@@ -30,9 +33,10 @@ public:
 
     ~Window();
 
-    void SetCursorMode(CursorMode cursor_mode) const;
+    void SetCursorMode(CursorMode cursor_mode);
+    CursorMode GetCursorMode() const;
     void SetTitle(const char* title) const;
-    void SetWindowSize(uint32_t width, uint32_t height) const;
+    void SetWindowSize(int width, int height);
     glm::ivec2 GetWindowSize() const;
     float GetAspectRatio() const;
     glm::vec2 GetCursorScreenPosition() const;
@@ -49,11 +53,17 @@ public:
     void ResizeCallback(GLFWwindow* window, int width, int height);
     static void GLFWErrorCallback(int error, const char* description);
 
+    void RegisterOnScreenResizedObserver(std::function<void(glm::vec2)> on_screen_resized_observer);
+
 private:
     int width_;
     int height_;
     std::string title_;
     GLFWwindow* glfw_window_;
+
+    Observable<glm::vec2> event_screen_resized_;
+
+    CursorMode current_cursor_mode_;
 };
 } // namespace Soldank
 

@@ -1,6 +1,7 @@
 #ifndef __CURSORRENDERER_HPP__
 #define __CURSORRENDERER_HPP__
 
+#include "rendering/ClientState.hpp"
 #include "rendering/shaders/Shader.hpp"
 
 #include "core/math/Glm.hpp"
@@ -10,7 +11,7 @@ namespace Soldank
 class CursorRenderer
 {
 public:
-    CursorRenderer();
+    CursorRenderer(ClientState& client_state);
     ~CursorRenderer();
 
     // it's not safe to be able to copy/move this because we would also need to take care of the
@@ -20,11 +21,14 @@ public:
     CursorRenderer(CursorRenderer&&) = delete;
     CursorRenderer& operator=(CursorRenderer&& other) = delete;
 
-    void Render(const glm::vec2& mouse_position);
+    void Render(const glm::vec2& mouse_position, glm::vec2 window_dimensions);
 
 private:
-    // TODO: this should be taken from mod.ini
-    constexpr static const float SIZE_SCALE = 0.1;
+    constexpr static const float SIZE_SCALE = 0.23;
+
+    void GenerateGLBufferVertices(glm::vec2 window_dimensions,
+                                  std::vector<float>& destination_vertices) const;
+    void OnWindowResized(glm::vec2 new_window_dimensions);
 
     Shader shader_;
 

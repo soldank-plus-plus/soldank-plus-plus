@@ -235,8 +235,7 @@ void AddControlActionTypes(const Control& soldier_control,
 void Render(State& game_state, ClientState& client_state, double /*frame_percent*/, int fps)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent((client_state.mouse.x / 640.0F) * 1280.0F,
-                        (480.0F - client_state.mouse.y) / 480.0F * 1024.0F);
+    io.AddMousePosEvent(client_state.mouse.x, client_state.window_height - client_state.mouse.y);
     io.MouseDrawCursor = io.WantCaptureMouse;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();

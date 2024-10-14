@@ -86,12 +86,17 @@ TextRenderer::~TextRenderer()
     }
 }
 
-void TextRenderer::Render(std::string text, float x, float y, float scale, glm::vec3 color)
+void TextRenderer::Render(std::string text,
+                          float x,
+                          float y,
+                          float scale,
+                          glm::vec3 color,
+                          glm::vec2 window_dimensions)
 {
     // activate corresponding render state
     shader_.Use();
     shader_.SetVec3("textColor", color);
-    glm::mat4 projection = glm::ortho(0.0F, 1280.0F, 0.0F, 1024.0F);
+    glm::mat4 projection = glm::ortho(0.0F, window_dimensions.x, 0.0F, window_dimensions.y);
     shader_.SetMatrix4("projection", projection);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);

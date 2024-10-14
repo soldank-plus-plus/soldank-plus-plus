@@ -20,7 +20,7 @@
 
 namespace Soldank
 {
-Scene::Scene(const std::shared_ptr<StateManager>& game_state)
+Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& client_state)
     : background_renderer_(game_state->GetState().map.GetBackgroundTopColor(),
                            game_state->GetState().map.GetBackgroundBottomColor(),
                            game_state->GetState().map.GetBoundaries())
@@ -31,6 +31,7 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state)
     , sceneries_renderer_(game_state->GetState().map.GetSceneryTypes(),
                           game_state->GetState().map.GetSceneryInstances())
     , soldier_renderer_(sprite_manager_)
+    , cursor_renderer_(client_state)
     , text_renderer_("play-regular.ttf", 48)
     , bullet_renderer_(sprite_manager_)
     , item_renderer_(sprite_manager_)
@@ -145,7 +146,8 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     if (client_state.draw_game_debug_interface) {
         DebugUI::Render(game_state, client_state, frame_percent, fps);
         if (!DebugUI::GetWantCaptureMouse()) {
-            cursor_renderer_.Render({ client_state.mouse.x, client_state.mouse.y });
+            cursor_renderer_.Render({ client_state.mouse.x, client_state.mouse.y },
+                                    { client_state.window_width, client_state.window_height });
         }
     }
 
@@ -161,12 +163,14 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
                                       50.0,
                                       100.0,
                                       1.0,
-                                      { 1.0, 1.0, 1.0 });
+                                      { 1.0, 1.0, 1.0 },
+                                      { client_state.window_width, client_state.window_height });
                 text_renderer_.Render("Jets: " + std::to_string((int)soldier.jets_count),
                                       50.0,
                                       50.0,
                                       1.0,
-                                      { 1.0, 1.0, 1.0 });
+                                      { 1.0, 1.0, 1.0 },
+                                      { client_state.window_width, client_state.window_height });
             }
         }
 
@@ -180,14 +184,20 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
                           400.0,
                           100.0,
                           1.0,
-                          { 1.0, 1.0, 1.0 });
+                          { 1.0, 1.0, 1.0 },
+                          { client_state.window_width, client_state.window_height });
                     }
                 }
             }
         }
 
         if (game_state.paused) {
-            text_renderer_.Render("Game paused", 400.0, 700.0, 1.0, { 0.6, 0.7, 0.4 });
+            text_renderer_.Render("Game paused",
+                                  400.0,
+                                  700.0,
+                                  1.0,
+                                  { 0.6, 0.7, 0.4 },
+                                  { client_state.window_width, client_state.window_height });
         }
     }
 
