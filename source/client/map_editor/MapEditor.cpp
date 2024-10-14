@@ -40,7 +40,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
 
     client_state.event_left_mouse_button_released.AddObserver([this, &client_state]() {
         if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
-            OnSceneLeftMouseButtonRelease();
+            OnSceneLeftMouseButtonRelease(client_state);
         }
     });
 
@@ -89,7 +89,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
       [this, &client_state](int key) { OnKeyReleased(key, client_state); });
 
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
-      [this](ToolType tool_type) { OnSelectNewTool(tool_type); });
+      [this, &client_state](ToolType tool_type) { OnSelectNewTool(tool_type, client_state); });
 
     client_state.map_editor_state.event_pressed_undo.AddObserver(
       [this, &client_state, &game_state]() { UndoLastAction(client_state, game_state.map); });
@@ -120,13 +120,13 @@ void MapEditor::Unlock()
     locked_ = false;
 }
 
-void MapEditor::OnSelectNewTool(ToolType tool_type)
+void MapEditor::OnSelectNewTool(ToolType tool_type, ClientState& client_state)
 {
     if (locked_) {
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnUnselect();
+    tools_.at(std::to_underlying(selected_tool_))->OnUnselect(client_state);
     selected_tool_ = tool_type;
     tools_.at(std::to_underlying(selected_tool_))->OnSelect();
 }
@@ -141,13 +141,13 @@ void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
       ->OnSceneLeftMouseButtonClick(client_state, game_state);
 }
 
-void MapEditor::OnSceneLeftMouseButtonRelease()
+void MapEditor::OnSceneLeftMouseButtonRelease(ClientState& client_state)
 {
     if (locked_) {
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonRelease();
+    tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonRelease(client_state);
 }
 
 void MapEditor::OnSceneRightMouseButtonClick()

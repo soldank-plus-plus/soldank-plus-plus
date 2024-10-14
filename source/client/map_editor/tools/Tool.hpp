@@ -14,11 +14,11 @@ public:
     virtual ~Tool() = default;
 
     virtual void OnSelect() = 0;
-    virtual void OnUnselect() = 0;
+    virtual void OnUnselect(ClientState& client_state) = 0;
 
     virtual void OnSceneLeftMouseButtonClick(ClientState& client_state,
                                              const State& game_state) = 0;
-    virtual void OnSceneLeftMouseButtonRelease() = 0;
+    virtual void OnSceneLeftMouseButtonRelease(ClientState& client_state) = 0;
     virtual void OnSceneRightMouseButtonClick() = 0;
     virtual void OnSceneRightMouseButtonRelease() = 0;
     virtual void OnMouseScreenPositionChange(ClientState& client_state,

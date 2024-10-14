@@ -4,13 +4,13 @@ namespace Soldank
 {
 void SpawnpointTool::OnSelect() {}
 
-void SpawnpointTool::OnUnselect() {}
+void SpawnpointTool::OnUnselect(ClientState& client_state) {}
 
 void SpawnpointTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
 }
 
-void SpawnpointTool::OnSceneLeftMouseButtonRelease() {}
+void SpawnpointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void SpawnpointTool::OnSceneRightMouseButtonClick() {}
 

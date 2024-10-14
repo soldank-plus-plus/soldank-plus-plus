@@ -34,6 +34,20 @@ void MapEditorScene::Render(State& game_state,
 
     polygon_vertex_outlines_renderer_.Render(camera.GetView());
 
+    if (client_state.map_editor_state.vertex_selection_box) {
+        glm::vec2 start_position = client_state.map_editor_state.vertex_selection_box->first;
+        glm::vec2 end_position = client_state.map_editor_state.vertex_selection_box->second;
+        glm::vec4 color = { 0.8F, 0.2F, 0.2F, 1.0F };
+        line_renderer_.Render(
+          camera.GetView(), start_position, { start_position.x, end_position.y }, color, 1.0F);
+        line_renderer_.Render(
+          camera.GetView(), start_position, { end_position.x, start_position.y }, color, 1.0F);
+        line_renderer_.Render(
+          camera.GetView(), { start_position.x, end_position.y }, end_position, color, 1.0F);
+        line_renderer_.Render(
+          camera.GetView(), { end_position.x, start_position.y }, end_position, color, 1.0F);
+    }
+
     MapEditorUI::Render(game_state, client_state);
 }
 } // namespace Soldank

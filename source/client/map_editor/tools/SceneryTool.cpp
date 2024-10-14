@@ -4,11 +4,11 @@ namespace Soldank
 {
 void SceneryTool::OnSelect() {}
 
-void SceneryTool::OnUnselect() {}
+void SceneryTool::OnUnselect(ClientState& client_state) {}
 
 void SceneryTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) {}
 
-void SceneryTool::OnSceneLeftMouseButtonRelease() {}
+void SceneryTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void SceneryTool::OnSceneRightMouseButtonClick() {}
 
