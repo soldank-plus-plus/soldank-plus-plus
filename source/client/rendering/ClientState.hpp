@@ -34,8 +34,6 @@ struct ClientState
     glm::vec2 mouse_map_position;
     bool mouse_left_button_pressed;
     bool mouse_right_button_pressed;
-    float game_width;
-    float game_height;
     float window_width;
     float window_height;
 
@@ -78,6 +76,8 @@ struct ClientState
     bool draw_sceneries = true;
 
     glm::vec2 current_polygon_texture_dimensions;
+
+    Observable<glm::vec2> event_window_resized;
 
     Observable<glm::vec2, glm::vec2> event_mouse_screen_position_changed;
     Observable<glm::vec2, glm::vec2> event_mouse_map_position_changed;

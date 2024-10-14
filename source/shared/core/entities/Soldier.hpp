@@ -25,8 +25,6 @@ struct Soldier
 
     std::uint8_t id;
 
-    glm::vec2 camera;
-    glm::vec2 camera_prev;
     glm::vec2 mouse;
     float game_width;
     float game_height;

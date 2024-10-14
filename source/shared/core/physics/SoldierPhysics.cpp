@@ -90,11 +90,6 @@ void Update(State& state,
         soldier.body_animation->SetSpeed(1);
     }
 
-    soldier.control.mouse_aim_x =
-      (soldier.mouse.x - (float)soldier.game_width / 2.0 + soldier.camera.x);
-    soldier.control.mouse_aim_y =
-      (soldier.mouse.y - (float)soldier.game_height / 2.0 + soldier.camera.y);
-
     auto conflicting_keys_pressed = [](const Control& c) {
         return ((int)c.throw_grenade + (int)c.change + (int)c.drop + (int)c.reload) > 1;
     };

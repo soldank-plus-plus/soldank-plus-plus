@@ -23,6 +23,7 @@ Window::Window()
 Window::Window(std::string title, int width, int height)
     : title_(std::move(title))
     , glfw_window_(nullptr)
+    , current_cursor_mode_(CursorMode::Locked)
 {
     if (glfwInit() == 0) {
         spdlog::error("Error: Failed to initialize GLFW");
@@ -98,7 +99,7 @@ void Window::Create()
     ImGui_ImplOpenGL3_Init();
 }
 
-void Window::SetCursorMode(CursorMode cursor_mode) const
+void Window::SetCursorMode(CursorMode cursor_mode)
 {
     int glfw_cursor_mode = GLFW_CURSOR_HIDDEN;
     switch (cursor_mode) {
@@ -113,6 +114,12 @@ void Window::SetCursorMode(CursorMode cursor_mode) const
             break;
     }
     glfwSetInputMode(glfw_window_, GLFW_CURSOR, glfw_cursor_mode);
+    current_cursor_mode_ = cursor_mode;
+}
+
+CursorMode Window::GetCursorMode() const
+{
+    return current_cursor_mode_;
 }
 
 void Window::SetTitle(const char* title) const
@@ -120,9 +127,11 @@ void Window::SetTitle(const char* title) const
     glfwSetWindowTitle(glfw_window_, title);
 }
 
-void Window::SetWindowSize(const uint32_t /*width*/, const uint32_t /*height*/) const
+void Window::SetWindowSize(const int width, const int height)
 {
-    glfwSetWindowSize(glfw_window_, width_, height_);
+    width_ = width;
+    height_ = height;
+    glfwSetWindowSize(glfw_window_, width, height);
 }
 
 glm::ivec2 Window::GetWindowSize() const
@@ -174,10 +183,17 @@ void Window::ResizeCallback(GLFWwindow* /*window*/, const int width, const int h
     width_ = width;
     height_ = height;
     glViewport(0, 0, width, height);
+    event_screen_resized_.Notify({ width, height });
 }
 
 void Window::GLFWErrorCallback(int error, const char* description)
 {
     spdlog::error("Error({}): {}", error, description);
+}
+
+void Window::RegisterOnScreenResizedObserver(
+  std::function<void(glm::vec2)> on_screen_resized_observer)
+{
+    event_screen_resized_.AddObserver(on_screen_resized_observer);
 }
 } // namespace Soldank

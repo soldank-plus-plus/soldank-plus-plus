@@ -12,7 +12,7 @@
 
 namespace Soldank
 {
-CursorRenderer::CursorRenderer()
+CursorRenderer::CursorRenderer(ClientState& client_state)
     : shader_(ShaderSources::VERTEX_SHADER_SOURCE, ShaderSources::FRAGMENT_SHADER_SOURCE)
 {
     std::filesystem::path texture_path = "interface-gfx/cursor.png";
@@ -28,8 +28,47 @@ CursorRenderer::CursorRenderer()
         texture_width_ = 0;
         texture_height_ = 0;
     }
-    float texture_width = (float)texture_width_ / 640.0F;
-    float texture_height = (float)texture_height_ / 480.0F;
+    std::vector<float> vertices;
+    GenerateGLBufferVertices({ client_state.window_width, client_state.window_height }, vertices);
+
+    std::vector<unsigned int> indices{ 0, 1, 2, 1, 3, 2 };
+
+    vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
+    ebo_ = Renderer::CreateEBO(indices, GL_STATIC_DRAW);
+
+    client_state.event_window_resized.AddObserver(
+      [this](glm::vec2 new_window_dimensions) { OnWindowResized(new_window_dimensions); });
+}
+
+CursorRenderer::~CursorRenderer()
+{
+    Renderer::FreeVBO(vbo_);
+    Renderer::FreeEBO(ebo_);
+}
+
+void CursorRenderer::Render(const glm::vec2& mouse_position, glm::vec2 window_dimensions)
+{
+    shader_.Use();
+    Renderer::SetupVertexArray(vbo_, ebo_);
+
+    glm::mat4 transform(1);
+
+    transform = glm::translate(transform,
+                               glm::vec3(mouse_position.x / (window_dimensions.x / 2.0F) - 1.0,
+                                         mouse_position.y / (window_dimensions.y / 2.0F) - 1.0,
+                                         0.0));
+    transform = glm::scale(transform, glm::vec3(SIZE_SCALE, SIZE_SCALE, 0.0));
+
+    shader_.SetMatrix4("transform", transform);
+    Renderer::BindTexture(texture_);
+    Renderer::DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+
+void CursorRenderer::GenerateGLBufferVertices(glm::vec2 window_dimensions,
+                                              std::vector<float>& destination_vertices) const
+{
+    float texture_width = (float)texture_width_ / window_dimensions.x;
+    float texture_height = (float)texture_height_ / window_dimensions.y;
 
     // clang-format off
     std::vector<float> vertices{
@@ -41,31 +80,15 @@ CursorRenderer::CursorRenderer()
     };
     // clang-format on
 
-    std::vector<unsigned int> indices{ 0, 1, 2, 1, 3, 2 };
-
-    vbo_ = Renderer::CreateVBO(vertices, GL_STATIC_DRAW);
-    ebo_ = Renderer::CreateEBO(indices, GL_STATIC_DRAW);
+    for (float vertex : vertices) {
+        destination_vertices.push_back(vertex);
+    }
 }
 
-CursorRenderer::~CursorRenderer()
+void CursorRenderer::OnWindowResized(glm::vec2 new_window_dimensions)
 {
-    Renderer::FreeVBO(vbo_);
-    Renderer::FreeEBO(ebo_);
-}
-
-void CursorRenderer::Render(const glm::vec2& mouse_position)
-{
-    shader_.Use();
-    ;
-    Renderer::SetupVertexArray(vbo_, ebo_);
-
-    glm::mat4 transform(1);
-    transform = glm::translate(
-      transform, glm::vec3(mouse_position.x / 320.0 - 1.0, mouse_position.y / 240.0 - 1.0, 0.0));
-    transform = glm::scale(transform, glm::vec3(SIZE_SCALE, SIZE_SCALE, 0.0));
-
-    shader_.SetMatrix4("transform", transform);
-    Renderer::BindTexture(texture_);
-    Renderer::DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(new_window_dimensions, vertices);
+    Renderer::ModifyVBOVertices(vbo_, vertices);
 }
 } // namespace Soldank

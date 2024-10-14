@@ -36,7 +36,12 @@ public:
     TextRenderer(TextRenderer&&) = delete;
     TextRenderer& operator=(TextRenderer&& other) = delete;
 
-    void Render(std::string text, float x, float y, float scale, glm::vec3 color);
+    void Render(std::string text,
+                float x,
+                float y,
+                float scale,
+                glm::vec3 color,
+                glm::vec2 window_dimensions);
 
 private:
     Shader shader_;
