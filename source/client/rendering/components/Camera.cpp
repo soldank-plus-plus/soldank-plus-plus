@@ -63,6 +63,6 @@ void Camera::UpdateWindowDimensions(const glm::vec2& window_dimensions)
 
 float Camera::GetSoldierPOVZoomFactor() const
 {
-    return window_dimensions_.x / 640.0F;
+    return window_dimensions_.x / 800.0F;
 }
 } // namespace Soldank
