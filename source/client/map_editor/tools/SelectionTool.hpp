@@ -7,6 +7,7 @@
 #include "core/utility/Observable.hpp"
 
 #include "core/math/Glm.hpp"
+#include "rendering/ClientState.hpp"
 
 #include <memory>
 
@@ -53,6 +54,7 @@ private:
     void AddFirstFoundObjectToSelection(ClientState& client_state, const State& game_state);
     bool AddFirstFoundPolygonToSelection(ClientState& client_state, const State& game_state);
     bool AddFirstFoundSceneryToSelection(ClientState& client_state, const State& game_state);
+    void RemoveLastFoundObjectFromSelection(ClientState& client_state, const State& game_state);
 
     glm::vec2 mouse_map_position_;
 

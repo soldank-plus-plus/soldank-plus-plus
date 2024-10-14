@@ -17,8 +17,10 @@ void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
             AddFirstFoundObjectToSelection(client_state, game_state);
             break;
         }
-        case SelectionMode::RemoveFromSelection:
+        case SelectionMode::RemoveFromSelection: {
+            RemoveLastFoundObjectFromSelection(client_state, game_state);
             break;
+        }
     }
 }
 
@@ -192,6 +194,33 @@ bool SelectionTool::AddFirstFoundSceneryToSelection(ClientState& client_state,
     return false;
 }
 
+void SelectionTool::RemoveLastFoundObjectFromSelection(ClientState& client_state,
+                                                       const State& game_state)
+{
+    const auto& map = game_state.map;
+    for (int i = (int)client_state.map_editor_state.selected_scenery_ids.size() - 1; i >= 0; --i) {
+        const auto& selected_scenery_id = client_state.map_editor_state.selected_scenery_ids.at(i);
+        const auto& scenery = map.GetSceneryInstances().at(selected_scenery_id);
+
+        if (Map::PointInScenery(mouse_map_position_, scenery)) {
+            client_state.map_editor_state.selected_scenery_ids.erase(
+              client_state.map_editor_state.selected_scenery_ids.begin() + i);
+            return;
+        }
+    }
+
+    for (int i = (int)client_state.map_editor_state.selected_polygon_ids.size() - 1; i >= 0; --i) {
+        const auto& selected_polygon_id = client_state.map_editor_state.selected_polygon_ids.at(i);
+        const auto& polygon = map.GetPolygons().at(selected_polygon_id);
+
+        if (Map::PointInPoly(mouse_map_position_, polygon)) {
+            client_state.map_editor_state.selected_polygon_ids.erase(
+              client_state.map_editor_state.selected_polygon_ids.begin() + i);
+            return;
+        }
+    }
+}
+
 void SelectionTool::OnModifierKey1Pressed()
 {
     current_selection_mode_ = SelectionMode::AddToSelection;
@@ -206,7 +235,13 @@ void SelectionTool::OnModifierKey2Pressed() {}
 
 void SelectionTool::OnModifierKey2Released() {}
 
-void SelectionTool::OnModifierKey3Pressed() {}
+void SelectionTool::OnModifierKey3Pressed()
+{
+    current_selection_mode_ = SelectionMode::RemoveFromSelection;
+}
 
-void SelectionTool::OnModifierKey3Released() {}
+void SelectionTool::OnModifierKey3Released()
+{
+    current_selection_mode_ = SelectionMode::SingleSelection;
+}
 } // namespace Soldank
