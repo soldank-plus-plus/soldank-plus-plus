@@ -2,7 +2,7 @@
 
 namespace Soldank
 {
-void VertexColorTool::OnSelect() {}
+void VertexColorTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void VertexColorTool::OnUnselect(ClientState& client_state) {}
 

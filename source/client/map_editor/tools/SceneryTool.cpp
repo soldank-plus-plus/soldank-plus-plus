@@ -2,7 +2,7 @@
 
 namespace Soldank
 {
-void SceneryTool::OnSelect() {}
+void SceneryTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void SceneryTool::OnUnselect(ClientState& client_state) {}
 

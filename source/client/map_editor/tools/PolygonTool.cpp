@@ -16,7 +16,7 @@ PolygonTool::PolygonTool(
 {
 }
 
-void PolygonTool::OnSelect() {}
+void PolygonTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void PolygonTool::OnUnselect(ClientState& client_state) {}
 

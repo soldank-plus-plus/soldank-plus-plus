@@ -12,8 +12,6 @@
 #include "map_editor/tools/VertexSelectionTool.hpp"
 #include "map_editor/tools/WaypointTool.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <GLFW/glfw3.h>
 #include <utility>
 
@@ -89,7 +87,9 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
       [this, &client_state](int key) { OnKeyReleased(key, client_state); });
 
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
-      [this, &client_state](ToolType tool_type) { OnSelectNewTool(tool_type, client_state); });
+      [this, &client_state, &game_state](ToolType tool_type) {
+          OnSelectNewTool(tool_type, client_state, game_state);
+      });
 
     client_state.map_editor_state.event_pressed_undo.AddObserver(
       [this, &client_state, &game_state]() { UndoLastAction(client_state, game_state.map); });
@@ -120,7 +120,9 @@ void MapEditor::Unlock()
     locked_ = false;
 }
 
-void MapEditor::OnSelectNewTool(ToolType tool_type, ClientState& client_state)
+void MapEditor::OnSelectNewTool(ToolType tool_type,
+                                ClientState& client_state,
+                                const State& game_state)
 {
     if (locked_) {
         return;
@@ -128,7 +130,7 @@ void MapEditor::OnSelectNewTool(ToolType tool_type, ClientState& client_state)
 
     tools_.at(std::to_underlying(selected_tool_))->OnUnselect(client_state);
     selected_tool_ = tool_type;
-    tools_.at(std::to_underlying(selected_tool_))->OnSelect();
+    tools_.at(std::to_underlying(selected_tool_))->OnSelect(client_state, game_state);
 }
 
 void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)

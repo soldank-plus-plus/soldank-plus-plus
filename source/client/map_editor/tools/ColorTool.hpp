@@ -11,7 +11,7 @@ public:
     ColorTool() = default;
     ~ColorTool() final = default;
 
-    void OnSelect() final;
+    void OnSelect(ClientState& client_state, const State& game_state) final;
     void OnUnselect(ClientState& client_state) final;
 
     void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) final;

@@ -2,7 +2,7 @@
 
 namespace Soldank
 {
-void TransformTool::OnSelect() {}
+void TransformTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void TransformTool::OnUnselect(ClientState& client_state) {}
 
