@@ -8,6 +8,41 @@ void SelectionTool::OnUnselect() {}
 
 void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
+    switch (current_selection_mode_) {
+        case SelectionMode::SingleSelection: {
+            SelectNextSingleObject(client_state, game_state);
+            break;
+        }
+        case SelectionMode::AddToSelection: {
+            AddFirstFoundObjectToSelection(client_state, game_state);
+            break;
+        }
+        case SelectionMode::RemoveFromSelection:
+            break;
+    }
+}
+
+void SelectionTool::OnSceneLeftMouseButtonRelease() {}
+
+void SelectionTool::OnSceneRightMouseButtonClick() {}
+
+void SelectionTool::OnSceneRightMouseButtonRelease() {}
+
+void SelectionTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
+                                                glm::vec2 /*last_mouse_position*/,
+                                                glm::vec2 /*new_mouse_position*/)
+{
+}
+
+void SelectionTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
+                                             glm::vec2 /*last_mouse_position*/,
+                                             glm::vec2 new_mouse_position)
+{
+    mouse_map_position_ = new_mouse_position;
+}
+
+void SelectionTool::SelectNextSingleObject(ClientState& client_state, const State& game_state)
+{
     const auto& map = game_state.map;
 
     unsigned int start_index = 0;
@@ -48,25 +83,6 @@ void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
     client_state.map_editor_state.selected_scenery_ids.clear();
 
     SelectNextObject(client_state, game_state, start_index, look_for_polygon_initially);
-}
-
-void SelectionTool::OnSceneLeftMouseButtonRelease() {}
-
-void SelectionTool::OnSceneRightMouseButtonClick() {}
-
-void SelectionTool::OnSceneRightMouseButtonRelease() {}
-
-void SelectionTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
-                                                glm::vec2 /*last_mouse_position*/,
-                                                glm::vec2 /*new_mouse_position*/)
-{
-}
-
-void SelectionTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
-                                             glm::vec2 /*last_mouse_position*/,
-                                             glm::vec2 new_mouse_position)
-{
-    mouse_map_position_ = new_mouse_position;
 }
 
 void SelectionTool::SelectNextObject(ClientState& client_state,
@@ -114,9 +130,77 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
     }
 }
 
-void SelectionTool::OnModifierKey1Pressed() {}
+void SelectionTool::AddFirstFoundObjectToSelection(ClientState& client_state,
+                                                   const State& game_state)
+{
+    if (AddFirstFoundPolygonToSelection(client_state, game_state)) {
+        return;
+    }
+    AddFirstFoundSceneryToSelection(client_state, game_state);
+}
 
-void SelectionTool::OnModifierKey1Released() {}
+bool SelectionTool::AddFirstFoundPolygonToSelection(ClientState& client_state,
+                                                    const State& game_state)
+{
+    const auto& map = game_state.map;
+
+    for (const auto& polygon : map.GetPolygons()) {
+        if (Map::PointInPoly(mouse_map_position_, polygon)) {
+            bool already_selected = false;
+            for (const auto& selected_polygon_id :
+                 client_state.map_editor_state.selected_polygon_ids) {
+                if (polygon.id == selected_polygon_id) {
+                    already_selected = true;
+                    break;
+                }
+            }
+
+            if (!already_selected) {
+                client_state.map_editor_state.selected_polygon_ids.push_back(polygon.id);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool SelectionTool::AddFirstFoundSceneryToSelection(ClientState& client_state,
+                                                    const State& game_state)
+{
+    const auto& map = game_state.map;
+
+    for (unsigned int scenery_id = 0; scenery_id < map.GetSceneryInstances().size(); ++scenery_id) {
+        const auto& scenery = map.GetSceneryInstances().at(scenery_id);
+        if (Map::PointInScenery(mouse_map_position_, scenery)) {
+            bool already_selected = false;
+            for (const auto& selected_scenery_id :
+                 client_state.map_editor_state.selected_scenery_ids) {
+                if (scenery_id == selected_scenery_id) {
+                    already_selected = true;
+                    break;
+                }
+            }
+
+            if (!already_selected) {
+                client_state.map_editor_state.selected_scenery_ids.push_back(scenery_id);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void SelectionTool::OnModifierKey1Pressed()
+{
+    current_selection_mode_ = SelectionMode::AddToSelection;
+}
+
+void SelectionTool::OnModifierKey1Released()
+{
+    current_selection_mode_ = SelectionMode::SingleSelection;
+}
 
 void SelectionTool::OnModifierKey2Pressed() {}
 
