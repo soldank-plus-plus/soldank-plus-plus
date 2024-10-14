@@ -4,17 +4,17 @@
 #include "rendering/ClientState.hpp"
 #include "rendering/renderer/LineRenderer.hpp"
 #include "rendering/renderer/PolygonsRenderer.hpp"
-#include "rendering/renderer/PolygonOutlinesRenderer.hpp"
 #include "rendering/renderer/SceneryOutlinesRenderer.hpp"
 
 #include "core/state/StateManager.hpp"
+#include "rendering/renderer/interface/map_editor/PolygonVertexOutlinesRenderer.hpp"
 
 namespace Soldank
 {
 class MapEditorScene
 {
 public:
-    MapEditorScene(State& game_state);
+    MapEditorScene(ClientState& client_state, State& game_state);
 
     void Render(State& game_state,
                 ClientState& client_state,
@@ -22,7 +22,7 @@ public:
 
 private:
     LineRenderer line_renderer_;
-    PolygonOutlinesRenderer polygon_outlines_renderer_;
+    PolygonVertexOutlinesRenderer polygon_vertex_outlines_renderer_;
     SceneryOutlinesRenderer scenery_outlines_renderer_;
 };
 } // namespace Soldank

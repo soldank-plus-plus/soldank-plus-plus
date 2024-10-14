@@ -35,7 +35,7 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& clien
     , text_renderer_("play-regular.ttf", 48)
     , bullet_renderer_(sprite_manager_)
     , item_renderer_(sprite_manager_)
-    , map_editor_scene_(game_state->GetState())
+    , map_editor_scene_(client_state, game_state->GetState())
 {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
