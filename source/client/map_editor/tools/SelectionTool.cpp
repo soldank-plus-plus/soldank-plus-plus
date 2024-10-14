@@ -4,7 +4,7 @@ namespace Soldank
 {
 void SelectionTool::OnSelect() {}
 
-void SelectionTool::OnUnselect() {}
+void SelectionTool::OnUnselect(ClientState& client_state) {}
 
 void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
@@ -24,7 +24,7 @@ void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
     }
 }
 
-void SelectionTool::OnSceneLeftMouseButtonRelease() {}
+void SelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void SelectionTool::OnSceneRightMouseButtonClick() {}
 

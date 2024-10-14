@@ -48,6 +48,9 @@ struct MapEditorState
 
     std::vector<unsigned int> selected_polygon_ids;
     std::vector<unsigned int> selected_scenery_ids;
+
+    // If specified, render a selection box for the Vertex Selection Tool
+    std::optional<std::pair<glm::vec2, glm::vec2>> vertex_selection_box;
 };
 } // namespace Soldank
 

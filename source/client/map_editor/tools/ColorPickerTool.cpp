@@ -4,14 +4,14 @@ namespace Soldank
 {
 void ColorPickerTool::OnSelect() {}
 
-void ColorPickerTool::OnUnselect() {}
+void ColorPickerTool::OnUnselect(ClientState& client_state) {}
 
 void ColorPickerTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
                                                   const State& game_state)
 {
 }
 
-void ColorPickerTool::OnSceneLeftMouseButtonRelease() {}
+void ColorPickerTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void ColorPickerTool::OnSceneRightMouseButtonClick() {}
 

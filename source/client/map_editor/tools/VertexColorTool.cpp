@@ -4,14 +4,14 @@ namespace Soldank
 {
 void VertexColorTool::OnSelect() {}
 
-void VertexColorTool::OnUnselect() {}
+void VertexColorTool::OnUnselect(ClientState& client_state) {}
 
 void VertexColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
                                                   const State& game_state)
 {
 }
 
-void VertexColorTool::OnSceneLeftMouseButtonRelease() {}
+void VertexColorTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void VertexColorTool::OnSceneRightMouseButtonClick() {}
 

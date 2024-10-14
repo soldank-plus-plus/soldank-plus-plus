@@ -18,7 +18,7 @@ PolygonTool::PolygonTool(
 
 void PolygonTool::OnSelect() {}
 
-void PolygonTool::OnUnselect() {}
+void PolygonTool::OnUnselect(ClientState& client_state) {}
 
 void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
@@ -67,7 +67,7 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const S
     }
 }
 
-void PolygonTool::OnSceneLeftMouseButtonRelease() {}
+void PolygonTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void PolygonTool::OnSceneRightMouseButtonClick() {}
 

@@ -4,13 +4,13 @@ namespace Soldank
 {
 void WaypointTool::OnSelect() {}
 
-void WaypointTool::OnUnselect() {}
+void WaypointTool::OnUnselect(ClientState& client_state) {}
 
 void WaypointTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
 }
 
-void WaypointTool::OnSceneLeftMouseButtonRelease() {}
+void WaypointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void WaypointTool::OnSceneRightMouseButtonClick() {}
 

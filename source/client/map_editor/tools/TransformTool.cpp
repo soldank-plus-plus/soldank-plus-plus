@@ -4,13 +4,13 @@ namespace Soldank
 {
 void TransformTool::OnSelect() {}
 
-void TransformTool::OnUnselect() {}
+void TransformTool::OnUnselect(ClientState& client_state) {}
 
 void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
 }
 
-void TransformTool::OnSceneLeftMouseButtonRelease() {}
+void TransformTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
 
 void TransformTool::OnSceneRightMouseButtonClick() {}
 
