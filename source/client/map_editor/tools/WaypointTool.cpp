@@ -2,7 +2,7 @@
 
 namespace Soldank
 {
-void WaypointTool::OnSelect() {}
+void WaypointTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void WaypointTool::OnUnselect(ClientState& client_state) {}
 

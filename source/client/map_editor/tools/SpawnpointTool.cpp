@@ -2,7 +2,7 @@
 
 namespace Soldank
 {
-void SpawnpointTool::OnSelect() {}
+void SpawnpointTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void SpawnpointTool::OnUnselect(ClientState& client_state) {}
 

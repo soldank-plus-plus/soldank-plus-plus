@@ -2,7 +2,7 @@
 
 namespace Soldank
 {
-void ColorTool::OnSelect() {}
+void ColorTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void ColorTool::OnUnselect(ClientState& client_state) {}
 

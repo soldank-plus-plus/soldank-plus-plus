@@ -2,7 +2,16 @@
 
 namespace Soldank
 {
-void SelectionTool::OnSelect() {}
+void SelectionTool::OnSelect(ClientState& client_state, const State& game_state)
+{
+    for (auto& selected_vertices : client_state.map_editor_state.selected_polygon_vertices) {
+        if (!selected_vertices.second.all()) {
+            selected_vertices.second = { 0b111 };
+            client_state.map_editor_state.event_polygon_selected.Notify(
+              game_state.map.GetPolygons().at(selected_vertices.first), selected_vertices.second);
+        }
+    }
+}
 
 void SelectionTool::OnUnselect(ClientState& client_state) {}
 

@@ -2,7 +2,7 @@
 
 namespace Soldank
 {
-void TextureTool::OnSelect() {}
+void TextureTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void TextureTool::OnUnselect(ClientState& client_state) {}
 

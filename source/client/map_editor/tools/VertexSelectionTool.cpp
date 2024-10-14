@@ -3,7 +3,7 @@
 
 namespace Soldank
 {
-void VertexSelectionTool::OnSelect() {}
+void VertexSelectionTool::OnSelect(ClientState& client_state, const State& game_state) {}
 
 void VertexSelectionTool::OnUnselect(ClientState& client_state)
 {
