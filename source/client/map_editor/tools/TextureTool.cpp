@@ -8,7 +8,9 @@ void TextureTool::OnUnselect(ClientState& client_state) {}
 
 void TextureTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) {}
 
-void TextureTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
+void TextureTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state)
+{
+}
 
 void TextureTool::OnSceneRightMouseButtonClick() {}
 

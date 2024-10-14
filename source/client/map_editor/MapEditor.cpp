@@ -38,9 +38,9 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
         }
     });
 
-    client_state.event_left_mouse_button_released.AddObserver([this, &client_state]() {
+    client_state.event_left_mouse_button_released.AddObserver([this, &client_state, &game_state]() {
         if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
-            OnSceneLeftMouseButtonRelease(client_state);
+            OnSceneLeftMouseButtonRelease(client_state, game_state);
         }
     });
 
@@ -141,13 +141,14 @@ void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
       ->OnSceneLeftMouseButtonClick(client_state, game_state);
 }
 
-void MapEditor::OnSceneLeftMouseButtonRelease(ClientState& client_state)
+void MapEditor::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state)
 {
     if (locked_) {
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnSceneLeftMouseButtonRelease(client_state);
+    tools_.at(std::to_underlying(selected_tool_))
+      ->OnSceneLeftMouseButtonRelease(client_state, game_state);
 }
 
 void MapEditor::OnSceneRightMouseButtonClick()

@@ -24,7 +24,10 @@ void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
     }
 }
 
-void SelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_state) {}
+void SelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                                  const State& game_state)
+{
+}
 
 void SelectionTool::OnSceneRightMouseButtonClick() {}
 
@@ -49,7 +52,7 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
 
     unsigned int start_index = 0;
     unsigned int selected_polygons_count =
-      client_state.map_editor_state.selected_polygon_ids.size();
+      client_state.map_editor_state.selected_polygon_vertices.size();
     unsigned int selected_sceneries_count =
       client_state.map_editor_state.selected_scenery_ids.size();
     unsigned int selected_objects_count = selected_polygons_count + selected_sceneries_count;
@@ -58,7 +61,7 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
     if (selected_objects_count == 1) {
         if (selected_polygons_count == 1) {
             unsigned int selected_polygon_id =
-              client_state.map_editor_state.selected_polygon_ids.at(0);
+              client_state.map_editor_state.selected_polygon_vertices.at(0).first;
             const auto& polygon = map.GetPolygons().at(selected_polygon_id);
 
             if (Map::PointInPoly(mouse_map_position_, polygon)) {
@@ -81,7 +84,7 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
         }
     }
 
-    client_state.map_editor_state.selected_polygon_ids.clear();
+    client_state.map_editor_state.selected_polygon_vertices.clear();
     client_state.map_editor_state.selected_scenery_ids.clear();
     for (const auto& polygon : map.GetPolygons()) {
         // TODO: can be optimized
@@ -117,7 +120,8 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
             const auto& polygon = map.GetPolygons().at(current_index);
 
             if (Map::PointInPoly(mouse_map_position_, polygon)) {
-                client_state.map_editor_state.selected_polygon_ids.push_back(current_index);
+                client_state.map_editor_state.selected_polygon_vertices.push_back(
+                  { current_index, { 0b111 } });
                 client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b111 });
                 break;
             }
@@ -164,16 +168,17 @@ bool SelectionTool::AddFirstFoundPolygonToSelection(ClientState& client_state,
     for (const auto& polygon : map.GetPolygons()) {
         if (Map::PointInPoly(mouse_map_position_, polygon)) {
             bool already_selected = false;
-            for (const auto& selected_polygon_id :
-                 client_state.map_editor_state.selected_polygon_ids) {
-                if (polygon.id == selected_polygon_id) {
+            for (const auto& selected_polygon_vertices :
+                 client_state.map_editor_state.selected_polygon_vertices) {
+                if (polygon.id == selected_polygon_vertices.first) {
                     already_selected = true;
                     break;
                 }
             }
 
             if (!already_selected) {
-                client_state.map_editor_state.selected_polygon_ids.push_back(polygon.id);
+                client_state.map_editor_state.selected_polygon_vertices.push_back(
+                  { polygon.id, { 0b111 } });
                 client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b111 });
                 return true;
             }
@@ -225,13 +230,15 @@ void SelectionTool::RemoveLastFoundObjectFromSelection(ClientState& client_state
         }
     }
 
-    for (int i = (int)client_state.map_editor_state.selected_polygon_ids.size() - 1; i >= 0; --i) {
-        const auto& selected_polygon_id = client_state.map_editor_state.selected_polygon_ids.at(i);
-        const auto& polygon = map.GetPolygons().at(selected_polygon_id);
+    for (int i = (int)client_state.map_editor_state.selected_polygon_vertices.size() - 1; i >= 0;
+         --i) {
+        const auto& selected_polygon_vertices =
+          client_state.map_editor_state.selected_polygon_vertices.at(i);
+        const auto& polygon = map.GetPolygons().at(selected_polygon_vertices.first);
 
         if (Map::PointInPoly(mouse_map_position_, polygon)) {
-            client_state.map_editor_state.selected_polygon_ids.erase(
-              client_state.map_editor_state.selected_polygon_ids.begin() + i);
+            client_state.map_editor_state.selected_polygon_vertices.erase(
+              client_state.map_editor_state.selected_polygon_vertices.begin() + i);
             client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b000 });
             return;
         }
