@@ -30,6 +30,10 @@ struct MapEditorState
 {
     ToolType selected_tool = ToolType::Selection;
 
+    bool is_tools_window_visible = true;
+    bool is_properties_window_visible = true;
+    bool is_display_window_visible = true;
+
     bool is_mouse_hovering_over_ui = false;
 
     Observable<ToolType> event_selected_new_tool;

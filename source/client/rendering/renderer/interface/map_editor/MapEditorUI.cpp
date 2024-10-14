@@ -38,13 +38,40 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Windows")) {
+                if (ImGui::MenuItem("Show all")) {
+                    client_state.map_editor_state.is_tools_window_visible = true;
+                    client_state.map_editor_state.is_properties_window_visible = true;
+                    client_state.map_editor_state.is_display_window_visible = true;
+                }
+                if (ImGui::MenuItem("Hide all")) {
+                    client_state.map_editor_state.is_tools_window_visible = false;
+                    client_state.map_editor_state.is_properties_window_visible = false;
+                    client_state.map_editor_state.is_display_window_visible = false;
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem(
+                      "Tools", "", client_state.map_editor_state.is_tools_window_visible)) {
+                    client_state.map_editor_state.is_tools_window_visible =
+                      !client_state.map_editor_state.is_tools_window_visible;
+                }
+                if (ImGui::MenuItem("Properties",
+                                    "",
+                                    client_state.map_editor_state.is_properties_window_visible)) {
+                    client_state.map_editor_state.is_properties_window_visible =
+                      !client_state.map_editor_state.is_properties_window_visible;
+                }
+                if (ImGui::MenuItem(
+                      "Display", "", client_state.map_editor_state.is_display_window_visible)) {
+                    client_state.map_editor_state.is_display_window_visible =
+                      !client_state.map_editor_state.is_display_window_visible;
+                }
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
         }
     }
 
-    {
+    if (client_state.map_editor_state.is_tools_window_visible) {
         ImGui::Begin("Tools");
 
         static std::vector<std::pair<std::string, ToolType>> tool_options = {
@@ -76,7 +103,7 @@ void Render(State& game_state, ClientState& client_state)
         ImGui::End();
     }
 
-    {
+    if (client_state.map_editor_state.is_properties_window_visible) {
         ImGui::Begin("Properties");
         ImGui::Text("Polygons: %zu", game_state.map.GetPolygons().size());
         ImGui::Text("Sceneries: %zu/500", game_state.map.GetSceneryInstances().size());
@@ -93,7 +120,7 @@ void Render(State& game_state, ClientState& client_state)
         ImGui::End();
     }
 
-    {
+    if (client_state.map_editor_state.is_display_window_visible) {
         static bool test = false;
         ImGui::Begin("Display");
 
