@@ -20,6 +20,9 @@ void Render(State& game_state, ClientState& client_state)
     {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("Save", "CTRL+S")) {
+                    game_state.map.SaveMap("maps/" + game_state.map.GetName());
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Edit")) {
