@@ -88,6 +88,43 @@ void Map::LoadMap(const std::filesystem::path& map_path, const IFileReader& file
     UpdateBoundaries();
 }
 
+void Map::SaveMap(const std::filesystem::path& map_path, std::shared_ptr<IFileWriter> file_writer)
+{
+    UpdateBoundaries();
+    GenerateSectors();
+
+    AppendToFileWriter(file_writer, map_data_.version);
+    AppendStringToFileWriter(file_writer, map_data_.description, DESCRIPTION_MAX_LENGTH);
+    AppendStringToFileWriter(file_writer, map_data_.texture_name, TEXTURE_NAME_MAX_LENGTH);
+
+    AppendToFileWriter(file_writer, map_data_.background_top_color);
+    AppendToFileWriter(file_writer, map_data_.background_bottom_color);
+    AppendToFileWriter(file_writer, map_data_.jet_count);
+    AppendToFileWriter(file_writer, map_data_.grenades_count);
+    AppendToFileWriter(file_writer, map_data_.medikits_count);
+    AppendToFileWriter(file_writer, map_data_.weather_type);
+    AppendToFileWriter(file_writer, map_data_.step_type);
+    AppendToFileWriter(file_writer, map_data_.random_id);
+
+    AppendPolygonsToFileWriter(file_writer);
+    AppendSectorsToFileWriter(file_writer);
+    AppendSceneryInstancesToFileWriter(file_writer);
+    AppendSceneryTypesToFileWriter(file_writer);
+    AppendCollidersToFileWriter(file_writer);
+    AppendSpawnPointsToFileWriter(file_writer);
+    AppendWayPointsToFileWriter(file_writer);
+
+    int zero = 0;
+    AppendToFileWriter(file_writer, zero);
+    AppendToFileWriter(file_writer, zero);
+
+    auto error = file_writer->Write(map_path, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (error != FileWriterError::NoError) {
+        spdlog::critical("Could not save map: {}", map_path.string());
+        return;
+    }
+}
+
 void Map::ReadPolygonsFromBuffer(std::stringstream& buffer)
 {
     int polygons_count = 0;
@@ -204,6 +241,139 @@ void Map::ReadWayPointsFromBuffer(std::stringstream& buffer)
     for (int i = 0; i < way_points_count; i++) {
         map_data_.way_points.push_back({});
         ReadFromBuffer(buffer, map_data_.way_points.back());
+    }
+}
+
+void Map::AppendPolygonsToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
+{
+    unsigned int polygons_count = map_data_.polygons.size();
+    AppendToFileWriter(file_writer, polygons_count);
+
+    for (auto& polygon : map_data_.polygons) {
+        // Polygons' vertices have to be arranged in clock-wise order.
+        if (!polygon.AreVerticesClockwise()) {
+            PMSVertex tmp = polygon.vertices[1];
+            polygon.vertices[1] = polygon.vertices[2];
+            polygon.vertices[2] = tmp;
+        }
+
+        for (const auto& vertex : polygon.vertices) {
+            auto vertex_copy = vertex;
+            vertex_copy.x -= map_data_.center_x;
+            vertex_copy.y -= map_data_.center_y;
+            vertex_copy.z = 1.0F;
+
+            AppendToFileWriter(file_writer, vertex_copy);
+        }
+
+        for (int j = 0; j < 3; ++j) {
+            unsigned int k = j + 1;
+            if (k > 2) {
+                k = 0;
+            }
+
+            float diff_x = polygon.vertices.at(k).x - polygon.vertices.at(j).x;
+            float diff_y = polygon.vertices.at(j).y - polygon.vertices.at(k).y;
+            float length = NAN;
+            if (fabs(diff_x) < 0.00001F && fabs(diff_y) < 0.00001F) {
+                length = 1.0F;
+            } else {
+                length = hypotf(diff_x, diff_y);
+            }
+
+            if (polygon.polygon_type == PMSPolygonType::Bouncy) {
+                if (polygon.perpendiculars.at(j).z < 1.0F) {
+                    polygon.perpendiculars.at(j).z = 1.0F;
+                }
+            } else {
+                polygon.perpendiculars.at(j).z = 1.0F;
+            }
+
+            polygon.perpendiculars.at(j).x = (diff_y / length) * polygon.perpendiculars.at(j).z;
+            polygon.perpendiculars.at(j).y = (diff_x / length) * polygon.perpendiculars.at(j).z;
+            polygon.perpendiculars.at(j).z = 1.0F;
+
+            AppendToFileWriter(file_writer, polygon.perpendiculars.at(j));
+        }
+        AppendToFileWriter(file_writer, polygon.polygon_type);
+    }
+}
+
+void Map::AppendSectorsToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
+{
+    AppendToFileWriter(file_writer, map_data_.sectors_size);
+    /**
+     * In VB6/Pascal, an array can have negative indexes. Basically, Soldat creates an
+     * array like this: [-sectorsCount...sectorsCount, -sectorsCount...sectorsCount].
+     * This is a 2-dimensional array equal to C++'s [sectorsCount * 2 + 1][sectorsCount * 2 + 1].
+     */
+    AppendToFileWriter(file_writer, map_data_.sectors_count);
+    for (int x = 0; x <= map_data_.sectors_count * 2; ++x) {
+        for (int y = 0; y <= map_data_.sectors_count * 2; ++y) {
+            unsigned short sector_polygons_count = map_data_.sectors_poly[x][y].polygons.size();
+            AppendToFileWriter(file_writer, sector_polygons_count);
+            for (const auto& polygon_id : map_data_.sectors_poly[x][y].polygons) {
+                AppendToFileWriter(file_writer, polygon_id);
+            }
+        }
+    }
+}
+
+void Map::AppendSceneryInstancesToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
+{
+    unsigned int scenery_instances_count = map_data_.scenery_instances.size();
+    AppendToFileWriter(file_writer, scenery_instances_count);
+    for (const auto& scenery : map_data_.scenery_instances) {
+        auto scenery_copy = scenery;
+        scenery_copy.x -= map_data_.center_x;
+        scenery_copy.y -= map_data_.center_y;
+        AppendToFileWriter(file_writer, scenery_copy);
+    }
+}
+
+void Map::AppendSceneryTypesToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
+{
+    unsigned int scenery_types_count = map_data_.scenery_types.size();
+    AppendToFileWriter(file_writer, scenery_types_count);
+    for (const auto& scenery_type : map_data_.scenery_types) {
+        AppendStringToFileWriter(file_writer, scenery_type.name, SCENERY_NAME_MAX_LENGTH);
+        AppendToFileWriter(file_writer, scenery_type.timestamp);
+    }
+}
+
+void Map::AppendCollidersToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
+{
+    unsigned int colliders_count = map_data_.colliders.size();
+    AppendToFileWriter(file_writer, colliders_count);
+    for (const auto& collider : map_data_.colliders) {
+        auto collider_copy = collider;
+        collider_copy.x -= map_data_.center_x;
+        collider_copy.y -= map_data_.center_y;
+        AppendToFileWriter(file_writer, collider_copy);
+    }
+}
+
+void Map::AppendSpawnPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
+{
+    unsigned int spawn_points_count = map_data_.spawn_points.size();
+    AppendToFileWriter(file_writer, spawn_points_count);
+    for (const auto& spawn_point : map_data_.spawn_points) {
+        auto spawn_point_copy = spawn_point;
+        spawn_point_copy.x -= (int)map_data_.center_x;
+        spawn_point_copy.y -= (int)map_data_.center_y;
+        AppendToFileWriter(file_writer, spawn_point_copy);
+    }
+}
+
+void Map::AppendWayPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
+{
+    unsigned int way_points_count = map_data_.way_points.size();
+    AppendToFileWriter(file_writer, way_points_count);
+    for (const auto& way_point : map_data_.way_points) {
+        auto way_point_copy = way_point;
+        way_point_copy.x -= (int)map_data_.center_x;
+        way_point_copy.y -= (int)map_data_.center_y;
+        AppendToFileWriter(file_writer, way_point_copy);
     }
 }
 

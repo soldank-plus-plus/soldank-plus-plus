@@ -8,6 +8,8 @@
 #include "core/math/Glm.hpp"
 #include "core/data/IFileReader.hpp"
 #include "core/data/FileReader.hpp"
+#include "core/data/IFileWriter.hpp"
+#include "core/data/FileWriter.hpp"
 
 #include "core/utility/Observable.hpp"
 
@@ -80,6 +82,8 @@ public:
     void CreateEmptyMap();
     void LoadMap(const std::filesystem::path& map_path,
                  const IFileReader& file_reader = FileReader());
+    void SaveMap(const std::filesystem::path& map_path,
+                 std::shared_ptr<IFileWriter> file_writer = std::make_shared<FileWriter>());
 
     static bool PointInPoly(glm::vec2 p, PMSPolygon poly);
     bool PointInPolyEdges(float x, float y, int i) const;
@@ -190,6 +194,28 @@ private:
         buffer.read(filler.get(), max_string_size - string_size);
     }
 
+    template<typename DataType>
+    static void AppendToFileWriter(std::shared_ptr<IFileWriter>& file_writer, const DataType& data)
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        file_writer->AppendData(reinterpret_cast<const char*>(&data), sizeof(data));
+    }
+
+    static void AppendStringToFileWriter(std::shared_ptr<IFileWriter>& file_writer,
+                                         const std::string& data,
+                                         unsigned int max_string_size)
+    {
+        unsigned char string_size = data.length();
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        file_writer->AppendData(reinterpret_cast<char*>(&string_size), sizeof(string_size));
+        unsigned long long data_size = data.length() * sizeof(char);
+        file_writer->AppendData(data.c_str(), (std::streamsize)data_size);
+        std::array<char, 64> filler{};
+        filler.fill(0);
+        data_size = (max_string_size - data.length()) * sizeof(char);
+        file_writer->AppendData(filler.data(), (std::streamsize)data_size);
+    }
+
     void ReadPolygonsFromBuffer(std::stringstream& buffer);
     void ReadSectorsFromBuffer(std::stringstream& buffer);
     void ReadSceneryInstancesFromBuffer(std::stringstream& buffer);
@@ -197,6 +223,14 @@ private:
     void ReadCollidersFromBuffer(std::stringstream& buffer);
     void ReadSpawnPointsFromBuffer(std::stringstream& buffer);
     void ReadWayPointsFromBuffer(std::stringstream& buffer);
+
+    void AppendPolygonsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSectorsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSceneryInstancesToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSceneryTypesToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendCollidersToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSpawnPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendWayPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
 
     void UpdateBoundaries();
     void GenerateSectors();
