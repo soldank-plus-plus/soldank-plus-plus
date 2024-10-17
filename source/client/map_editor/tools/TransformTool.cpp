@@ -15,7 +15,7 @@ void TransformTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
 {
 }
 
-void TransformTool::OnSceneRightMouseButtonClick() {}
+void TransformTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void TransformTool::OnSceneRightMouseButtonRelease() {}
 

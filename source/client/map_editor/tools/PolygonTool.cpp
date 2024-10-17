@@ -71,7 +71,7 @@ void PolygonTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const
 {
 }
 
-void PolygonTool::OnSceneRightMouseButtonClick() {}
+void PolygonTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void PolygonTool::OnSceneRightMouseButtonRelease() {}
 

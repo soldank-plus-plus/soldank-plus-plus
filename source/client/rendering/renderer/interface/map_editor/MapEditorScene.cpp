@@ -1,5 +1,7 @@
 #include "rendering/renderer/interface/map_editor/MapEditorScene.hpp"
 
+#include "core/map/PMSEnums.hpp"
+#include "core/map/PMSStructs.hpp"
 #include "rendering/renderer/SceneryOutlinesRenderer.hpp"
 #include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 #include "rendering/renderer/interface/map_editor/PolygonVertexOutlinesRenderer.hpp"
@@ -35,6 +37,15 @@ void MapEditorScene::Render(State& game_state,
     polygon_vertex_outlines_renderer_.Render(camera.GetView());
 
     for (const auto& spawn_point : game_state.map.GetSpawnPoints()) {
+        spawn_point_renderer_.Render(camera.GetView(), spawn_point, camera.GetZoom());
+    }
+
+    if (client_state.map_editor_state.selected_tool == ToolType::Spawnpoint) {
+        PMSSpawnPoint spawn_point{
+            .x = (int)client_state.mouse_map_position.x,
+            .y = (int)client_state.mouse_map_position.y,
+            .type = client_state.map_editor_state.selected_spawn_point_type,
+        };
         spawn_point_renderer_.Render(camera.GetView(), spawn_point, camera.GetZoom());
     }
 

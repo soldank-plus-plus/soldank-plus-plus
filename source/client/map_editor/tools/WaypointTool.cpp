@@ -14,7 +14,7 @@ void WaypointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, cons
 {
 }
 
-void WaypointTool::OnSceneRightMouseButtonClick() {}
+void WaypointTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void WaypointTool::OnSceneRightMouseButtonRelease() {}
 

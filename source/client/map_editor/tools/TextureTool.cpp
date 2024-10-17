@@ -12,7 +12,7 @@ void TextureTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const
 {
 }
 
-void TextureTool::OnSceneRightMouseButtonClick() {}
+void TextureTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void TextureTool::OnSceneRightMouseButtonRelease() {}
 

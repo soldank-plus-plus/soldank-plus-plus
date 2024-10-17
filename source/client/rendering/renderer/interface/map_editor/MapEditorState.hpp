@@ -1,6 +1,7 @@
 #ifndef __MAP_EDITOR_STATE_HPP__
 #define __MAP_EDITOR_STATE_HPP__
 
+#include "core/map/PMSEnums.hpp"
 #include "core/utility/Observable.hpp"
 #include "core/math/Glm.hpp"
 
@@ -55,6 +56,9 @@ struct MapEditorState
 
     // If specified, render a selection box for the Vertex Selection Tool
     std::optional<std::pair<glm::vec2, glm::vec2>> vertex_selection_box;
+
+    PMSSpawnPointType selected_spawn_point_type = PMSSpawnPointType::General;
+    bool should_open_spawn_point_type_popup = false;
 };
 } // namespace Soldank
 

@@ -16,7 +16,7 @@ public:
 
     void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) final;
     void OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state) final;
-    void OnSceneRightMouseButtonClick() final;
+    void OnSceneRightMouseButtonClick(ClientState& client_state) final;
     void OnSceneRightMouseButtonRelease() final;
     void OnMouseScreenPositionChange(ClientState& client_state,
                                      glm::vec2 last_mouse_position,
