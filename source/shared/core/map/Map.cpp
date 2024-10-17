@@ -3,6 +3,7 @@
 #include "core/map/Map.hpp"
 #include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
+#include "core/map/PMSStructs.hpp"
 #include "core/math/Calc.hpp"
 
 #include <algorithm>
@@ -670,6 +671,23 @@ PMSPolygon Map::RemovePolygonById(unsigned int id)
     GenerateSectors();
     map_change_events_.removed_polygon.Notify(removed_polygon, map_data_.polygons);
     return removed_polygon;
+}
+
+unsigned int Map::AddNewSpawnPoint(const PMSSpawnPoint& spawn_point)
+{
+    map_data_.spawn_points.push_back(spawn_point);
+    unsigned int new_spawn_point_id = map_data_.spawn_points.size() - 1;
+    map_change_events_.added_new_spawn_point.Notify(map_data_.spawn_points.back(),
+                                                    new_spawn_point_id);
+    return new_spawn_point_id;
+}
+
+PMSSpawnPoint Map::RemoveSpawnPointById(unsigned int id)
+{
+    PMSSpawnPoint removed_spawn_point = map_data_.spawn_points.at(id);
+    map_data_.spawn_points.erase(map_data_.spawn_points.begin() + id);
+    map_change_events_.removed_spawn_point.Notify(removed_spawn_point, id);
+    return removed_spawn_point;
 }
 
 std::array<glm::vec2, 4> Map::GetSceneryVertexPositions(const PMSScenery& scenery)
