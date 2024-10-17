@@ -108,6 +108,16 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     tools_.emplace_back(std::make_unique<WaypointTool>());
     tools_.emplace_back(std::make_unique<SpawnpointTool>(add_new_map_editor_action_));
     tools_.emplace_back(std::make_unique<ColorPickerTool>());
+
+    for (int i = 0; auto& saved_color : client_state.map_editor_state.palette_saved_colors) {
+        int row = i / 12;
+        if ((row + (i % 2)) % 2 == 0) {
+            saved_color = { 1.0F, 1.0F, 1.0F, 1.0F };
+        } else {
+            saved_color = { 0.683F, 0.98F, 1.0F, 1.0F };
+        }
+        ++i;
+    }
 }
 
 void MapEditor::Lock()

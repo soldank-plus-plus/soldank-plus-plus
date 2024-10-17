@@ -47,11 +47,13 @@ void Render(State& game_state, ClientState& client_state)
                     client_state.map_editor_state.is_tools_window_visible = true;
                     client_state.map_editor_state.is_properties_window_visible = true;
                     client_state.map_editor_state.is_display_window_visible = true;
+                    client_state.map_editor_state.is_palette_window_visible = true;
                 }
                 if (ImGui::MenuItem("Hide all")) {
                     client_state.map_editor_state.is_tools_window_visible = false;
                     client_state.map_editor_state.is_properties_window_visible = false;
                     client_state.map_editor_state.is_display_window_visible = false;
+                    client_state.map_editor_state.is_palette_window_visible = false;
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem(
@@ -69,6 +71,11 @@ void Render(State& game_state, ClientState& client_state)
                       "Display", "", client_state.map_editor_state.is_display_window_visible)) {
                     client_state.map_editor_state.is_display_window_visible =
                       !client_state.map_editor_state.is_display_window_visible;
+                }
+                if (ImGui::MenuItem(
+                      "Palette", "", client_state.map_editor_state.is_palette_window_visible)) {
+                    client_state.map_editor_state.is_palette_window_visible =
+                      !client_state.map_editor_state.is_palette_window_visible;
                 }
                 ImGui::EndMenu();
             }
@@ -135,6 +142,73 @@ void Render(State& game_state, ClientState& client_state)
         ImGui::Checkbox("Spawn points", &client_state.map_editor_state.draw_spawn_points);
         ImGui::Checkbox("Wireframe", &test);
 
+        ImGui::End();
+    }
+
+    if (client_state.map_editor_state.is_palette_window_visible) {
+        float palette_width = 204.0F;
+        int table_column_count = 12;
+
+        ImGui::Begin("Palette",
+                     nullptr,
+                     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize |
+                       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollWithMouse |
+                       ImGuiWindowFlags_NoCollapse);
+
+        ImGui::SetNextItemWidth(palette_width);
+        ImGui::ColorPicker4("##PaletteColorPicker",
+                            client_state.map_editor_state.palette_current_color.data(),
+                            ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB |
+                              ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_NoSidePreview);
+
+        ImVec2 cell_padding(0.0F, 0.0F);
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, cell_padding);
+        if (ImGui::BeginTable("PaletteSavedColorsTable",
+                              table_column_count,
+                              ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX |
+                                ImGuiTableFlags_BordersOuter)) {
+
+            for (int i = 0;
+                 auto& saved_color : client_state.map_editor_state.palette_saved_colors) {
+
+                if (i % table_column_count == 0) {
+                    ImGui::TableNextRow(ImGuiTableRowFlags_None, 1.0F);
+                }
+                ImGui::TableSetColumnIndex(i % table_column_count);
+
+                ImVec4 im_color{ saved_color.x, saved_color.y, saved_color.z, saved_color.w };
+
+                std::string label = "PaletteColorButton";
+                label += std::to_string(i);
+
+                ImVec2 size(palette_width / (float)table_column_count,
+                            palette_width / (float)table_column_count);
+
+                if (ImGui::ColorButton(label.c_str(),
+                                       im_color,
+                                       ImGuiColorEditFlags_AlphaPreview |
+                                         ImGuiColorEditFlags_NoDragDrop |
+                                         ImGuiColorEditFlags_NoBorder,
+                                       size)) {
+                    client_state.map_editor_state.palette_current_color.at(0) = im_color.x;
+                    client_state.map_editor_state.palette_current_color.at(1) = im_color.y;
+                    client_state.map_editor_state.palette_current_color.at(2) = im_color.z;
+                    client_state.map_editor_state.palette_current_color.at(3) = im_color.w;
+                }
+
+                if (ImGui::IsItemHovered()) {
+                    if (ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+                        saved_color.x = client_state.map_editor_state.palette_current_color.at(0);
+                        saved_color.y = client_state.map_editor_state.palette_current_color.at(1);
+                        saved_color.z = client_state.map_editor_state.palette_current_color.at(2);
+                        saved_color.w = client_state.map_editor_state.palette_current_color.at(3);
+                    }
+                }
+                ++i;
+            }
+            ImGui::EndTable();
+        }
+        ImGui::PopStyleVar();
         ImGui::End();
     }
 
