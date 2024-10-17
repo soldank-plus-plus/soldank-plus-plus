@@ -59,6 +59,8 @@ struct MapEditorState
 
     PMSSpawnPointType selected_spawn_point_type = PMSSpawnPointType::General;
     bool should_open_spawn_point_type_popup = false;
+
+    bool draw_spawn_points = true;
 };
 } // namespace Soldank
 

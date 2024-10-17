@@ -36,8 +36,10 @@ void MapEditorScene::Render(State& game_state,
 
     polygon_vertex_outlines_renderer_.Render(camera.GetView());
 
-    for (const auto& spawn_point : game_state.map.GetSpawnPoints()) {
-        spawn_point_renderer_.Render(camera.GetView(), spawn_point, camera.GetZoom());
+    if (client_state.map_editor_state.draw_spawn_points) {
+        for (const auto& spawn_point : game_state.map.GetSpawnPoints()) {
+            spawn_point_renderer_.Render(camera.GetView(), spawn_point, camera.GetZoom());
+        }
     }
 
     if (client_state.map_editor_state.selected_tool == ToolType::Spawnpoint) {

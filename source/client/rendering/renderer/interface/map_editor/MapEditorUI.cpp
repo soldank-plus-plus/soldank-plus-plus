@@ -132,7 +132,7 @@ void Render(State& game_state, ClientState& client_state)
         ImGui::Checkbox("Background", &client_state.draw_background);
         ImGui::Checkbox("Polygons", &client_state.draw_polygons);
         ImGui::Checkbox("Sceneries", &client_state.draw_sceneries);
-        ImGui::Checkbox("Spawn points", &test);
+        ImGui::Checkbox("Spawn points", &client_state.map_editor_state.draw_spawn_points);
         ImGui::Checkbox("Wireframe", &test);
 
         ImGui::End();
