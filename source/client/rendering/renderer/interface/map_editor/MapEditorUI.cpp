@@ -156,8 +156,18 @@ void Render(State& game_state, ClientState& client_state)
 
         if (ImGui::Begin("MapTabBar", nullptr, flags)) {
             if (ImGui::BeginMenuBar()) {
-                ImGui::Button(game_state.map.GetName().c_str());
-                ImGui::Button("+");
+                if (ImGui::BeginTabBar("#asd")) {
+                    if (ImGui::BeginTabItem(game_state.map.GetName().c_str(),
+                                            nullptr,
+                                            ImGuiTabItemFlags_SetSelected /*|
+                                              ImGuiTabItemFlags_UnsavedDocument*/)) {
+                        ImGui::EndTabItem();
+                    }
+                    if (ImGui::BeginTabItem("+", nullptr)) {
+                        ImGui::EndTabItem();
+                    }
+                    ImGui::EndTabBar();
+                }
                 ImGui::EndMenuBar();
             }
             ImGui::End();
