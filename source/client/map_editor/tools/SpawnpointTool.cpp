@@ -15,7 +15,10 @@ void SpawnpointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
 {
 }
 
-void SpawnpointTool::OnSceneRightMouseButtonClick() {}
+void SpawnpointTool::OnSceneRightMouseButtonClick(ClientState& client_state)
+{
+    client_state.map_editor_state.should_open_spawn_point_type_popup = true;
+}
 
 void SpawnpointTool::OnSceneRightMouseButtonRelease() {}
 

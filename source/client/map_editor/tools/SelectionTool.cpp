@@ -38,7 +38,7 @@ void SelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
 {
 }
 
-void SelectionTool::OnSceneRightMouseButtonClick() {}
+void SelectionTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void SelectionTool::OnSceneRightMouseButtonRelease() {}
 

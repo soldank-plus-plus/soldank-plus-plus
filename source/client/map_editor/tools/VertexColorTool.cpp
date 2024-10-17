@@ -16,7 +16,7 @@ void VertexColorTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
 {
 }
 
-void VertexColorTool::OnSceneRightMouseButtonClick() {}
+void VertexColorTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void VertexColorTool::OnSceneRightMouseButtonRelease() {}
 

@@ -10,7 +10,7 @@ void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
 
 void ColorTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state) {}
 
-void ColorTool::OnSceneRightMouseButtonClick() {}
+void ColorTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void ColorTool::OnSceneRightMouseButtonRelease() {}
 

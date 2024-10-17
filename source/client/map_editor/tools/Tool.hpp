@@ -20,7 +20,7 @@ public:
                                              const State& game_state) = 0;
     virtual void OnSceneLeftMouseButtonRelease(ClientState& client_state,
                                                const State& game_state) = 0;
-    virtual void OnSceneRightMouseButtonClick() = 0;
+    virtual void OnSceneRightMouseButtonClick(ClientState& client_state) = 0;
     virtual void OnSceneRightMouseButtonRelease() = 0;
     virtual void OnMouseScreenPositionChange(ClientState& client_state,
                                              glm::vec2 last_mouse_position,

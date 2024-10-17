@@ -1,5 +1,7 @@
 #include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 
+#include "core/map/PMSEnums.hpp"
+
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
@@ -193,6 +195,44 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::EndMenuBar();
             }
             ImGui::End();
+        }
+    }
+
+    {
+        if (client_state.map_editor_state.should_open_spawn_point_type_popup) {
+            ImGui::OpenPopup("SpawnPointPopupMenu");
+            client_state.map_editor_state.should_open_spawn_point_type_popup = false;
+        }
+        if (ImGui::BeginPopup("SpawnPointPopupMenu", ImGuiWindowFlags_NoMove)) {
+            static std::vector<std::pair<std::string, PMSSpawnPointType>> spawn_point_options = {
+                { "Player Spawn", PMSSpawnPointType::General },
+                { "Alpha Team", PMSSpawnPointType::Alpha },
+                { "Bravo Team", PMSSpawnPointType::Bravo },
+                { "Charlie Team", PMSSpawnPointType::Charlie },
+                { "Delta Team", PMSSpawnPointType::Delta },
+                { "Alpha Flag", PMSSpawnPointType::AlphaFlag },
+                { "Bravo Flag", PMSSpawnPointType::BravoFlag },
+                { "Pointmatch Flag", PMSSpawnPointType::YellowFlag },
+                { "Grenade Kit", PMSSpawnPointType::Grenades },
+                { "Medical Kit", PMSSpawnPointType::Medkits },
+                { "Cluster Grenade Kit", PMSSpawnPointType::Clusters },
+                { "Vest Kit", PMSSpawnPointType::Vest },
+                { "Flamer Kit", PMSSpawnPointType::Flamer },
+                { "Berserker Kit", PMSSpawnPointType::Berserker },
+                { "Predator Kit", PMSSpawnPointType::Predator },
+                { "Rambo Bow", PMSSpawnPointType::RamboBow },
+                { "Stationary Gun", PMSSpawnPointType::StatGun },
+            };
+
+            for (const auto& spawn_point_option : spawn_point_options) {
+                if (ImGui::Selectable(spawn_point_option.first.c_str(),
+                                      client_state.map_editor_state.selected_spawn_point_type ==
+                                        spawn_point_option.second)) {
+                    client_state.map_editor_state.selected_spawn_point_type =
+                      spawn_point_option.second;
+                }
+            }
+            ImGui::EndPopup();
         }
     }
 

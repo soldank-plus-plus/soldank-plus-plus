@@ -57,7 +57,7 @@ void VertexSelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_stat
     client_state.map_editor_state.vertex_selection_box = std::nullopt;
 }
 
-void VertexSelectionTool::OnSceneRightMouseButtonClick() {}
+void VertexSelectionTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void VertexSelectionTool::OnSceneRightMouseButtonRelease() {}
 

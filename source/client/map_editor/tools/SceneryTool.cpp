@@ -12,7 +12,7 @@ void SceneryTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const
 {
 }
 
-void SceneryTool::OnSceneRightMouseButtonClick() {}
+void SceneryTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
 void SceneryTool::OnSceneRightMouseButtonRelease() {}
 
