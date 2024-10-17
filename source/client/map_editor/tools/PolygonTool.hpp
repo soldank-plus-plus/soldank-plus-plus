@@ -4,8 +4,6 @@
 #include "map_editor/actions/MapEditorAction.hpp"
 #include "map_editor/tools/Tool.hpp"
 
-#include "core/utility/Observable.hpp"
-
 #include "core/math/Glm.hpp"
 
 #include <memory>

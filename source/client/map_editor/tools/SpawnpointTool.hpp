@@ -1,14 +1,18 @@
 #ifndef __SPAWNPOINT_TOOL_HPP__
 #define __SPAWNPOINT_TOOL_HPP__
 
+#include "map_editor/actions/MapEditorAction.hpp"
 #include "map_editor/tools/Tool.hpp"
+
+#include <memory>
 
 namespace Soldank
 {
 class SpawnpointTool final : public Tool
 {
 public:
-    SpawnpointTool() = default;
+    SpawnpointTool(
+      const std::function<void(std::unique_ptr<MapEditorAction>)>& add_new_map_editor_action);
     ~SpawnpointTool() final = default;
 
     void OnSelect(ClientState& client_state, const State& game_state) final;
@@ -30,6 +34,10 @@ public:
     void OnModifierKey2Released() final;
     void OnModifierKey3Pressed() final;
     void OnModifierKey3Released() final;
+
+private:
+    std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
+    glm::vec2 mouse_map_position_;
 };
 } // namespace Soldank
 

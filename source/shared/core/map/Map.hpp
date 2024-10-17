@@ -70,6 +70,8 @@ struct MapChangeEvents
 {
     Observable<const PMSPolygon&> added_new_polygon;
     Observable<const PMSPolygon&, const std::vector<PMSPolygon>&> removed_polygon;
+    Observable<const PMSSpawnPoint&, unsigned int> added_new_spawn_point;
+    Observable<const PMSSpawnPoint&, unsigned int> removed_spawn_point;
 };
 
 class Map
@@ -104,6 +106,9 @@ public:
 
     PMSPolygon AddNewPolygon(const PMSPolygon& polygon);
     PMSPolygon RemovePolygonById(unsigned int id);
+
+    unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
+    PMSSpawnPoint RemoveSpawnPointById(unsigned int id);
 
     static std::array<glm::vec2, 4> GetSceneryVertexPositions(const PMSScenery& scenery);
 
