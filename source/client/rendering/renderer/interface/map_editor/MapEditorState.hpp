@@ -9,6 +9,7 @@
 
 #include <optional>
 #include <bitset>
+#include <array>
 
 namespace Soldank
 {
@@ -34,6 +35,7 @@ struct MapEditorState
     bool is_tools_window_visible = true;
     bool is_properties_window_visible = true;
     bool is_display_window_visible = true;
+    bool is_palette_window_visible = true;
 
     bool is_mouse_hovering_over_ui = false;
 
@@ -61,6 +63,9 @@ struct MapEditorState
     bool should_open_spawn_point_type_popup = false;
 
     bool draw_spawn_points = true;
+
+    std::array<float, 4> palette_current_color{ 1.0F, 1.0F, 1.0F, 1.0F };
+    std::array<glm::vec4, 72> palette_saved_colors;
 };
 } // namespace Soldank
 
