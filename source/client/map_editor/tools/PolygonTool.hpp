@@ -38,6 +38,8 @@ public:
     void OnModifierKey3Released() final;
 
 private:
+    static PMSColor GetCurrentPaletteColor(ClientState& client_state);
+
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
     glm::vec2 mouse_map_position_;
 };

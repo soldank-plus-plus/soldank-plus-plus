@@ -37,7 +37,7 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const S
             .y = mouse_map_position_.y,
             .z = 1,
             .rhw = 1.0F,
-            .color = PMSColor(255, 255, 255, 255),
+            .color = GetCurrentPaletteColor(client_state),
             .texture_s = mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x,
             .texture_t = mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y
         };
@@ -46,7 +46,7 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const S
             .y = mouse_map_position_.y,
             .z = 1,
             .rhw = 1.0F,
-            .color = PMSColor(255, 255, 255, 255),
+            .color = GetCurrentPaletteColor(client_state),
             .texture_s = mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x,
             .texture_t = mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y
         };
@@ -58,7 +58,7 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const S
             .y = mouse_map_position_.y,
             .z = 1,
             .rhw = 1.0F,
-            .color = PMSColor(255, 255, 255, 255),
+            .color = GetCurrentPaletteColor(client_state),
             .texture_s = mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x,
             .texture_t = mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y
         };
@@ -96,6 +96,8 @@ void PolygonTool::OnMouseMapPositionChange(ClientState& client_state,
           new_mouse_position.x / client_state.current_polygon_texture_dimensions.x;
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).texture_t =
           new_mouse_position.y / client_state.current_polygon_texture_dimensions.y;
+        client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).color =
+          GetCurrentPaletteColor(client_state);
     }
 
     if (client_state.map_editor_state.polygon_tool_wip_polygon) {
@@ -107,6 +109,8 @@ void PolygonTool::OnMouseMapPositionChange(ClientState& client_state,
           new_mouse_position.x / client_state.current_polygon_texture_dimensions.x;
         client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).texture_t =
           new_mouse_position.y / client_state.current_polygon_texture_dimensions.y;
+        client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).color =
+          GetCurrentPaletteColor(client_state);
     }
 }
 
@@ -121,4 +125,12 @@ void PolygonTool::OnModifierKey2Released() {}
 void PolygonTool::OnModifierKey3Pressed() {}
 
 void PolygonTool::OnModifierKey3Released() {}
+
+PMSColor PolygonTool::GetCurrentPaletteColor(ClientState& client_state)
+{
+    return { (unsigned char)(client_state.map_editor_state.palette_current_color.at(0) * 255.0F),
+             (unsigned char)(client_state.map_editor_state.palette_current_color.at(1) * 255.0F),
+             (unsigned char)(client_state.map_editor_state.palette_current_color.at(2) * 255.0F),
+             (unsigned char)(client_state.map_editor_state.palette_current_color.at(3) * 255.0F) };
+}
 } // namespace Soldank
