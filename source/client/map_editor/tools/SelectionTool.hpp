@@ -46,15 +46,26 @@ private:
         RemoveFromSelection,
     };
 
+    enum class NextObjectTypeToSelect
+    {
+        Polygon = 0,
+        Scenery,
+        SpawnPoint,
+    };
+
     void SelectNextSingleObject(ClientState& client_state, const State& game_state);
     void SelectNextObject(ClientState& client_state,
                           const State& game_state,
                           unsigned int start_index,
-                          bool look_for_polygon_initially);
+                          NextObjectTypeToSelect next_object_type_to_select);
     void AddFirstFoundObjectToSelection(ClientState& client_state, const State& game_state);
     bool AddFirstFoundPolygonToSelection(ClientState& client_state, const State& game_state);
     bool AddFirstFoundSceneryToSelection(ClientState& client_state, const State& game_state);
+    bool AddFirstFoundSpawnPointToSelection(ClientState& client_state, const State& game_state);
     void RemoveLastFoundObjectFromSelection(ClientState& client_state, const State& game_state);
+
+    bool IsMouseInSpawnPoint(const ClientState& client_state,
+                             const glm::vec2& spawn_point_position) const;
 
     glm::vec2 mouse_map_position_;
 
