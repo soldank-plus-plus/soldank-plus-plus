@@ -29,7 +29,6 @@ void VertexSelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_stat
     float right = std::max(selection_start_position.x, selection_end_position.x);
     float bottom = std::max(selection_start_position.y, selection_end_position.y);
     float top = std::min(selection_start_position.y, selection_end_position.y);
-    spdlog::debug("lrbt {} {} {} {}", left, right, bottom, top);
     client_state.map_editor_state.selected_polygon_vertices.clear();
     for (const auto& polygon : map.GetPolygons()) {
         std::bitset<3> selected_vertices = { 0b000 };
@@ -51,6 +50,16 @@ void VertexSelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_stat
         const auto& scenery = map.GetSceneryInstances().at(scenery_id);
         if (scenery.x >= left && scenery.x <= right && scenery.y >= top && scenery.y <= bottom) {
             client_state.map_editor_state.selected_scenery_ids.push_back(scenery_id);
+        }
+    }
+
+    client_state.map_editor_state.selected_spawn_point_ids.clear();
+    for (unsigned int spawn_point_id = 0; spawn_point_id < map.GetSpawnPoints().size();
+         ++spawn_point_id) {
+        const auto& spawn_point = map.GetSpawnPoints().at(spawn_point_id);
+        if (spawn_point.x >= left && spawn_point.x <= right && spawn_point.y >= top &&
+            spawn_point.y <= bottom) {
+            client_state.map_editor_state.selected_spawn_point_ids.push_back(spawn_point_id);
         }
     }
 
