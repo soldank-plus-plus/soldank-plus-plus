@@ -13,7 +13,7 @@ void SelectionTool::OnSelect(ClientState& client_state, const State& game_state)
     }
 }
 
-void SelectionTool::OnUnselect(ClientState& client_state) {}
+void SelectionTool::OnUnselect(ClientState& /*client_state*/) {}
 
 void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
@@ -33,12 +33,12 @@ void SelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
     }
 }
 
-void SelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
-                                                  const State& game_state)
+void SelectionTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
+                                                  const State& /*game_state*/)
 {
 }
 
-void SelectionTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
+void SelectionTool::OnSceneRightMouseButtonClick(ClientState& /*client_state*/) {}
 
 void SelectionTool::OnSceneRightMouseButtonRelease() {}
 

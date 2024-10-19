@@ -22,6 +22,12 @@ public:
                 const PolygonsRenderer& polygons_renderer);
 
 private:
+    void RenderRectangle(const glm::mat4& transform,
+                         const glm::vec2& left_top_position,
+                         const glm::vec2& right_bottom_position,
+                         const glm::vec4& color,
+                         float thickness);
+
     LineRenderer line_renderer_;
     PolygonVertexOutlinesRenderer polygon_vertex_outlines_renderer_;
     SceneryOutlinesRenderer scenery_outlines_renderer_;
