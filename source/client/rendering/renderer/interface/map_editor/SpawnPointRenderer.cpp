@@ -41,8 +41,8 @@ SpawnPointRenderer::SpawnPointRenderer()
         // position                      // color                // texture
         -half_width, half_height,  1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F, 1.0F,
         half_width,  half_height,  1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F,
-        -half_width, -half_height, 0.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F, 0.0F,
-        half_width,  -half_height, 0.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F,
+        -half_width, -half_height, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F, 0.0F,
+        half_width,  -half_height, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F,
     };
 
     std::vector<unsigned int> indices{ 0, 1, 2, 1, 3, 2 };
