@@ -1,5 +1,7 @@
 #include "map_editor/tools/SelectionTool.hpp"
 
+#include "core/math/Calc.hpp"
+
 namespace Soldank
 {
 void SelectionTool::OnSelect(ClientState& client_state, const State& game_state)
@@ -64,8 +66,10 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
       client_state.map_editor_state.selected_polygon_vertices.size();
     unsigned int selected_sceneries_count =
       client_state.map_editor_state.selected_scenery_ids.size();
+    unsigned int selected_spawn_points_count =
+      client_state.map_editor_state.selected_spawn_point_ids.size();
     unsigned int selected_objects_count = selected_polygons_count + selected_sceneries_count;
-    bool look_for_polygon_initially = true;
+    NextObjectTypeToSelect next_object_type_to_select = NextObjectTypeToSelect::Polygon;
 
     if (selected_objects_count == 1) {
         if (selected_polygons_count == 1) {
@@ -77,7 +81,7 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
                 // If we have only one polygon selected and we still click inside of it then we
                 // want to "rotate" through objects
                 start_index = selected_polygon_id + 1;
-                look_for_polygon_initially = true;
+                next_object_type_to_select = NextObjectTypeToSelect::Polygon;
             }
         } else if (selected_sceneries_count == 1) {
             unsigned int selected_scenery_id =
@@ -88,73 +92,128 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
                 // If we have only one scenery selected and we still click inside of it then we
                 // want to "rotate" through objects
                 start_index = selected_scenery_id + 1;
-                look_for_polygon_initially = false;
+                next_object_type_to_select = NextObjectTypeToSelect::Scenery;
+            }
+        } else if (selected_spawn_points_count == 1) {
+            unsigned int selected_spawn_point_id =
+              client_state.map_editor_state.selected_spawn_point_ids.at(0);
+            const auto& spawn_point = map.GetSpawnPoints().at(selected_spawn_point_id);
+
+            if (IsMouseInSpawnPoint(client_state, { spawn_point.x, spawn_point.y })) {
+                // If we have only one scenery selected and we still click inside of it then we
+                // want to "rotate" through objects
+                start_index = selected_spawn_point_id + 1;
+                next_object_type_to_select = NextObjectTypeToSelect::SpawnPoint;
             }
         }
     }
 
     client_state.map_editor_state.selected_polygon_vertices.clear();
     client_state.map_editor_state.selected_scenery_ids.clear();
+    client_state.map_editor_state.selected_spawn_point_ids.clear();
+
     for (const auto& polygon : map.GetPolygons()) {
         // TODO: can be optimized
         client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b000 });
     }
 
-    if (look_for_polygon_initially && start_index >= map.GetPolygonsCount()) {
+    if (next_object_type_to_select == NextObjectTypeToSelect::Polygon &&
+        start_index >= map.GetPolygonsCount()) {
+
         start_index = 0;
-        look_for_polygon_initially = false;
+        next_object_type_to_select = NextObjectTypeToSelect::Scenery;
     }
 
-    if (!look_for_polygon_initially && start_index >= map.GetSceneryInstances().size()) {
+    if (next_object_type_to_select == NextObjectTypeToSelect::Scenery &&
+        start_index >= map.GetSceneryInstances().size()) {
+
         start_index = 0;
-        look_for_polygon_initially = true;
+        next_object_type_to_select = NextObjectTypeToSelect::SpawnPoint;
     }
 
-    SelectNextObject(client_state, game_state, start_index, look_for_polygon_initially);
+    if (next_object_type_to_select == NextObjectTypeToSelect::SpawnPoint &&
+        start_index >= map.GetSpawnPoints().size()) {
+
+        start_index = 0;
+        next_object_type_to_select = NextObjectTypeToSelect::Polygon;
+    }
+
+    SelectNextObject(client_state, game_state, start_index, next_object_type_to_select);
 }
 
 void SelectionTool::SelectNextObject(ClientState& client_state,
                                      const State& game_state,
                                      unsigned int start_index,
-                                     bool look_for_polygon_initially)
+                                     NextObjectTypeToSelect next_object_type_to_select)
 {
     unsigned int current_index = start_index;
-    bool looking_for_polygon = look_for_polygon_initially;
     const auto& map = game_state.map;
     unsigned int polygon_candidates_count = 0;
     unsigned int scenery_candidates_count = 0;
-    while (polygon_candidates_count < map.GetPolygonsCount() ||
-           scenery_candidates_count < map.GetSceneryInstances().size()) {
-        if (looking_for_polygon) {
-            const auto& polygon = map.GetPolygons().at(current_index);
+    unsigned int spawn_point_candidates_count = 0;
 
-            if (Map::PointInPoly(mouse_map_position_, polygon)) {
-                client_state.map_editor_state.selected_polygon_vertices.push_back(
-                  { current_index, { 0b111 } });
-                client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b111 });
+    while (polygon_candidates_count < map.GetPolygonsCount() ||
+           scenery_candidates_count < map.GetSceneryInstances().size() ||
+           spawn_point_candidates_count < map.GetSpawnPoints().size()) {
+
+        switch (next_object_type_to_select) {
+            case NextObjectTypeToSelect::Polygon: {
+                const auto& polygon = map.GetPolygons().at(current_index);
+
+                if (Map::PointInPoly(mouse_map_position_, polygon)) {
+                    client_state.map_editor_state.selected_polygon_vertices.push_back(
+                      { current_index, { 0b111 } });
+                    client_state.map_editor_state.event_polygon_selected.Notify(polygon, { 0b111 });
+                    return;
+                }
                 break;
             }
-        } else {
-            const auto& scenery = map.GetSceneryInstances().at(current_index);
+            case NextObjectTypeToSelect::Scenery: {
+                const auto& scenery = map.GetSceneryInstances().at(current_index);
 
-            if (Map::PointInScenery(mouse_map_position_, scenery)) {
-                client_state.map_editor_state.selected_scenery_ids.push_back(current_index);
+                if (Map::PointInScenery(mouse_map_position_, scenery)) {
+                    client_state.map_editor_state.selected_scenery_ids.push_back(current_index);
+                    return;
+                }
+                break;
+            }
+            case NextObjectTypeToSelect::SpawnPoint: {
+                const auto& spawn_point = map.GetSpawnPoints().at(current_index);
+
+                if (IsMouseInSpawnPoint(client_state, { spawn_point.x, spawn_point.y })) {
+                    client_state.map_editor_state.selected_spawn_point_ids.push_back(current_index);
+                    return;
+                }
                 break;
             }
         }
 
         ++current_index;
-        if (looking_for_polygon) {
-            ++polygon_candidates_count;
-            if (current_index == map.GetPolygonsCount()) {
-                current_index = 0;
-                looking_for_polygon = false;
+
+        switch (next_object_type_to_select) {
+            case NextObjectTypeToSelect::Polygon: {
+                ++polygon_candidates_count;
+                if (current_index == map.GetPolygonsCount()) {
+                    current_index = 0;
+                    next_object_type_to_select = NextObjectTypeToSelect::Scenery;
+                }
+                break;
             }
-        } else {
-            ++scenery_candidates_count;
-            if (current_index == map.GetSceneryInstances().size()) {
-                current_index = 0;
-                looking_for_polygon = true;
+            case NextObjectTypeToSelect::Scenery: {
+                ++scenery_candidates_count;
+                if (current_index == map.GetSceneryInstances().size()) {
+                    current_index = 0;
+                    next_object_type_to_select = NextObjectTypeToSelect::SpawnPoint;
+                }
+                break;
+            }
+            case NextObjectTypeToSelect::SpawnPoint: {
+                ++spawn_point_candidates_count;
+                if (current_index == map.GetSpawnPoints().size()) {
+                    current_index = 0;
+                    next_object_type_to_select = NextObjectTypeToSelect::Polygon;
+                }
+                break;
             }
         }
     }
@@ -166,7 +225,11 @@ void SelectionTool::AddFirstFoundObjectToSelection(ClientState& client_state,
     if (AddFirstFoundPolygonToSelection(client_state, game_state)) {
         return;
     }
-    AddFirstFoundSceneryToSelection(client_state, game_state);
+    if (AddFirstFoundSceneryToSelection(client_state, game_state)) {
+        return;
+    }
+
+    AddFirstFoundSpawnPointToSelection(client_state, game_state);
 }
 
 bool SelectionTool::AddFirstFoundPolygonToSelection(ClientState& client_state,
@@ -224,10 +287,54 @@ bool SelectionTool::AddFirstFoundSceneryToSelection(ClientState& client_state,
     return false;
 }
 
+bool SelectionTool::AddFirstFoundSpawnPointToSelection(ClientState& client_state,
+                                                       const State& game_state)
+{
+    const auto& map = game_state.map;
+
+    for (unsigned int spawn_point_id = 0; spawn_point_id < map.GetSpawnPoints().size();
+         ++spawn_point_id) {
+
+        const auto& spawn_point = map.GetSpawnPoints().at(spawn_point_id);
+
+        if (IsMouseInSpawnPoint(client_state, { spawn_point.x, spawn_point.y })) {
+            bool already_selected = false;
+            for (const auto& selected_spawn_point_id :
+                 client_state.map_editor_state.selected_spawn_point_ids) {
+                if (spawn_point_id == selected_spawn_point_id) {
+                    already_selected = true;
+                    break;
+                }
+            }
+
+            if (!already_selected) {
+                client_state.map_editor_state.selected_spawn_point_ids.push_back(spawn_point_id);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void SelectionTool::RemoveLastFoundObjectFromSelection(ClientState& client_state,
                                                        const State& game_state)
 {
     const auto& map = game_state.map;
+    for (int i = (int)client_state.map_editor_state.selected_spawn_point_ids.size() - 1; i >= 0;
+         --i) {
+
+        const auto& selected_spawn_point_id =
+          client_state.map_editor_state.selected_spawn_point_ids.at(i);
+        const auto& spawn_point = map.GetSpawnPoints().at(selected_spawn_point_id);
+
+        if (IsMouseInSpawnPoint(client_state, { spawn_point.x, spawn_point.y })) {
+            client_state.map_editor_state.selected_spawn_point_ids.erase(
+              client_state.map_editor_state.selected_spawn_point_ids.begin() + i);
+            return;
+        }
+    }
+
     for (int i = (int)client_state.map_editor_state.selected_scenery_ids.size() - 1; i >= 0; --i) {
         const auto& selected_scenery_id = client_state.map_editor_state.selected_scenery_ids.at(i);
         const auto& scenery = map.GetSceneryInstances().at(selected_scenery_id);
@@ -276,5 +383,13 @@ void SelectionTool::OnModifierKey3Pressed()
 void SelectionTool::OnModifierKey3Released()
 {
     current_selection_mode_ = SelectionMode::SingleSelection;
+}
+
+bool SelectionTool::IsMouseInSpawnPoint(const ClientState& client_state,
+                                        const glm::vec2& spawn_point_position) const
+{
+    float current_camera_zoom = client_state.camera_component.GetZoom();
+    return Calc::SquareDistance(spawn_point_position, mouse_map_position_) / current_camera_zoom <=
+           64.0F * current_camera_zoom;
 }
 } // namespace Soldank
