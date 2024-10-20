@@ -12,7 +12,10 @@ void SceneryTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const
 {
 }
 
-void SceneryTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
+void SceneryTool::OnSceneRightMouseButtonClick(ClientState& client_state)
+{
+    client_state.map_editor_state.should_open_scenery_picker_popup = true;
+}
 
 void SceneryTool::OnSceneRightMouseButtonRelease() {}
 

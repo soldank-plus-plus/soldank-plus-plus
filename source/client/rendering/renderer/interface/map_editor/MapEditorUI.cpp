@@ -7,6 +7,7 @@
 #include "backends/imgui_impl_opengl3.h"
 
 #include <filesystem>
+#include <string>
 
 namespace Soldank::MapEditorUI
 {
@@ -20,6 +21,7 @@ void Render(State& game_state, ClientState& client_state)
     ImGui::NewFrame();
 
     client_state.map_editor_state.is_mouse_hovering_over_ui = io.WantCaptureMouse;
+    client_state.map_editor_state.is_modal_or_popup_open = false;
 
     {
         bool should_open_map_settings_modal = false;
@@ -113,6 +115,8 @@ void Render(State& game_state, ClientState& client_state)
         }
 
         if (ImGui::BeginPopupModal("Map settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            client_state.map_editor_state.is_modal_or_popup_open = true;
+
             static std::string drag_int_tooltip =
               "Drag left or right to change.\n\nDouble-click to input text manually.";
             client_state.map_editor_state.map_description_input = game_state.map.GetDescription();
@@ -578,6 +582,8 @@ void Render(State& game_state, ClientState& client_state)
             client_state.map_editor_state.should_open_spawn_point_type_popup = false;
         }
         if (ImGui::BeginPopup("SpawnPointPopupMenu", ImGuiWindowFlags_NoMove)) {
+            client_state.map_editor_state.is_modal_or_popup_open = true;
+
             static std::vector<std::pair<std::string, PMSSpawnPointType>> spawn_point_options = {
                 { "Player Spawn", PMSSpawnPointType::General },
                 { "Alpha Team", PMSSpawnPointType::Alpha },
@@ -604,6 +610,70 @@ void Render(State& game_state, ClientState& client_state)
                                         spawn_point_option.second)) {
                     client_state.map_editor_state.selected_spawn_point_type =
                       spawn_point_option.second;
+                }
+            }
+            ImGui::EndPopup();
+        }
+    }
+
+    {
+        static std::array<char, 256> scenery_search_filter;
+
+        if (client_state.map_editor_state.should_open_scenery_picker_popup) {
+            std::filesystem::path sceneries_directory_path = "scenery-gfx";
+            client_state.map_editor_state.all_sceneries_in_directory.clear();
+            for (const auto& entry :
+                 std::filesystem::directory_iterator(sceneries_directory_path)) {
+                if (entry.is_directory()) {
+                    continue;
+                }
+
+                if (!entry.path().has_extension()) {
+                    continue;
+                }
+
+                if (entry.path().extension() == ".bmp" || entry.path().extension() == ".jpg" ||
+                    entry.path().extension() == ".jpeg" || entry.path().extension() == ".gif" ||
+                    entry.path().extension() == ".png") {
+                    client_state.map_editor_state.all_sceneries_in_directory.push_back(
+                      entry.path().filename().string());
+                }
+            }
+
+            if (client_state.map_editor_state.selected_scenery_to_place.empty() &&
+                !client_state.map_editor_state.all_sceneries_in_directory.empty()) {
+
+                client_state.map_editor_state.selected_scenery_to_place =
+                  client_state.map_editor_state.all_sceneries_in_directory.front();
+            }
+
+            client_state.map_editor_state.should_open_scenery_picker_popup = false;
+
+            scenery_search_filter.fill(0);
+            ImGui::OpenPopup("SceneryPickerPopupMenu");
+        }
+
+        if (ImGui::BeginPopup("SceneryPickerPopupMenu")) {
+            client_state.map_editor_state.is_modal_or_popup_open = true;
+
+            ImGui::SeparatorText("Search:");
+            ImGui::InputText(
+              "##ScenerySearchInput", scenery_search_filter.data(), scenery_search_filter.size());
+            std::string search_filter(scenery_search_filter.begin(), scenery_search_filter.end());
+            std::erase(search_filter, 0);
+            ImGui::Separator();
+            for (const auto& scenery_file_name :
+                 client_state.map_editor_state.all_sceneries_in_directory) {
+
+                if (!search_filter.empty() &&
+                    scenery_file_name.find(search_filter) == std::string::npos) {
+                    continue;
+                }
+
+                if (ImGui::Selectable(scenery_file_name.c_str(),
+                                      client_state.map_editor_state.selected_scenery_to_place ==
+                                        scenery_file_name)) {
+                    client_state.map_editor_state.selected_scenery_to_place = scenery_file_name;
                 }
             }
             ImGui::EndPopup();
