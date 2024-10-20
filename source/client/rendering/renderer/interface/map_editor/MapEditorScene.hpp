@@ -8,6 +8,7 @@
 
 #include "core/state/StateManager.hpp"
 #include "rendering/renderer/interface/map_editor/PolygonVertexOutlinesRenderer.hpp"
+#include "rendering/renderer/interface/map_editor/SingleImageRenderer.hpp"
 #include "rendering/renderer/interface/map_editor/SpawnPointRenderer.hpp"
 
 namespace Soldank
@@ -32,6 +33,7 @@ private:
     PolygonVertexOutlinesRenderer polygon_vertex_outlines_renderer_;
     SceneryOutlinesRenderer scenery_outlines_renderer_;
     SpawnPointRenderer spawn_point_renderer_;
+    SingleImageRenderer single_image_renderer_;
 };
 } // namespace Soldank
 

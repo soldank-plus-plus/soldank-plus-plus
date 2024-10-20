@@ -694,6 +694,8 @@ void Render(State& game_state, ClientState& client_state)
                                       client_state.map_editor_state.selected_scenery_to_place ==
                                         scenery_file_name)) {
                     client_state.map_editor_state.selected_scenery_to_place = scenery_file_name;
+                    client_state.map_editor_state.event_scenery_texture_changed.Notify(
+                      scenery_file_name);
                 }
             }
             ImGui::EndPopup();
