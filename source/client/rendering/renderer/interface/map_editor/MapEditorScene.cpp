@@ -14,6 +14,8 @@ MapEditorScene::MapEditorScene(ClientState& client_state, State& game_state)
     , scenery_outlines_renderer_(game_state.map, { 1.0F, 0.0F, 0.0F, 0.5F })
 {
     client_state.map_editor_state.map_description_input.reserve(DESCRIPTION_MAX_LENGTH);
+    client_state.map_editor_state.event_scenery_texture_changed.AddObserver(
+      [this](const std::string& file_name) { single_image_renderer_.SetTexture(file_name); });
 }
 
 void MapEditorScene::Render(State& game_state,
@@ -76,6 +78,19 @@ void MapEditorScene::Render(State& game_state,
         glm::vec4 color = { 0.8F, 0.2F, 0.2F, 1.0F };
         float thickness = camera.GetZoom();
         RenderRectangle(camera.GetView(), start_position, end_position, color, thickness);
+    }
+
+    if (client_state.map_editor_state.selected_tool == ToolType::Scenery) {
+        glm::vec2 position = { client_state.map_editor_state.scenery_to_place.x,
+                               client_state.map_editor_state.scenery_to_place.y };
+        glm::vec4 color = { client_state.map_editor_state.palette_current_color.at(0),
+                            client_state.map_editor_state.palette_current_color.at(1),
+                            client_state.map_editor_state.palette_current_color.at(2),
+                            client_state.map_editor_state.palette_current_color.at(3) };
+        glm::vec2 scale = { client_state.map_editor_state.scenery_to_place.scale_x,
+                            client_state.map_editor_state.scenery_to_place.scale_y };
+        float rotation = client_state.map_editor_state.scenery_to_place.rotation;
+        single_image_renderer_.Render(camera.GetView(), position, color, scale, rotation);
     }
 
     MapEditorUI::Render(game_state, client_state);
