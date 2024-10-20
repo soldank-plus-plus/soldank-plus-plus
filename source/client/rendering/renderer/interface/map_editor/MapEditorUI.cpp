@@ -1,5 +1,6 @@
 #include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 
+#include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
 
 #include "imgui.h"
@@ -92,6 +93,8 @@ void Render(State& game_state, ClientState& client_state)
             ImGui::EndMainMenuBar();
         }
 
+        static std::array<char, TEXTURE_NAME_MAX_LENGTH> texture_search_filter;
+
         if (should_open_map_settings_modal) {
             std::filesystem::path textures_directory_path = "textures";
             client_state.map_editor_state.all_textures_in_directory.clear();
@@ -111,6 +114,9 @@ void Render(State& game_state, ClientState& client_state)
                       entry.path().filename().string());
                 }
             }
+
+            texture_search_filter.fill(0);
+
             ImGui::OpenPopup("Map settings");
         }
 
@@ -341,10 +347,24 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                 if (ImGui::BeginCombo("##TextureComboPicker",
                                       game_state.map.GetTextureName().c_str())) {
+
+                    ImGui::InputText("##TextureSearchFilterInput",
+                                     texture_search_filter.data(),
+                                     texture_search_filter.size());
+                    std::string search_filter(texture_search_filter.begin(),
+                                              texture_search_filter.end());
+                    std::erase(search_filter, 0);
+                    ImGui::Separator();
+
                     std::filesystem::path map_texture_in_png = game_state.map.GetTextureName();
                     map_texture_in_png.replace_extension(".png");
                     for (const auto& texture_file_name :
                          client_state.map_editor_state.all_textures_in_directory) {
+
+                        if (!search_filter.empty() &&
+                            texture_file_name.find(search_filter) == std::string::npos) {
+                            continue;
+                        }
 
                         if (ImGui::Selectable(texture_file_name.c_str(),
                                               texture_file_name ==
@@ -617,7 +637,7 @@ void Render(State& game_state, ClientState& client_state)
     }
 
     {
-        static std::array<char, 256> scenery_search_filter;
+        static std::array<char, SCENERY_NAME_MAX_LENGTH> scenery_search_filter;
 
         if (client_state.map_editor_state.should_open_scenery_picker_popup) {
             std::filesystem::path sceneries_directory_path = "scenery-gfx";
