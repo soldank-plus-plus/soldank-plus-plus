@@ -10,6 +10,7 @@
 #include <optional>
 #include <bitset>
 #include <array>
+#include <string>
 
 namespace Soldank
 {
@@ -67,6 +68,12 @@ struct MapEditorState
 
     std::array<float, 4> palette_current_color{ 1.0F, 1.0F, 1.0F, 1.0F };
     std::array<glm::vec4, 72> palette_saved_colors;
+
+    std::string map_description_input;
+
+    unsigned int polygon_texture_opengl_id = 0;
+
+    std::vector<std::string> all_textures_in_directory;
 };
 } // namespace Soldank
 
