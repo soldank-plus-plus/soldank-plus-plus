@@ -39,6 +39,7 @@ struct MapEditorState
     bool is_palette_window_visible = true;
 
     bool is_mouse_hovering_over_ui = false;
+    bool is_modal_or_popup_open = false;
 
     Observable<ToolType> event_selected_new_tool;
     Observable<> event_pressed_play;
@@ -64,6 +65,9 @@ struct MapEditorState
     PMSSpawnPointType selected_spawn_point_type = PMSSpawnPointType::General;
     bool should_open_spawn_point_type_popup = false;
 
+    std::string selected_scenery_to_place;
+    bool should_open_scenery_picker_popup = false;
+
     bool draw_spawn_points = true;
 
     std::array<float, 4> palette_current_color{ 1.0F, 1.0F, 1.0F, 1.0F };
@@ -74,6 +78,7 @@ struct MapEditorState
     unsigned int polygon_texture_opengl_id = 0;
 
     std::vector<std::string> all_textures_in_directory;
+    std::vector<std::string> all_sceneries_in_directory;
 };
 } // namespace Soldank
 

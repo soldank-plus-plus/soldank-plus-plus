@@ -31,37 +31,43 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
       };
 
     client_state.event_left_mouse_button_clicked.AddObserver([this, &client_state, &game_state]() {
-        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui &&
+            !client_state.map_editor_state.is_modal_or_popup_open) {
             OnSceneLeftMouseButtonClick(client_state, game_state);
         }
     });
 
     client_state.event_left_mouse_button_released.AddObserver([this, &client_state, &game_state]() {
-        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui &&
+            !client_state.map_editor_state.is_modal_or_popup_open) {
             OnSceneLeftMouseButtonRelease(client_state, game_state);
         }
     });
 
     client_state.event_right_mouse_button_clicked.AddObserver([this, &client_state]() {
-        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui &&
+            !client_state.map_editor_state.is_modal_or_popup_open) {
             OnSceneRightMouseButtonClick(client_state);
         }
     });
 
     client_state.event_right_mouse_button_released.AddObserver([this, &client_state]() {
-        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui &&
+            !client_state.map_editor_state.is_modal_or_popup_open) {
             OnSceneRightMouseButtonRelease();
         }
     });
 
     client_state.event_middle_mouse_button_clicked.AddObserver([this, &client_state]() {
-        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui &&
+            !client_state.map_editor_state.is_modal_or_popup_open) {
             OnSceneMiddleMouseButtonClick(client_state);
         }
     });
 
     client_state.event_middle_mouse_button_released.AddObserver([this, &client_state]() {
-        if (!client_state.map_editor_state.is_mouse_hovering_over_ui) {
+        if (!client_state.map_editor_state.is_mouse_hovering_over_ui &&
+            !client_state.map_editor_state.is_modal_or_popup_open) {
             OnSceneMiddleMouseButtonRelease();
         }
     });
@@ -76,15 +82,27 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
           OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
       });
 
-    client_state.event_mouse_wheel_scrolled_up.AddObserver(
-      [this, &client_state]() { OnMouseScrollUp(client_state); });
-    client_state.event_mouse_wheel_scrolled_down.AddObserver(
-      [this, &client_state]() { OnMouseScrollDown(client_state); });
+    client_state.event_mouse_wheel_scrolled_up.AddObserver([this, &client_state]() {
+        if (!client_state.map_editor_state.is_modal_or_popup_open) {
+            OnMouseScrollUp(client_state);
+        }
+    });
+    client_state.event_mouse_wheel_scrolled_down.AddObserver([this, &client_state]() {
+        if (!client_state.map_editor_state.is_modal_or_popup_open) {
+            OnMouseScrollDown(client_state);
+        }
+    });
 
-    client_state.event_key_pressed.AddObserver(
-      [this, &client_state](int key) { OnKeyPressed(key, client_state); });
-    client_state.event_key_released.AddObserver(
-      [this, &client_state](int key) { OnKeyReleased(key, client_state); });
+    client_state.event_key_pressed.AddObserver([this, &client_state](int key) {
+        if (!client_state.map_editor_state.is_modal_or_popup_open) {
+            OnKeyPressed(key, client_state);
+        }
+    });
+    client_state.event_key_released.AddObserver([this, &client_state](int key) {
+        if (!client_state.map_editor_state.is_modal_or_popup_open) {
+            OnKeyReleased(key, client_state);
+        }
+    });
 
     client_state.map_editor_state.event_selected_new_tool.AddObserver(
       [this, &client_state, &game_state](ToolType tool_type) {
