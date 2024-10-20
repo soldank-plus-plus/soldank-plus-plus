@@ -21,9 +21,7 @@
 namespace Soldank
 {
 Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& client_state)
-    : background_renderer_(game_state->GetState().map.GetBackgroundTopColor(),
-                           game_state->GetState().map.GetBackgroundBottomColor(),
-                           game_state->GetState().map.GetBoundaries())
+    : background_renderer_(game_state->GetState().map)
     , polygons_renderer_(std::make_unique<PolygonsRenderer>(
         game_state->GetState().map,
         std::string(game_state->GetState().map.GetTextureName())))

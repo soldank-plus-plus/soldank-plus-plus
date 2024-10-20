@@ -14,21 +14,7 @@ PolygonsRenderer::PolygonsRenderer(Map& map, const std::string& texture_name)
     : shader_(ShaderSources::VERTEX_SHADER_SOURCE, ShaderSources::FRAGMENT_SHADER_SOURCE)
     , polygons_count_(map.GetPolygonsCount())
 {
-    std::filesystem::path texture_path = "textures/" + texture_name;
-    if (!std::filesystem::exists(texture_path)) {
-        texture_path.replace_extension(".png");
-    }
-
-    auto texture_or_error = Texture::Load(texture_path.string().c_str());
-
-    if (texture_or_error.has_value()) {
-        texture_ = texture_or_error.value().opengl_id;
-        texture_dimensions_ = { texture_or_error->width, texture_or_error->height };
-    } else {
-        texture_ = 0;
-        texture_dimensions_ = { 0, 0 };
-        spdlog::critical("Texture file not found {}", texture_name);
-    }
+    LoadTexture(map.GetTextureName());
 
     std::vector<float> vertices;
 
@@ -50,6 +36,11 @@ PolygonsRenderer::PolygonsRenderer(Map& map, const std::string& texture_name)
       [this](const PMSPolygon& /*removed_polygon*/,
              const std::vector<PMSPolygon>& polygons_after_removal) {
           OnRemovePolygon(polygons_after_removal);
+      });
+    map.GetMapChangeEvents().changed_texture_name.AddObserver(
+      [this](const std::string& texture_name) {
+          Texture::Delete(texture_);
+          LoadTexture(texture_name);
       });
 }
 
@@ -146,6 +137,25 @@ void PolygonsRenderer::GenerateGLBufferVerticesForPolygon(const PMSPolygon& poly
         destination_vertices.push_back((float)vertex.color.alpha / 255.0F);
         destination_vertices.push_back(vertex.texture_s);
         destination_vertices.push_back(vertex.texture_t);
+    }
+}
+
+void PolygonsRenderer::LoadTexture(const std::string& texture_name)
+{
+    std::filesystem::path texture_path = "textures/" + texture_name;
+    if (!std::filesystem::exists(texture_path)) {
+        texture_path.replace_extension(".png");
+    }
+
+    auto texture_or_error = Texture::Load(texture_path.string().c_str());
+
+    if (texture_or_error.has_value()) {
+        texture_ = texture_or_error.value().opengl_id;
+        texture_dimensions_ = { texture_or_error->width, texture_or_error->height };
+    } else {
+        texture_ = 0;
+        texture_dimensions_ = { 0, 0 };
+        spdlog::critical("Texture file not found {}", texture_name);
     }
 }
 } // namespace Soldank

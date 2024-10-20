@@ -30,6 +30,7 @@ public:
     void RenderSinglePolygon(glm::mat4 transform, const PMSPolygon& polygon) const;
 
     glm::vec2 GetTextureDimensions() const { return texture_dimensions_; }
+    unsigned int GetTextureOpenGLID() const { return texture_; };
 
 private:
     void OnAddPolygon(const PMSPolygon& new_polygon);
@@ -39,6 +40,7 @@ private:
                                          std::vector<float>& destination_vertices);
     static void GenerateGLBufferVerticesForPolygon(const PMSPolygon& polygon,
                                                    std::vector<float>& destination_vertices);
+    void LoadTexture(const std::string& texture_name);
 
     Shader shader_;
     unsigned int polygons_count_;

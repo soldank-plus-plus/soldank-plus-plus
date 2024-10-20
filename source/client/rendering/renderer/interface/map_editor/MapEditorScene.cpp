@@ -1,5 +1,6 @@
 #include "rendering/renderer/interface/map_editor/MapEditorScene.hpp"
 
+#include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
 #include "core/map/PMSStructs.hpp"
 #include "rendering/renderer/SceneryOutlinesRenderer.hpp"
@@ -12,6 +13,7 @@ MapEditorScene::MapEditorScene(ClientState& client_state, State& game_state)
     : polygon_vertex_outlines_renderer_(client_state, game_state.map, { 1.0F, 0.0F, 0.0F, 0.5F })
     , scenery_outlines_renderer_(game_state.map, { 1.0F, 0.0F, 0.0F, 0.5F })
 {
+    client_state.map_editor_state.map_description_input.reserve(DESCRIPTION_MAX_LENGTH);
 }
 
 void MapEditorScene::Render(State& game_state,
@@ -19,6 +21,8 @@ void MapEditorScene::Render(State& game_state,
                             const PolygonsRenderer& polygons_renderer)
 {
     const Camera& camera = client_state.camera_component;
+    client_state.map_editor_state.polygon_texture_opengl_id =
+      polygons_renderer.GetTextureOpenGLID();
 
     if (client_state.map_editor_state.polygon_tool_wip_polygon_edge) {
         polygons_renderer.RenderSinglePolygonFirstEdge(

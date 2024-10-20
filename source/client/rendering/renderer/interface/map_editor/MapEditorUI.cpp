@@ -6,6 +6,8 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
+#include <filesystem>
+
 namespace Soldank::MapEditorUI
 {
 void Render(State& game_state, ClientState& client_state)
@@ -20,6 +22,8 @@ void Render(State& game_state, ClientState& client_state)
     client_state.map_editor_state.is_mouse_hovering_over_ui = io.WantCaptureMouse;
 
     {
+        bool should_open_map_settings_modal = false;
+
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Save", "CTRL+S")) {
@@ -33,6 +37,10 @@ void Render(State& game_state, ClientState& client_state)
                 }
                 if (ImGui::MenuItem("Redo", "CTRL+SHIFT+Z")) {
                     client_state.map_editor_state.event_pressed_redo.Notify();
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Map settings...", "CTRL+M")) {
+                    should_open_map_settings_modal = true;
                 }
                 ImGui::EndMenu();
             }
@@ -80,6 +88,288 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
+        }
+
+        if (should_open_map_settings_modal) {
+            std::filesystem::path textures_directory_path = "textures";
+            client_state.map_editor_state.all_textures_in_directory.clear();
+            for (const auto& entry : std::filesystem::directory_iterator(textures_directory_path)) {
+                if (entry.is_directory()) {
+                    continue;
+                }
+
+                if (!entry.path().has_extension()) {
+                    continue;
+                }
+
+                if (entry.path().extension() == ".bmp" || entry.path().extension() == ".jpg" ||
+                    entry.path().extension() == ".jpeg" || entry.path().extension() == ".gif" ||
+                    entry.path().extension() == ".png") {
+                    client_state.map_editor_state.all_textures_in_directory.push_back(
+                      entry.path().filename().string());
+                }
+            }
+            ImGui::OpenPopup("Map settings");
+        }
+
+        if (ImGui::BeginPopupModal("Map settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            static std::string drag_int_tooltip =
+              "Drag left or right to change.\n\nDouble-click to input text manually.";
+            client_state.map_editor_state.map_description_input = game_state.map.GetDescription();
+            client_state.map_editor_state.map_description_input += (char)0;
+            ImGui::SeparatorText("Description");
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            if (ImGui::InputText("##DescriptionInput",
+                                 client_state.map_editor_state.map_description_input.data(),
+                                 DESCRIPTION_MAX_LENGTH)) {
+                game_state.map.SetDescription(client_state.map_editor_state.map_description_input);
+            }
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            if (ImGui::BeginTable("weather_and_step_table", 2, ImGuiTableFlags_SizingStretchSame)) {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::SeparatorText("Weather type");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SeparatorText("Step type");
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                static std::vector<std::pair<std::string, PMSWeatherType>> weather_options = {
+                    { "None", PMSWeatherType::None },
+                    { "Rain", PMSWeatherType::Rain },
+                    { "Sandstorm", PMSWeatherType::Sandstorm },
+                    { "Snow", PMSWeatherType::Snow },
+                };
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                if (ImGui::BeginCombo("##WeatherInput",
+                                      game_state.map.GetWeatherTypeText().c_str())) {
+                    for (const auto& weather_option : weather_options) {
+                        if (ImGui::Selectable(weather_option.first.c_str(),
+                                              game_state.map.GetWeatherType() ==
+                                                weather_option.second)) {
+                            game_state.map.SetWeatherType(weather_option.second);
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                static std::vector<std::pair<std::string, PMSStepType>> step_options = {
+                    { "Hard", PMSStepType::HardGround },
+                    { "Soft", PMSStepType::SoftGround },
+                    { "None", PMSStepType::None },
+                };
+                // ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                if (ImGui::BeginCombo("##StepsInput", game_state.map.GetStepTypeText().c_str())) {
+                    for (const auto& step_option : step_options) {
+                        if (ImGui::Selectable(step_option.first.c_str(),
+                                              game_state.map.GetStepType() == step_option.second)) {
+                            game_state.map.SetStepType(step_option.second);
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::EndTable();
+            }
+
+            ImGui::Separator();
+            float drag_int_width = ImGui::CalcTextSize("Medical kits: 99").x + 50.0F;
+            int grenades_count = game_state.map.GetGrenadesCount();
+            ImGui::SetNextItemWidth(drag_int_width);
+            if (ImGui::DragInt("##GrenadesInput", &grenades_count, 0.1F, 0, 12, "Grenades: %d")) {
+                if (grenades_count < 0) {
+                    grenades_count = 0;
+                }
+                if (grenades_count > 12) {
+                    grenades_count = 12;
+                }
+                game_state.map.SetGrenadesCount(grenades_count);
+            }
+            ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
+
+            ImGui::SameLine();
+
+            int medikits_count = game_state.map.GetMedikitsCount();
+            ImGui::SetNextItemWidth(drag_int_width);
+            if (ImGui::DragInt(
+                  "##MedikitsInput", &medikits_count, 0.1F, 0, 12, "Medical kits: %d")) {
+                if (medikits_count < 0) {
+                    medikits_count = 0;
+                }
+                if (medikits_count > 12) {
+                    medikits_count = 12;
+                }
+                game_state.map.SetMedikitsCount(medikits_count);
+            }
+            ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
+
+            ImVec2 jet_fuel_buttons_size(ImGui::GetContentRegionAvail().x / 4.0F - 9.0F, 0);
+            ImGui::SeparatorText("Jet fuel:");
+            if (ImGui::Button("None##JetFuelInputNone", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(0);
+            }
+            ImGui::SetItemTooltip("Value: 0");
+            ImGui::SameLine();
+            if (ImGui::Button("Minimal##JetFuelInputMinimal", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(12);
+            }
+            ImGui::SetItemTooltip("Value: 12");
+            ImGui::SameLine();
+            if (ImGui::Button("Very Low##JetFuelInputVeryLow", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(45);
+            }
+            ImGui::SetItemTooltip("Value: 45");
+            ImGui::SameLine();
+            if (ImGui::Button("Low##JetFuelInputLow", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(95);
+            }
+
+            // new line
+            ImGui::SetItemTooltip("Value: 95");
+            if (ImGui::Button("Normal##JetFuelInputNormal", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(190);
+            }
+            ImGui::SetItemTooltip("Value: 190");
+            ImGui::SameLine();
+            if (ImGui::Button("High##JetFuelInputHigh", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(320);
+            }
+            ImGui::SetItemTooltip("Value: 320");
+            ImGui::SameLine();
+            if (ImGui::Button("Extreme##JetFuelInputExtreme", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(800);
+            }
+            ImGui::SetItemTooltip("Value: 800");
+            ImGui::SameLine();
+            if (ImGui::Button("Infinite##JetFuelInputInfinite", jet_fuel_buttons_size)) {
+                game_state.map.SetJetCount(25999);
+            }
+            ImGui::SetItemTooltip("Value: 25999");
+            int jet_count = game_state.map.GetJetCount();
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            if (ImGui::DragInt("##JetFuelCustomInput", &jet_count, 1.0F, 0, 25999)) {
+                if (jet_count < 0) {
+                    jet_count = 0;
+                }
+                if (jet_count > 25999) {
+                    jet_count = 25999;
+                }
+                game_state.map.SetJetCount(jet_count);
+            }
+            ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+            if (ImGui::BeginTable(
+                  "texture_and_background_table", 2, ImGuiTableFlags_SizingStretchSame)) {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::SeparatorText("Background");
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SeparatorText("Texture");
+
+                ImGui::TableNextRow();
+
+                ImVec2 color_button_size(ImGui::GetContentRegionAvail().x,
+                                         ImGui::GetContentRegionAvail().x / 2.0F + 15.0F);
+
+                ImGui::TableSetColumnIndex(0);
+                PMSColor top_background_color = game_state.map.GetBackgroundTopColor();
+                ImVec4 im_top_background_color = ImVec4((float)top_background_color.red / 255.0F,
+                                                        (float)top_background_color.green / 255.0F,
+                                                        (float)top_background_color.blue / 255.0F,
+                                                        (float)top_background_color.alpha / 255.0F);
+                if (ImGui::ColorButton("TopBackgroundColorButton",
+                                       im_top_background_color,
+                                       ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha,
+                                       color_button_size)) {
+                    ImGui::OpenPopup("TopBackgroundColorPicker");
+                }
+                if (ImGui::BeginPopup("TopBackgroundColorPicker")) {
+                    if (ImGui::ColorPicker4("##topcolorpicker1",
+                                            &im_top_background_color.x,
+                                            ImGuiColorEditFlags_NoLabel |
+                                              ImGuiColorEditFlags_NoAlpha)) {
+                        top_background_color.red =
+                          (unsigned char)(im_top_background_color.x * 255.0F);
+                        top_background_color.green =
+                          (unsigned char)(im_top_background_color.y * 255.0F);
+                        top_background_color.blue =
+                          (unsigned char)(im_top_background_color.z * 255.0F);
+                        top_background_color.alpha =
+                          (unsigned char)(im_top_background_color.w * 255.0F);
+                        game_state.map.SetBackgroundTopColor(top_background_color);
+                    }
+                    ImGui::EndPopup();
+                }
+
+                PMSColor bottom_background_color = game_state.map.GetBackgroundBottomColor();
+                ImVec4 im_bottom_background_color =
+                  ImVec4((float)bottom_background_color.red / 255.0F,
+                         (float)bottom_background_color.green / 255.0F,
+                         (float)bottom_background_color.blue / 255.0F,
+                         (float)bottom_background_color.alpha / 255.0F);
+                if (ImGui::ColorButton("BottomBackgroundColorButton",
+                                       im_bottom_background_color,
+                                       ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha,
+                                       color_button_size)) {
+                    ImGui::OpenPopup("BottomBackgroundColorPicker");
+                }
+                if (ImGui::BeginPopup("BottomBackgroundColorPicker")) {
+                    if (ImGui::ColorPicker4("##bottomcolorpicker1",
+                                            &im_bottom_background_color.x,
+                                            ImGuiColorEditFlags_NoLabel |
+                                              ImGuiColorEditFlags_NoAlpha)) {
+                        bottom_background_color.red =
+                          (unsigned char)(im_bottom_background_color.x * 255.0F);
+                        bottom_background_color.green =
+                          (unsigned char)(im_bottom_background_color.y * 255.0F);
+                        bottom_background_color.blue =
+                          (unsigned char)(im_bottom_background_color.z * 255.0F);
+                        bottom_background_color.alpha =
+                          (unsigned char)(im_bottom_background_color.w * 255.0F);
+                        game_state.map.SetBackgroundBottomColor(bottom_background_color);
+                    }
+                    ImGui::EndPopup();
+                }
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                if (ImGui::BeginCombo("##TextureComboPicker",
+                                      game_state.map.GetTextureName().c_str())) {
+                    std::filesystem::path map_texture_in_png = game_state.map.GetTextureName();
+                    map_texture_in_png.replace_extension(".png");
+                    for (const auto& texture_file_name :
+                         client_state.map_editor_state.all_textures_in_directory) {
+
+                        if (ImGui::Selectable(texture_file_name.c_str(),
+                                              texture_file_name ==
+                                                  game_state.map.GetTextureName() ||
+                                                texture_file_name == map_texture_in_png.string())) {
+
+                            game_state.map.SetTextureName(texture_file_name);
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                ImGui::Image(
+                  (ImTextureID)(intptr_t)client_state.map_editor_state.polygon_texture_opengl_id,
+                  { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x });
+
+                ImGui::EndTable();
+            }
+
+            ImGui::Separator();
+
+            float close_button_width =
+              ImGui::CalcTextSize("CLOSE").x + ImGui::GetStyle().FramePadding.x * 2.F;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
+                                 close_button_width);
+            if (ImGui::Button("CLOSE")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
     }
 

@@ -14,9 +14,7 @@ namespace Soldank
 class BackgroundRenderer
 {
 public:
-    BackgroundRenderer(PMSColor background_top_color,
-                       PMSColor background_bottom_color,
-                       std::span<float, 4> boundaries);
+    BackgroundRenderer(Map& map);
     ~BackgroundRenderer();
 
     // it's not safe to be able to copy/move this because we would also need to take care of the
@@ -29,6 +27,14 @@ public:
     void Render(glm::mat4 transform);
 
 private:
+    void OnChangeBackgroundColor(const PMSColor& top_color,
+                                 const PMSColor& bottom_color,
+                                 std::span<float, 4> boundaries);
+    static void GenerateGLBufferVertices(PMSColor background_top_color,
+                                         PMSColor background_bottom_color,
+                                         std::span<float, 4> boundaries,
+                                         std::vector<float>& destination_vertices);
+
     Shader shader_;
 
     unsigned int vbo_;

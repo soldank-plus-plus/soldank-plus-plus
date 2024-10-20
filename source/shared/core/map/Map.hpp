@@ -72,6 +72,8 @@ struct MapChangeEvents
     Observable<const PMSPolygon&, const std::vector<PMSPolygon>&> removed_polygon;
     Observable<const PMSSpawnPoint&, unsigned int> added_new_spawn_point;
     Observable<const PMSSpawnPoint&, unsigned int> removed_spawn_point;
+    Observable<const PMSColor&, const PMSColor&, std::span<float, 4>> changed_background_color;
+    Observable<const std::string&> changed_texture_name;
 };
 
 class Map
@@ -116,10 +118,27 @@ public:
 
     std::string GetName() const { return map_data_.name; }
 
+    void SetDescription(const std::string& new_description)
+    {
+        map_data_.description = new_description;
+    }
+
     std::string GetDescription() const { return map_data_.description; }
 
+    void SetBackgroundTopColor(const PMSColor& color)
+    {
+        map_data_.background_top_color = color;
+        map_change_events_.changed_background_color.Notify(
+          map_data_.background_top_color, map_data_.background_bottom_color, GetBoundaries());
+    }
     PMSColor GetBackgroundTopColor() const { return map_data_.background_top_color; }
 
+    void SetBackgroundBottomColor(const PMSColor& color)
+    {
+        map_data_.background_bottom_color = color;
+        map_change_events_.changed_background_color.Notify(
+          map_data_.background_top_color, map_data_.background_bottom_color, GetBoundaries());
+    }
     PMSColor GetBackgroundBottomColor() const { return map_data_.background_bottom_color; }
 
     std::span<float, 4> GetBoundaries() { return map_data_.boundaries_xy; }
@@ -141,17 +160,57 @@ public:
 
     const std::vector<PMSWayPoint>& GetWayPoints() const { return map_data_.way_points; }
 
+    void SetTextureName(const std::string& texture_name)
+    {
+        map_data_.texture_name = texture_name;
+        map_change_events_.changed_texture_name.Notify(map_data_.texture_name);
+    }
     const std::string& GetTextureName() const { return map_data_.texture_name; }
 
+    void SetJetCount(int jet_count) { map_data_.jet_count = jet_count; }
     int GetJetCount() const { return map_data_.jet_count; }
 
+    void SetGrenadesCount(unsigned char grenades_count)
+    {
+        map_data_.grenades_count = grenades_count;
+    }
     unsigned char GetGrenadesCount() const { return map_data_.grenades_count; }
 
+    void SetMedikitsCount(unsigned char medikits_count)
+    {
+        map_data_.medikits_count = medikits_count;
+    }
     unsigned char GetMedikitsCount() const { return map_data_.medikits_count; }
 
+    void SetWeatherType(PMSWeatherType weather_type) { map_data_.weather_type = weather_type; }
     PMSWeatherType GetWeatherType() const { return map_data_.weather_type; }
+    std::string GetWeatherTypeText() const
+    {
+        switch (map_data_.weather_type) {
+            case PMSWeatherType::None:
+                return "None";
+            case PMSWeatherType::Rain:
+                return "Rain";
+            case PMSWeatherType::Sandstorm:
+                return "Sandstorm";
+            case PMSWeatherType::Snow:
+                return "Snow";
+        }
+    }
 
+    void SetStepType(PMSStepType step_type) { map_data_.step_type = step_type; }
     PMSStepType GetStepType() const { return map_data_.step_type; }
+    std::string GetStepTypeText() const
+    {
+        switch (map_data_.step_type) {
+            case PMSStepType::HardGround:
+                return "Hard";
+            case PMSStepType::SoftGround:
+                return "Soft";
+            case PMSStepType::None:
+                return "None";
+        }
+    }
 
     int GetSectorsSize() const { return map_data_.sectors_size; }
 
