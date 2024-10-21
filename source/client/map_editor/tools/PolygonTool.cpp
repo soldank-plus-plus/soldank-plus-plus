@@ -16,11 +16,16 @@ PolygonTool::PolygonTool(
 {
 }
 
-void PolygonTool::OnSelect(ClientState& client_state, const State& game_state) {}
+void PolygonTool::OnSelect(ClientState& /*client_state*/, const State& /*game_state*/) {}
 
-void PolygonTool::OnUnselect(ClientState& client_state) {}
+void PolygonTool::OnUnselect(ClientState& client_state)
+{
+    client_state.map_editor_state.polygon_tool_wip_polygon_edge = std::nullopt;
+    client_state.map_editor_state.polygon_tool_wip_polygon = std::nullopt;
+}
 
-void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
+void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                              const State& /*game_state*/)
 {
     if (client_state.map_editor_state.polygon_tool_wip_polygon) {
         auto add_polygon_action = std::make_unique<AddPolygonMapEditorAction>(
@@ -67,17 +72,18 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const S
     }
 }
 
-void PolygonTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state)
+void PolygonTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
+                                                const State& /*game_state*/)
 {
 }
 
-void PolygonTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
+void PolygonTool::OnSceneRightMouseButtonClick(ClientState& /*client_state*/) {}
 
 void PolygonTool::OnSceneRightMouseButtonRelease() {}
 
-void PolygonTool::OnMouseScreenPositionChange(ClientState& client_state,
-                                              glm::vec2 last_mouse_position,
-                                              glm::vec2 new_mouse_position)
+void PolygonTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
+                                              glm::vec2 /*last_mouse_position*/,
+                                              glm::vec2 /*new_mouse_position*/)
 {
 }
 
