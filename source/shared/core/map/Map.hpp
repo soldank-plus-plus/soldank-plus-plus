@@ -74,6 +74,11 @@ struct MapChangeEvents
     Observable<const PMSSpawnPoint&, unsigned int> removed_spawn_point;
     Observable<const PMSColor&, const PMSColor&, std::span<float, 4>> changed_background_color;
     Observable<const std::string&> changed_texture_name;
+    Observable<const PMSScenery&, unsigned int> added_new_scenery;
+    Observable<const PMSScenery&, unsigned int, const std::vector<PMSScenery>&> removed_scenery;
+    Observable<const PMSSceneryType&> added_new_scenery_type;
+    Observable<const PMSSceneryType&, unsigned short, const std::vector<PMSSceneryType>&>
+      removed_scenery_type;
 };
 
 class Map
@@ -111,6 +116,9 @@ public:
 
     unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);
+
+    unsigned int AddNewScenery(const PMSScenery& scenery, const std::string& file_name);
+    PMSScenery RemoveSceneryById(unsigned int id);
 
     static std::array<glm::vec2, 4> GetSceneryVertexPositions(const PMSScenery& scenery);
 

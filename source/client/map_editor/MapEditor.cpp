@@ -122,7 +122,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     tools_.emplace_back(std::make_unique<VertexColorTool>());
     tools_.emplace_back(std::make_unique<ColorTool>());
     tools_.emplace_back(std::make_unique<TextureTool>());
-    tools_.emplace_back(std::make_unique<SceneryTool>());
+    tools_.emplace_back(std::make_unique<SceneryTool>(add_new_map_editor_action_));
     tools_.emplace_back(std::make_unique<WaypointTool>());
     tools_.emplace_back(std::make_unique<SpawnpointTool>(add_new_map_editor_action_));
     tools_.emplace_back(std::make_unique<ColorPickerTool>());

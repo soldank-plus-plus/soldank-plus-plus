@@ -29,6 +29,7 @@ public:
                 float rotation);
 
     void SetTexture(const std::string& file_name);
+    glm::ivec2 GetTextureDimensions() const { return { texture_width_, texture_height_ }; }
 
 private:
     Shader shader_;
@@ -36,6 +37,9 @@ private:
     unsigned int vbo_;
     unsigned int ebo_;
     unsigned int texture_;
+
+    int texture_width_;
+    int texture_height_;
 };
 } // namespace Soldank
 

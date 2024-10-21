@@ -26,8 +26,7 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& clien
         game_state->GetState().map,
         std::string(game_state->GetState().map.GetTextureName())))
     , polygon_outlines_renderer_(game_state->GetState().map, { 1.0F, 1.0F, 1.0F, 1.0F })
-    , sceneries_renderer_(game_state->GetState().map.GetSceneryTypes(),
-                          game_state->GetState().map.GetSceneryInstances())
+    , sceneries_renderer_(game_state->GetState().map)
     , soldier_renderer_(sprite_manager_)
     , cursor_renderer_(client_state)
     , text_renderer_("play-regular.ttf", 48)
