@@ -91,6 +91,10 @@ void MapEditorScene::Render(State& game_state,
                             client_state.map_editor_state.scenery_to_place.scale_y };
         float rotation = client_state.map_editor_state.scenery_to_place.rotation;
         single_image_renderer_.Render(camera.GetView(), position, color, scale, rotation);
+        client_state.map_editor_state.scenery_to_place.width =
+          single_image_renderer_.GetTextureDimensions().x;
+        client_state.map_editor_state.scenery_to_place.height =
+          single_image_renderer_.GetTextureDimensions().y;
     }
 
     MapEditorUI::Render(game_state, client_state);

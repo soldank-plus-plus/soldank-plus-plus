@@ -16,6 +16,8 @@ SingleImageRenderer::SingleImageRenderer()
               ShaderSources::DYNAMIC_COLOR_FRAGMENT_SHADER_SOURCE)
     , vbo_(0)
     , texture_(0)
+    , texture_width_(0)
+    , texture_height_(0)
 {
     float half_width = 16.0F;
     float half_height = 16.0F;
@@ -81,8 +83,11 @@ void SingleImageRenderer::SetTexture(const std::string& file_name)
     if (texture_or_error.has_value()) {
         texture_ = texture_or_error.value().opengl_id;
 
-        auto width = (float)texture_or_error.value().width;
-        auto height = (float)texture_or_error.value().height;
+        texture_width_ = texture_or_error.value().width;
+        texture_height_ = texture_or_error.value().height;
+
+        auto width = (float)texture_width_;
+        auto height = (float)texture_height_;
 
         // clang-format off
         std::vector<float> vertices{
@@ -98,6 +103,8 @@ void SingleImageRenderer::SetTexture(const std::string& file_name)
     } else {
         spdlog::critical("Texture file not found {}", file_path.string());
         texture_ = 0;
+        texture_width_ = 0;
+        texture_height_ = 0;
     }
 }
 } // namespace Soldank

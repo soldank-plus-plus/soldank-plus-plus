@@ -3,12 +3,15 @@
 
 #include "map_editor/tools/Tool.hpp"
 
+#include "map_editor/actions/MapEditorAction.hpp"
+
 namespace Soldank
 {
 class SceneryTool final : public Tool
 {
 public:
-    SceneryTool() = default;
+    SceneryTool(
+      const std::function<void(std::unique_ptr<MapEditorAction>)>& add_new_map_editor_action);
     ~SceneryTool() final = default;
 
     void OnSelect(ClientState& client_state, const State& game_state) final;
@@ -30,6 +33,9 @@ public:
     void OnModifierKey2Released() final;
     void OnModifierKey3Pressed() final;
     void OnModifierKey3Released() final;
+
+private:
+    std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
 };
 } // namespace Soldank
 
