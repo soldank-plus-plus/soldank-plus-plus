@@ -42,6 +42,16 @@ PolygonsRenderer::PolygonsRenderer(Map& map, const std::string& texture_name)
           Texture::Delete(texture_);
           LoadTexture(texture_name);
       });
+    map.GetMapChangeEvents().added_new_polygons.AddObserver(
+      [this](const std::vector<PMSPolygon>& /*created_polygons*/,
+             const std::vector<PMSPolygon>& polygons_after_adding) {
+          OnAddPolygons(polygons_after_adding);
+      });
+    map.GetMapChangeEvents().removed_polygons.AddObserver(
+      [this](const std::vector<PMSPolygon>& /*removed_polygons*/,
+             const std::vector<PMSPolygon>& polygons_after_removal) {
+          OnRemovePolygons(polygons_after_removal);
+      });
 }
 
 PolygonsRenderer::~PolygonsRenderer()
@@ -106,6 +116,22 @@ void PolygonsRenderer::OnRemovePolygon(const std::vector<PMSPolygon>& polygons_a
     if (!vertices.empty()) {
         Renderer::ModifyVBOVertices(vbo_, vertices, 0);
     }
+}
+
+void PolygonsRenderer::OnAddPolygons(const std::vector<PMSPolygon>& polygons_after_adding)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(polygons_after_adding, vertices);
+    Renderer::ModifyVBOVertices(vbo_, vertices);
+    polygons_count_ = polygons_after_adding.size();
+}
+
+void PolygonsRenderer::OnRemovePolygons(const std::vector<PMSPolygon>& polygons_after_removal)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(polygons_after_removal, vertices);
+    Renderer::ModifyVBOVertices(vbo_, vertices);
+    polygons_count_ = polygons_after_removal.size();
 }
 
 void PolygonsRenderer::GenerateGLBufferVertices(const std::vector<PMSPolygon>& polygons,

@@ -40,7 +40,7 @@ private:
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position);
 
-    void OnKeyPressed(int key, ClientState& client_state);
+    void OnKeyPressed(int key, ClientState& client_state, Map& map);
     void OnKeyReleased(int key, ClientState& client_state);
 
     void ExecuteNewAction(ClientState& client_state,
@@ -48,6 +48,8 @@ private:
                           std::unique_ptr<MapEditorAction> new_action);
     void UndoLastAction(ClientState& client_state, Map& map);
     void RedoUndoneAction(ClientState& client_state, Map& map);
+
+    void RemoveCurrentSelection(ClientState& client_state, Map& map);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;

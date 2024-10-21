@@ -32,6 +32,8 @@ private:
                                         const std::bitset<3>& selected_vertices);
     void OnAddPolygon(const PMSPolygon& new_polygon);
     void OnRemovePolygon(const PMSPolygon& removed_polygon);
+    void OnAddPolygons(const std::vector<PMSPolygon>& polygons_after_adding);
+    void OnRemovePolygons(const std::vector<PMSPolygon>& polygons_after_removal);
 
     void GenerateGLBufferVertices(const std::vector<PMSPolygon>& polygons,
                                   std::vector<float>& destination_vertices) const;
