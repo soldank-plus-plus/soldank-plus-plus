@@ -70,6 +70,8 @@ struct MapChangeEvents
 {
     Observable<const PMSPolygon&> added_new_polygon;
     Observable<const PMSPolygon&, const std::vector<PMSPolygon>&> removed_polygon;
+    Observable<const std::vector<PMSPolygon>, const std::vector<PMSPolygon>&> added_new_polygons;
+    Observable<const std::vector<PMSPolygon>, const std::vector<PMSPolygon>&> removed_polygons;
     Observable<const PMSSpawnPoint&, unsigned int> added_new_spawn_point;
     Observable<const PMSSpawnPoint&, unsigned int> removed_spawn_point;
     Observable<const PMSColor&, const PMSColor&, std::span<float, 4>> changed_background_color;
@@ -112,7 +114,9 @@ public:
     MapChangeEvents& GetMapChangeEvents() { return map_change_events_; }
 
     PMSPolygon AddNewPolygon(const PMSPolygon& polygon);
+    void AddPolygons(const std::vector<PMSPolygon>& polygons);
     PMSPolygon RemovePolygonById(unsigned int id);
+    void RemovePolygonsById(const std::vector<unsigned int>& polygon_ids);
 
     unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);
@@ -310,6 +314,10 @@ private:
                            float sector_x,
                            float sector_y,
                            float sector_size);
+
+    static void SetPolygonVerticesAndPerpendiculars(PMSPolygon& polygon);
+
+    void FixPolygonIds();
 };
 } // namespace Soldank
 

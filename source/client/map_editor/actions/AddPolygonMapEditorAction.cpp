@@ -7,7 +7,7 @@ AddPolygonMapEditorAction::AddPolygonMapEditorAction(const PMSPolygon& new_polyg
 {
 }
 
-void AddPolygonMapEditorAction::Execute(ClientState& client_state, Map& map)
+void AddPolygonMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
 {
     added_polygon_ = map.AddNewPolygon(added_polygon_);
 }

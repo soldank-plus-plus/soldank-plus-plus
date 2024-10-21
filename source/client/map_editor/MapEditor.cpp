@@ -1,5 +1,6 @@
 #include "map_editor/MapEditor.hpp"
 
+#include "map_editor/actions/RemoveSelectionMapEditorAction.hpp"
 #include "map_editor/tools/ColorPickerTool.hpp"
 #include "map_editor/tools/ColorTool.hpp"
 #include "map_editor/tools/PolygonTool.hpp"
@@ -13,6 +14,8 @@
 #include "map_editor/tools/WaypointTool.hpp"
 
 #include <GLFW/glfw3.h>
+
+#include <memory>
 #include <utility>
 
 namespace Soldank
@@ -93,9 +96,9 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
         }
     });
 
-    client_state.event_key_pressed.AddObserver([this, &client_state](int key) {
+    client_state.event_key_pressed.AddObserver([this, &client_state, &game_state](int key) {
         if (!client_state.map_editor_state.is_modal_or_popup_open) {
-            OnKeyPressed(key, client_state);
+            OnKeyPressed(key, client_state, game_state.map);
         }
     });
     client_state.event_key_released.AddObserver([this, &client_state](int key) {
@@ -277,7 +280,7 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
       ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
 }
 
-void MapEditor::OnKeyPressed(int key, ClientState& client_state)
+void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
 {
     static std::vector<std::pair<int, ToolType>> key_to_tool_type_map = {
         { GLFW_KEY_A, ToolType::Transform },       { GLFW_KEY_Q, ToolType::Polygon },
@@ -307,6 +310,10 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state)
     }
     if (key == GLFW_KEY_LEFT_ALT) {
         tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Pressed();
+    }
+
+    if (key == GLFW_KEY_DELETE) {
+        RemoveCurrentSelection(client_state, map);
     }
 }
 
@@ -360,5 +367,12 @@ void MapEditor::RedoUndoneAction(ClientState& client_state, Map& map)
         map_editor_undone_actions_.pop_back();
         map_editor_executed_actions_.back()->Execute(client_state, map);
     }
+}
+
+void MapEditor::RemoveCurrentSelection(ClientState& client_state, Map& map)
+{
+    std::unique_ptr<RemoveSelectionMapEditorAction> remove_selection_action =
+      std::make_unique<RemoveSelectionMapEditorAction>(client_state, map);
+    ExecuteNewAction(client_state, map, std::move(remove_selection_action));
 }
 } // namespace Soldank

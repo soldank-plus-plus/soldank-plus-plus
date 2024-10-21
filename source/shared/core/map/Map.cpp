@@ -616,61 +616,103 @@ std::optional<PMSSpawnPoint> Map::FindFirstSpawnPoint(PMSSpawnPointType spawn_po
 
 PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 {
+
     PMSPolygon new_polygon = polygon;
+
     new_polygon.id = map_data_.polygons.size();
 
-    // Polygons' vertices have to be arranged in clock-wise order.
-    if (!new_polygon.AreVerticesClockwise()) {
-        PMSVertex tmp = new_polygon.vertices[1];
-        new_polygon.vertices[1] = new_polygon.vertices[2];
-        new_polygon.vertices[2] = tmp;
-    }
-
-    for (int j = 0; j < 3; ++j) {
-        unsigned int k = j + 1;
-        if (k > 2) {
-            k = 0;
-        }
-
-        float diff_x = new_polygon.vertices.at(k).x - new_polygon.vertices.at(j).x;
-        float diff_y = new_polygon.vertices.at(j).y - new_polygon.vertices.at(k).y;
-        float length = NAN;
-        if (fabs(diff_x) < 0.0001F && fabs(diff_y) < 0.0001F) {
-            length = 1.0F;
-        } else {
-            length = hypotf(diff_x, diff_y);
-        }
-
-        if (new_polygon.polygon_type == PMSPolygonType::Bouncy) {
-            if (new_polygon.perpendiculars.at(j).z < 1.0F) {
-                new_polygon.perpendiculars.at(j).z = 1.0F;
-            }
-        } else {
-            new_polygon.perpendiculars.at(j).z = 1.0F;
-        }
-
-        new_polygon.perpendiculars.at(j).x = (diff_y / length) * new_polygon.perpendiculars.at(j).z;
-        new_polygon.perpendiculars.at(j).y = (diff_x / length) * new_polygon.perpendiculars.at(j).z;
-        new_polygon.perpendiculars.at(j).z = 1.0F;
-    }
+    SetPolygonVerticesAndPerpendiculars(new_polygon);
 
     map_data_.polygons.push_back(new_polygon);
 
+    FixPolygonIds();
     UpdateBoundaries();
     GenerateSectors();
+
     map_change_events_.added_new_polygon.Notify(new_polygon);
 
     return new_polygon;
+}
+
+void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)
+{
+    std::vector<PMSPolygon> polygons_to_add = polygons;
+    for (auto& polygon : polygons_to_add) {
+        SetPolygonVerticesAndPerpendiculars(polygon);
+    }
+    std::vector<PMSPolygon> old_polygons = map_data_.polygons;
+    map_data_.polygons.clear();
+    unsigned int old_polygons_id = 0;
+    unsigned int polygons_to_add_id = 0;
+    while (old_polygons_id < old_polygons.size() || polygons_to_add_id < polygons_to_add.size()) {
+        if (polygons_to_add_id < polygons_to_add.size() &&
+            polygons_to_add.at(polygons_to_add_id).id == map_data_.polygons.size()) {
+
+            map_data_.polygons.push_back(polygons_to_add.at(polygons_to_add_id));
+            ++polygons_to_add_id;
+        } else {
+            map_data_.polygons.push_back(old_polygons.at(old_polygons_id));
+            ++old_polygons_id;
+        }
+    }
+
+    FixPolygonIds();
+    UpdateBoundaries();
+    GenerateSectors();
+
+    map_change_events_.added_new_polygons.Notify(polygons_to_add, map_data_.polygons);
 }
 
 PMSPolygon Map::RemovePolygonById(unsigned int id)
 {
     PMSPolygon removed_polygon = map_data_.polygons.at(id);
     map_data_.polygons.erase(map_data_.polygons.begin() + id);
+    FixPolygonIds();
     UpdateBoundaries();
     GenerateSectors();
     map_change_events_.removed_polygon.Notify(removed_polygon, map_data_.polygons);
+
     return removed_polygon;
+}
+
+void Map::RemovePolygonsById(const std::vector<unsigned int>& polygon_ids)
+{
+    std::vector<unsigned int> sorted_polygon_ids = polygon_ids;
+    std::sort(sorted_polygon_ids.begin(), sorted_polygon_ids.end());
+    std::vector<PMSPolygon> removed_polygons;
+    removed_polygons.reserve(polygon_ids.size());
+    for (const auto& polygon_id : sorted_polygon_ids) {
+        removed_polygons.push_back(map_data_.polygons.at(polygon_id));
+    }
+
+    unsigned int polygon_id = 0;
+    unsigned int removal_id = 0;
+    while (polygon_id + removal_id < map_data_.polygons.size()) {
+        while (removal_id < sorted_polygon_ids.size() &&
+               polygon_id + removal_id == sorted_polygon_ids.at(removal_id)) {
+            ++removal_id;
+        }
+
+        if (polygon_id + removal_id >= map_data_.polygons.size()) {
+            break;
+        }
+
+        if (removal_id > 0) {
+            std::swap(map_data_.polygons[polygon_id], map_data_.polygons[polygon_id + removal_id]);
+        }
+
+        ++polygon_id;
+    }
+
+    for (unsigned i = 0; i < sorted_polygon_ids.size(); ++i) {
+        map_data_.polygons.pop_back();
+    }
+
+    FixPolygonIds();
+    UpdateBoundaries();
+    GenerateSectors();
+
+    map_change_events_.removed_polygons.Notify(removed_polygons, map_data_.polygons);
 }
 
 unsigned int Map::AddNewSpawnPoint(const PMSSpawnPoint& spawn_point)
@@ -911,5 +953,52 @@ bool Map::IsPolygonInSector(unsigned short polygon_index,
     }
 
     return false;
+}
+
+void Map::SetPolygonVerticesAndPerpendiculars(PMSPolygon& polygon)
+{
+    // Polygons' vertices have to be arranged in clock-wise order.
+    if (!polygon.AreVerticesClockwise()) {
+        PMSVertex tmp = polygon.vertices[1];
+        polygon.vertices[1] = polygon.vertices[2];
+        polygon.vertices[2] = tmp;
+    }
+
+    for (int j = 0; j < 3; ++j) {
+        unsigned int k = j + 1;
+        if (k > 2) {
+            k = 0;
+        }
+
+        float diff_x = polygon.vertices.at(k).x - polygon.vertices.at(j).x;
+        float diff_y = polygon.vertices.at(j).y - polygon.vertices.at(k).y;
+        float length = NAN;
+        if (fabs(diff_x) < 0.0001F && fabs(diff_y) < 0.0001F) {
+            length = 1.0F;
+        } else {
+            length = hypotf(diff_x, diff_y);
+        }
+
+        if (polygon.polygon_type == PMSPolygonType::Bouncy) {
+            if (polygon.perpendiculars.at(j).z < 1.0F) {
+                polygon.perpendiculars.at(j).z = 1.0F;
+            }
+        } else {
+            polygon.perpendiculars.at(j).z = 1.0F;
+        }
+
+        polygon.perpendiculars.at(j).x = (diff_y / length) * polygon.perpendiculars.at(j).z;
+        polygon.perpendiculars.at(j).y = (diff_x / length) * polygon.perpendiculars.at(j).z;
+        polygon.perpendiculars.at(j).z = 1.0F;
+    }
+}
+
+void Map::FixPolygonIds()
+{
+    unsigned int next_id = 0;
+    for (auto& polygon : map_data_.polygons) {
+        polygon.id = next_id;
+        ++next_id;
+    }
 }
 } // namespace Soldank
