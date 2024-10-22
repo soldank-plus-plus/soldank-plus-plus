@@ -67,6 +67,18 @@ SceneriesRenderer::SceneriesRenderer(Map& map)
           OnRemoveSceneryType(
             removed_scenery_type, removed_scenery_type_id, scenery_types_after_removal);
       });
+    map.GetMapChangeEvents().added_sceneries.AddObserver(
+      [this](const std::vector<PMSScenery>& sceneries_after_adding) {
+          OnAddSceneries(sceneries_after_adding);
+      });
+    map.GetMapChangeEvents().removed_sceneries.AddObserver(
+      [this](const std::vector<PMSScenery>& sceneries_after_removal) {
+          OnRemoveSceneries(sceneries_after_removal);
+      });
+    map.GetMapChangeEvents().removed_scenery_types.AddObserver(
+      [this](const std::vector<std::pair<unsigned short, PMSSceneryType>>& removed_scenery_types) {
+          OnRemoveSceneryTypes(removed_scenery_types);
+      });
 }
 
 SceneriesRenderer::~SceneriesRenderer()
@@ -155,6 +167,46 @@ void SceneriesRenderer::OnRemoveSceneryType(
     --removed_scenery_type_id;
     Texture::Delete(textures_.at(removed_scenery_type_id));
     textures_.erase(textures_.begin() + removed_scenery_type_id);
+}
+
+void SceneriesRenderer::OnRemoveSceneryTypes(
+  const std::vector<std::pair<unsigned short, PMSSceneryType>>& removed_scenery_types)
+{
+    std::vector<unsigned int> indexes_to_remove;
+    for (const auto& removed_scenery_type : removed_scenery_types) {
+        indexes_to_remove.push_back(removed_scenery_type.first - 1);
+        Texture::Delete(textures_.at(removed_scenery_type.first - 1));
+    }
+
+    std::sort(indexes_to_remove.begin(), indexes_to_remove.end());
+    std::vector<unsigned int> new_textures;
+
+    unsigned int removal_id = 0;
+    for (unsigned int i = 0; i < textures_.size(); ++i) {
+        if (removal_id < indexes_to_remove.size() && indexes_to_remove.at(removal_id) == i) {
+
+            ++removal_id;
+            continue;
+        }
+
+        new_textures.push_back(textures_.at(i));
+    }
+
+    textures_ = new_textures;
+}
+
+void SceneriesRenderer::OnAddSceneries(const std::vector<PMSScenery>& sceneries_after_adding)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(sceneries_after_adding, vertices);
+    Renderer::ModifyVBOVertices(vbo_, vertices);
+}
+
+void SceneriesRenderer::OnRemoveSceneries(const std::vector<PMSScenery>& sceneries_after_removal)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(sceneries_after_removal, vertices);
+    Renderer::ModifyVBOVertices(vbo_, vertices);
 }
 
 void SceneriesRenderer::GenerateGLBufferVertices(const std::vector<PMSScenery>& sceneries,

@@ -28,6 +28,13 @@ public:
     void Render(glm::mat4 transform, unsigned int scenery_id);
 
 private:
+    void OnAddScenery(const PMSScenery& new_scenery, unsigned int new_scenery_id);
+    void OnRemoveScenery(const PMSScenery& removed_scenery,
+                         unsigned int removed_scenery_id,
+                         const std::vector<PMSScenery>& sceneries_after_removal);
+    void OnAddSceneries(const std::vector<PMSScenery>& sceneries_after_adding);
+    void OnRemoveSceneries(const std::vector<PMSScenery>& sceneries_after_removal);
+
     void GenerateGLBufferVertices(const std::vector<PMSScenery>& sceneries,
                                   std::vector<float>& destination_vertices) const;
     void GenerateGLBufferVerticesForScenery(const PMSScenery& scenery,

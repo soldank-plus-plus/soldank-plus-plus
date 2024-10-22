@@ -858,6 +858,111 @@ PMSScenery Map::RemoveSceneryById(unsigned int id)
     return removed_scenery;
 }
 
+void Map::AddSceneries(
+  const std::vector<std::pair<unsigned int, std::pair<PMSScenery, std::string>>>& sceneries)
+{
+    auto sceneries_to_add = sceneries;
+    std::sort(sceneries_to_add.begin(), sceneries_to_add.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+
+    for (auto& scenery_to_add : sceneries_to_add) {
+        std::string file_name = scenery_to_add.second.second;
+        bool found = false;
+        for (unsigned int i = 0; i < map_data_.scenery_types.size(); ++i) {
+            if (map_data_.scenery_types.at(i).name == file_name) {
+                scenery_to_add.second.first.style = i + 1;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            map_data_.scenery_types.push_back({ .name = file_name });
+            scenery_to_add.second.first.style = map_data_.scenery_types.size();
+            map_change_events_.added_new_scenery_type.Notify(map_data_.scenery_types.back());
+        }
+    }
+
+    std::vector<PMSScenery> old_sceneries = map_data_.scenery_instances;
+    map_data_.scenery_instances.clear();
+    unsigned int old_scenery_id = 0;
+    unsigned int sceneries_to_add_id = 0;
+
+    while (old_scenery_id < old_sceneries.size() || sceneries_to_add_id < sceneries_to_add.size()) {
+
+        if (sceneries_to_add_id < sceneries_to_add.size() &&
+            sceneries_to_add.at(sceneries_to_add_id).first == map_data_.scenery_instances.size()) {
+
+            map_data_.scenery_instances.push_back(
+              sceneries_to_add.at(sceneries_to_add_id).second.first);
+            ++sceneries_to_add_id;
+        } else {
+            map_data_.scenery_instances.push_back(old_sceneries.at(old_scenery_id));
+            ++old_scenery_id;
+        }
+    }
+
+    map_change_events_.added_sceneries.Notify(map_data_.scenery_instances);
+}
+
+void Map::RemoveSceneriesById(const std::vector<unsigned int>& scenery_ids)
+{
+    std::vector<PMSScenery> old_sceneries = map_data_.scenery_instances;
+    std::vector<unsigned int> scenery_ids_to_remove = scenery_ids;
+    std::sort(scenery_ids_to_remove.begin(), scenery_ids_to_remove.end());
+    map_data_.scenery_instances.clear();
+    unsigned int removal_id = 0;
+    std::array<unsigned int, MAX_SCENERIES_COUNT + 10> scenery_type_usage_count{};
+    scenery_type_usage_count.fill(0);
+
+    for (unsigned int i = 0; i < old_sceneries.size(); ++i) {
+        if (removal_id < scenery_ids_to_remove.size() &&
+            i == scenery_ids_to_remove.at(removal_id)) {
+
+            ++removal_id;
+            continue;
+        }
+
+        map_data_.scenery_instances.push_back(old_sceneries.at(i));
+        ++scenery_type_usage_count.at(map_data_.scenery_instances.back().style);
+    }
+
+    std::array<unsigned int, MAX_SCENERIES_COUNT + 10> scenery_type_new_style{};
+    for (unsigned int i = 0; i < scenery_type_new_style.size(); ++i) {
+        scenery_type_new_style.at(i) = i;
+    }
+
+    unsigned int acc = 0;
+    for (unsigned int i = 1; i < scenery_type_new_style.size(); ++i) {
+        if (scenery_type_usage_count.at(i) == 0) {
+            scenery_type_new_style.at(i) = 0;
+            acc++;
+        }
+
+        scenery_type_new_style.at(i) -= acc;
+    }
+
+    std::vector<PMSSceneryType> old_scenery_types = map_data_.scenery_types;
+    std::vector<std::pair<unsigned short, PMSSceneryType>> removed_scenery_types;
+    map_data_.scenery_types.clear();
+
+    for (unsigned int i = 0; i < old_scenery_types.size(); ++i) {
+        if (scenery_type_usage_count.at(i + 1) != 0) {
+            map_data_.scenery_types.push_back(old_scenery_types.at(i));
+        } else {
+            removed_scenery_types.emplace_back(i + 1, old_scenery_types.at(i));
+        }
+    }
+
+    for (auto& scenery_instance : map_data_.scenery_instances) {
+        scenery_instance.style = scenery_type_new_style.at(scenery_instance.style);
+    }
+
+    map_change_events_.removed_scenery_types.Notify(removed_scenery_types);
+    map_change_events_.removed_sceneries.Notify(map_data_.scenery_instances);
+}
+
 std::array<glm::vec2, 4> Map::GetSceneryVertexPositions(const PMSScenery& scenery)
 {
     glm::mat4 transform_matrix(1.0F);
