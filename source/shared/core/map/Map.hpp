@@ -74,6 +74,8 @@ struct MapChangeEvents
     Observable<const std::vector<PMSPolygon>, const std::vector<PMSPolygon>&> removed_polygons;
     Observable<const PMSSpawnPoint&, unsigned int> added_new_spawn_point;
     Observable<const PMSSpawnPoint&, unsigned int> removed_spawn_point;
+    Observable<const std::vector<PMSSpawnPoint>&> removed_spawn_points;
+    Observable<const std::vector<PMSSpawnPoint>&> added_spawn_points;
     Observable<const PMSColor&, const PMSColor&, std::span<float, 4>> changed_background_color;
     Observable<const std::string&> changed_texture_name;
     Observable<const PMSScenery&, unsigned int> added_new_scenery;
@@ -120,6 +122,8 @@ public:
 
     unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);
+    void AddSpawnPoints(const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points);
+    void RemoveSpawnPointsById(const std::vector<unsigned int>& spawn_point_ids);
 
     unsigned int AddNewScenery(const PMSScenery& scenery, const std::string& file_name);
     PMSScenery RemoveSceneryById(unsigned int id);
