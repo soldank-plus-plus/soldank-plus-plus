@@ -18,6 +18,8 @@ public:
 private:
     std::vector<unsigned int> polygon_ids_to_remove_;
     std::vector<PMSPolygon> removed_polygons_;
+    std::vector<unsigned int> spawn_point_ids_to_remove_;
+    std::vector<std::pair<unsigned int, PMSSpawnPoint>> removed_spawn_points_;
 };
 } // namespace Soldank
 

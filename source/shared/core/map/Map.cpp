@@ -637,6 +637,10 @@ PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)
 {
     std::vector<PMSPolygon> polygons_to_add = polygons;
+    std::sort(polygons_to_add.begin(),
+              polygons_to_add.end(),
+              [](const PMSPolygon& a, const PMSPolygon& b) { return a.id < b.id; });
+
     for (auto& polygon : polygons_to_add) {
         SetPolygonVerticesAndPerpendiculars(polygon);
     }
@@ -730,6 +734,58 @@ PMSSpawnPoint Map::RemoveSpawnPointById(unsigned int id)
     map_data_.spawn_points.erase(map_data_.spawn_points.begin() + id);
     map_change_events_.removed_spawn_point.Notify(removed_spawn_point, id);
     return removed_spawn_point;
+}
+
+void Map::AddSpawnPoints(const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points)
+{
+    std::vector<std::pair<unsigned int, PMSSpawnPoint>> spawn_points_to_add = spawn_points;
+    std::sort(spawn_points_to_add.begin(),
+              spawn_points_to_add.end(),
+              [](const std::pair<unsigned int, PMSSpawnPoint>& a,
+                 const std::pair<unsigned int, PMSSpawnPoint>& b) { return a.first < b.first; });
+
+    std::vector<PMSSpawnPoint> old_spawn_points = map_data_.spawn_points;
+    map_data_.spawn_points.clear();
+    unsigned int old_spawn_point_id = 0;
+    unsigned int spawn_points_to_add_id = 0;
+
+    while (old_spawn_point_id < old_spawn_points.size() ||
+           spawn_points_to_add_id < spawn_points_to_add.size()) {
+
+        if (spawn_points_to_add_id < spawn_points_to_add.size() &&
+            spawn_points_to_add.at(spawn_points_to_add_id).first == map_data_.spawn_points.size()) {
+
+            map_data_.spawn_points.push_back(spawn_points_to_add.at(spawn_points_to_add_id).second);
+            ++spawn_points_to_add_id;
+        } else {
+            map_data_.spawn_points.push_back(old_spawn_points.at(old_spawn_point_id));
+            ++old_spawn_point_id;
+        }
+    }
+
+    map_change_events_.added_spawn_points.Notify(map_data_.spawn_points);
+}
+
+void Map::RemoveSpawnPointsById(const std::vector<unsigned int>& spawn_point_ids)
+{
+    std::vector<PMSSpawnPoint> old_spawn_points = map_data_.spawn_points;
+    std::vector<unsigned int> spawn_point_ids_to_remove = spawn_point_ids;
+    std::sort(spawn_point_ids_to_remove.begin(), spawn_point_ids_to_remove.end());
+    map_data_.spawn_points.clear();
+    unsigned int removal_id = 0;
+
+    for (unsigned int i = 0; i < old_spawn_points.size(); ++i) {
+        if (removal_id < spawn_point_ids_to_remove.size() &&
+            i == spawn_point_ids_to_remove.at(removal_id)) {
+
+            ++removal_id;
+            continue;
+        }
+
+        map_data_.spawn_points.push_back(old_spawn_points.at(i));
+    }
+
+    map_change_events_.removed_spawn_points.Notify(map_data_.spawn_points);
 }
 
 unsigned int Map::AddNewScenery(const PMSScenery& scenery, const std::string& file_name)
