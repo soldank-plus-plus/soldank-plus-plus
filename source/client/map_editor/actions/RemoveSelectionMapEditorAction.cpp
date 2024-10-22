@@ -1,4 +1,5 @@
 #include "map_editor/actions/RemoveSelectionMapEditorAction.hpp"
+#include <string>
 
 namespace Soldank
 {
@@ -20,12 +21,27 @@ RemoveSelectionMapEditorAction::RemoveSelectionMapEditorAction(const ClientState
         removed_spawn_points_.emplace_back(selected_spawn_point_id,
                                            map.GetSpawnPoints().at(selected_spawn_point_id));
     }
+
+    for (unsigned int selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
+        scenery_ids_to_remove_.push_back(selected_scenery_id);
+        std::string scenery_file_name;
+        for (unsigned int i = 0; const auto& scenery_type : map.GetSceneryTypes()) {
+            if (i == map.GetSceneryInstances().at(selected_scenery_id).style - 1) {
+                scenery_file_name = scenery_type.name;
+            }
+            ++i;
+        }
+        removed_sceneries_.push_back(
+          { selected_scenery_id,
+            { map.GetSceneryInstances().at(selected_scenery_id), scenery_file_name } });
+    }
 }
 
 void RemoveSelectionMapEditorAction::Execute(ClientState& client_state, Map& map)
 {
     map.RemovePolygonsById(polygon_ids_to_remove_);
     map.RemoveSpawnPointsById(spawn_point_ids_to_remove_);
+    map.RemoveSceneriesById(scenery_ids_to_remove_);
 
     client_state.map_editor_state.selected_polygon_vertices.clear();
     client_state.map_editor_state.selected_scenery_ids.clear();
@@ -36,5 +52,6 @@ void RemoveSelectionMapEditorAction::Undo(ClientState& client_state, Map& map)
 {
     map.AddPolygons(removed_polygons_);
     map.AddSpawnPoints(removed_spawn_points_);
+    map.AddSceneries(removed_sceneries_);
 }
 } // namespace Soldank

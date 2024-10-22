@@ -40,6 +40,10 @@ private:
     void OnRemoveSceneryType(const PMSSceneryType& removed_scenery_type,
                              unsigned short removed_scenery_type_id,
                              const std::vector<PMSSceneryType>& scenery_types_after_removal);
+    void OnRemoveSceneryTypes(
+      const std::vector<std::pair<unsigned short, PMSSceneryType>>& removed_scenery_types);
+    void OnAddSceneries(const std::vector<PMSScenery>& sceneries_after_adding);
+    void OnRemoveSceneries(const std::vector<PMSScenery>& sceneries_after_removal);
 
     static void GenerateGLBufferVertices(const std::vector<PMSScenery>& sceneries,
                                          std::vector<float>& destination_vertices);
