@@ -5,8 +5,6 @@
 #include "map_editor/actions/AddPolygonMapEditorAction.hpp"
 #include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
 
-#include "spdlog/spdlog.h"
-
 namespace Soldank
 {
 PolygonTool::PolygonTool(
@@ -91,30 +89,35 @@ void PolygonTool::OnMouseMapPositionChange(ClientState& client_state,
                                            glm::vec2 /*last_mouse_position*/,
                                            glm::vec2 new_mouse_position)
 {
-    mouse_map_position_ = new_mouse_position;
+    if (client_state.map_editor_state.is_snap_to_grid_enabled) {
+        mouse_map_position_ = SnapMousePositionToGrid(
+          new_mouse_position, client_state.map_editor_state.grid_interval_division);
+    } else {
+        mouse_map_position_ = new_mouse_position;
+    }
 
     if (client_state.map_editor_state.polygon_tool_wip_polygon_edge) {
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).x =
-          new_mouse_position.x;
+          mouse_map_position_.x;
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).y =
-          new_mouse_position.y;
+          mouse_map_position_.y;
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).texture_s =
-          new_mouse_position.x / client_state.current_polygon_texture_dimensions.x;
+          mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x;
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).texture_t =
-          new_mouse_position.y / client_state.current_polygon_texture_dimensions.y;
+          mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y;
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).color =
           GetCurrentPaletteColor(client_state);
     }
 
     if (client_state.map_editor_state.polygon_tool_wip_polygon) {
         client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).x =
-          new_mouse_position.x;
+          mouse_map_position_.x;
         client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).y =
-          new_mouse_position.y;
+          mouse_map_position_.y;
         client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).texture_s =
-          new_mouse_position.x / client_state.current_polygon_texture_dimensions.x;
+          mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x;
         client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).texture_t =
-          new_mouse_position.y / client_state.current_polygon_texture_dimensions.y;
+          mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y;
         client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).color =
           GetCurrentPaletteColor(client_state);
     }

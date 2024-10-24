@@ -34,6 +34,10 @@ public:
     virtual void OnModifierKey2Released() = 0;
     virtual void OnModifierKey3Pressed() = 0;
     virtual void OnModifierKey3Released() = 0;
+
+protected:
+    static glm::vec2 SnapMousePositionToGrid(const glm::vec2& current_mouse_position,
+                                             int grid_interval_division);
 };
 } // namespace Soldank
 

@@ -58,8 +58,16 @@ void SceneryTool::OnMouseMapPositionChange(ClientState& client_state,
                                            glm::vec2 last_mouse_position,
                                            glm::vec2 new_mouse_position)
 {
-    client_state.map_editor_state.scenery_to_place.x = new_mouse_position.x;
-    client_state.map_editor_state.scenery_to_place.y = new_mouse_position.y;
+    if (client_state.map_editor_state.is_snap_to_grid_enabled) {
+        glm::vec2 snapped_mouse_position = SnapMousePositionToGrid(
+          new_mouse_position, client_state.map_editor_state.grid_interval_division);
+
+        client_state.map_editor_state.scenery_to_place.x = snapped_mouse_position.x;
+        client_state.map_editor_state.scenery_to_place.y = snapped_mouse_position.y;
+    } else {
+        client_state.map_editor_state.scenery_to_place.x = new_mouse_position.x;
+        client_state.map_editor_state.scenery_to_place.y = new_mouse_position.y;
+    }
 }
 
 void SceneryTool::OnModifierKey1Pressed() {}
