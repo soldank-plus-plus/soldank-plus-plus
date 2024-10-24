@@ -44,6 +44,7 @@ struct MapEditorState
     bool is_grid_visible = false;
     bool is_snap_to_grid_enabled = false;
     int grid_interval_division = 4;
+    bool is_snap_to_vertices_enabled = false;
 
     Observable<ToolType> event_selected_new_tool;
     Observable<> event_pressed_play;

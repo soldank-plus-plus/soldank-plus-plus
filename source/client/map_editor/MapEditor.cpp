@@ -80,10 +80,11 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
           OnMouseScreenPositionChange(client_state, last_mouse_position, new_mouse_position);
       });
 
-    client_state.event_mouse_map_position_changed.AddObserver(
-      [this, &client_state](glm::vec2 last_mouse_position, glm::vec2 new_mouse_position) {
-          OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
-      });
+    client_state.event_mouse_map_position_changed.AddObserver([this, &client_state, &game_state](
+                                                                glm::vec2 last_mouse_position,
+                                                                glm::vec2 new_mouse_position) {
+        OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position, game_state);
+    });
 
     client_state.event_mouse_wheel_scrolled_up.AddObserver([this, &client_state]() {
         if (!client_state.map_editor_state.is_modal_or_popup_open) {
@@ -270,14 +271,15 @@ void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
 
 void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
                                          glm::vec2 last_mouse_position,
-                                         glm::vec2 new_mouse_position)
+                                         glm::vec2 new_mouse_position,
+                                         const State& game_state)
 {
     if (locked_) {
         return;
     }
 
     tools_.at(std::to_underlying(selected_tool_))
-      ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position);
+      ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position, game_state);
 }
 
 void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
