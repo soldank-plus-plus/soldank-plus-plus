@@ -52,7 +52,8 @@ void SelectionTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
 
 void SelectionTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
                                              glm::vec2 /*last_mouse_position*/,
-                                             glm::vec2 new_mouse_position)
+                                             glm::vec2 new_mouse_position,
+                                             const State& /*game_state*/)
 {
     mouse_map_position_ = new_mouse_position;
 }

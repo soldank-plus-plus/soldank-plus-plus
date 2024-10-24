@@ -52,7 +52,8 @@ void SpawnpointTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
 
 void SpawnpointTool::OnMouseMapPositionChange(ClientState& client_state,
                                               glm::vec2 /*last_mouse_position*/,
-                                              glm::vec2 new_mouse_position)
+                                              glm::vec2 new_mouse_position,
+                                              const State& /*game_state*/)
 {
     if (client_state.map_editor_state.is_snap_to_grid_enabled) {
         client_state.map_editor_state.spawn_point_preview_position = SnapMousePositionToGrid(

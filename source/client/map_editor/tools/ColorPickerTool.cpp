@@ -28,7 +28,8 @@ void ColorPickerTool::OnMouseScreenPositionChange(ClientState& client_state,
 
 void ColorPickerTool::OnMouseMapPositionChange(ClientState& client_state,
                                                glm::vec2 last_mouse_position,
-                                               glm::vec2 new_mouse_position)
+                                               glm::vec2 new_mouse_position,
+                                               const State& game_state)
 {
 }
 

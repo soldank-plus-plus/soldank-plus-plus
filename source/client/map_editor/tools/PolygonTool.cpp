@@ -4,6 +4,7 @@
 #include "core/map/PMSStructs.hpp"
 #include "map_editor/actions/AddPolygonMapEditorAction.hpp"
 #include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
+#include "core/math/Calc.hpp"
 
 namespace Soldank
 {
@@ -87,13 +88,33 @@ void PolygonTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
 
 void PolygonTool::OnMouseMapPositionChange(ClientState& client_state,
                                            glm::vec2 /*last_mouse_position*/,
-                                           glm::vec2 new_mouse_position)
+                                           glm::vec2 new_mouse_position,
+                                           const State& game_state)
 {
-    if (client_state.map_editor_state.is_snap_to_grid_enabled) {
-        mouse_map_position_ = SnapMousePositionToGrid(
-          new_mouse_position, client_state.map_editor_state.grid_interval_division);
-    } else {
-        mouse_map_position_ = new_mouse_position;
+    bool alread_snapped = false;
+    float closest_distance = SNAP_TO_VERTICES_DISTANCE * SNAP_TO_VERTICES_DISTANCE *
+                             client_state.camera_component.GetZoom();
+    if (client_state.map_editor_state.is_snap_to_vertices_enabled) {
+        for (const auto& polygon : game_state.map.GetPolygons()) {
+            for (const auto& vertex : polygon.vertices) {
+                float square_distance =
+                  Calc::SquareDistance(new_mouse_position, { vertex.x, vertex.y });
+                if (square_distance < closest_distance) {
+                    mouse_map_position_ = { vertex.x, vertex.y };
+                    closest_distance = square_distance;
+                    alread_snapped = true;
+                }
+            }
+        }
+    }
+
+    if (!alread_snapped) {
+        if (client_state.map_editor_state.is_snap_to_grid_enabled) {
+            mouse_map_position_ = SnapMousePositionToGrid(
+              new_mouse_position, client_state.map_editor_state.grid_interval_division);
+        } else {
+            mouse_map_position_ = new_mouse_position;
+        }
     }
 
     if (client_state.map_editor_state.polygon_tool_wip_polygon_edge) {

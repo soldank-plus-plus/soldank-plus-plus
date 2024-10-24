@@ -38,7 +38,8 @@ private:
                                      glm::vec2 new_mouse_position);
     void OnMouseMapPositionChange(ClientState& client_state,
                                   glm::vec2 last_mouse_position,
-                                  glm::vec2 new_mouse_position);
+                                  glm::vec2 new_mouse_position,
+                                  const State& game_state);
 
     void OnKeyPressed(int key, ClientState& client_state, Map& map);
     void OnKeyReleased(int key, ClientState& client_state);

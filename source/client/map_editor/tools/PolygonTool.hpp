@@ -29,7 +29,8 @@ public:
                                      glm::vec2 new_mouse_position) final;
     void OnMouseMapPositionChange(ClientState& client_state,
                                   glm::vec2 last_mouse_position,
-                                  glm::vec2 new_mouse_position) final;
+                                  glm::vec2 new_mouse_position,
+                                  const State& game_state) final;
     void OnModifierKey1Pressed() final;
     void OnModifierKey1Released() final;
     void OnModifierKey2Pressed() final;
@@ -38,6 +39,8 @@ public:
     void OnModifierKey3Released() final;
 
 private:
+    constexpr static const float SNAP_TO_VERTICES_DISTANCE = 7.0F;
+
     static PMSColor GetCurrentPaletteColor(ClientState& client_state);
 
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
