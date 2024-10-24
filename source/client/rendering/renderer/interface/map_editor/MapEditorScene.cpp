@@ -65,8 +65,8 @@ void MapEditorScene::Render(State& game_state,
 
     if (client_state.map_editor_state.selected_tool == ToolType::Spawnpoint) {
         PMSSpawnPoint spawn_point{
-            .x = (int)client_state.mouse_map_position.x,
-            .y = (int)client_state.mouse_map_position.y,
+            .x = (int)client_state.map_editor_state.spawn_point_preview_position.x,
+            .y = (int)client_state.map_editor_state.spawn_point_preview_position.y,
             .type = client_state.map_editor_state.selected_spawn_point_type,
         };
         spawn_point_renderer_.Render(camera.GetView(), spawn_point, camera.GetZoom());

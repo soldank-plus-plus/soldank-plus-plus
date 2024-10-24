@@ -41,7 +41,9 @@ struct MapEditorState
     bool is_mouse_hovering_over_ui = false;
     bool is_modal_or_popup_open = false;
 
-    bool is_grid_visible = true;
+    bool is_grid_visible = false;
+    bool is_snap_to_grid_enabled = false;
+    int grid_interval_division = 4;
 
     Observable<ToolType> event_selected_new_tool;
     Observable<> event_pressed_play;
@@ -67,6 +69,7 @@ struct MapEditorState
 
     PMSSpawnPointType selected_spawn_point_type = PMSSpawnPointType::General;
     bool should_open_spawn_point_type_popup = false;
+    glm::vec2 spawn_point_preview_position;
 
     std::string selected_scenery_to_place;
     bool should_open_scenery_picker_popup = false;

@@ -53,6 +53,13 @@ void Render(State& game_state, ClientState& client_state)
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("View")) {
+                if (ImGui::MenuItem("Snap to grid",
+                                    nullptr,
+                                    &client_state.map_editor_state.is_snap_to_grid_enabled)) {
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Windows")) {
                 if (ImGui::MenuItem("Show all")) {
                     client_state.map_editor_state.is_tools_window_visible = true;
