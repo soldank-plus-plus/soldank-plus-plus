@@ -7,6 +7,7 @@
 #include "rendering/renderer/SceneryOutlinesRenderer.hpp"
 
 #include "core/state/StateManager.hpp"
+#include "rendering/renderer/interface/map_editor/GridRenderer.hpp"
 #include "rendering/renderer/interface/map_editor/PolygonVertexOutlinesRenderer.hpp"
 #include "rendering/renderer/interface/map_editor/SingleImageRenderer.hpp"
 #include "rendering/renderer/interface/map_editor/SpawnPointRenderer.hpp"
@@ -34,6 +35,7 @@ private:
     SceneryOutlinesRenderer scenery_outlines_renderer_;
     SpawnPointRenderer spawn_point_renderer_;
     SingleImageRenderer single_image_renderer_;
+    GridRenderer grid_renderer_;
 };
 } // namespace Soldank
 

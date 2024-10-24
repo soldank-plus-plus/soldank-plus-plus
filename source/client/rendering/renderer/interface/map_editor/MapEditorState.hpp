@@ -41,6 +41,8 @@ struct MapEditorState
     bool is_mouse_hovering_over_ui = false;
     bool is_modal_or_popup_open = false;
 
+    bool is_grid_visible = true;
+
     Observable<ToolType> event_selected_new_tool;
     Observable<> event_pressed_play;
     Observable<> event_pressed_undo;

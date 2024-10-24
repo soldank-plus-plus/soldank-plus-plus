@@ -97,6 +97,13 @@ void MapEditorScene::Render(State& game_state,
           single_image_renderer_.GetTextureDimensions().y;
     }
 
+    if (client_state.map_editor_state.is_grid_visible) {
+        grid_renderer_.Render(
+          { client_state.camera_component.GetWidth(), client_state.camera_component.GetHeight() },
+          { client_state.camera_component.GetX(), client_state.camera_component.GetY() },
+          client_state.camera_component.GetZoom());
+    }
+
     MapEditorUI::Render(game_state, client_state);
 }
 
