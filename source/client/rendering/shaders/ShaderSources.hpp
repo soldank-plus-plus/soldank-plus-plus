@@ -50,6 +50,14 @@ constexpr const char* const FONT_VERTEX_SHADER_SOURCE =
 constexpr const char* const FONT_FRAGMENT_SHADER_SOURCE =
 #include "Font.fs"
   ;
+
+constexpr const char* const GRID_VERTEX_SHADER_SOURCE =
+#include "Grid.vs"
+  ;
+
+constexpr const char* const GRID_FRAGMENT_SHADER_SOURCE =
+#include "Grid.fs"
+  ;
 } // namespace Soldank::ShaderSources
 
 #endif
