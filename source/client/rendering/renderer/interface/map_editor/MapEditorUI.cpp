@@ -650,6 +650,54 @@ void Render(State& game_state, ClientState& client_state)
     }
 
     {
+        if (client_state.map_editor_state.should_open_polygon_type_popup) {
+            ImGui::OpenPopup("PolygonTypePopupMenu");
+            client_state.map_editor_state.should_open_polygon_type_popup = false;
+        }
+
+        if (ImGui::BeginPopup("PolygonTypePopupMenu", ImGuiWindowFlags_NoMove)) {
+            client_state.map_editor_state.is_modal_or_popup_open = true;
+
+            static std::vector<std::pair<std::string, PMSPolygonType>> polygon_type_options = {
+                { "Normal", PMSPolygonType::Normal },
+                { "All Bullets Collide", PMSPolygonType::OnlyBulletsCollide },
+                { "All Players Collide", PMSPolygonType::OnlyPlayersCollide },
+                { "Doesn't Collide", PMSPolygonType::NoCollide },
+                { "Icy", PMSPolygonType::Ice },
+                { "Deadly", PMSPolygonType::Deadly },
+                { "Bloody Deadly", PMSPolygonType::BloodyDeadly },
+                { "Hurting", PMSPolygonType::Hurts },
+                { "Regenerative", PMSPolygonType::Regenerates },
+                { "Lava", PMSPolygonType::Lava },
+                { "Only Alpha Bullets Collide", PMSPolygonType::AlphaBullets },
+                { "Only Alpha Players Collide", PMSPolygonType::AlphaPlayers },
+                { "Only Bravo Bullets Collide", PMSPolygonType::BravoBullets },
+                { "Only Bravo Players Collide", PMSPolygonType::BravoPlayers },
+                { "Only Charlie Bullets Collide", PMSPolygonType::CharlieBullets },
+                { "Only Charlie Players Collide", PMSPolygonType::CharliePlayers },
+                { "Only Delta Bullets Collide", PMSPolygonType::DeltaBullets },
+                { "Only Delta Players Collide", PMSPolygonType::DeltaPlayers },
+                { "Bouncy", PMSPolygonType::Bouncy },
+                { "Explosive", PMSPolygonType::Explosive },
+                { "Hurting Flaggers", PMSPolygonType::HurtFlaggers },
+                { "Only Flaggers Collide", PMSPolygonType::FlaggerCollides },
+                { "Only Non Flaggers Collide", PMSPolygonType::NonFlaggerCollides },
+                { "Only Flag Collide", PMSPolygonType::FlagCollides },
+            };
+
+            for (const auto& polygon_type_option : polygon_type_options) {
+                if (ImGui::Selectable(polygon_type_option.first.c_str(),
+                                      client_state.map_editor_state.polygon_tool_polygon_type ==
+                                        polygon_type_option.second)) {
+                    client_state.map_editor_state.polygon_tool_polygon_type =
+                      polygon_type_option.second;
+                }
+            }
+            ImGui::EndPopup();
+        }
+    }
+
+    {
         static std::array<char, SCENERY_NAME_MAX_LENGTH> scenery_search_filter;
 
         if (client_state.map_editor_state.should_open_scenery_picker_popup) {

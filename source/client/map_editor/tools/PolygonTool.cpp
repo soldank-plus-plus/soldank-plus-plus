@@ -35,7 +35,7 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
         client_state.map_editor_state.polygon_tool_wip_polygon_edge = PMSPolygon{};
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->id = 0;
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->polygon_type =
-          PMSPolygonType::Normal;
+          client_state.map_editor_state.polygon_tool_polygon_type;
         client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(0) = {
             .x = mouse_map_position_.x,
             .y = mouse_map_position_.y,
@@ -76,7 +76,10 @@ void PolygonTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
 {
 }
 
-void PolygonTool::OnSceneRightMouseButtonClick(ClientState& /*client_state*/) {}
+void PolygonTool::OnSceneRightMouseButtonClick(ClientState& client_state)
+{
+    client_state.map_editor_state.should_open_polygon_type_popup = true;
+}
 
 void PolygonTool::OnSceneRightMouseButtonRelease() {}
 
