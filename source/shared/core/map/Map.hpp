@@ -86,6 +86,7 @@ struct MapChangeEvents
     Observable<const std::vector<PMSScenery>&> added_sceneries;
     Observable<const std::vector<PMSScenery>&> removed_sceneries;
     Observable<const std::vector<std::pair<unsigned short, PMSSceneryType>>&> removed_scenery_types;
+    Observable<const std::vector<PMSScenery>&> modified_sceneries;
 };
 
 class Map
@@ -133,6 +134,8 @@ public:
     void AddSceneries(
       const std::vector<std::pair<unsigned int, std::pair<PMSScenery, std::string>>>& sceneries);
     void RemoveSceneriesById(const std::vector<unsigned int>& scenery_ids);
+    void SetSceneriesColorById(
+      const std::vector<std::pair<unsigned int, PMSColor>>& scenery_ids_with_new_color);
 
     static std::array<glm::vec2, 4> GetSceneryVertexPositions(const PMSScenery& scenery);
 

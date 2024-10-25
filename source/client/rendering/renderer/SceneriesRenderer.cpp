@@ -79,6 +79,10 @@ SceneriesRenderer::SceneriesRenderer(Map& map)
       [this](const std::vector<std::pair<unsigned short, PMSSceneryType>>& removed_scenery_types) {
           OnRemoveSceneryTypes(removed_scenery_types);
       });
+    map.GetMapChangeEvents().modified_sceneries.AddObserver(
+      [this](const std::vector<PMSScenery>& sceneries_after_modify) {
+          OnModifySceneries(sceneries_after_modify);
+      });
 }
 
 SceneriesRenderer::~SceneriesRenderer()
@@ -206,6 +210,13 @@ void SceneriesRenderer::OnRemoveSceneries(const std::vector<PMSScenery>& sceneri
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(sceneries_after_removal, vertices);
+    Renderer::ModifyVBOVertices(vbo_, vertices);
+}
+
+void SceneriesRenderer::OnModifySceneries(const std::vector<PMSScenery>& sceneries_after_modify)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(sceneries_after_modify, vertices);
     Renderer::ModifyVBOVertices(vbo_, vertices);
 }
 

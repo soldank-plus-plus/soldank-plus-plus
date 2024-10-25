@@ -963,6 +963,17 @@ void Map::RemoveSceneriesById(const std::vector<unsigned int>& scenery_ids)
     map_change_events_.removed_sceneries.Notify(map_data_.scenery_instances);
 }
 
+void Map::SetSceneriesColorById(
+  const std::vector<std::pair<unsigned int, PMSColor>>& scenery_ids_with_new_color)
+{
+    for (const auto& [scenery_id, new_color] : scenery_ids_with_new_color) {
+        map_data_.scenery_instances.at(scenery_id).color = new_color;
+        map_data_.scenery_instances.at(scenery_id).alpha = new_color.alpha;
+    }
+
+    map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
+}
+
 std::array<glm::vec2, 4> Map::GetSceneryVertexPositions(const PMSScenery& scenery)
 {
     glm::mat4 transform_matrix(1.0F);
