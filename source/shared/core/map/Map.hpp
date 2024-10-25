@@ -13,6 +13,7 @@
 
 #include "core/utility/Observable.hpp"
 
+#include <bitset>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -87,6 +88,8 @@ struct MapChangeEvents
     Observable<const std::vector<PMSScenery>&> removed_sceneries;
     Observable<const std::vector<std::pair<unsigned short, PMSSceneryType>>&> removed_scenery_types;
     Observable<const std::vector<PMSScenery>&> modified_sceneries;
+    Observable<const std::vector<PMSPolygon>&> modified_polygons;
+    ;
 };
 
 class Map
@@ -123,6 +126,9 @@ public:
     void AddPolygons(const std::vector<PMSPolygon>& polygons);
     PMSPolygon RemovePolygonById(unsigned int id);
     void RemovePolygonsById(const std::vector<unsigned int>& polygon_ids);
+    void SetPolygonVerticesColorById(
+      const std::vector<std::pair<std::pair<unsigned int, unsigned int>, PMSColor>>&
+        polygon_vertices_with_new_color);
 
     unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);

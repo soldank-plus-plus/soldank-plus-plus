@@ -719,6 +719,18 @@ void Map::RemovePolygonsById(const std::vector<unsigned int>& polygon_ids)
     map_change_events_.removed_polygons.Notify(removed_polygons, map_data_.polygons);
 }
 
+void Map::SetPolygonVerticesColorById(
+  const std::vector<std::pair<std::pair<unsigned int, unsigned int>, PMSColor>>&
+    polygon_vertices_with_new_color)
+{
+    for (const auto& [polygon_vertex_id, new_color] : polygon_vertices_with_new_color) {
+        map_data_.polygons.at(polygon_vertex_id.first).vertices.at(polygon_vertex_id.second).color =
+          new_color;
+    }
+
+    map_change_events_.modified_polygons.Notify(map_data_.polygons);
+}
+
 unsigned int Map::AddNewSpawnPoint(const PMSSpawnPoint& spawn_point)
 {
     map_data_.spawn_points.push_back(spawn_point);

@@ -14,6 +14,8 @@ class ColorObjectsMapEditorAction final : public MapEditorAction
 public:
     ColorObjectsMapEditorAction(
       const PMSColor& new_color,
+      const std::vector<std::pair<std::pair<unsigned int, unsigned int>, PMSColor>>&
+        polygon_vertices_with_old_color,
       const std::vector<std::pair<unsigned int, PMSColor>>& scenery_ids_with_old_color);
 
     void Execute(ClientState& client_state, Map& map) final;
@@ -21,6 +23,8 @@ public:
 
 private:
     PMSColor new_color_;
+    std::vector<std::pair<std::pair<unsigned int, unsigned int>, PMSColor>>
+      polygon_vertices_with_old_color_;
     std::vector<std::pair<unsigned int, PMSColor>> scenery_ids_with_old_color_;
 };
 } // namespace Soldank
