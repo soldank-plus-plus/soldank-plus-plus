@@ -63,6 +63,8 @@ struct MapEditorState
     // we handle it differently because we don't want to save t he polygon immediately.
     // After the Polygon Tool is done creating the polygon then we save it.
     std::optional<PMSPolygon> polygon_tool_wip_polygon;
+    PMSPolygonType polygon_tool_polygon_type = PMSPolygonType::Normal;
+    bool should_open_polygon_type_popup = false;
 
     std::vector<std::pair<unsigned int, std::bitset<3>>> selected_polygon_vertices;
     std::vector<unsigned int> selected_scenery_ids;
