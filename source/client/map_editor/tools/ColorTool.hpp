@@ -3,12 +3,17 @@
 
 #include "map_editor/tools/Tool.hpp"
 
+#include "map_editor/actions/MapEditorAction.hpp"
+
+#include "core/math/Glm.hpp"
+
 namespace Soldank
 {
 class ColorTool final : public Tool
 {
 public:
-    ColorTool() = default;
+    ColorTool(
+      const std::function<void(std::unique_ptr<MapEditorAction>)>& add_new_map_editor_action);
     ~ColorTool() final = default;
 
     void OnSelect(ClientState& client_state, const State& game_state) final;
@@ -31,6 +36,10 @@ public:
     void OnModifierKey2Released() final;
     void OnModifierKey3Pressed() final;
     void OnModifierKey3Released() final;
+
+private:
+    std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
+    glm::vec2 mouse_map_position_;
 };
 } // namespace Soldank
 
