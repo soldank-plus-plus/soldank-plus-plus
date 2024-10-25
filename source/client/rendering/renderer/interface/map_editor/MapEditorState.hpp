@@ -46,6 +46,9 @@ struct MapEditorState
     int grid_interval_division = 4;
     bool is_snap_to_vertices_enabled = false;
 
+    bool is_undo_enabled = false;
+    bool is_redo_enabled = false;
+
     Observable<ToolType> event_selected_new_tool;
     Observable<> event_pressed_play;
     Observable<> event_pressed_undo;
