@@ -24,14 +24,39 @@ void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
     is_anything_selected |= !client_state.map_editor_state.selected_polygon_vertices.empty();
     is_anything_selected |= !client_state.map_editor_state.selected_scenery_ids.empty();
 
+    std::vector<std::pair<std::pair<unsigned int, unsigned int>, PMSColor>>
+      polygon_vertices_to_color;
     std::vector<std::pair<unsigned int, PMSColor>> scenery_ids_to_color;
 
     if (is_anything_selected) {
+        for (const auto& polygon_vertices :
+             client_state.map_editor_state.selected_polygon_vertices) {
+            for (unsigned int i = 0; i < 3; ++i) {
+                if (polygon_vertices.second[i]) {
+                    polygon_vertices_to_color.push_back({ { polygon_vertices.first, i },
+                                                          game_state.map.GetPolygons()
+                                                            .at(polygon_vertices.first)
+                                                            .vertices.at(i)
+                                                            .color });
+                }
+            }
+        }
         for (const auto& scenery_id : client_state.map_editor_state.selected_scenery_ids) {
             scenery_ids_to_color.emplace_back(
               scenery_id, game_state.map.GetSceneryInstances().at(scenery_id).color);
         }
     } else {
+        for (unsigned int polygon_id = 0; polygon_id < game_state.map.GetPolygonsCount();
+             ++polygon_id) {
+            if (Map::PointInPoly(mouse_map_position_,
+                                 game_state.map.GetPolygons().at(polygon_id))) {
+                for (unsigned int vertex_id = 0; vertex_id < 3; ++vertex_id) {
+                    polygon_vertices_to_color.push_back(
+                      { { polygon_id, vertex_id },
+                        game_state.map.GetPolygons().at(polygon_id).vertices.at(vertex_id).color });
+                }
+            }
+        }
         for (unsigned int i = 0; i < game_state.map.GetSceneryInstances().size(); ++i) {
             if (Map::PointInScenery(mouse_map_position_,
                                     game_state.map.GetSceneryInstances().at(i))) {
@@ -41,7 +66,7 @@ void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
         }
     }
 
-    if (scenery_ids_to_color.empty()) {
+    if (scenery_ids_to_color.empty() && polygon_vertices_to_color.empty()) {
         return;
     }
 
@@ -52,7 +77,8 @@ void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
       (unsigned char)(client_state.map_editor_state.palette_current_color.at(3) * 255.0F));
 
     std::unique_ptr<ColorObjectsMapEditorAction> color_objects_action =
-      std::make_unique<ColorObjectsMapEditorAction>(palette_color, scenery_ids_to_color);
+      std::make_unique<ColorObjectsMapEditorAction>(
+        palette_color, polygon_vertices_to_color, scenery_ids_to_color);
     add_new_map_editor_action_(std::move(color_objects_action));
 }
 
