@@ -343,6 +343,11 @@ void MapEditor::ExecuteNewAction(ClientState& client_state,
     map_editor_undone_actions_.clear();
     new_action->Execute(client_state, map);
     map_editor_executed_actions_.push_back(std::move(new_action));
+    if (map_editor_executed_actions_.size() > ACTION_HISTORY_LIMIT) {
+        map_editor_executed_actions_.pop_front();
+    }
+
+    UpdateUndoRedoButtons(client_state);
 }
 
 void MapEditor::UndoLastAction(ClientState& client_state, Map& map)
@@ -356,6 +361,8 @@ void MapEditor::UndoLastAction(ClientState& client_state, Map& map)
         map_editor_undone_actions_.push_back(std::move(map_editor_executed_actions_.back()));
         map_editor_executed_actions_.pop_back();
     }
+
+    UpdateUndoRedoButtons(client_state);
 }
 
 void MapEditor::RedoUndoneAction(ClientState& client_state, Map& map)
@@ -369,6 +376,14 @@ void MapEditor::RedoUndoneAction(ClientState& client_state, Map& map)
         map_editor_undone_actions_.pop_back();
         map_editor_executed_actions_.back()->Execute(client_state, map);
     }
+
+    UpdateUndoRedoButtons(client_state);
+}
+
+void MapEditor::UpdateUndoRedoButtons(ClientState& client_state)
+{
+    client_state.map_editor_state.is_undo_enabled = !map_editor_executed_actions_.empty();
+    client_state.map_editor_state.is_redo_enabled = !map_editor_undone_actions_.empty();
 }
 
 void MapEditor::RemoveCurrentSelection(ClientState& client_state, Map& map)

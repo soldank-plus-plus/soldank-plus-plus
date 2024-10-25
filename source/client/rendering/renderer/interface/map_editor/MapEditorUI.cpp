@@ -35,10 +35,14 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Edit")) {
-                if (ImGui::MenuItem("Undo", "CTRL+Z")) {
+                if (ImGui::MenuItem(
+                      "Undo", "CTRL+Z", false, client_state.map_editor_state.is_undo_enabled)) {
                     client_state.map_editor_state.event_pressed_undo.Notify();
                 }
-                if (ImGui::MenuItem("Redo", "CTRL+SHIFT+Z")) {
+                if (ImGui::MenuItem("Redo",
+                                    "CTRL+SHIFT+Z",
+                                    false,
+                                    client_state.map_editor_state.is_redo_enabled)) {
                     client_state.map_editor_state.event_pressed_redo.Notify();
                 }
                 ImGui::Separator();

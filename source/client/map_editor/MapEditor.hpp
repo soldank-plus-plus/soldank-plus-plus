@@ -9,6 +9,7 @@
 #include "core/state/State.hpp"
 #include "core/math/Glm.hpp"
 
+#include <deque>
 #include <vector>
 #include <memory>
 #include <functional>
@@ -24,6 +25,8 @@ public:
     void Unlock();
 
 private:
+    static const int ACTION_HISTORY_LIMIT = 50;
+
     void OnSelectNewTool(ToolType tool_type, ClientState& client_state, const State& game_state);
     void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state);
     void OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state);
@@ -49,13 +52,14 @@ private:
                           std::unique_ptr<MapEditorAction> new_action);
     void UndoLastAction(ClientState& client_state, Map& map);
     void RedoUndoneAction(ClientState& client_state, Map& map);
+    void UpdateUndoRedoButtons(ClientState& client_state);
 
     void RemoveCurrentSelection(ClientState& client_state, Map& map);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
-    std::vector<std::unique_ptr<MapEditorAction>> map_editor_executed_actions_;
+    std::deque<std::unique_ptr<MapEditorAction>> map_editor_executed_actions_;
     std::vector<std::unique_ptr<MapEditorAction>> map_editor_undone_actions_;
 
     glm::vec2 current_mouse_screen_position_;
