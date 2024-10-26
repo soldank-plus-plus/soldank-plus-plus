@@ -1,5 +1,7 @@
 #include "application/cli/CommandLineParameters.hpp"
 
+#include "application/window/Window.hpp"
+
 #include "spdlog/spdlog.h"
 
 #include <cxxopts.hpp>
@@ -31,7 +33,10 @@ ParsedValues Parse(int argc, const char* argv[])
             ("e,map-editor", "Opens the application in map editting mode")
             ("ip", "IP of the server to join", cxxopts::value<std::string>())
             ("port", "Port of the server to join", cxxopts::value<std::uint16_t>())
-            ("m,map", "Choose a map to load at the start of the game. Only in local", cxxopts::value<std::string>());
+            ("m,map", "Choose a map to load at the start of the game. Only in local", cxxopts::value<std::string>())
+            ("fullscreen", "Start the game in fullscreen")
+            ("borderless", "Start the game in borderless (windowed) fullscreen")
+            ("windowed", "Start the game in window of a fixed size");
         // clang-format on
 
         auto result = options.parse(argc, argv);
@@ -77,6 +82,16 @@ ParsedValues Parse(int argc, const char* argv[])
 
         if (result.count("map") != 0) {
             parsed_values.map = result["map"].as<std::string>();
+        }
+
+        if (result.count("fullscreen") != 0) {
+            parsed_values.window_size_mode = WindowSizeMode::Fullscreen;
+        } else if (result.count("borderless") != 0) {
+            parsed_values.window_size_mode = WindowSizeMode::BorderlessFullscreen;
+        } else if (result.count("windowed") != 0) {
+            parsed_values.window_size_mode = WindowSizeMode::Windowed;
+        } else {
+            parsed_values.window_size_mode = WindowSizeMode::Fullscreen;
         }
 
         parsed_values.is_parsing_successful = true;
