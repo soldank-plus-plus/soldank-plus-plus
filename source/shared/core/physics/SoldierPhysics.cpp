@@ -257,9 +257,9 @@ void Update(State& state,
 
         xy = soldier.particle.position;
         grounded = soldier.on_ground || soldier.on_ground_for_law;
-        soldier.on_ground =
-          soldier.on_ground ||
-          CheckMapVerticesCollision(soldier, map, xy.x, xy.y, 3.0, grounded, state, physics_events);
+        soldier.on_ground = CheckMapVerticesCollision(
+                              soldier, map, xy.x, xy.y, 3.0, grounded, state, physics_events) ||
+                            soldier.on_ground;
 
         if (!(soldier.on_ground ^ soldier.on_ground_last_frame)) {
             soldier.on_ground_permanent = soldier.on_ground;
@@ -331,7 +331,7 @@ void Update(State& state,
         soldier.particle.velocity_.y = PhysicsConstants::MAX_VELOCITY;
     }
     if (soldier.particle.velocity_.y < -PhysicsConstants::MAX_VELOCITY) {
-        soldier.particle.velocity_.y = PhysicsConstants::MAX_VELOCITY;
+        soldier.particle.velocity_.y = -PhysicsConstants::MAX_VELOCITY;
     }
 }
 
@@ -487,16 +487,17 @@ bool CheckMapVerticesCollision(Soldier& soldier,
                                State& state,
                                const PhysicsEvents& physics_events)
 {
-    auto pos = glm::vec2(x, y) + soldier.particle.velocity_;
+    auto pos = glm::vec2(x, y);
     auto rx = ((int)std::round(pos.x / (float)map.GetSectorsSize())) + 25;
     auto ry = ((int)std::round(pos.y / (float)map.GetSectorsSize())) + 25;
 
     if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
         (ry < map.GetSectorsCount() + 25)) {
-        for (int j = 0; j < map.GetSector(rx, ry).polygons.size(); j++) {
+        for (int j = 0; j < map.GetSector(rx, ry).polygons.size(); ++j) {
             auto poly = map.GetSector(rx, ry).polygons[j] - 1;
             PMSPolygonType polytype = map.GetPolygons()[poly].polygon_type;
 
+            // TODO: this if has more poly types
             if (polytype != PMSPolygonType::NoCollide &&
                 polytype != PMSPolygonType::OnlyBulletsCollide) {
                 for (int i = 0; i < 3; i++) {

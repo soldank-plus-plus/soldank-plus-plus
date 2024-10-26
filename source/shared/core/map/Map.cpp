@@ -626,7 +626,7 @@ bool Map::RayCast(glm::vec2 a,
     for (unsigned int i = ax; i < bx; ++i) {
         for (unsigned int j = ay; j < by; ++j) {
             for (const auto& polygon_id : GetSector(i, j).polygons) {
-                const PMSPolygon& polygon = map_data_.polygons.at(polygon_id);
+                const PMSPolygon& polygon = map_data_.polygons.at(polygon_id - 1);
 
                 bool testcol = true;
                 // TODO: replace team_id with some enum
