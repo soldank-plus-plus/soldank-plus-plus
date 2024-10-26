@@ -36,6 +36,7 @@ private:
     void OnRemovePolygon(const PMSPolygon& removed_polygon);
     void OnAddPolygons(const std::vector<PMSPolygon>& polygons_after_adding);
     void OnRemovePolygons(const std::vector<PMSPolygon>& polygons_after_removal);
+    void OnModifyPolygons(const std::vector<PMSPolygon>& polygons_after_modify);
 
     void GenerateGLBufferVertices(const std::vector<PMSPolygon>& polygons,
                                   std::vector<float>& destination_vertices) const;

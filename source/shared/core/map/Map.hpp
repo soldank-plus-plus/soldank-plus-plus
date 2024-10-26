@@ -133,6 +133,9 @@ public:
     void SetPolygonVerticesColorById(
       const std::vector<std::pair<std::pair<unsigned int, unsigned int>, PMSColor>>&
         polygon_vertices_with_new_color);
+    void MovePolygonVerticesById(
+      const std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>&
+        polygon_vertices_with_new_position);
 
     unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);

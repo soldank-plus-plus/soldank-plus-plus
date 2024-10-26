@@ -18,6 +18,20 @@ void TransformTool::OnUnselect(ClientState& client_state) {}
 
 void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
+    std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>
+      polygon_vertices_with_position;
+    for (const auto& [selected_polygon_id, selected_vertices] :
+         client_state.map_editor_state.selected_polygon_vertices) {
+        for (unsigned int i = 0; i < 3; ++i) {
+            if (selected_vertices[i]) {
+                const auto& polygon = game_state.map.GetPolygons().at(selected_polygon_id);
+                polygon_vertices_with_position.push_back(
+                  { { selected_polygon_id, i },
+                    { polygon.vertices.at(i).x, polygon.vertices.at(i).y } });
+            }
+        }
+    }
+
     std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_position;
     for (const auto& selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
         glm::vec2 position = { game_state.map.GetSceneryInstances().at(selected_scenery_id).x,
@@ -34,7 +48,7 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
     }
 
     maybe_move_selection_action_ = std::make_unique<MoveSelectionMapEditorAction>(
-      scenery_ids_with_position, spawn_point_ids_with_position);
+      polygon_vertices_with_position, scenery_ids_with_position, spawn_point_ids_with_position);
     mouse_map_position_on_last_click_ = client_state.mouse_map_position;
 }
 
