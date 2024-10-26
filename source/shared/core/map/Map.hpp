@@ -148,6 +148,8 @@ public:
     void RemoveSceneriesById(const std::vector<unsigned int>& scenery_ids);
     void SetSceneriesColorById(
       const std::vector<std::pair<unsigned int, PMSColor>>& scenery_ids_with_new_color);
+    void MoveSceneriesById(
+      const std::vector<std::pair<unsigned int, glm::vec2>>& scenery_ids_with_new_position);
 
     static std::array<glm::vec2, 4> GetSceneryVertexPositions(const PMSScenery& scenery);
 

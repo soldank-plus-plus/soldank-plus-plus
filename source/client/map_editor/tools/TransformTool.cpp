@@ -18,6 +18,13 @@ void TransformTool::OnUnselect(ClientState& client_state) {}
 
 void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
+    std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_position;
+    for (const auto& selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
+        glm::vec2 position = { game_state.map.GetSceneryInstances().at(selected_scenery_id).x,
+                               game_state.map.GetSceneryInstances().at(selected_scenery_id).y };
+        scenery_ids_with_position.emplace_back(selected_scenery_id, position);
+    }
+
     std::vector<std::pair<unsigned int, glm::ivec2>> spawn_point_ids_with_position;
     for (const auto& selected_spawn_point_id :
          client_state.map_editor_state.selected_spawn_point_ids) {
@@ -25,8 +32,9 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                                 game_state.map.GetSpawnPoints().at(selected_spawn_point_id).y };
         spawn_point_ids_with_position.emplace_back(selected_spawn_point_id, position);
     }
-    maybe_move_selection_action_ =
-      std::make_unique<MoveSelectionMapEditorAction>(spawn_point_ids_with_position);
+
+    maybe_move_selection_action_ = std::make_unique<MoveSelectionMapEditorAction>(
+      scenery_ids_with_position, spawn_point_ids_with_position);
     mouse_map_position_on_last_click_ = client_state.mouse_map_position;
 }
 

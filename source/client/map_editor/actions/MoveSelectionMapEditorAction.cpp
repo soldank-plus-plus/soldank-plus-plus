@@ -1,17 +1,25 @@
 #include "map_editor/actions/MoveSelectionMapEditorAction.hpp"
-#include <spdlog/spdlog.h>
 
 namespace Soldank
 {
 MoveSelectionMapEditorAction::MoveSelectionMapEditorAction(
+  const std::vector<std::pair<unsigned int, glm::vec2>>& scenery_ids_with_position,
   const std::vector<std::pair<unsigned int, glm::ivec2>>& spawn_point_ids_with_position)
-    : spawn_point_ids_with_old_position_(spawn_point_ids_with_position)
+    : scenery_ids_with_position_(scenery_ids_with_position)
+    , spawn_point_ids_with_old_position_(spawn_point_ids_with_position)
     , move_offset_()
 {
 }
 
 void MoveSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
 {
+    std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_new_position;
+    scenery_ids_with_new_position.reserve(scenery_ids_with_new_position.size());
+    for (const auto& [scenery_id, old_position] : scenery_ids_with_position_) {
+        scenery_ids_with_new_position.emplace_back(scenery_id, old_position + move_offset_);
+    }
+    map.MoveSceneriesById(scenery_ids_with_new_position);
+
     std::vector<std::pair<unsigned int, glm::ivec2>> spawn_point_ids_with_new_position;
     glm::ivec2 spawn_points_move_offset = move_offset_;
     spawn_point_ids_with_new_position.reserve(spawn_point_ids_with_old_position_.size());
@@ -24,6 +32,7 @@ void MoveSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map& m
 
 void MoveSelectionMapEditorAction::Undo(ClientState& /*client_state*/, Map& map)
 {
+    map.MoveSceneriesById(scenery_ids_with_position_);
     map.MoveSpawnPointsById(spawn_point_ids_with_old_position_);
 }
 } // namespace Soldank
