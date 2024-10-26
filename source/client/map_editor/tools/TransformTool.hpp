@@ -41,6 +41,8 @@ public:
     void OnModifierKey3Released() final;
 
 private:
+    static void SetupSelectionBox(ClientState& client_state, const State& game_state);
+
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
     std::function<void(MapEditorAction*)> execute_without_adding_map_editor_action_;
 
