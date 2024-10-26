@@ -118,7 +118,11 @@ public:
                  bool flag = false,
                  bool bullet = true,
                  bool check_collider = false,
-                 std::uint8_t team_id = 0);
+                 std::uint8_t team_id = 0) const;
+    static bool LineInPoly(const glm::vec2& a,
+                           const glm::vec2& b,
+                           const PMSPolygon& polygon,
+                           glm::vec2& v);
 
     MapChangeEvents& GetMapChangeEvents() { return map_change_events_; }
 

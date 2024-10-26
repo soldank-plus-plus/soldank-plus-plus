@@ -224,23 +224,21 @@ void Update(State& state,
         }
         // If a leg is inside a polygon, caused by the modification of ArmS and
         // BodyY, this is there to not lose contact to ground on slope polygons
-        if (body_y == 0.0) {
-            // let leg_vector = vec2(
-            //   self.particle.pos.x + 2.0,
-            //   self.particle.pos.y + 1.9,
-            //);
-            //     if Map.RayCast(LegVector, LegVector, LegDistance, 10) {
-            body_y = 0.25;
-            // }
+        if (std::abs(body_y) <= 0.00001) {
+            glm::vec2 leg_vector = { soldier.particle.position.x + 2.0F,
+                                     soldier.particle.position.y + 1.9F };
+            float leg_distance = 0.0F;
+            if (map.RayCast(leg_vector, leg_vector, leg_distance, 10)) {
+                body_y = 0.25;
+            }
         }
-        if (arm_s == 0.0) {
-            // let leg_vector = vec2(
-            //   self.particle.pos.x - 2.0,
-            //   self.particle.pos.y + 1.9,
-            //);
-            //     if Map.RayCast(LegVector, LegVector, LegDistance, 10) {
-            arm_s = 0.25;
-            // }
+        if (std::abs(arm_s) <= 0.00001) {
+            glm::vec2 leg_vector = { soldier.particle.position.x - 2.0F,
+                                     soldier.particle.position.y + 1.9F };
+            float leg_distance = 0.0F;
+            if (map.RayCast(leg_vector, leg_vector, leg_distance, 10)) {
+                arm_s = 0.25;
+            }
         }
 
         xy = soldier.particle.position;
