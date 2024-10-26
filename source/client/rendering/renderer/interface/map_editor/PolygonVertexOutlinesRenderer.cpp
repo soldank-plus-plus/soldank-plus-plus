@@ -66,6 +66,8 @@ void PolygonVertexOutlinesRenderer::OnChangePolygonVertexSelection(
 
     int offset = polygon.id * 7 * sizeof(GLfloat) * 3;
     Renderer::ModifyVBOVertices(vbo_, vertices, offset);
+
+    selected_polygon_vertices_.at(polygon.id) = selected_vertices;
 }
 
 void PolygonVertexOutlinesRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
@@ -76,6 +78,8 @@ void PolygonVertexOutlinesRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
         int offset = new_polygon.id * 7 * sizeof(GLfloat) * 3;
         Renderer::ModifyVBOVertices(vbo_, vertices, offset);
     }
+
+    selected_polygon_vertices_.at(new_polygon.id) = { 0b000 };
 
     ++polygons_count_;
 }
@@ -90,6 +94,8 @@ void PolygonVertexOutlinesRenderer::OnRemovePolygon(const PMSPolygon& removed_po
         Renderer::ModifyVBOVertices(vbo_, vertices, offset);
     }
 
+    selected_polygon_vertices_.at(removed_polygon.id) = { 0b000 };
+
     --polygons_count_;
 }
 
@@ -99,6 +105,9 @@ void PolygonVertexOutlinesRenderer::OnAddPolygons(
     std::vector<float> vertices;
     GenerateGLBufferVertices(polygons_after_adding, vertices);
     Renderer::ModifyVBOVertices(vbo_, vertices);
+    for (unsigned int i = polygons_count_; i < polygons_after_adding.size(); ++i) {
+        selected_polygon_vertices_.at(i) = { 0b000 };
+    }
     polygons_count_ = polygons_after_adding.size();
 }
 
@@ -116,7 +125,8 @@ void PolygonVertexOutlinesRenderer::GenerateGLBufferVertices(
   std::vector<float>& destination_vertices) const
 {
     for (const auto& polygon : polygons) {
-        GenerateGLBufferVerticesForPolygon(polygon, { 0b000 }, destination_vertices);
+        GenerateGLBufferVerticesForPolygon(
+          polygon, selected_polygon_vertices_.at(polygon.id), destination_vertices);
     }
 
     for (unsigned int i = 0; i < MAX_POLYGONS_COUNT - polygons.size(); ++i) {

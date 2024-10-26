@@ -23,6 +23,16 @@ PolygonOutlinesRenderer::PolygonOutlinesRenderer(Map& map, glm::vec4 color)
              const std::vector<PMSPolygon>& polygons_after_removal) {
           OnRemovePolygon(polygons_after_removal);
       });
+    map.GetMapChangeEvents().added_new_polygons.AddObserver(
+      [this](const std::vector<PMSPolygon>& /*created_polygons*/,
+             const std::vector<PMSPolygon>& polygons_after_adding) {
+          OnAddPolygons(polygons_after_adding);
+      });
+    map.GetMapChangeEvents().removed_polygons.AddObserver(
+      [this](const std::vector<PMSPolygon>& /*removed_polygons*/,
+             const std::vector<PMSPolygon>& polygons_after_removal) {
+          OnRemovePolygons(polygons_after_removal);
+      });
 }
 
 PolygonOutlinesRenderer::~PolygonOutlinesRenderer()
@@ -50,6 +60,27 @@ void PolygonOutlinesRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
 }
 
 void PolygonOutlinesRenderer::OnRemovePolygon(const std::vector<PMSPolygon>& polygons_after_removal)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(polygons_after_removal, vertices);
+
+    if (!vertices.empty()) {
+        Renderer::ModifyVBOVertices(vbo_, vertices, 0);
+    }
+}
+
+void PolygonOutlinesRenderer::OnAddPolygons(const std::vector<PMSPolygon>& polygons_after_adding)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(polygons_after_adding, vertices);
+
+    if (!vertices.empty()) {
+        Renderer::ModifyVBOVertices(vbo_, vertices, 0);
+    }
+}
+
+void PolygonOutlinesRenderer::OnRemovePolygons(
+  const std::vector<PMSPolygon>& polygons_after_removal)
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(polygons_after_removal, vertices);

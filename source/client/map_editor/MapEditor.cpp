@@ -1,5 +1,6 @@
 #include "map_editor/MapEditor.hpp"
 
+#include "map_editor/actions/AddObjectsMapEditorAction.hpp"
 #include "map_editor/actions/RemoveSelectionMapEditorAction.hpp"
 #include "map_editor/tools/ColorPickerTool.hpp"
 #include "map_editor/tools/ColorTool.hpp"
@@ -27,6 +28,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     , mouse_screen_position_on_start_dragging_()
     , is_dragging_camera_(false)
     , locked_(false)
+    , is_holding_left_ctrl_(false)
 {
     add_new_map_editor_action_ =
       [this, &client_state, &game_state](std::unique_ptr<MapEditorAction> new_action) {
@@ -304,10 +306,61 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
         }
     }
 
+    bool is_anything_selected = false;
+
+    is_anything_selected |= !client_state.map_editor_state.selected_polygon_vertices.empty();
+    is_anything_selected |= !client_state.map_editor_state.selected_scenery_ids.empty();
+    is_anything_selected |= !client_state.map_editor_state.selected_spawn_point_ids.empty();
+
+    if (is_holding_left_ctrl_ && is_anything_selected && key == GLFW_KEY_C) {
+        // TODO: make use of system's clipboard
+        copied_polygons_.clear();
+        copied_sceneries_.clear();
+        copied_spawn_points_.clear();
+
+        for (const auto& [selected_polygon_id, selected_vertices] :
+             client_state.map_editor_state.selected_polygon_vertices) {
+            if (!selected_vertices.all()) {
+                continue;
+            }
+
+            copied_polygons_.push_back(map.GetPolygons().at(selected_polygon_id));
+        }
+
+        for (const auto& selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
+            const auto& scenery = map.GetSceneryInstances().at(selected_scenery_id);
+            copied_sceneries_.push_back(
+              { selected_scenery_id,
+                { scenery, map.GetSceneryTypes().at(scenery.style - 1).name } });
+        }
+
+        for (const auto& selected_spawn_point_id :
+             client_state.map_editor_state.selected_spawn_point_ids) {
+            copied_spawn_points_.emplace_back(selected_spawn_point_id,
+                                              map.GetSpawnPoints().at(selected_spawn_point_id));
+        }
+
+        return;
+    }
+
+    if (is_holding_left_ctrl_ && key == GLFW_KEY_V) {
+        if (!copied_polygons_.empty() || !copied_sceneries_.empty() ||
+            !copied_spawn_points_.empty()) {
+
+            std::unique_ptr<AddObjectsMapEditorAction> add_copied_objects_action =
+              std::make_unique<AddObjectsMapEditorAction>(
+                copied_polygons_, copied_sceneries_, copied_spawn_points_);
+            ExecuteNewAction(client_state, map, std::move(add_copied_objects_action));
+
+            return;
+        }
+    }
+
     if (key == GLFW_KEY_LEFT_SHIFT) {
         tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Pressed();
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
+        is_holding_left_ctrl_ = true;
         tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Pressed();
     }
     if (key == GLFW_KEY_LEFT_ALT) {
@@ -325,6 +378,7 @@ void MapEditor::OnKeyReleased(int key, ClientState& /*client_state*/)
         tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Released();
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
+        is_holding_left_ctrl_ = false;
         tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Released();
     }
     if (key == GLFW_KEY_LEFT_ALT) {

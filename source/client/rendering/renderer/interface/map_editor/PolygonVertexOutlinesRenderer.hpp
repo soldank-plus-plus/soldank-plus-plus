@@ -1,14 +1,16 @@
 #ifndef __POLYGON_VERTEX_OUTLINES_RENDERER_HPP__
 #define __POLYGON_VERTEX_OUTLINES_RENDERER_HPP__
 
+#include "core/map/PMSConstants.hpp"
 #include "rendering/shaders/Shader.hpp"
 #include "rendering/ClientState.hpp"
 
 #include "core/map/Map.hpp"
 #include "core/math/Glm.hpp"
 
-#include <vector>
+#include <array>
 #include <bitset>
+#include <vector>
 
 namespace Soldank
 {
@@ -46,6 +48,8 @@ private:
 
     unsigned int vbo_;
     unsigned int polygons_count_;
+
+    std::array<std::bitset<3>, MAX_POLYGONS_COUNT> selected_polygon_vertices_;
 };
 }; // namespace Soldank
 

@@ -1,6 +1,7 @@
 #ifndef __MAP_EDITOR_HPP__
 #define __MAP_EDITOR_HPP__
 
+#include "core/map/PMSStructs.hpp"
 #include "map_editor/tools/Tool.hpp"
 #include "map_editor/actions/MapEditorAction.hpp"
 
@@ -67,6 +68,12 @@ private:
     glm::vec2 mouse_screen_position_on_start_dragging_;
     bool is_dragging_camera_;
     bool locked_;
+
+    bool is_holding_left_ctrl_;
+
+    std::vector<PMSPolygon> copied_polygons_;
+    std::vector<std::pair<unsigned int, std::pair<PMSScenery, std::string>>> copied_sceneries_;
+    std::vector<std::pair<unsigned int, PMSSpawnPoint>> copied_spawn_points_;
 };
 } // namespace Soldank
 
