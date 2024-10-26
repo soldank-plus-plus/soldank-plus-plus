@@ -67,6 +67,9 @@ private:
 
     bool IsMouseInSpawnPoint(const ClientState& client_state,
                              const glm::vec2& spawn_point_position) const;
+    static NextObjectTypeToSelect GetNextObjectTypeToSelect(
+      NextObjectTypeToSelect current_object_type_to_select,
+      const Map& map);
 
     glm::vec2 mouse_map_position_;
 
