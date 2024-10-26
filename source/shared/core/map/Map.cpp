@@ -701,6 +701,7 @@ bool Map::RayCast(glm::vec2 a,
         }
     }
 
+    // TODO: Dead code, decide whether it's needed and refactor or delete
     if (check_collider) {
         // check if vector crosses any colliders
         // |A*x + B*y + C| / Sqrt(A^2 + B^2) < r
@@ -908,6 +909,20 @@ void Map::SetPolygonVerticesColorById(
     for (const auto& [polygon_vertex_id, new_color] : polygon_vertices_with_new_color) {
         map_data_.polygons.at(polygon_vertex_id.first).vertices.at(polygon_vertex_id.second).color =
           new_color;
+    }
+
+    map_change_events_.modified_polygons.Notify(map_data_.polygons);
+}
+
+void Map::MovePolygonVerticesById(
+  const std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>&
+    polygon_vertices_with_new_position)
+{
+    for (const auto& [polygon_vertex, new_position] : polygon_vertices_with_new_position) {
+        map_data_.polygons.at(polygon_vertex.first).vertices.at(polygon_vertex.second).x =
+          new_position.x;
+        map_data_.polygons.at(polygon_vertex.first).vertices.at(polygon_vertex.second).y =
+          new_position.y;
     }
 
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
