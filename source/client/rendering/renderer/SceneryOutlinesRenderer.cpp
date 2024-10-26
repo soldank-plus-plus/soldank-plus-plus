@@ -36,6 +36,10 @@ SceneryOutlinesRenderer::SceneryOutlinesRenderer(Map& map, glm::vec4 color)
       [this](const std::vector<PMSScenery>& sceneries_after_removal) {
           OnRemoveSceneries(sceneries_after_removal);
       });
+    map.GetMapChangeEvents().modified_sceneries.AddObserver(
+      [this](const std::vector<PMSScenery>& sceneries_after_modify) {
+          OnModifySceneries(sceneries_after_modify);
+      });
 }
 
 SceneryOutlinesRenderer::~SceneryOutlinesRenderer()
@@ -87,6 +91,14 @@ void SceneryOutlinesRenderer::OnRemoveSceneries(
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(sceneries_after_removal, vertices);
+    Renderer::ModifyVBOVertices(vbo_, vertices);
+}
+
+void SceneryOutlinesRenderer::OnModifySceneries(
+  const std::vector<PMSScenery>& sceneries_after_modify)
+{
+    std::vector<float> vertices;
+    GenerateGLBufferVertices(sceneries_after_modify, vertices);
     Renderer::ModifyVBOVertices(vbo_, vertices);
 }
 

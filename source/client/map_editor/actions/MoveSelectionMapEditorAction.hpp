@@ -11,6 +11,7 @@ class MoveSelectionMapEditorAction final : public MapEditorAction
 {
 public:
     MoveSelectionMapEditorAction(
+      const std::vector<std::pair<unsigned int, glm::vec2>>& scenery_ids_with_position,
       const std::vector<std::pair<unsigned int, glm::ivec2>>& spawn_point_ids_with_position);
 
     void Execute(ClientState& client_state, Map& map) final;
@@ -19,6 +20,7 @@ public:
     void SetMoveOffset(const glm::vec2& new_move_offset) { move_offset_ = new_move_offset; }
 
 private:
+    std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_position_;
     std::vector<std::pair<unsigned int, glm::ivec2>> spawn_point_ids_with_old_position_;
 
     glm::vec2 move_offset_;

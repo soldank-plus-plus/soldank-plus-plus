@@ -1179,6 +1179,17 @@ void Map::SetSceneriesColorById(
     map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
 }
 
+void Map::MoveSceneriesById(
+  const std::vector<std::pair<unsigned int, glm::vec2>>& scenery_ids_with_new_position)
+{
+    for (const auto& [scenery_id, new_position] : scenery_ids_with_new_position) {
+        map_data_.scenery_instances.at(scenery_id).x = new_position.x;
+        map_data_.scenery_instances.at(scenery_id).y = new_position.y;
+    }
+
+    map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
+}
+
 std::array<glm::vec2, 4> Map::GetSceneryVertexPositions(const PMSScenery& scenery)
 {
     glm::mat4 transform_matrix(1.0F);
