@@ -34,6 +34,11 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
       [this, &client_state, &game_state](std::unique_ptr<MapEditorAction> new_action) {
           ExecuteNewAction(client_state, game_state.map, std::move(new_action));
       };
+    execute_without_adding_map_editor_action_ = [&client_state,
+                                                 &game_state](MapEditorAction* new_action) {
+        new_action->Execute(client_state, game_state.map);
+        return new_action;
+    };
 
     client_state.event_left_mouse_button_clicked.AddObserver([this, &client_state, &game_state]() {
         if (!client_state.map_editor_state.is_mouse_hovering_over_ui &&
@@ -121,7 +126,8 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     client_state.map_editor_state.event_pressed_redo.AddObserver(
       [this, &client_state, &game_state]() { RedoUndoneAction(client_state, game_state.map); });
 
-    tools_.emplace_back(std::make_unique<TransformTool>());
+    tools_.emplace_back(std::make_unique<TransformTool>(add_new_map_editor_action_,
+                                                        execute_without_adding_map_editor_action_));
     tools_.emplace_back(std::make_unique<PolygonTool>(add_new_map_editor_action_));
     tools_.emplace_back(std::make_unique<VertexSelectionTool>());
     tools_.emplace_back(std::make_unique<SelectionTool>());

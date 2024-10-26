@@ -60,6 +60,7 @@ private:
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
+    std::function<void(MapEditorAction*)> execute_without_adding_map_editor_action_;
     std::deque<std::unique_ptr<MapEditorAction>> map_editor_executed_actions_;
     std::vector<std::unique_ptr<MapEditorAction>> map_editor_undone_actions_;
 
