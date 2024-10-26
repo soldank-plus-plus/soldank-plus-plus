@@ -47,7 +47,7 @@ Window::~Window()
     glfwTerminate();
 }
 
-void Window::Create()
+void Window::Create(WindowSizeMode window_size_mode)
 {
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     if (monitor == nullptr) {
@@ -55,8 +55,42 @@ void Window::Create()
         throw "Error: Failed to get primary monitor";
     }
 
-    glfw_window_ =
-      glfwCreateWindow(width_, height_, title_.c_str(), /* monitor */ nullptr, nullptr);
+    const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
+    if (video_mode == nullptr) {
+        spdlog::error("Error: Failed to get video mode");
+        throw "Error: Failed to get video mode";
+    }
+
+    switch (window_size_mode) {
+        case WindowSizeMode::Fullscreen: {
+            // TODO: there is a bug where alt-tabbing and then alt-tabbing back makes the scene
+            // disappear. This is a quick workaround which will prevent alt-tabbing out of the game.
+            // Need to handle it gracefully.
+            glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+
+            width_ = video_mode->width;
+            height_ = video_mode->height;
+            glfw_window_ = glfwCreateWindow(width_, height_, title_.c_str(), monitor, nullptr);
+            break;
+        }
+        case WindowSizeMode::BorderlessFullscreen: {
+            glfwWindowHint(GLFW_RED_BITS, video_mode->redBits);
+            glfwWindowHint(GLFW_GREEN_BITS, video_mode->greenBits);
+            glfwWindowHint(GLFW_BLUE_BITS, video_mode->blueBits);
+            glfwWindowHint(GLFW_REFRESH_RATE, video_mode->refreshRate);
+            width_ = video_mode->width;
+            height_ = video_mode->height;
+            glfw_window_ = glfwCreateWindow(
+              video_mode->width, video_mode->height, title_.c_str(), monitor, nullptr);
+            break;
+        }
+        case WindowSizeMode::Windowed: {
+            glfw_window_ =
+              glfwCreateWindow(width_, height_, title_.c_str(), /* monitor */ nullptr, nullptr);
+            break;
+        }
+    }
+
     if (nullptr == glfw_window_) {
         spdlog::error("Error: Failed to create window.");
         throw "Error: Failed to create window.";

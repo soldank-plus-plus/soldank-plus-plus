@@ -5,6 +5,11 @@
 #include <string>
 #include <cstdint>
 
+namespace Soldank
+{
+enum class WindowSizeMode : std::uint8_t;
+}
+
 namespace Soldank::CommandLineParameters
 {
 enum class ApplicationMode
@@ -22,6 +27,7 @@ struct ParsedValues
     std::string join_server_ip;
     std::uint16_t join_server_port;
     std::optional<std::string> map;
+    WindowSizeMode window_size_mode;
 };
 
 // NOLINTNEXTLINE modernize-avoid-c-arrays

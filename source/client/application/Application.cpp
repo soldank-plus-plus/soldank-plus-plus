@@ -58,6 +58,7 @@ std::unique_ptr<MapEditor> map_editor;
 SteamNetworkingMicroseconds log_time_zero;
 
 CommandLineParameters::ApplicationMode application_mode;
+WindowSizeMode window_size_mode;
 
 void DebugOutput(ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
 {
@@ -106,6 +107,8 @@ bool Init(int argc, const char* argv[])
     if (!cli_parameters.is_parsing_successful) {
         return false;
     }
+
+    window_size_mode = cli_parameters.window_size_mode;
 
     std::string map_path;
 
@@ -308,7 +311,7 @@ void UpdateWindowSize()
 
 void Run()
 {
-    window->Create();
+    window->Create(window_size_mode);
     glm::vec2 last_mouse_screen_position = GetCurrentMouseScreenPosition();
     glm::vec2 last_mouse_map_position = GetCurrentMouseMapPosition();
     UpdateWindowSize();

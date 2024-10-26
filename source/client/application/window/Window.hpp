@@ -4,7 +4,6 @@
 #include "core/math/Glm.hpp"
 #include "core/utility/Observable.hpp"
 
-#include <functional>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -14,11 +13,18 @@
 
 namespace Soldank
 {
-enum class CursorMode : uint8_t
+enum class CursorMode : std::uint8_t
 {
     Locked,
     Normal,
     Hidden
+};
+
+enum class WindowSizeMode : std::uint8_t
+{
+    Fullscreen = 0,
+    BorderlessFullscreen,
+    Windowed
 };
 
 class Window
@@ -41,7 +47,7 @@ public:
     float GetAspectRatio() const;
     glm::vec2 GetCursorScreenPosition() const;
 
-    void Create();
+    void Create(WindowSizeMode window_size_mode);
     void Close();
     void Destroy();
 
