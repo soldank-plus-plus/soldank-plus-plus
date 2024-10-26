@@ -89,7 +89,7 @@ struct MapChangeEvents
     Observable<const std::vector<std::pair<unsigned short, PMSSceneryType>>&> removed_scenery_types;
     Observable<const std::vector<PMSScenery>&> modified_sceneries;
     Observable<const std::vector<PMSPolygon>&> modified_polygons;
-    ;
+    Observable<const std::vector<PMSSpawnPoint>&> modified_spawn_points;
 };
 
 class Map
@@ -138,6 +138,8 @@ public:
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);
     void AddSpawnPoints(const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points);
     void RemoveSpawnPointsById(const std::vector<unsigned int>& spawn_point_ids);
+    void MoveSpawnPointsById(
+      const std::vector<std::pair<unsigned int, glm::ivec2>>& spawn_point_ids_with_new_position);
 
     unsigned int AddNewScenery(const PMSScenery& scenery, const std::string& file_name);
     PMSScenery RemoveSceneryById(unsigned int id);

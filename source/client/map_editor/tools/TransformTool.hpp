@@ -3,12 +3,20 @@
 
 #include "map_editor/tools/Tool.hpp"
 
+#include "map_editor/actions/MapEditorAction.hpp"
+#include "map_editor/actions/MoveSelectionMapEditorAction.hpp"
+
+#include <memory>
+#include <optional>
+
 namespace Soldank
 {
 class TransformTool final : public Tool
 {
 public:
-    TransformTool() = default;
+    TransformTool(
+      const std::function<void(std::unique_ptr<MapEditorAction>)>& add_new_map_editor_action,
+      const std::function<void(MapEditorAction*)>& execute_without_adding_map_editor_action);
     ~TransformTool() final = default;
 
     void OnSelect(ClientState& client_state, const State& game_state) final;
@@ -31,6 +39,13 @@ public:
     void OnModifierKey2Released() final;
     void OnModifierKey3Pressed() final;
     void OnModifierKey3Released() final;
+
+private:
+    std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
+    std::function<void(MapEditorAction*)> execute_without_adding_map_editor_action_;
+
+    std::optional<std::unique_ptr<MoveSelectionMapEditorAction>> maybe_move_selection_action_;
+    glm::vec2 mouse_map_position_on_last_click_;
 };
 } // namespace Soldank
 

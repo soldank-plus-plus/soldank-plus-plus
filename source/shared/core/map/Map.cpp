@@ -930,6 +930,17 @@ PMSSpawnPoint Map::RemoveSpawnPointById(unsigned int id)
     return removed_spawn_point;
 }
 
+void Map::MoveSpawnPointsById(
+  const std::vector<std::pair<unsigned int, glm::ivec2>>& spawn_point_ids_with_new_position)
+{
+    for (const auto& [spawn_point_id, new_position] : spawn_point_ids_with_new_position) {
+        map_data_.spawn_points.at(spawn_point_id).x = new_position.x;
+        map_data_.spawn_points.at(spawn_point_id).y = new_position.y;
+    }
+
+    map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
+}
+
 void Map::AddSpawnPoints(const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points)
 {
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> spawn_points_to_add = spawn_points;
