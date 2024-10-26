@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <spdlog/spdlog.h>
 #include <utility>
 #include <sstream>
@@ -597,9 +598,190 @@ bool Map::RayCast(glm::vec2 a,
                   bool flag,
                   bool bullet,
                   bool check_collider,
-                  std::uint8_t team_id)
+                  std::uint8_t team_id) const
 {
-    // TODO: implement this
+    distance = Calc::Vec2Length(a - b);
+    if (distance > max_dist) {
+        distance = 9999999.0F;
+        return true;
+    }
+
+    int ax = ((int)std::round(std::min(a.x, b.x) / (float)map_data_.sectors_size)) + 25;
+    int ay = ((int)std::round(std::min(a.y, b.y) / (float)map_data_.sectors_size)) + 25;
+    int bx = ((int)std::round(std::max(a.x, b.x) / (float)map_data_.sectors_size)) + 25;
+    int by = ((int)std::round(std::max(a.y, b.y) / (float)map_data_.sectors_size)) + 25;
+
+    if (ax > GetSectorsCount() + 25 || bx < 0 || ay > GetSectorsCount() + 25 || by < 0) {
+        return false;
+    }
+
+    ax = std::max(0, ax);
+    ay = std::max(0, ay);
+    bx = std::min(GetSectorsCount() + 25, bx);
+    by = std::min(GetSectorsCount() + 25, by);
+
+    bool npCol = !player;
+    bool nbCol = !bullet;
+
+    for (unsigned int i = ax; i < bx; ++i) {
+        for (unsigned int j = ay; j < by; ++j) {
+            for (const auto& polygon_id : GetSector(i, j).polygons) {
+                const PMSPolygon& polygon = map_data_.polygons.at(polygon_id);
+
+                bool testcol = true;
+                // TODO: replace team_id with some enum
+                if ((polygon.polygon_type == PMSPolygonType::AlphaBullets &&
+                     (team_id != 1 || nbCol)) ||
+                    (polygon.polygon_type == PMSPolygonType::AlphaPlayers &&
+                     (team_id != 1 || npCol))) {
+
+                    testcol = false;
+                }
+
+                if ((polygon.polygon_type == PMSPolygonType::BravoBullets &&
+                     (team_id != 2 || nbCol)) ||
+                    (polygon.polygon_type == PMSPolygonType::BravoPlayers &&
+                     (team_id != 2 || npCol))) {
+
+                    testcol = false;
+                }
+
+                if ((polygon.polygon_type == PMSPolygonType::CharlieBullets &&
+                     (team_id != 3 || nbCol)) ||
+                    (polygon.polygon_type == PMSPolygonType::CharliePlayers &&
+                     (team_id != 3 || npCol))) {
+
+                    testcol = false;
+                }
+
+                if ((polygon.polygon_type == PMSPolygonType::DeltaBullets &&
+                     (team_id != 4 || nbCol)) ||
+                    (polygon.polygon_type == PMSPolygonType::DeltaPlayers &&
+                     (team_id != 4 || npCol))) {
+
+                    testcol = false;
+                }
+
+                if (((!flag || npCol) &&
+                     (polygon.polygon_type == PMSPolygonType::FlaggerCollides)) ||
+                    ((flag || npCol) &&
+                     polygon.polygon_type == PMSPolygonType::NonFlaggerCollides)) {
+
+                    testcol = false;
+                }
+
+                if ((!flag || npCol || nbCol) &&
+                    polygon.polygon_type == PMSPolygonType::NonFlaggerCollides) {
+
+                    testcol = false;
+                }
+
+                if (
+                  (polygon.polygon_type == PMSPolygonType::OnlyBulletsCollide && nbCol) ||
+                  (polygon.polygon_type == PMSPolygonType::OnlyPlayersCollide && npCol) || (polygon.polygon_type == PMSPolygonType::NoCollide
+                  // TODO: add this when those are implemented
+                  /*|| polygon.polygon_type == PMSPolygonType::POLY_TYPE_BACKGROUND || polygon.polygon_type == PMSPolygonType::POLY_TYPE_BACKGROUND_TRANSITION*/)) {
+
+                    testcol = false;
+                }
+
+                if (testcol) {
+                    if (PointInPoly(a, polygon)) {
+                        distance = 0;
+                        return true;
+                    }
+                    glm::vec2 d;
+                    if (LineInPoly(a, b, polygon, d)) {
+                        glm::vec2 c = d - a;
+                        distance = Calc::Vec2Length(c);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    if (check_collider) {
+        // check if vector crosses any colliders
+        // |A*x + B*y + C| / Sqrt(A^2 + B^2) < r
+
+        float e = a.y - b.y;
+        float f = b.x - a.x;
+        float g = a.x * b.y - a.y * b.x;
+        float h = std::sqrt(e * e + f * f);
+        for (const auto& collider : map_data_.colliders) {
+            if (collider.active != 0) {
+                if (std::abs(e * collider.x + f * collider.y + g) / h <= collider.radius) {
+                    float r = Calc::SquareDistance(a, b) + collider.radius * collider.radius;
+                    if (Calc::SquareDistance(a, { collider.x, collider.y }) <= r) {
+                        if (Calc::SquareDistance(b, { collider.x, collider.y }) <= r) {
+                            // TODO: it looks like check_collider never returns true. Check
+                            // what's up with that
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool Map::LineInPoly(const glm::vec2& a,
+                     const glm::vec2& b,
+                     const PMSPolygon& polygon,
+                     glm::vec2& v)
+{
+    for (unsigned int i = 0; i < 3; ++i) {
+        unsigned int j = i + 1;
+        if (j >= 3) {
+            j = 0;
+        }
+
+        const auto& p = polygon.vertices.at(i);
+        const auto& q = polygon.vertices.at(j);
+
+        if ((std::abs(b.x - a.x) > 0.00001F) || (std::abs(q.x - p.x) > 0.00001F)) {
+            if (b.x == a.x) {
+                float bk = (q.y - p.y) / (q.x - p.x);
+                float bm = p.y - bk * p.x;
+                v.x = a.x;
+                v.y = bk * v.x + bm;
+
+                if ((v.x > std::min(p.x, q.x)) && (v.x < std::max(p.x, q.x)) &&
+                    (v.y > std::min(a.y, b.y)) && (v.y < std::max(a.y, b.y))) {
+                    return true;
+                }
+            } else if (std::abs(q.x - p.x) <= 0.000001F) {
+                float ak = (b.y - a.y) / (b.x - a.x);
+                float am = a.y - ak * a.x;
+                v.x = p.x;
+                v.y = ak * v.x + am;
+
+                if ((v.y > std::min(p.y, q.y)) && (v.y < std::max(p.y, q.y)) &&
+                    (v.x > std::min(a.x, b.x)) && (v.x < std::max(a.x, b.x))) {
+                    return true;
+                }
+            } else {
+                float ak = (b.y - a.y) / (b.x - a.x);
+                float bk = (q.y - p.y) / (q.x - p.x);
+
+                if (std::abs(ak - bk) > 0.000001F) {
+                    float am = a.y - ak * a.x;
+                    float bm = p.y - bk * p.x;
+                    v.x = (bm - am) / (ak - bk);
+                    v.y = ak * v.x + am;
+
+                    if ((v.x > std::min(p.x, q.x)) && (v.x < std::max(p.x, q.x)) &&
+                        (v.x > std::min(a.x, b.x)) && (v.x < std::max(a.x, b.x))) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
     return false;
 }
 
