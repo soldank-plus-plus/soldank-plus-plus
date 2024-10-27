@@ -928,6 +928,15 @@ void Map::MovePolygonVerticesById(
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
 
+void Map::SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>& polygons)
+{
+    for (const auto& [polygon_id, polygon] : polygons) {
+        map_data_.polygons.at(polygon_id) = polygon;
+    }
+
+    map_change_events_.modified_polygons.Notify(map_data_.polygons);
+}
+
 unsigned int Map::AddNewSpawnPoint(const PMSSpawnPoint& spawn_point)
 {
     map_data_.spawn_points.push_back(spawn_point);
@@ -951,6 +960,16 @@ void Map::MoveSpawnPointsById(
     for (const auto& [spawn_point_id, new_position] : spawn_point_ids_with_new_position) {
         map_data_.spawn_points.at(spawn_point_id).x = new_position.x;
         map_data_.spawn_points.at(spawn_point_id).y = new_position.y;
+    }
+
+    map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
+}
+
+void Map::SetSpawnPointsById(
+  const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points)
+{
+    for (const auto& [spawn_point_id, spawn_point] : spawn_points) {
+        map_data_.spawn_points.at(spawn_point_id) = spawn_point;
     }
 
     map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
@@ -1200,6 +1219,15 @@ void Map::MoveSceneriesById(
     for (const auto& [scenery_id, new_position] : scenery_ids_with_new_position) {
         map_data_.scenery_instances.at(scenery_id).x = new_position.x;
         map_data_.scenery_instances.at(scenery_id).y = new_position.y;
+    }
+
+    map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
+}
+
+void Map::SetSceneriesById(const std::vector<std::pair<unsigned int, PMSScenery>>& sceneries)
+{
+    for (const auto& [scenery_id, scenery] : sceneries) {
+        map_data_.scenery_instances.at(scenery_id) = scenery;
     }
 
     map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);

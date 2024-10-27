@@ -217,4 +217,33 @@ float Det(glm::vec2 a, glm::vec2 b, glm::vec2 c)
 {
     return a.x * b.y + a.y * c.x + b.x * c.y - c.x * b.y - c.y * a.x - b.x * a.y;
 }
+
+float GetAngle(const glm::vec2& p1, const glm::vec2& p2)
+{
+    return std::atan2(p1.y - p2.y, p1.x - p2.x);
+}
+
+glm::vec2 RotatePoint(const glm::vec2& point, const glm::vec2& origin, float rotation)
+{
+    glm::vec4 origin4 = { origin.x, origin.y, 1.0F, 1.0F };
+    glm::vec4 point4 = { point.x, point.y, 1.0F, 1.0F };
+    glm::vec4 new_position = point4 - origin4;
+    glm::mat4 transform(1);
+    transform = glm::rotate(transform, rotation, glm::vec3(0.0, 0.0, 1.0));
+    new_position = transform * new_position;
+    new_position += origin4;
+    glm::vec2 result;
+    result.x = new_position.x;
+    result.y = new_position.y;
+    return result;
+}
+
+glm::vec2 ScalePoint(const glm::vec2& point, const glm::vec2& origin, const glm::vec2& scale_factor)
+{
+    glm::vec2 result = point - origin;
+    result.x *= scale_factor.x;
+    result.y *= scale_factor.y;
+    result += origin;
+    return result;
+}
 } // namespace Soldank::Calc

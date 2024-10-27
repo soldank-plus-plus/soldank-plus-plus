@@ -136,6 +136,7 @@ public:
     void MovePolygonVerticesById(
       const std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>&
         polygon_vertices_with_new_position);
+    void SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>& polygons);
 
     unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);
@@ -143,6 +144,8 @@ public:
     void RemoveSpawnPointsById(const std::vector<unsigned int>& spawn_point_ids);
     void MoveSpawnPointsById(
       const std::vector<std::pair<unsigned int, glm::ivec2>>& spawn_point_ids_with_new_position);
+    void SetSpawnPointsById(
+      const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points);
 
     unsigned int AddNewScenery(const PMSScenery& scenery, const std::string& file_name);
     PMSScenery RemoveSceneryById(unsigned int id);
@@ -153,6 +156,7 @@ public:
       const std::vector<std::pair<unsigned int, PMSColor>>& scenery_ids_with_new_color);
     void MoveSceneriesById(
       const std::vector<std::pair<unsigned int, glm::vec2>>& scenery_ids_with_new_position);
+    void SetSceneriesById(const std::vector<std::pair<unsigned int, PMSScenery>>& sceneries);
 
     static std::array<glm::vec2, 4> GetSceneryVertexPositions(const PMSScenery& scenery);
 
