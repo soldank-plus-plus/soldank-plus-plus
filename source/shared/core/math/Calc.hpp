@@ -32,6 +32,11 @@ std::optional<glm::vec2> LineCircleCollision(const glm::vec2& start_point,
 bool SegmentsIntersect(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d);
 
 float Det(glm::vec2 a, glm::vec2 b, glm::vec2 c);
+float GetAngle(const glm::vec2& p1, const glm::vec2& p2);
+glm::vec2 RotatePoint(const glm::vec2& point, const glm::vec2& origin, float rotation);
+glm::vec2 ScalePoint(const glm::vec2& point,
+                     const glm::vec2& origin,
+                     const glm::vec2& scale_factor);
 } // namespace Soldank::Calc
 
 #endif

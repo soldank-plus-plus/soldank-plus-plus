@@ -1,5 +1,10 @@
 #include "map_editor/tools/TransformTool.hpp"
+#include "core/map/PMSStructs.hpp"
 #include "map_editor/actions/MoveSelectionMapEditorAction.hpp"
+#include "map_editor/actions/ScaleSelectionMapEditorAction.hpp"
+
+#include "core/math/Calc.hpp"
+
 #include <limits>
 
 namespace Soldank
@@ -10,12 +15,14 @@ TransformTool::TransformTool(
     : add_new_map_editor_action_(add_new_map_editor_action)
     , execute_without_adding_map_editor_action_(execute_without_adding_map_editor_action)
     , mouse_map_position_on_last_click_()
+    , transform_mode_(TransformMode::Move)
 {
 }
 
 void TransformTool::OnSelect(ClientState& client_state, const State& game_state)
 {
     SetupSelectionBox(client_state, game_state);
+    transform_mode_ = TransformMode::Move;
 }
 
 void TransformTool::OnUnselect(ClientState& client_state)
@@ -25,37 +32,100 @@ void TransformTool::OnUnselect(ClientState& client_state)
 
 void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
-    std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>
-      polygon_vertices_with_position;
-    for (const auto& [selected_polygon_id, selected_vertices] :
-         client_state.map_editor_state.selected_polygon_vertices) {
-        for (unsigned int i = 0; i < 3; ++i) {
-            if (selected_vertices[i]) {
-                const auto& polygon = game_state.map.GetPolygons().at(selected_polygon_id);
-                polygon_vertices_with_position.push_back(
-                  { { selected_polygon_id, i },
-                    { polygon.vertices.at(i).x, polygon.vertices.at(i).y } });
+    switch (transform_mode_) {
+        case TransformMode::Move: {
+            std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>
+              polygon_vertices_with_position;
+            for (const auto& [selected_polygon_id, selected_vertices] :
+                 client_state.map_editor_state.selected_polygon_vertices) {
+                for (unsigned int i = 0; i < 3; ++i) {
+                    if (selected_vertices[i]) {
+                        const auto& polygon = game_state.map.GetPolygons().at(selected_polygon_id);
+                        polygon_vertices_with_position.push_back(
+                          { { selected_polygon_id, i },
+                            { polygon.vertices.at(i).x, polygon.vertices.at(i).y } });
+                    }
+                }
             }
+
+            std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_position;
+            for (const auto& selected_scenery_id :
+                 client_state.map_editor_state.selected_scenery_ids) {
+                glm::vec2 position = {
+                    game_state.map.GetSceneryInstances().at(selected_scenery_id).x,
+                    game_state.map.GetSceneryInstances().at(selected_scenery_id).y
+                };
+                scenery_ids_with_position.emplace_back(selected_scenery_id, position);
+            }
+
+            std::vector<std::pair<unsigned int, glm::ivec2>> spawn_point_ids_with_position;
+            for (const auto& selected_spawn_point_id :
+                 client_state.map_editor_state.selected_spawn_point_ids) {
+                glm::ivec2 position = {
+                    game_state.map.GetSpawnPoints().at(selected_spawn_point_id).x,
+                    game_state.map.GetSpawnPoints().at(selected_spawn_point_id).y
+                };
+                spawn_point_ids_with_position.emplace_back(selected_spawn_point_id, position);
+            }
+
+            maybe_move_selection_action_ =
+              std::make_unique<MoveSelectionMapEditorAction>(polygon_vertices_with_position,
+                                                             scenery_ids_with_position,
+                                                             spawn_point_ids_with_position);
+            break;
+        }
+        case TransformMode::Scale: {
+            if (!client_state.map_editor_state.vertex_selection_box) {
+                break;
+            }
+
+            float max_distance = 5.0F * client_state.camera_component.GetZoom();
+
+            if (Calc::SquareDistance(client_state.map_editor_state.vertex_selection_box->second,
+                                     client_state.mouse_map_position) >
+                max_distance * max_distance) {
+                break;
+            }
+
+            std::vector<std::pair<std::pair<unsigned int, std::bitset<3>>, PMSPolygon>> polygons;
+            polygons.reserve(client_state.map_editor_state.selected_polygon_vertices.size());
+            for (const auto& selected_polygon_vertices :
+                 client_state.map_editor_state.selected_polygon_vertices) {
+                polygons.emplace_back(
+                  selected_polygon_vertices,
+                  game_state.map.GetPolygons().at(selected_polygon_vertices.first));
+            }
+
+            std::vector<std::pair<unsigned int, PMSScenery>> sceneries;
+            sceneries.reserve(client_state.map_editor_state.selected_scenery_ids.size());
+            for (const auto& selected_scenery_id :
+                 client_state.map_editor_state.selected_scenery_ids) {
+                sceneries.emplace_back(
+                  selected_scenery_id,
+                  game_state.map.GetSceneryInstances().at(selected_scenery_id));
+            }
+
+            std::vector<std::pair<unsigned int, PMSSpawnPoint>> spawn_points;
+            spawn_points.reserve(client_state.map_editor_state.selected_spawn_point_ids.size());
+            for (const auto& selected_spawn_point_id :
+                 client_state.map_editor_state.selected_spawn_point_ids) {
+                spawn_points.emplace_back(
+                  selected_spawn_point_id,
+                  game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
+            }
+
+            glm::vec2 origin = client_state.map_editor_state.vertex_selection_box->first;
+
+            maybe_scale_selection_action_ = std::make_unique<ScaleSelectionMapEditorAction>(
+              polygons, sceneries, spawn_points, origin, client_state.mouse_map_position);
+
+            break;
+        }
+        case TransformMode::Rotate: {
+            break;
         }
     }
 
-    std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_position;
-    for (const auto& selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
-        glm::vec2 position = { game_state.map.GetSceneryInstances().at(selected_scenery_id).x,
-                               game_state.map.GetSceneryInstances().at(selected_scenery_id).y };
-        scenery_ids_with_position.emplace_back(selected_scenery_id, position);
-    }
-
-    std::vector<std::pair<unsigned int, glm::ivec2>> spawn_point_ids_with_position;
-    for (const auto& selected_spawn_point_id :
-         client_state.map_editor_state.selected_spawn_point_ids) {
-        glm::ivec2 position = { game_state.map.GetSpawnPoints().at(selected_spawn_point_id).x,
-                                game_state.map.GetSpawnPoints().at(selected_spawn_point_id).y };
-        spawn_point_ids_with_position.emplace_back(selected_spawn_point_id, position);
-    }
-
-    maybe_move_selection_action_ = std::make_unique<MoveSelectionMapEditorAction>(
-      polygon_vertices_with_position, scenery_ids_with_position, spawn_point_ids_with_position);
     mouse_map_position_on_last_click_ = client_state.mouse_map_position;
 }
 
@@ -65,6 +135,11 @@ void TransformTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
     if (maybe_move_selection_action_) {
         add_new_map_editor_action_(std::move(*maybe_move_selection_action_));
         maybe_move_selection_action_ = std::nullopt;
+    }
+
+    if (maybe_scale_selection_action_) {
+        add_new_map_editor_action_(std::move(*maybe_scale_selection_action_));
+        maybe_scale_selection_action_ = std::nullopt;
     }
 }
 
@@ -89,19 +164,37 @@ void TransformTool::OnMouseMapPositionChange(ClientState& client_state,
         execute_without_adding_map_editor_action_(maybe_move_selection_action_->get());
         SetupSelectionBox(client_state, game_state);
     }
+
+    if (maybe_scale_selection_action_) {
+        (*maybe_scale_selection_action_)->SetCurrentMousePosition(new_mouse_position);
+        execute_without_adding_map_editor_action_(maybe_scale_selection_action_->get());
+        SetupSelectionBox(client_state, game_state);
+    }
 }
 
 void TransformTool::OnModifierKey1Pressed() {}
 
 void TransformTool::OnModifierKey1Released() {}
 
-void TransformTool::OnModifierKey2Pressed() {}
+void TransformTool::OnModifierKey2Pressed()
+{
+    transform_mode_ = TransformMode::Scale;
+}
 
-void TransformTool::OnModifierKey2Released() {}
+void TransformTool::OnModifierKey2Released()
+{
+    transform_mode_ = TransformMode::Move;
+}
 
-void TransformTool::OnModifierKey3Pressed() {}
+void TransformTool::OnModifierKey3Pressed()
+{
+    transform_mode_ = TransformMode::Rotate;
+}
 
-void TransformTool::OnModifierKey3Released() {}
+void TransformTool::OnModifierKey3Released()
+{
+    transform_mode_ = TransformMode::Move;
+}
 
 void TransformTool::SetupSelectionBox(ClientState& client_state, const State& game_state)
 {
