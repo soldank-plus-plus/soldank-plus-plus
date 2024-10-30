@@ -1,6 +1,7 @@
 #include "map_editor/tools/TransformTool.hpp"
 #include "core/map/PMSStructs.hpp"
 #include "map_editor/actions/MoveSelectionMapEditorAction.hpp"
+#include "map_editor/actions/RotateSelectionMapEditorAction.hpp"
 #include "map_editor/actions/ScaleSelectionMapEditorAction.hpp"
 
 #include "core/math/Calc.hpp"
@@ -122,6 +123,50 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
             break;
         }
         case TransformMode::Rotate: {
+            if (!client_state.map_editor_state.vertex_selection_box) {
+                break;
+            }
+
+            float max_distance = 5.0F * client_state.camera_component.GetZoom();
+
+            if (Calc::SquareDistance(client_state.map_editor_state.vertex_selection_box->second,
+                                     client_state.mouse_map_position) >
+                max_distance * max_distance) {
+                break;
+            }
+
+            std::vector<std::pair<std::pair<unsigned int, std::bitset<3>>, PMSPolygon>> polygons;
+            polygons.reserve(client_state.map_editor_state.selected_polygon_vertices.size());
+            for (const auto& selected_polygon_vertices :
+                 client_state.map_editor_state.selected_polygon_vertices) {
+                polygons.emplace_back(
+                  selected_polygon_vertices,
+                  game_state.map.GetPolygons().at(selected_polygon_vertices.first));
+            }
+
+            std::vector<std::pair<unsigned int, PMSScenery>> sceneries;
+            sceneries.reserve(client_state.map_editor_state.selected_scenery_ids.size());
+            for (const auto& selected_scenery_id :
+                 client_state.map_editor_state.selected_scenery_ids) {
+                sceneries.emplace_back(
+                  selected_scenery_id,
+                  game_state.map.GetSceneryInstances().at(selected_scenery_id));
+            }
+
+            std::vector<std::pair<unsigned int, PMSSpawnPoint>> spawn_points;
+            spawn_points.reserve(client_state.map_editor_state.selected_spawn_point_ids.size());
+            for (const auto& selected_spawn_point_id :
+                 client_state.map_editor_state.selected_spawn_point_ids) {
+                spawn_points.emplace_back(
+                  selected_spawn_point_id,
+                  game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
+            }
+
+            glm::vec2 origin = client_state.map_editor_state.vertex_selection_box->first;
+
+            maybe_rotate_selection_action_ = std::make_unique<RotateSelectionMapEditorAction>(
+              polygons, sceneries, spawn_points, origin, client_state.mouse_map_position);
+
             break;
         }
     }
@@ -140,6 +185,11 @@ void TransformTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
     if (maybe_scale_selection_action_) {
         add_new_map_editor_action_(std::move(*maybe_scale_selection_action_));
         maybe_scale_selection_action_ = std::nullopt;
+    }
+
+    if (maybe_rotate_selection_action_) {
+        add_new_map_editor_action_(std::move(*maybe_rotate_selection_action_));
+        maybe_rotate_selection_action_ = std::nullopt;
     }
 }
 
@@ -168,6 +218,12 @@ void TransformTool::OnMouseMapPositionChange(ClientState& client_state,
     if (maybe_scale_selection_action_) {
         (*maybe_scale_selection_action_)->SetCurrentMousePosition(new_mouse_position);
         execute_without_adding_map_editor_action_(maybe_scale_selection_action_->get());
+        SetupSelectionBox(client_state, game_state);
+    }
+
+    if (maybe_rotate_selection_action_) {
+        (*maybe_rotate_selection_action_)->SetCurrentMousePosition(new_mouse_position);
+        execute_without_adding_map_editor_action_(maybe_rotate_selection_action_->get());
         SetupSelectionBox(client_state, game_state);
     }
 }

@@ -1,6 +1,7 @@
 #ifndef __TRANSFORM_TOOL_HPP__
 #define __TRANSFORM_TOOL_HPP__
 
+#include "map_editor/actions/RotateSelectionMapEditorAction.hpp"
 #include "map_editor/tools/Tool.hpp"
 
 #include "map_editor/actions/MapEditorAction.hpp"
@@ -56,6 +57,7 @@ private:
 
     std::optional<std::unique_ptr<MoveSelectionMapEditorAction>> maybe_move_selection_action_;
     std::optional<std::unique_ptr<ScaleSelectionMapEditorAction>> maybe_scale_selection_action_;
+    std::optional<std::unique_ptr<RotateSelectionMapEditorAction>> maybe_rotate_selection_action_;
     glm::vec2 mouse_map_position_on_last_click_;
 
     TransformMode transform_mode_;
