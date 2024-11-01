@@ -555,9 +555,9 @@ void Render(State& game_state, ClientState& client_state)
                                  ImGuiWindowFlags_NoBringToFrontOnFocus |
                                  ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar;
 
-        if (ImGui::Begin("MapTabBar", nullptr, flags)) {
+        if (ImGui::Begin("MapTabBarWindow", nullptr, flags)) {
             if (ImGui::BeginMenuBar()) {
-                if (ImGui::BeginTabBar("#asd")) {
+                if (ImGui::BeginTabBar("#MapTabBar")) {
                     if (ImGui::BeginTabItem(game_state.map.GetName().c_str(),
                                             nullptr,
                                             ImGuiTabItemFlags_SetSelected /*|
@@ -738,6 +738,10 @@ void Render(State& game_state, ClientState& client_state)
             client_state.map_editor_state.is_modal_or_popup_open = true;
 
             ImGui::SeparatorText("Search:");
+            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+                !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
+                ImGui::SetKeyboardFocusHere(0);
+            }
             ImGui::InputText(
               "##ScenerySearchInput", scenery_search_filter.data(), scenery_search_filter.size());
             std::string search_filter(scenery_search_filter.begin(), scenery_search_filter.end());
