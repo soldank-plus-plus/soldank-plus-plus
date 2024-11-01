@@ -10,7 +10,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <variant>
 #include <vector>
+#include <memory>
+#include <chrono>
+
+namespace Soldank::Texture
+{
+class TextureGIFData;
+};
 
 namespace Soldank
 {
@@ -32,6 +40,22 @@ public:
                 const std::vector<PMSScenery>& scenery_instances);
 
 private:
+    class GIFTexture
+    {
+    public:
+        GIFTexture(const std::shared_ptr<Texture::TextureGIFData>& gif_data);
+
+        void Update();
+        unsigned int GetTextureId() const;
+
+    private:
+        std::shared_ptr<Texture::TextureGIFData> gif_data_;
+        unsigned int current_frame_id_;
+        std::chrono::time_point<std::chrono::system_clock> last_switch_time_;
+    };
+
+    void AddNewTexture(const std::filesystem::path& texture_file_name);
+
     void OnAddScenery(const PMSScenery& new_scenery, unsigned int new_scenery_id);
     void OnAddSceneryType(const PMSSceneryType& new_scenery_type);
     void OnRemoveScenery(const PMSScenery& removed_scenery,
@@ -53,7 +77,7 @@ private:
 
     Shader shader_;
 
-    std::vector<unsigned int> textures_;
+    std::vector<std::variant<unsigned int, GIFTexture>> textures_;
     unsigned int vbo_;
     unsigned int ebo_;
 };

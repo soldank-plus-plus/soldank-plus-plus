@@ -15,21 +15,8 @@ namespace Soldank
 SceneriesRenderer::SceneriesRenderer(Map& map)
     : shader_(ShaderSources::VERTEX_SHADER_SOURCE, ShaderSources::FRAGMENT_SHADER_SOURCE)
 {
-    for (const auto& scnery_type : map.GetSceneryTypes()) {
-        std::filesystem::path texture_path = "scenery-gfx/";
-        texture_path += scnery_type.name;
-        if (!std::filesystem::exists(texture_path)) {
-            texture_path.replace_extension(".png");
-        }
-
-        auto texture_or_error = Texture::Load(texture_path.string().c_str());
-
-        if (texture_or_error.has_value()) {
-            textures_.push_back(texture_or_error.value().opengl_id);
-        } else {
-            spdlog::critical("Texture file not found {}", texture_path.string());
-            textures_.push_back(0);
-        }
+    for (const auto& scenery_type : map.GetSceneryTypes()) {
+        AddNewTexture(scenery_type.name);
     }
 
     std::vector<float> vertices;
@@ -90,7 +77,9 @@ SceneriesRenderer::~SceneriesRenderer()
     Renderer::FreeVBO(vbo_);
     Renderer::FreeVBO(ebo_);
     for (const auto& texture : textures_) {
-        Texture::Delete(texture);
+        if (std::holds_alternative<unsigned int>(texture)) {
+            Texture::Delete(std::get<unsigned int>(texture));
+        }
     }
 }
 
@@ -119,8 +108,44 @@ void SceneriesRenderer::Render(glm::mat4 transform,
 
         shader_.SetMatrix4("transform", current_scenery_transform);
 
-        Renderer::BindTexture(textures_[scenery_instances[i].style - 1]);
+        if (std::holds_alternative<unsigned int>(textures_[scenery_instances[i].style - 1])) {
+            Renderer::BindTexture(std::get<0>(textures_[scenery_instances[i].style - 1]));
+        } else {
+            auto& gif_texture = std::get<1>(textures_[scenery_instances[i].style - 1]);
+            gif_texture.Update();
+            Renderer::BindTexture(gif_texture.GetTextureId());
+        }
+
         Renderer::DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (i * 6ULL * sizeof(GLuint)));
+    }
+}
+
+void SceneriesRenderer::AddNewTexture(const std::filesystem::path& texture_file_name)
+{
+    std::filesystem::path texture_path = "scenery-gfx/";
+    texture_path += texture_file_name;
+
+    if (texture_path.extension() == ".gif") {
+        auto texture_or_error = Texture::LoadGIF(texture_path.string().c_str());
+
+        if (texture_or_error.has_value()) {
+            GIFTexture gif_texture(texture_or_error.value());
+            textures_.emplace_back(std::move(gif_texture));
+        } else {
+            spdlog::critical("Texture file not found {}", texture_path.string());
+            textures_.emplace_back(0UL);
+        }
+    } else {
+        if (!std::filesystem::exists(texture_path)) {
+            texture_path.replace_extension(".png");
+        }
+        auto texture_or_error = Texture::Load(texture_path.string().c_str());
+        if (texture_or_error.has_value()) {
+            textures_.emplace_back(texture_or_error.value().opengl_id);
+        } else {
+            spdlog::critical("Texture file not found {}", texture_path.string());
+            textures_.emplace_back(0UL);
+        }
     }
 }
 
@@ -135,20 +160,7 @@ void SceneriesRenderer::OnAddScenery(const PMSScenery& new_scenery, unsigned int
 void SceneriesRenderer::OnAddSceneryType(const PMSSceneryType& new_scenery_type)
 {
     spdlog::debug("new scenery type: {}", new_scenery_type.name);
-    std::filesystem::path texture_path = "scenery-gfx/";
-    texture_path += new_scenery_type.name;
-    if (!std::filesystem::exists(texture_path)) {
-        texture_path.replace_extension(".png");
-    }
-
-    auto texture_or_error = Texture::Load(texture_path.string().c_str());
-
-    if (texture_or_error.has_value()) {
-        textures_.push_back(texture_or_error.value().opengl_id);
-    } else {
-        spdlog::critical("Texture file not found {}", texture_path.string());
-        textures_.push_back(0);
-    }
+    AddNewTexture(new_scenery_type.name);
 }
 
 void SceneriesRenderer::OnRemoveScenery(const PMSScenery& removed_scenery,
@@ -169,7 +181,9 @@ void SceneriesRenderer::OnRemoveSceneryType(
   const std::vector<PMSSceneryType>& /*scenery_types_after_removal*/)
 {
     --removed_scenery_type_id;
-    Texture::Delete(textures_.at(removed_scenery_type_id));
+    if (std::holds_alternative<unsigned int>(textures_.at(removed_scenery_type_id))) {
+        Texture::Delete(std::get<unsigned int>(textures_.at(removed_scenery_type_id)));
+    }
     textures_.erase(textures_.begin() + removed_scenery_type_id);
 }
 
@@ -179,11 +193,13 @@ void SceneriesRenderer::OnRemoveSceneryTypes(
     std::vector<unsigned int> indexes_to_remove;
     for (const auto& removed_scenery_type : removed_scenery_types) {
         indexes_to_remove.push_back(removed_scenery_type.first - 1);
-        Texture::Delete(textures_.at(removed_scenery_type.first - 1));
+        if (std::holds_alternative<unsigned int>(textures_.at(removed_scenery_type.first - 1))) {
+            Texture::Delete(std::get<unsigned int>(textures_.at(removed_scenery_type.first - 1)));
+        }
     }
 
     std::sort(indexes_to_remove.begin(), indexes_to_remove.end());
-    std::vector<unsigned int> new_textures;
+    std::vector<std::variant<unsigned int, GIFTexture>> new_textures;
 
     unsigned int removal_id = 0;
     for (unsigned int i = 0; i < textures_.size(); ++i) {
@@ -272,5 +288,30 @@ void SceneriesRenderer::GenerateGLBufferVerticesForScenery(const PMSScenery& sce
     destination_vertices[first_index + 28] = 0.0;
     destination_vertices[first_index + 34] = 1.0;
     destination_vertices[first_index + 35] = 1.0;
+}
+
+SceneriesRenderer::GIFTexture::GIFTexture(const std::shared_ptr<Texture::TextureGIFData>& gif_data)
+    : gif_data_(gif_data)
+    , current_frame_id_(0)
+    , last_switch_time_(std::chrono::system_clock::now())
+{
+}
+
+void SceneriesRenderer::GIFTexture::Update()
+{
+    auto time_now = std::chrono::system_clock::now();
+    std::chrono::duration<double> delta_time = time_now - last_switch_time_;
+    unsigned int next_frame_id = (current_frame_id_ + 1) % gif_data_->Size();
+    double delay = gif_data_->GetFrame(current_frame_id_).second;
+    delay /= 1000.0;
+    if (delta_time.count() >= delay) {
+        current_frame_id_ = next_frame_id;
+        last_switch_time_ = time_now;
+    }
+}
+
+unsigned int SceneriesRenderer::GIFTexture::GetTextureId() const
+{
+    return gif_data_->GetFrame(current_frame_id_).first;
 }
 } // namespace Soldank
