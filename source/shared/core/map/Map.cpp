@@ -268,14 +268,14 @@ void Map::AppendPolygonsToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
             AppendToFileWriter(file_writer, vertex_copy);
         }
 
-        for (int j = 0; j < 3; ++j) {
-            unsigned int k = j + 1;
-            if (k > 2) {
-                k = 0;
+        for (int i = 0; i < 3; ++i) {
+            unsigned int j = i + 1;
+            if (j > 2) {
+                j = 0;
             }
 
-            float diff_x = polygon.vertices.at(k).x - polygon.vertices.at(j).x;
-            float diff_y = polygon.vertices.at(j).y - polygon.vertices.at(k).y;
+            float diff_x = polygon.vertices.at(j).x - polygon.vertices.at(i).x;
+            float diff_y = polygon.vertices.at(i).y - polygon.vertices.at(j).y;
             float length = NAN;
             if (fabs(diff_x) < 0.00001F && fabs(diff_y) < 0.00001F) {
                 length = 1.0F;
@@ -283,19 +283,23 @@ void Map::AppendPolygonsToFileWriter(std::shared_ptr<IFileWriter>& file_writer)
                 length = hypotf(diff_x, diff_y);
             }
 
+            float bounciness = 1.0F;
+
             if (polygon.polygon_type == PMSPolygonType::Bouncy) {
-                if (polygon.perpendiculars.at(j).z < 1.0F) {
-                    polygon.perpendiculars.at(j).z = 1.0F;
+                if (bounciness < 1.0F) {
+                    bounciness = 1.0F;
+                } else {
+                    bounciness = polygon.bounciness;
                 }
             } else {
-                polygon.perpendiculars.at(j).z = 1.0F;
+                bounciness = 1.0F;
             }
 
-            polygon.perpendiculars.at(j).x = (diff_y / length) * polygon.perpendiculars.at(j).z;
-            polygon.perpendiculars.at(j).y = (diff_x / length) * polygon.perpendiculars.at(j).z;
-            polygon.perpendiculars.at(j).z = 1.0F;
+            polygon.perpendiculars.at(i).x = (diff_y / length) * bounciness;
+            polygon.perpendiculars.at(i).y = (diff_x / length) * bounciness;
+            polygon.perpendiculars.at(i).z = 1.0F;
 
-            AppendToFileWriter(file_writer, polygon.perpendiculars.at(j));
+            AppendToFileWriter(file_writer, polygon.perpendiculars.at(i));
         }
         AppendToFileWriter(file_writer, polygon.polygon_type);
     }
@@ -1395,32 +1399,36 @@ void Map::SetPolygonVerticesAndPerpendiculars(PMSPolygon& polygon)
         polygon.vertices[2] = tmp;
     }
 
-    for (int j = 0; j < 3; ++j) {
-        unsigned int k = j + 1;
-        if (k > 2) {
-            k = 0;
+    for (int i = 0; i < 3; ++i) {
+        unsigned int j = i + 1;
+        if (j > 2) {
+            j = 0;
         }
 
-        float diff_x = polygon.vertices.at(k).x - polygon.vertices.at(j).x;
-        float diff_y = polygon.vertices.at(j).y - polygon.vertices.at(k).y;
+        float diff_x = polygon.vertices.at(j).x - polygon.vertices.at(i).x;
+        float diff_y = polygon.vertices.at(i).y - polygon.vertices.at(j).y;
         float length = NAN;
-        if (fabs(diff_x) < 0.0001F && fabs(diff_y) < 0.0001F) {
+        if (fabs(diff_x) < 0.00001F && fabs(diff_y) < 0.00001F) {
             length = 1.0F;
         } else {
             length = hypotf(diff_x, diff_y);
         }
 
+        float bounciness = 1.0F;
+
         if (polygon.polygon_type == PMSPolygonType::Bouncy) {
-            if (polygon.perpendiculars.at(j).z < 1.0F) {
-                polygon.perpendiculars.at(j).z = 1.0F;
+            if (bounciness < 1.0F) {
+                bounciness = 1.0F;
+            } else {
+                bounciness = polygon.bounciness;
             }
         } else {
-            polygon.perpendiculars.at(j).z = 1.0F;
+            bounciness = 1.0F;
         }
 
-        polygon.perpendiculars.at(j).x = (diff_y / length) * polygon.perpendiculars.at(j).z;
-        polygon.perpendiculars.at(j).y = (diff_x / length) * polygon.perpendiculars.at(j).z;
-        polygon.perpendiculars.at(j).z = 1.0F;
+        polygon.perpendiculars.at(i).x = (diff_y / length);
+        polygon.perpendiculars.at(i).y = (diff_x / length);
+        polygon.perpendiculars.at(i).z = 1.0F;
     }
 }
 

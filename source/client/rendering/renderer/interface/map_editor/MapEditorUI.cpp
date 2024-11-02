@@ -1,5 +1,7 @@
 #include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
 
+#include "rendering/renderer/interface/map_editor/MapEditorToolDetailsWindow.hpp"
+
 #include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
 
@@ -537,6 +539,10 @@ void Render(State& game_state, ClientState& client_state)
         }
         ImGui::PopStyleVar();
         ImGui::End();
+    }
+
+    if (client_state.map_editor_state.is_tool_details_window_visible) {
+        MapEditorToolDetailsWindow::Render(game_state, client_state);
     }
 
     {
