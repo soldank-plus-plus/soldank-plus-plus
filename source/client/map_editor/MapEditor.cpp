@@ -4,6 +4,7 @@
 #include "core/map/PMSStructs.hpp"
 #include "map_editor/actions/AddObjectsMapEditorAction.hpp"
 #include "map_editor/actions/RemoveSelectionMapEditorAction.hpp"
+#include "map_editor/actions/TransformPolygonsMapEditorAction.hpp"
 #include "map_editor/actions/TransformSceneriesMapEditorAction.hpp"
 #include "map_editor/actions/TransformSpawnPointsMapEditorAction.hpp"
 #include "map_editor/tools/ColorPickerTool.hpp"
@@ -160,6 +161,28 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     client_state.map_editor_state.event_selected_sceneries_level_changed.AddObserver(
       [this, &client_state, &game_state](int new_level) {
           OnChangeSelectedSceneriesLevel(new_level, client_state, game_state.map);
+      });
+    client_state.map_editor_state.event_selected_polygons_bounciness_changed.AddObserver(
+      [this, &client_state, &game_state](float new_bounciness) {
+          OnTransformSelectedPolygons(
+            [new_bounciness](const PMSPolygon& old_polygon) {
+                PMSPolygon new_polygon = old_polygon;
+                new_polygon.bounciness = new_bounciness;
+                return new_polygon;
+            },
+            client_state,
+            game_state.map);
+      });
+    client_state.map_editor_state.event_selected_polygons_type_changed.AddObserver(
+      [this, &client_state, &game_state](PMSPolygonType new_polygon_type) {
+          OnTransformSelectedPolygons(
+            [new_polygon_type](const PMSPolygon& old_polygon) {
+                PMSPolygon new_polygon = old_polygon;
+                new_polygon.polygon_type = new_polygon_type;
+                return new_polygon;
+            },
+            client_state,
+            game_state.map);
       });
 }
 
@@ -503,5 +526,22 @@ void MapEditor::OnChangeSelectedSceneriesLevel(int new_level, ClientState& clien
             return new_scenery;
         });
     ExecuteNewAction(client_state, map, std::move(transform_sceneries_action));
+}
+
+void MapEditor::OnTransformSelectedPolygons(
+  const std::function<PMSPolygon(const PMSPolygon&)>& transform_function,
+  ClientState& client_state,
+  Map& map)
+{
+    std::vector<std::pair<unsigned int, PMSPolygon>> selected_polygons;
+    selected_polygons.reserve(client_state.map_editor_state.selected_polygon_vertices.size());
+    for (const auto& selected_polygon_vertices :
+         client_state.map_editor_state.selected_polygon_vertices) {
+        selected_polygons.emplace_back(selected_polygon_vertices.first,
+                                       map.GetPolygons().at(selected_polygon_vertices.first));
+    }
+    std::unique_ptr<TransformPolygonsMapEditorAction> transform_polygons_action =
+      std::make_unique<TransformPolygonsMapEditorAction>(selected_polygons, transform_function);
+    ExecuteNewAction(client_state, map, std::move(transform_polygons_action));
 }
 } // namespace Soldank
