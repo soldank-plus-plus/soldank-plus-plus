@@ -117,14 +117,9 @@ void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
                          &client_state.map_editor_state.polygon_tool_wip_polygon_bounciness,
                          1.0F,
                          0.0F,
-                         9999999.0F,
-                         "%.3f%%")) {
-        if (client_state.map_editor_state.polygon_tool_wip_polygon_bounciness < 0.0F) {
-            client_state.map_editor_state.polygon_tool_wip_polygon_bounciness = 0.0F;
-        }
-        if (client_state.map_editor_state.polygon_tool_wip_polygon_bounciness > 9999999.0F) {
-            client_state.map_editor_state.polygon_tool_wip_polygon_bounciness = 9999999.0F;
-        }
+                         1000.0F,
+                         "%.3f%%",
+                         ImGuiSliderFlags_AlwaysClamp)) {
     }
     ImGui::EndDisabled();
 
@@ -193,7 +188,89 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
     }
     if (ImGui::CollapsingHeader(polygons_header.c_str())) {
         sub_window_open_type = ToolDetailsSubWindowOpenType::Polygons;
-        ImGui::Text("test");
+
+        if (!client_state.map_editor_state.selected_polygon_vertices.empty()) {
+            const auto& polygon = game_state.map.GetPolygons().at(
+              client_state.map_editor_state.selected_polygon_vertices.at(0).first);
+
+            static std::vector<std::pair<std::string, PMSPolygonType>> polygon_type_options = {
+                { "Normal", PMSPolygonType::Normal },
+                { "All Bullets Collide", PMSPolygonType::OnlyBulletsCollide },
+                { "All Players Collide", PMSPolygonType::OnlyPlayersCollide },
+                { "Doesn't Collide", PMSPolygonType::NoCollide },
+                { "Icy", PMSPolygonType::Ice },
+                { "Deadly", PMSPolygonType::Deadly },
+                { "Bloody Deadly", PMSPolygonType::BloodyDeadly },
+                { "Hurting", PMSPolygonType::Hurts },
+                { "Regenerative", PMSPolygonType::Regenerates },
+                { "Lava", PMSPolygonType::Lava },
+                { "Only Alpha Bullets Collide", PMSPolygonType::AlphaBullets },
+                { "Only Alpha Players Collide", PMSPolygonType::AlphaPlayers },
+                { "Only Bravo Bullets Collide", PMSPolygonType::BravoBullets },
+                { "Only Bravo Players Collide", PMSPolygonType::BravoPlayers },
+                { "Only Charlie Bullets Collide", PMSPolygonType::CharlieBullets },
+                { "Only Charlie Players Collide", PMSPolygonType::CharliePlayers },
+                { "Only Delta Bullets Collide", PMSPolygonType::DeltaBullets },
+                { "Only Delta Players Collide", PMSPolygonType::DeltaPlayers },
+                { "Bouncy", PMSPolygonType::Bouncy },
+                { "Explosive", PMSPolygonType::Explosive },
+                { "Hurting Flaggers", PMSPolygonType::HurtFlaggers },
+                { "Only Flaggers Collide", PMSPolygonType::FlaggerCollides },
+                { "Only Non Flaggers Collide", PMSPolygonType::NonFlaggerCollides },
+                { "Only Flag Collide", PMSPolygonType::FlagCollides },
+            };
+            std::string current_polygon_type;
+            for (const auto& polygon_type_option : polygon_type_options) {
+                if (polygon.polygon_type == polygon_type_option.second) {
+                    current_polygon_type = polygon_type_option.first;
+                }
+            }
+            if (ImGui::BeginCombo("##ToolDetailsPolygonTypeComboInput",
+                                  current_polygon_type.c_str())) {
+                client_state.map_editor_state.is_modal_or_popup_open = true;
+                for (const auto& polygon_type_option : polygon_type_options) {
+                    if (ImGui::Selectable(polygon_type_option.first.c_str(),
+                                          polygon.polygon_type == polygon_type_option.second)) {
+                        client_state.map_editor_state.event_selected_polygons_type_changed.Notify(
+                          polygon_type_option.second);
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            bool are_all_selected_bouncy = true;
+
+            for (const auto& selected_polygon_vertices :
+                 client_state.map_editor_state.selected_polygon_vertices) {
+
+                if (game_state.map.GetPolygons().at(selected_polygon_vertices.first).polygon_type !=
+                    PMSPolygonType::Bouncy) {
+                    are_all_selected_bouncy = false;
+                }
+            }
+
+            float bounciness = polygon.bounciness * 100.0F;
+
+            ImGui::BeginDisabled(!are_all_selected_bouncy);
+            if (ImGui::DragFloat("##ToolDetailsPolygonBouncinessDragFloat",
+                                 &bounciness,
+                                 1.0F,
+                                 0.0F,
+                                 1000.0F,
+                                 "%.3f%%",
+                                 ImGuiSliderFlags_AlwaysClamp)) {
+                client_state.map_editor_state.event_selected_polygons_bounciness_changed.Notify(
+                  bounciness / 100.0F);
+            }
+            ImGui::EndDisabled();
+
+            ImGui::Text(
+              "Position 1: %.2f %.2f", polygon.vertices.at(0).x, polygon.vertices.at(0).y);
+            ImGui::Text(
+              "Position 2: %.2f %.2f", polygon.vertices.at(1).x, polygon.vertices.at(1).y);
+            ImGui::Text(
+              "Position 3: %.2f %.2f", polygon.vertices.at(2).x, polygon.vertices.at(2).y);
+        }
     }
 
     std::string sceneries_header =
@@ -223,6 +300,7 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
             }
 
             if (ImGui::BeginCombo("##SceneryLevelComboInput", current_level_text.c_str())) {
+                client_state.map_editor_state.is_modal_or_popup_open = true;
                 if (ImGui::Selectable("Back", scenery.level == 0)) {
                     client_state.map_editor_state.event_selected_sceneries_level_changed.Notify(0);
                 }

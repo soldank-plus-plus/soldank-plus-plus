@@ -936,6 +936,11 @@ void Map::MovePolygonVerticesById(
           new_position.y;
     }
 
+    UpdateMinMaxPolygonPositions();
+    FixPolygonIds();
+    UpdateBoundaries();
+    GenerateSectors();
+
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
 
@@ -944,6 +949,11 @@ void Map::SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>
     for (const auto& [polygon_id, polygon] : polygons) {
         map_data_.polygons.at(polygon_id) = polygon;
     }
+
+    UpdateMinMaxPolygonPositions();
+    FixPolygonIds();
+    UpdateBoundaries();
+    GenerateSectors();
 
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
