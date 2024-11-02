@@ -98,6 +98,8 @@ struct MapEditorState
 
     std::vector<std::string> all_textures_in_directory;
     std::vector<std::string> all_sceneries_in_directory;
+
+    bool should_open_map_settings_modal = false;
 };
 } // namespace Soldank
 

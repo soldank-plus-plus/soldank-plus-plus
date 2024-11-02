@@ -27,8 +27,6 @@ void Render(State& game_state, ClientState& client_state)
     client_state.map_editor_state.is_modal_or_popup_open = false;
 
     {
-        bool should_open_map_settings_modal = false;
-
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Save", "CTRL+S")) {
@@ -49,7 +47,7 @@ void Render(State& game_state, ClientState& client_state)
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Map settings...", "CTRL+M")) {
-                    should_open_map_settings_modal = true;
+                    client_state.map_editor_state.should_open_map_settings_modal = true;
                 }
                 ImGui::EndMenu();
             }
@@ -109,7 +107,8 @@ void Render(State& game_state, ClientState& client_state)
 
         static std::array<char, TEXTURE_NAME_MAX_LENGTH> texture_search_filter;
 
-        if (should_open_map_settings_modal) {
+        if (client_state.map_editor_state.should_open_map_settings_modal) {
+            client_state.map_editor_state.should_open_map_settings_modal = false;
             std::filesystem::path textures_directory_path = "textures";
             client_state.map_editor_state.all_textures_in_directory.clear();
             for (const auto& entry : std::filesystem::directory_iterator(textures_directory_path)) {

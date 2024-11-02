@@ -34,6 +34,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     , is_dragging_camera_(false)
     , locked_(false)
     , is_holding_left_ctrl_(false)
+    , is_holding_left_shift_(false)
 {
     add_new_map_editor_action_ =
       [this, &client_state, &game_state](std::unique_ptr<MapEditorAction> new_action) {
@@ -328,6 +329,30 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
 
 void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
 {
+    if (is_holding_left_ctrl_ && key == GLFW_KEY_S) {
+        map.SaveMap("maps/" + map.GetName());
+
+        return;
+    }
+
+    if (is_holding_left_ctrl_ && is_holding_left_shift_ && key == GLFW_KEY_Z) {
+        RedoUndoneAction(client_state, map);
+
+        return;
+    }
+
+    if (is_holding_left_ctrl_ && key == GLFW_KEY_Z) {
+        UndoLastAction(client_state, map);
+
+        return;
+    }
+
+    if (is_holding_left_ctrl_ && key == GLFW_KEY_M) {
+        client_state.map_editor_state.should_open_map_settings_modal = true;
+
+        return;
+    }
+
     static std::vector<std::pair<int, ToolType>> key_to_tool_type_map = {
         { GLFW_KEY_A, ToolType::Transform },       { GLFW_KEY_Q, ToolType::Polygon },
         { GLFW_KEY_S, ToolType::VertexSelection }, { GLFW_KEY_W, ToolType::Selection },
@@ -399,6 +424,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
     }
 
     if (key == GLFW_KEY_LEFT_SHIFT) {
+        is_holding_left_shift_ = true;
         tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Pressed();
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
@@ -417,6 +443,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
 void MapEditor::OnKeyReleased(int key, ClientState& /*client_state*/)
 {
     if (key == GLFW_KEY_LEFT_SHIFT) {
+        is_holding_left_shift_ = false;
         tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Released();
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
