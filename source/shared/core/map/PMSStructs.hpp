@@ -131,6 +131,7 @@ struct PMSSceneryType
 struct PMSSector
 {
     std::vector<unsigned short> polygons;
+    std::array<float, 4> boundaries;
 };
 
 struct PMSSpawnPoint

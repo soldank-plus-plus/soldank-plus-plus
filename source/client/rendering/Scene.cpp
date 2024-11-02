@@ -140,6 +140,51 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
         }
     }
 
+    if (client_state.draw_sectors) {
+        int sectors_count = 2 * game_state.map.GetSectorsCount() + 1;
+        for (int x = 0; x < sectors_count; ++x) {
+            for (int y = 0; y < sectors_count; ++y) {
+                const auto& boundaries = game_state.map.GetSector(x, y).boundaries;
+
+                float top = boundaries[0];
+                float bottom = boundaries[1];
+                float left = boundaries[2];
+                float right = boundaries[3];
+
+                glm::vec4 color = { 0.7F, 0.1F, 0.0F, 1.0F };
+                float thickness = camera.GetZoom();
+
+                line_renderer_.Render(
+                  camera.GetView(), { left, top }, { right, top }, color, thickness);
+                line_renderer_.Render(
+                  camera.GetView(), { right, top }, { right, bottom }, color, thickness);
+                line_renderer_.Render(
+                  camera.GetView(), { left, bottom }, { right, bottom }, color, thickness);
+                line_renderer_.Render(
+                  camera.GetView(), { left, bottom }, { left, top }, color, thickness);
+            }
+        }
+    }
+
+    if (client_state.draw_map_boundaries) {
+        auto boundaries = game_state.map.GetBoundaries();
+
+        float top = boundaries[0];
+        float bottom = boundaries[1];
+        float left = boundaries[2];
+        float right = boundaries[3];
+
+        glm::vec4 color = { 0.5F, 0.0F, 0.0F, 1.0F };
+        float thickness = camera.GetZoom();
+
+        line_renderer_.Render(camera.GetView(), { left, top }, { right, top }, color, thickness);
+        line_renderer_.Render(
+          camera.GetView(), { right, top }, { right, bottom }, color, thickness);
+        line_renderer_.Render(
+          camera.GetView(), { left, bottom }, { right, bottom }, color, thickness);
+        line_renderer_.Render(camera.GetView(), { left, bottom }, { left, top }, color, thickness);
+    }
+
     if (client_state.draw_game_debug_interface) {
         DebugUI::Render(game_state, client_state, frame_percent, fps);
         if (!DebugUI::GetWantCaptureMouse()) {

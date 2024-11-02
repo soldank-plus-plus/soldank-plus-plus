@@ -408,6 +408,9 @@ void Map::UpdateBoundaries()
     map_data_.boundaries_xy[BottomBoundary] += MAP_BOUNDARY;
     map_data_.boundaries_xy[LeftBoundary] -= MAP_BOUNDARY;
     map_data_.boundaries_xy[RightBoundary] += MAP_BOUNDARY;
+
+    map_change_events_.changed_background_color.Notify(
+      map_data_.background_top_color, map_data_.background_bottom_color, GetBoundaries());
 }
 
 bool Map::PointInPoly(glm::vec2 p, PMSPolygon poly)
@@ -812,6 +815,7 @@ PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 
     map_data_.polygons.push_back(new_polygon);
 
+    UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
     GenerateSectors();
@@ -847,6 +851,7 @@ void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)
         }
     }
 
+    UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
     GenerateSectors();
@@ -858,6 +863,7 @@ PMSPolygon Map::RemovePolygonById(unsigned int id)
 {
     PMSPolygon removed_polygon = map_data_.polygons.at(id);
     map_data_.polygons.erase(map_data_.polygons.begin() + id);
+    UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
     GenerateSectors();
@@ -899,6 +905,7 @@ void Map::RemovePolygonsById(const std::vector<unsigned int>& polygon_ids)
         map_data_.polygons.pop_back();
     }
 
+    UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
     GenerateSectors();
@@ -1277,6 +1284,17 @@ void Map::GenerateSectors()
 
     for (int x = 0; x < n; ++x) {
         for (int y = 0; y < n; ++y) {
+            map_data_.sectors_poly[x][y].boundaries[LeftBoundary] = std::floor(
+              (float)map_data_.sectors_size * ((float)x - (float)map_data_.sectors_count - 0.5F) -
+              1.0F + map_data_.center_x);
+            map_data_.sectors_poly[x][y].boundaries[TopBoundary] = std::floor(
+              (float)map_data_.sectors_size * ((float)y - (float)map_data_.sectors_count - 0.5F) -
+              1.0F + map_data_.center_y);
+            map_data_.sectors_poly[x][y].boundaries[RightBoundary] =
+              map_data_.sectors_poly[x][y].boundaries[LeftBoundary] + (float)map_data_.sectors_size;
+            map_data_.sectors_poly[x][y].boundaries[BottomBoundary] =
+              map_data_.sectors_poly[x][y].boundaries[TopBoundary] + (float)map_data_.sectors_size;
+
             for (unsigned int i = 0; i < map_data_.polygons.size(); ++i) {
                 if (IsPolygonInSector(i,
                                       floor((float)map_data_.sectors_size *
@@ -1439,5 +1457,46 @@ void Map::FixPolygonIds()
         polygon.id = next_id;
         ++next_id;
     }
+}
+
+void Map::UpdateMinMaxPolygonPositions(const PMSPolygon& polygon, bool should_notify)
+{
+    for (unsigned int i = 0; i < 3; ++i) {
+        const auto& vertex = polygon.vertices.at(i);
+
+        if (vertex.x < map_data_.polygons_min_x) {
+            map_data_.polygons_min_x = vertex.x;
+        }
+        if (vertex.x > map_data_.polygons_max_x) {
+            map_data_.polygons_max_x = vertex.x;
+        }
+
+        if (vertex.y < map_data_.polygons_min_y) {
+            map_data_.polygons_min_y = vertex.y;
+        }
+        if (vertex.y > map_data_.polygons_max_y) {
+            map_data_.polygons_max_y = vertex.y;
+        }
+    }
+
+    if (should_notify) {
+        map_change_events_.changed_background_color.Notify(
+          map_data_.background_top_color, map_data_.background_bottom_color, GetBoundaries());
+    }
+}
+
+void Map::UpdateMinMaxPolygonPositions()
+{
+    map_data_.polygons_min_x = 0.0F;
+    map_data_.polygons_max_x = 0.0F;
+    map_data_.polygons_min_y = 0.0F;
+    map_data_.polygons_max_y = 0.0F;
+
+    for (const auto& polygon : map_data_.polygons) {
+        UpdateMinMaxPolygonPositions(polygon, false);
+    }
+
+    map_change_events_.changed_background_color.Notify(
+      map_data_.background_top_color, map_data_.background_bottom_color, GetBoundaries());
 }
 } // namespace Soldank
