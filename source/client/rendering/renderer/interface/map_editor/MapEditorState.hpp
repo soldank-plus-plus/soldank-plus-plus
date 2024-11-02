@@ -37,6 +37,7 @@ struct MapEditorState
     bool is_properties_window_visible = true;
     bool is_display_window_visible = true;
     bool is_palette_window_visible = true;
+    bool is_tool_details_window_visible = true;
 
     bool is_mouse_hovering_over_ui = false;
     bool is_modal_or_popup_open = false;
@@ -64,6 +65,7 @@ struct MapEditorState
     // After the Polygon Tool is done creating the polygon then we save it.
     std::optional<PMSPolygon> polygon_tool_wip_polygon;
     PMSPolygonType polygon_tool_polygon_type = PMSPolygonType::Normal;
+    float polygon_tool_wip_polygon_bounciness = 100.0F;
     bool should_open_polygon_type_popup = false;
 
     std::vector<std::pair<unsigned int, std::bitset<3>>> selected_polygon_vertices;

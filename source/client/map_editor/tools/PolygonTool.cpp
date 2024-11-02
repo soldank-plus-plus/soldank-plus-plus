@@ -27,6 +27,8 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
                                               const State& /*game_state*/)
 {
     if (client_state.map_editor_state.polygon_tool_wip_polygon) {
+        client_state.map_editor_state.polygon_tool_wip_polygon->bounciness =
+          client_state.map_editor_state.polygon_tool_wip_polygon_bounciness / 100.0F;
         auto add_polygon_action = std::make_unique<AddPolygonMapEditorAction>(
           *client_state.map_editor_state.polygon_tool_wip_polygon);
         add_new_map_editor_action_(std::move(add_polygon_action));
