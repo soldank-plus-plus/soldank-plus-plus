@@ -57,6 +57,7 @@ struct MapEditorState
     Observable<const PMSPolygon&, const std::bitset<3>&> event_polygon_selected;
     Observable<const std::string&> event_scenery_texture_changed;
     Observable<PMSSpawnPointType> event_selected_spawn_points_type_changed;
+    Observable<int> event_selected_sceneries_level_changed;
 
     // If specified, we render first edge of the polygon
     // that is being created with the polygon tool
