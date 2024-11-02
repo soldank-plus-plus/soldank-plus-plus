@@ -10,6 +10,14 @@
 
 namespace Soldank::MapEditorToolDetailsWindow
 {
+enum class ToolDetailsSubWindowOpenType
+{
+    None = 0,
+    Polygons,
+    Sceneries,
+    SpawnPoints
+};
+
 void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
 {
     unsigned short new_polygon_id = game_state.map.GetPolygonsCount() + 1;
@@ -136,7 +144,126 @@ void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
     }
 }
 
-void RenderSelectionToolDetails(State& game_state, ClientState& client_state) {}
+void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
+{
+    static ToolDetailsSubWindowOpenType sub_window_open_type = ToolDetailsSubWindowOpenType::None;
+
+    switch (sub_window_open_type) {
+        case ToolDetailsSubWindowOpenType::None: {
+            if (!client_state.map_editor_state.selected_spawn_point_ids.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::SpawnPoints;
+            }
+
+            if (!client_state.map_editor_state.selected_scenery_ids.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::Sceneries;
+            }
+
+            if (!client_state.map_editor_state.selected_polygon_vertices.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::Polygons;
+            }
+            break;
+        }
+        case ToolDetailsSubWindowOpenType::Polygons: {
+            if (client_state.map_editor_state.selected_polygon_vertices.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::None;
+            }
+            break;
+        }
+        case ToolDetailsSubWindowOpenType::Sceneries: {
+            if (client_state.map_editor_state.selected_scenery_ids.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::None;
+            }
+            break;
+        }
+        case ToolDetailsSubWindowOpenType::SpawnPoints: {
+            if (client_state.map_editor_state.selected_spawn_point_ids.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::None;
+            }
+            break;
+        }
+    }
+
+    std::string polygons_header =
+      "Selected " + std::to_string(client_state.map_editor_state.selected_polygon_vertices.size()) +
+      " polygons";
+    if (sub_window_open_type == ToolDetailsSubWindowOpenType::Polygons) {
+        ImGui::SetNextItemOpen(true);
+    } else {
+        ImGui::SetNextItemOpen(false);
+    }
+    if (ImGui::CollapsingHeader(polygons_header.c_str())) {
+        sub_window_open_type = ToolDetailsSubWindowOpenType::Polygons;
+        ImGui::Text("test");
+    }
+
+    std::string sceneries_header =
+      "Selected " + std::to_string(client_state.map_editor_state.selected_scenery_ids.size()) +
+      " sceneries";
+    if (sub_window_open_type == ToolDetailsSubWindowOpenType::Sceneries) {
+        ImGui::SetNextItemOpen(true);
+    } else {
+        ImGui::SetNextItemOpen(false);
+    }
+    if (ImGui::CollapsingHeader(sceneries_header.c_str())) {
+        sub_window_open_type = ToolDetailsSubWindowOpenType::Sceneries;
+        ImGui::Text("test");
+    }
+
+    std::string spawn_points_header =
+      "Selected " + std::to_string(client_state.map_editor_state.selected_spawn_point_ids.size()) +
+      " spawn points";
+    if (sub_window_open_type == ToolDetailsSubWindowOpenType::SpawnPoints) {
+        ImGui::SetNextItemOpen(true);
+    } else {
+        ImGui::SetNextItemOpen(false);
+    }
+    if (ImGui::CollapsingHeader(spawn_points_header.c_str())) {
+        sub_window_open_type = ToolDetailsSubWindowOpenType::SpawnPoints;
+
+        if (!client_state.map_editor_state.selected_spawn_point_ids.empty()) {
+            const auto& spawn_point = game_state.map.GetSpawnPoints().at(
+              client_state.map_editor_state.selected_spawn_point_ids.at(0));
+
+            static std::vector<std::pair<std::string, PMSSpawnPointType>> spawn_point_options = {
+                { "Player Spawn", PMSSpawnPointType::General },
+                { "Alpha Team", PMSSpawnPointType::Alpha },
+                { "Bravo Team", PMSSpawnPointType::Bravo },
+                { "Charlie Team", PMSSpawnPointType::Charlie },
+                { "Delta Team", PMSSpawnPointType::Delta },
+                { "Alpha Flag", PMSSpawnPointType::AlphaFlag },
+                { "Bravo Flag", PMSSpawnPointType::BravoFlag },
+                { "Pointmatch Flag", PMSSpawnPointType::YellowFlag },
+                { "Grenade Kit", PMSSpawnPointType::Grenades },
+                { "Medical Kit", PMSSpawnPointType::Medkits },
+                { "Cluster Grenade Kit", PMSSpawnPointType::Clusters },
+                { "Vest Kit", PMSSpawnPointType::Vest },
+                { "Flamer Kit", PMSSpawnPointType::Flamer },
+                { "Berserker Kit", PMSSpawnPointType::Berserker },
+                { "Predator Kit", PMSSpawnPointType::Predator },
+                { "Rambo Bow", PMSSpawnPointType::RamboBow },
+                { "Stationary Gun", PMSSpawnPointType::StatGun },
+            };
+            std::string current_spawn_point_type;
+            for (const auto& spawn_point_option : spawn_point_options) {
+                if (spawn_point.type == spawn_point_option.second) {
+                    current_spawn_point_type = spawn_point_option.first;
+                }
+            }
+            if (ImGui::BeginCombo("##PolygonTypeComboInput", current_spawn_point_type.c_str())) {
+                for (const auto& spawn_point_option : spawn_point_options) {
+                    if (ImGui::Selectable(spawn_point_option.first.c_str(),
+                                          spawn_point.type == spawn_point_option.second)) {
+                        client_state.map_editor_state.event_selected_spawn_points_type_changed
+                          .Notify(spawn_point_option.second);
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::Text("Position %d %d", spawn_point.x, spawn_point.y);
+        }
+    }
+}
 
 void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
 {
@@ -200,7 +327,6 @@ void Render(State& game_state, ClientState& client_state)
                     break;
                 }
                 case ToolType::VertexSelection:
-                    break;
                 case ToolType::Selection: {
                     RenderSelectionToolDetails(game_state, client_state);
                     break;

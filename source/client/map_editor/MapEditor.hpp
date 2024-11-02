@@ -1,6 +1,7 @@
 #ifndef __MAP_EDITOR_HPP__
 #define __MAP_EDITOR_HPP__
 
+#include "core/map/PMSEnums.hpp"
 #include "core/map/PMSStructs.hpp"
 #include "map_editor/tools/Tool.hpp"
 #include "map_editor/actions/MapEditorAction.hpp"
@@ -56,6 +57,10 @@ private:
     void UpdateUndoRedoButtons(ClientState& client_state);
 
     void RemoveCurrentSelection(ClientState& client_state, Map& map);
+
+    void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
+                                          ClientState& client_state,
+                                          Map& map);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;

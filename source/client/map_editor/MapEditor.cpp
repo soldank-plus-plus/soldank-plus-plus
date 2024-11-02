@@ -1,7 +1,10 @@
 #include "map_editor/MapEditor.hpp"
 
+#include "core/map/PMSEnums.hpp"
+#include "core/map/PMSStructs.hpp"
 #include "map_editor/actions/AddObjectsMapEditorAction.hpp"
 #include "map_editor/actions/RemoveSelectionMapEditorAction.hpp"
+#include "map_editor/actions/TransformSpawnPointsMapEditorAction.hpp"
 #include "map_editor/tools/ColorPickerTool.hpp"
 #include "map_editor/tools/ColorTool.hpp"
 #include "map_editor/tools/PolygonTool.hpp"
@@ -148,6 +151,11 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
         }
         ++i;
     }
+
+    client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(
+      [this, &client_state, &game_state](PMSSpawnPointType new_spawn_point_type) {
+          OnChangeSelectedSpawnPointsTypes(new_spawn_point_type, client_state, game_state.map);
+      });
 }
 
 void MapEditor::Lock()
@@ -451,5 +459,26 @@ void MapEditor::RemoveCurrentSelection(ClientState& client_state, Map& map)
     std::unique_ptr<RemoveSelectionMapEditorAction> remove_selection_action =
       std::make_unique<RemoveSelectionMapEditorAction>(client_state, map);
     ExecuteNewAction(client_state, map, std::move(remove_selection_action));
+}
+
+void MapEditor::OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
+                                                 ClientState& client_state,
+                                                 Map& map)
+{
+    std::vector<std::pair<unsigned int, PMSSpawnPoint>> selected_spawn_points;
+    selected_spawn_points.reserve(client_state.map_editor_state.selected_spawn_point_ids.size());
+    for (unsigned int selected_spawn_point_id :
+         client_state.map_editor_state.selected_spawn_point_ids) {
+        selected_spawn_points.emplace_back(selected_spawn_point_id,
+                                           map.GetSpawnPoints().at(selected_spawn_point_id));
+    }
+    std::unique_ptr<TransformSpawnPointsMapEditorAction> transform_spawn_points_action =
+      std::make_unique<TransformSpawnPointsMapEditorAction>(
+        selected_spawn_points, [new_spawn_point_type](const PMSSpawnPoint& old_spawn_point) {
+            PMSSpawnPoint new_spawn_point = old_spawn_point;
+            new_spawn_point.type = new_spawn_point_type;
+            return new_spawn_point;
+        });
+    ExecuteNewAction(client_state, map, std::move(transform_spawn_points_action));
 }
 } // namespace Soldank
