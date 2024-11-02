@@ -206,7 +206,38 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
     }
     if (ImGui::CollapsingHeader(sceneries_header.c_str())) {
         sub_window_open_type = ToolDetailsSubWindowOpenType::Sceneries;
-        ImGui::Text("test");
+
+        if (!client_state.map_editor_state.selected_scenery_ids.empty()) {
+            const auto& scenery = game_state.map.GetSceneryInstances().at(
+              client_state.map_editor_state.selected_scenery_ids.at(0));
+            const auto& scenery_type = game_state.map.GetSceneryTypes().at(scenery.style - 1);
+
+            std::string current_level_text;
+
+            if (scenery.level == 0) {
+                current_level_text = "Back";
+            } else if (scenery.level == 1) {
+                current_level_text = "Middle";
+            } else if (scenery.level == 2) {
+                current_level_text = "Front";
+            }
+
+            if (ImGui::BeginCombo("##SceneryLevelComboInput", current_level_text.c_str())) {
+                if (ImGui::Selectable("Back", scenery.level == 0)) {
+                    client_state.map_editor_state.event_selected_sceneries_level_changed.Notify(0);
+                }
+                if (ImGui::Selectable("Middle", scenery.level == 1)) {
+                    client_state.map_editor_state.event_selected_sceneries_level_changed.Notify(1);
+                }
+                if (ImGui::Selectable("Front", scenery.level == 2)) {
+                    client_state.map_editor_state.event_selected_sceneries_level_changed.Notify(2);
+                }
+                ImGui::EndCombo();
+            }
+
+            ImGui::Text("Position: %.2f %.2f", scenery.x, scenery.y);
+            ImGui::Text("File: %s", scenery_type.name.c_str());
+        }
     }
 
     std::string spawn_points_header =
@@ -249,7 +280,7 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
                     current_spawn_point_type = spawn_point_option.first;
                 }
             }
-            if (ImGui::BeginCombo("##PolygonTypeComboInput", current_spawn_point_type.c_str())) {
+            if (ImGui::BeginCombo("##SpawnPointTypeComboInput", current_spawn_point_type.c_str())) {
                 for (const auto& spawn_point_option : spawn_point_options) {
                     if (ImGui::Selectable(spawn_point_option.first.c_str(),
                                           spawn_point.type == spawn_point_option.second)) {

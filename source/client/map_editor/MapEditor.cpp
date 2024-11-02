@@ -4,6 +4,7 @@
 #include "core/map/PMSStructs.hpp"
 #include "map_editor/actions/AddObjectsMapEditorAction.hpp"
 #include "map_editor/actions/RemoveSelectionMapEditorAction.hpp"
+#include "map_editor/actions/TransformSceneriesMapEditorAction.hpp"
 #include "map_editor/actions/TransformSpawnPointsMapEditorAction.hpp"
 #include "map_editor/tools/ColorPickerTool.hpp"
 #include "map_editor/tools/ColorTool.hpp"
@@ -155,6 +156,10 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
     client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(
       [this, &client_state, &game_state](PMSSpawnPointType new_spawn_point_type) {
           OnChangeSelectedSpawnPointsTypes(new_spawn_point_type, client_state, game_state.map);
+      });
+    client_state.map_editor_state.event_selected_sceneries_level_changed.AddObserver(
+      [this, &client_state, &game_state](int new_level) {
+          OnChangeSelectedSceneriesLevel(new_level, client_state, game_state.map);
       });
 }
 
@@ -480,5 +485,23 @@ void MapEditor::OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_poi
             return new_spawn_point;
         });
     ExecuteNewAction(client_state, map, std::move(transform_spawn_points_action));
+}
+
+void MapEditor::OnChangeSelectedSceneriesLevel(int new_level, ClientState& client_state, Map& map)
+{
+    std::vector<std::pair<unsigned int, PMSScenery>> selected_sceneries;
+    selected_sceneries.reserve(client_state.map_editor_state.selected_scenery_ids.size());
+    for (unsigned int selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
+        selected_sceneries.emplace_back(selected_scenery_id,
+                                        map.GetSceneryInstances().at(selected_scenery_id));
+    }
+    std::unique_ptr<TransformSceneriesMapEditorAction> transform_sceneries_action =
+      std::make_unique<TransformSceneriesMapEditorAction>(
+        selected_sceneries, [new_level](const PMSScenery& old_scenery) {
+            PMSScenery new_scenery = old_scenery;
+            new_scenery.level = new_level;
+            return new_scenery;
+        });
+    ExecuteNewAction(client_state, map, std::move(transform_sceneries_action));
 }
 } // namespace Soldank

@@ -61,6 +61,7 @@ private:
     void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
                                           ClientState& client_state,
                                           Map& map);
+    void OnChangeSelectedSceneriesLevel(int new_level, ClientState& client_state, Map& map);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;
