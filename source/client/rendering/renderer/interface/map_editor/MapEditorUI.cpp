@@ -361,6 +361,10 @@ void Render(State& game_state, ClientState& client_state)
                 if (ImGui::BeginCombo("##TextureComboPicker",
                                       game_state.map.GetTextureName().c_str())) {
 
+                    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+                        !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
+                        ImGui::SetKeyboardFocusHere(0);
+                    }
                     ImGui::InputText("##TextureSearchFilterInput",
                                      texture_search_filter.data(),
                                      texture_search_filter.size());
