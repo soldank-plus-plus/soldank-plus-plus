@@ -81,6 +81,7 @@ private:
     bool locked_;
 
     bool is_holding_left_ctrl_;
+    bool is_holding_left_shift_;
 
     std::vector<PMSPolygon> copied_polygons_;
     std::vector<std::pair<unsigned int, std::pair<PMSScenery, std::string>>> copied_sceneries_;
