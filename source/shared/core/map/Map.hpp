@@ -352,6 +352,8 @@ private:
     static void SetPolygonVerticesAndPerpendiculars(PMSPolygon& polygon);
 
     void FixPolygonIds();
+    void UpdateMinMaxPolygonPositions(const PMSPolygon& polygon, bool should_notify = true);
+    void UpdateMinMaxPolygonPositions();
 };
 } // namespace Soldank
 

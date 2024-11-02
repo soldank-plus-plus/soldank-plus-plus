@@ -260,6 +260,8 @@ void Render(State& game_state, ClientState& client_state, double /*frame_percent
         ImGui::Checkbox("Draw soldier hitboxes", &client_state.draw_soldier_hitboxes);
         ImGui::Checkbox("Draw bullet hitboxes", &client_state.draw_bullet_hitboxes);
         ImGui::Checkbox("Draw item hitboxes", &client_state.draw_item_hitboxes);
+        ImGui::Checkbox("Draw collision sectors", &client_state.draw_sectors);
+        ImGui::Checkbox("Draw map boundaries", &client_state.draw_map_boundaries);
 
         ImGui::Checkbox("Smooth camera", &client_state.smooth_camera);
         ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0F / (float)fps, fps);

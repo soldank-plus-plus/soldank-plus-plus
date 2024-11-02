@@ -63,6 +63,8 @@ struct ClientState
     bool draw_soldier_hitboxes = false;
     bool draw_bullet_hitboxes = false;
     bool draw_item_hitboxes = false;
+    bool draw_sectors = false;
+    bool draw_map_boundaries = false;
     std::vector<unsigned int> colliding_polygon_ids;
 
     bool draw_map_editor_interface = false;
