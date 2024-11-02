@@ -1,9 +1,12 @@
 #include "rendering/renderer/interface/map_editor/MapEditorToolDetailsWindow.hpp"
 
 #include "core/map/PMSEnums.hpp"
+
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+
+#include <numbers>
 
 namespace Soldank::MapEditorToolDetailsWindow
 {
@@ -11,7 +14,7 @@ void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
 {
     unsigned short new_polygon_id = game_state.map.GetPolygonsCount() + 1;
 
-    ImGui::Text("Placing polygon: %hu", new_polygon_id);
+    ImGui::Text("Placing polygon: %hu/5000", new_polygon_id);
 
     unsigned int placed_vertices_count = 0;
     glm::vec2 first_vertex_position;
@@ -133,6 +136,53 @@ void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
     }
 }
 
+void RenderSelectionToolDetails(State& game_state, ClientState& client_state) {}
+
+void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
+{
+    unsigned short new_scenery_id = game_state.map.GetSceneryInstances().size() + 1;
+    ImGui::Text("Placing scenery: %hu/500", new_scenery_id);
+    ImGui::Text("Scenery type: %s",
+                client_state.map_editor_state.selected_scenery_to_place.c_str());
+    ImGui::SeparatorText("Rotation");
+    float rotation_in_degrees =
+      client_state.map_editor_state.scenery_to_place.rotation * 180.0F / std::numbers::pi_v<float>;
+    if (ImGui::DragFloat("##SceneryToolWIPSceneryRotation",
+                         &rotation_in_degrees,
+                         1.0F,
+                         0.0F,
+                         360.0F,
+                         "%.0f°",
+                         ImGuiSliderFlags_AlwaysClamp)) {
+        client_state.map_editor_state.scenery_to_place.rotation =
+          rotation_in_degrees * std::numbers::pi_v<float> / 180.0F;
+    }
+    ImGui::SeparatorText("Scale");
+    ImGui::SetNextItemWidth(105.0F);
+    float scale_x_in_percent = client_state.map_editor_state.scenery_to_place.scale_x * 100.0F;
+    if (ImGui::DragFloat("##SceneryToolWIPSceneryScaleX",
+                         &scale_x_in_percent,
+                         1.0F,
+                         -100000.0F,
+                         100000.0F,
+                         "X: %.2f%%",
+                         ImGuiSliderFlags_AlwaysClamp)) {
+        client_state.map_editor_state.scenery_to_place.scale_x = scale_x_in_percent / 100.0F;
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(105.0F);
+    float scale_y_in_percent = client_state.map_editor_state.scenery_to_place.scale_y * 100.0F;
+    if (ImGui::DragFloat("##SceneryToolWIPSceneryScaleY",
+                         &scale_y_in_percent,
+                         1.0F,
+                         -100000.0F,
+                         100000.0F,
+                         "Y: %.2f%%",
+                         ImGuiSliderFlags_AlwaysClamp)) {
+        client_state.map_editor_state.scenery_to_place.scale_y = scale_y_in_percent / 100.0F;
+    }
+}
+
 void Render(State& game_state, ClientState& client_state)
 {
     {
@@ -150,11 +200,19 @@ void Render(State& game_state, ClientState& client_state)
                     break;
                 }
                 case ToolType::VertexSelection:
-                case ToolType::Selection:
+                    break;
+                case ToolType::Selection: {
+                    RenderSelectionToolDetails(game_state, client_state);
+                    break;
+                }
                 case ToolType::VertexColor:
                 case ToolType::Color:
                 case ToolType::Texture:
-                case ToolType::Scenery:
+                    break;
+                case ToolType::Scenery: {
+                    RenderSceneryToolDetails(game_state, client_state);
+                    break;
+                }
                 case ToolType::Waypoint:
                 case ToolType::Spawnpoint:
                 case ToolType::ColorPicker:
