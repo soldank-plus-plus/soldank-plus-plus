@@ -567,10 +567,11 @@ void Render(State& game_state, ClientState& client_state)
         if (ImGui::Begin("MapTabBarWindow", nullptr, flags)) {
             if (ImGui::BeginMenuBar()) {
                 if (ImGui::BeginTabBar("#MapTabBar")) {
-                    if (ImGui::BeginTabItem(game_state.map.GetName().c_str(),
-                                            nullptr,
-                                            ImGuiTabItemFlags_SetSelected /*|
-                                              ImGuiTabItemFlags_UnsavedDocument*/)) {
+                    ImGuiTabItemFlags flags = ImGuiTabItemFlags_SetSelected;
+                    if (client_state.map_editor_state.is_map_changed) {
+                        flags |= ImGuiTabItemFlags_UnsavedDocument;
+                    }
+                    if (ImGui::BeginTabItem(game_state.map.GetName().c_str(), nullptr, flags)) {
                         ImGui::EndTabItem();
                     }
                     if (ImGui::BeginTabItem("+", nullptr)) {

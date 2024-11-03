@@ -337,6 +337,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, State& game_sta
 
     if (is_holding_left_ctrl_ && key == GLFW_KEY_S) {
         game_state.map.SaveMap("maps/" + game_state.map.GetName());
+        client_state.map_editor_state.is_map_changed = false;
 
         return;
     }
@@ -477,6 +478,8 @@ void MapEditor::ExecuteNewAction(ClientState& client_state,
     }
 
     UpdateUndoRedoButtons(client_state);
+    // TODO: need to detect if current state is the same as saved state, probably using checksums
+    client_state.map_editor_state.is_map_changed = true;
 }
 
 void MapEditor::UndoLastAction(ClientState& client_state, State& game_state)
@@ -492,6 +495,7 @@ void MapEditor::UndoLastAction(ClientState& client_state, State& game_state)
     }
 
     UpdateUndoRedoButtons(client_state);
+    client_state.map_editor_state.is_map_changed = true;
 }
 
 void MapEditor::RedoUndoneAction(ClientState& client_state, State& game_state)
@@ -507,6 +511,7 @@ void MapEditor::RedoUndoneAction(ClientState& client_state, State& game_state)
     }
 
     UpdateUndoRedoButtons(client_state);
+    client_state.map_editor_state.is_map_changed = true;
 }
 
 void MapEditor::UpdateUndoRedoButtons(ClientState& client_state)
