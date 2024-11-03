@@ -1,6 +1,7 @@
 #ifndef __COMMAND_LINE_PARAMETERS_HPP__
 #define __COMMAND_LINE_PARAMETERS_HPP__
 
+#include "application/config/Config.hpp"
 #include <optional>
 #include <string>
 #include <cstdint>
@@ -28,6 +29,7 @@ struct ParsedValues
     std::uint16_t join_server_port;
     std::optional<std::string> map;
     WindowSizeMode window_size_mode;
+    int fps_limit = Config::FPS_LIMIT;
 };
 
 // NOLINTNEXTLINE modernize-avoid-c-arrays
