@@ -10,14 +10,14 @@ AddSceneryMapEditorAction::AddSceneryMapEditorAction(const PMSScenery& new_scene
 {
 }
 
-void AddSceneryMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
+void AddSceneryMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
-    added_scenery_id_ = map.AddNewScenery(added_scenery_, file_name_);
+    added_scenery_id_ = game_state.map.AddNewScenery(added_scenery_, file_name_);
 }
 
-void AddSceneryMapEditorAction::Undo(ClientState& /*client_state*/, Map& map)
+void AddSceneryMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
-    added_scenery_ = map.RemoveSceneryById(added_scenery_id_);
+    added_scenery_ = game_state.map.RemoveSceneryById(added_scenery_id_);
     // TODO: remove from selection when implemented
 }
 } // namespace Soldank

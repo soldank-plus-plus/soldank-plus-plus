@@ -11,18 +11,18 @@ TransformPolygonsMapEditorAction::TransformPolygonsMapEditorAction(
 {
 }
 
-void TransformPolygonsMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
+void TransformPolygonsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSPolygon>> new_polygons;
     for (const auto& old_polygon : old_polygons_) {
         PMSPolygon new_polygon = transform_function_(old_polygon.second);
         new_polygons.emplace_back(old_polygon.first, new_polygon);
     }
-    map.SetPolygonsById(new_polygons);
+    game_state.map.SetPolygonsById(new_polygons);
 }
 
-void TransformPolygonsMapEditorAction::Undo(ClientState& /*client_state*/, Map& map)
+void TransformPolygonsMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
-    map.SetPolygonsById(old_polygons_);
+    game_state.map.SetPolygonsById(old_polygons_);
 }
 } // namespace Soldank

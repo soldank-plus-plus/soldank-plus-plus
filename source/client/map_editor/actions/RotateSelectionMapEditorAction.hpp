@@ -20,8 +20,8 @@ public:
       const glm::vec2& origin,
       const glm::vec2& reference_position);
 
-    void Execute(ClientState& client_state, Map& map) final;
-    void Undo(ClientState& client_state, Map& map) final;
+    void Execute(ClientState& client_state, State& game_state) final;
+    void Undo(ClientState& client_state, State& game_state) final;
 
     void SetCurrentMousePosition(const glm::vec2& new_current_mouse_position)
     {

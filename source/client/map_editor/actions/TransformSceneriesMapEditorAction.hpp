@@ -14,8 +14,8 @@ public:
       const std::vector<std::pair<unsigned int, PMSScenery>>& old_sceneries,
       const std::function<PMSScenery(const PMSScenery&)>& transform_function);
 
-    void Execute(ClientState& client_state, Map& map) final;
-    void Undo(ClientState& client_state, Map& map) final;
+    void Execute(ClientState& client_state, State& game_state) final;
+    void Undo(ClientState& client_state, State& game_state) final;
 
 private:
     std::vector<std::pair<unsigned int, PMSScenery>> old_sceneries_;

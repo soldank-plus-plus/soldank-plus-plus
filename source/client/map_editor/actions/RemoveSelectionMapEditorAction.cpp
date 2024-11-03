@@ -37,21 +37,21 @@ RemoveSelectionMapEditorAction::RemoveSelectionMapEditorAction(const ClientState
     }
 }
 
-void RemoveSelectionMapEditorAction::Execute(ClientState& client_state, Map& map)
+void RemoveSelectionMapEditorAction::Execute(ClientState& client_state, State& game_state)
 {
-    map.RemovePolygonsById(polygon_ids_to_remove_);
-    map.RemoveSpawnPointsById(spawn_point_ids_to_remove_);
-    map.RemoveSceneriesById(scenery_ids_to_remove_);
+    game_state.map.RemovePolygonsById(polygon_ids_to_remove_);
+    game_state.map.RemoveSpawnPointsById(spawn_point_ids_to_remove_);
+    game_state.map.RemoveSceneriesById(scenery_ids_to_remove_);
 
     client_state.map_editor_state.selected_polygon_vertices.clear();
     client_state.map_editor_state.selected_scenery_ids.clear();
     client_state.map_editor_state.selected_spawn_point_ids.clear();
 }
 
-void RemoveSelectionMapEditorAction::Undo(ClientState& client_state, Map& map)
+void RemoveSelectionMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
-    map.AddPolygons(removed_polygons_);
-    map.AddSpawnPoints(removed_spawn_points_);
-    map.AddSceneries(removed_sceneries_);
+    game_state.map.AddPolygons(removed_polygons_);
+    game_state.map.AddSpawnPoints(removed_spawn_points_);
+    game_state.map.AddSceneries(removed_sceneries_);
 }
 } // namespace Soldank

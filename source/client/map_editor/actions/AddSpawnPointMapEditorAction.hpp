@@ -12,8 +12,8 @@ class AddSpawnPointMapEditorAction final : public MapEditorAction
 public:
     AddSpawnPointMapEditorAction(const PMSSpawnPoint& new_spawn_point);
 
-    void Execute(ClientState& client_state, Map& map) final;
-    void Undo(ClientState& client_state, Map& map) final;
+    void Execute(ClientState& client_state, State& game_state) final;
+    void Undo(ClientState& client_state, State& game_state) final;
 
 private:
     PMSSpawnPoint added_spawn_point_;

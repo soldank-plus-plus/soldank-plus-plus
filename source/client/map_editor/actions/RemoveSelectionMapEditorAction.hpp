@@ -12,8 +12,8 @@ class RemoveSelectionMapEditorAction final : public MapEditorAction
 public:
     RemoveSelectionMapEditorAction(const ClientState& client_state, Map& map);
 
-    void Execute(ClientState& client_state, Map& map) final;
-    void Undo(ClientState& client_state, Map& map) final;
+    void Execute(ClientState& client_state, State& game_state) final;
+    void Undo(ClientState& client_state, State& game_state) final;
 
 private:
     std::vector<unsigned int> polygon_ids_to_remove_;

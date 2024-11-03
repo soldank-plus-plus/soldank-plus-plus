@@ -11,18 +11,18 @@ TransformSpawnPointsMapEditorAction::TransformSpawnPointsMapEditorAction(
 {
 }
 
-void TransformSpawnPointsMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
+void TransformSpawnPointsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> new_spawn_points;
     for (const auto& old_spawn_point : old_spawn_points_) {
         PMSSpawnPoint new_spawn_point = transform_function_(old_spawn_point.second);
         new_spawn_points.emplace_back(old_spawn_point.first, new_spawn_point);
     }
-    map.SetSpawnPointsById(new_spawn_points);
+    game_state.map.SetSpawnPointsById(new_spawn_points);
 }
 
-void TransformSpawnPointsMapEditorAction::Undo(ClientState& /*client_state*/, Map& map)
+void TransformSpawnPointsMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
-    map.SetSpawnPointsById(old_spawn_points_);
+    game_state.map.SetSpawnPointsById(old_spawn_points_);
 }
 } // namespace Soldank
