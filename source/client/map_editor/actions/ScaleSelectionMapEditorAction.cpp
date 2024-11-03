@@ -3,6 +3,7 @@
 #include "core/map/PMSStructs.hpp"
 
 #include "core/math/Calc.hpp"
+#include "core/physics/SoldierSkeletonPhysics.hpp"
 
 #include <cmath>
 #include <spdlog/spdlog.h>
@@ -14,11 +15,13 @@ ScaleSelectionMapEditorAction::ScaleSelectionMapEditorAction(
     original_polygon_vertices,
   const std::vector<std::pair<unsigned int, PMSScenery>>& original_sceneries,
   const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& original_spawn_points,
+  const std::vector<std::pair<unsigned int, glm::vec2>>& original_soldier_positions,
   const glm::vec2& origin,
   const glm::vec2& reference_position)
     : original_polygon_vertices_(original_polygon_vertices)
     , original_sceneries_(original_sceneries)
     , original_spawn_points_(original_spawn_points)
+    , original_soldier_positions_(original_soldier_positions)
     , origin_(origin)
     , reference_position_(reference_position)
     , current_mouse_position_(reference_position)
@@ -121,6 +124,24 @@ void ScaleSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State
         new_spawn_points.emplace_back(spawn_point_id, new_spawn_point);
     }
     game_state.map.SetSpawnPointsById(new_spawn_points);
+
+    // TODO: start using StateManager to avoid looping over all soldiers all the time
+    // TODO: StateManager should handle moving and repositioning skeleton parts
+    //       and then should notify Observers about the move
+    for (const auto& [soldier_id, soldier_position] : original_soldier_positions_) {
+        for (auto& soldier : game_state.soldiers) {
+            if (soldier.id != soldier_id) {
+                continue;
+            }
+
+            glm::vec2 new_soldier_position =
+              Calc::ScalePoint(soldier_position, origin_, scale_factor);
+
+            soldier.particle.position = new_soldier_position;
+            soldier.particle.old_position = new_soldier_position;
+            RepositionSoldierSkeletonParts(soldier);
+        }
+    }
 }
 
 void ScaleSelectionMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
@@ -128,5 +149,16 @@ void ScaleSelectionMapEditorAction::Undo(ClientState& /*client_state*/, State& g
     game_state.map.SetPolygonsById(original_polygons_);
     game_state.map.SetSceneriesById(original_sceneries_);
     game_state.map.SetSpawnPointsById(original_spawn_points_);
+    for (const auto& [soldier_id, soldier_position] : original_soldier_positions_) {
+        for (auto& soldier : game_state.soldiers) {
+            if (soldier.id != soldier_id) {
+                continue;
+            }
+
+            soldier.particle.position = soldier_position;
+            soldier.particle.old_position = soldier_position;
+            RepositionSoldierSkeletonParts(soldier);
+        }
+    }
 }
 } // namespace Soldank
