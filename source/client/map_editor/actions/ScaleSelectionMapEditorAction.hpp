@@ -4,6 +4,7 @@
 #include "map_editor/actions/MapEditorAction.hpp"
 
 #include "core/map/PMSStructs.hpp"
+#include "core/entities/Soldier.hpp"
 
 #include <bitset>
 
@@ -17,6 +18,7 @@ public:
         original_polygon_vertices,
       const std::vector<std::pair<unsigned int, PMSScenery>>& original_sceneries,
       const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& original_spawn_points,
+      const std::vector<std::pair<unsigned int, glm::vec2>>& original_soldier_positions,
       const glm::vec2& origin,
       const glm::vec2& reference_position);
 
@@ -33,6 +35,7 @@ private:
       original_polygon_vertices_;
     std::vector<std::pair<unsigned int, PMSScenery>> original_sceneries_;
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> original_spawn_points_;
+    std::vector<std::pair<unsigned int, glm::vec2>> original_soldier_positions_;
 
     std::vector<std::pair<unsigned int, PMSPolygon>> original_polygons_;
 

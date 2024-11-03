@@ -69,10 +69,24 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                 spawn_point_ids_with_position.emplace_back(selected_spawn_point_id, position);
             }
 
+            std::vector<std::pair<unsigned int, glm::vec2>> soldier_positions;
+            soldier_positions.reserve(client_state.map_editor_state.selected_soldier_ids.size());
+            for (const auto& selected_soldier_id :
+                 client_state.map_editor_state.selected_soldier_ids) {
+                for (const auto& soldier : game_state.soldiers) {
+                    if (soldier.id != selected_soldier_id) {
+                        continue;
+                    }
+
+                    soldier_positions.emplace_back(selected_soldier_id, soldier.particle.position);
+                }
+            }
+
             maybe_move_selection_action_ =
               std::make_unique<MoveSelectionMapEditorAction>(polygon_vertices_with_position,
                                                              scenery_ids_with_position,
-                                                             spawn_point_ids_with_position);
+                                                             spawn_point_ids_with_position,
+                                                             soldier_positions);
             break;
         }
         case TransformMode::Scale: {
@@ -115,10 +129,28 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                   game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
             }
 
+            std::vector<std::pair<unsigned int, glm::vec2>> soldier_positions;
+            soldier_positions.reserve(client_state.map_editor_state.selected_soldier_ids.size());
+            for (const auto& selected_soldier_id :
+                 client_state.map_editor_state.selected_soldier_ids) {
+                for (const auto& soldier : game_state.soldiers) {
+                    if (soldier.id != selected_soldier_id) {
+                        continue;
+                    }
+
+                    soldier_positions.emplace_back(selected_soldier_id, soldier.particle.position);
+                }
+            }
+
             glm::vec2 origin = client_state.map_editor_state.vertex_selection_box->first;
 
-            maybe_scale_selection_action_ = std::make_unique<ScaleSelectionMapEditorAction>(
-              polygons, sceneries, spawn_points, origin, client_state.mouse_map_position);
+            maybe_scale_selection_action_ =
+              std::make_unique<ScaleSelectionMapEditorAction>(polygons,
+                                                              sceneries,
+                                                              spawn_points,
+                                                              soldier_positions,
+                                                              origin,
+                                                              client_state.mouse_map_position);
 
             break;
         }
@@ -162,10 +194,28 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                   game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
             }
 
+            std::vector<std::pair<unsigned int, glm::vec2>> soldier_positions;
+            soldier_positions.reserve(client_state.map_editor_state.selected_soldier_ids.size());
+            for (const auto& selected_soldier_id :
+                 client_state.map_editor_state.selected_soldier_ids) {
+                for (const auto& soldier : game_state.soldiers) {
+                    if (soldier.id != selected_soldier_id) {
+                        continue;
+                    }
+
+                    soldier_positions.emplace_back(selected_soldier_id, soldier.particle.position);
+                }
+            }
+
             glm::vec2 origin = client_state.map_editor_state.vertex_selection_box->first;
 
-            maybe_rotate_selection_action_ = std::make_unique<RotateSelectionMapEditorAction>(
-              polygons, sceneries, spawn_points, origin, client_state.mouse_map_position);
+            maybe_rotate_selection_action_ =
+              std::make_unique<RotateSelectionMapEditorAction>(polygons,
+                                                               sceneries,
+                                                               spawn_points,
+                                                               soldier_positions,
+                                                               origin,
+                                                               client_state.mouse_map_position);
 
             break;
         }
@@ -305,6 +355,24 @@ void TransformTool::SetupSelectionBox(ClientState& client_state, const State& ga
             right = std::max(right, bottom_right_corner.x);
             top = std::min(top, top_left_corner.y);
             bottom = std::max(bottom, bottom_right_corner.y);
+        }
+
+        for (const auto& selected_soldier_id : client_state.map_editor_state.selected_soldier_ids) {
+            for (const auto& soldier : game_state.soldiers) {
+                if (soldier.id != selected_soldier_id) {
+                    continue;
+                }
+
+                float soldier_left = soldier.particle.position.x - 9.0F;
+                float soldier_right = soldier.particle.position.x + 9.0F;
+                float soldier_top = soldier.particle.position.y - 25.0F;
+                float soldier_bottom = soldier.particle.position.y + 5.0F;
+
+                left = std::min(left, soldier_left);
+                right = std::max(right, soldier_right);
+                top = std::min(top, soldier_top);
+                bottom = std::max(bottom, soldier_bottom);
+            }
         }
 
         client_state.map_editor_state.vertex_selection_box = { { left, top }, { right, bottom } };
