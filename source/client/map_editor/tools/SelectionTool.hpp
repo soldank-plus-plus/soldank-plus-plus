@@ -32,12 +32,12 @@ public:
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position,
                                   const State& game_state) final;
-    void OnModifierKey1Pressed() final;
-    void OnModifierKey1Released() final;
-    void OnModifierKey2Pressed() final;
-    void OnModifierKey2Released() final;
-    void OnModifierKey3Pressed() final;
-    void OnModifierKey3Released() final;
+    void OnModifierKey1Pressed(ClientState& client_state) final;
+    void OnModifierKey1Released(ClientState& client_state) final;
+    void OnModifierKey2Pressed(ClientState& client_state) final;
+    void OnModifierKey2Released(ClientState& client_state) final;
+    void OnModifierKey3Pressed(ClientState& client_state) final;
+    void OnModifierKey3Released(ClientState& client_state) final;
 
 private:
     enum class SelectionMode
@@ -70,6 +70,7 @@ private:
     bool IsMouseInSpawnPoint(const ClientState& client_state,
                              const glm::vec2& spawn_point_position) const;
     bool IsMouseInSoldier(const glm::vec2& soldier_position) const;
+    void SetSelectionMode(SelectionMode new_selection_mode, ClientState& client_state);
     static NextObjectTypeToSelect GetNextObjectTypeToSelect(
       NextObjectTypeToSelect current_object_type_to_select,
       const State& game_state);

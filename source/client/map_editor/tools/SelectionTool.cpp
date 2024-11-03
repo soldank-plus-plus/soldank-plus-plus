@@ -13,6 +13,7 @@ void SelectionTool::OnSelect(ClientState& client_state, const State& game_state)
               game_state.map.GetPolygons().at(selected_vertices.first), selected_vertices.second);
         }
     }
+    SetSelectionMode(SelectionMode::SingleSelection, client_state);
 }
 
 void SelectionTool::OnUnselect(ClientState& /*client_state*/) {}
@@ -473,28 +474,28 @@ void SelectionTool::RemoveLastFoundObjectFromSelection(ClientState& client_state
     }
 }
 
-void SelectionTool::OnModifierKey1Pressed()
+void SelectionTool::OnModifierKey1Pressed(ClientState& client_state)
 {
-    current_selection_mode_ = SelectionMode::AddToSelection;
+    SetSelectionMode(SelectionMode::AddToSelection, client_state);
 }
 
-void SelectionTool::OnModifierKey1Released()
+void SelectionTool::OnModifierKey1Released(ClientState& client_state)
 {
-    current_selection_mode_ = SelectionMode::SingleSelection;
+    SetSelectionMode(SelectionMode::SingleSelection, client_state);
 }
 
-void SelectionTool::OnModifierKey2Pressed() {}
+void SelectionTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void SelectionTool::OnModifierKey2Released() {}
+void SelectionTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void SelectionTool::OnModifierKey3Pressed()
+void SelectionTool::OnModifierKey3Pressed(ClientState& client_state)
 {
-    current_selection_mode_ = SelectionMode::RemoveFromSelection;
+    SetSelectionMode(SelectionMode::RemoveFromSelection, client_state);
 }
 
-void SelectionTool::OnModifierKey3Released()
+void SelectionTool::OnModifierKey3Released(ClientState& client_state)
 {
-    current_selection_mode_ = SelectionMode::SingleSelection;
+    SetSelectionMode(SelectionMode::SingleSelection, client_state);
 }
 
 bool SelectionTool::IsMouseInSpawnPoint(const ClientState& client_state,
@@ -513,6 +514,26 @@ bool SelectionTool::IsMouseInSoldier(const glm::vec2& soldier_position) const
     float bottom = soldier_position.y + 5.0F;
     return (mouse_map_position_.x >= left && mouse_map_position_.x <= right &&
             mouse_map_position_.y >= top && mouse_map_position_.y <= bottom);
+}
+
+void SelectionTool::SetSelectionMode(SelectionMode new_selection_mode, ClientState& client_state)
+{
+    current_selection_mode_ = new_selection_mode;
+
+    switch (new_selection_mode) {
+        case SelectionMode::SingleSelection: {
+            client_state.map_editor_state.current_tool_action_description = "Select Objects";
+            break;
+        }
+        case SelectionMode::AddToSelection: {
+            client_state.map_editor_state.current_tool_action_description = "Add to Selection";
+            break;
+        }
+        case SelectionMode::RemoveFromSelection: {
+            client_state.map_editor_state.current_tool_action_description = "Remove from Selection";
+            break;
+        }
+    }
 }
 
 SelectionTool::NextObjectTypeToSelect SelectionTool::GetNextObjectTypeToSelect(

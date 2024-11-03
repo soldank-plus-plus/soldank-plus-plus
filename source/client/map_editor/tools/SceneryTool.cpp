@@ -14,6 +14,7 @@ void SceneryTool::OnSelect(ClientState& client_state, const State& game_state)
     client_state.map_editor_state.scenery_to_place.scale_x = 1.0F;
     client_state.map_editor_state.scenery_to_place.scale_y = 1.0F;
     client_state.map_editor_state.scenery_to_place.active = true;
+    client_state.map_editor_state.current_tool_action_description = "Place Scenery";
 }
 
 void SceneryTool::OnUnselect(ClientState& client_state) {}
@@ -71,15 +72,15 @@ void SceneryTool::OnMouseMapPositionChange(ClientState& client_state,
     }
 }
 
-void SceneryTool::OnModifierKey1Pressed() {}
+void SceneryTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void SceneryTool::OnModifierKey1Released() {}
+void SceneryTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void SceneryTool::OnModifierKey2Pressed() {}
+void SceneryTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void SceneryTool::OnModifierKey2Released() {}
+void SceneryTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void SceneryTool::OnModifierKey3Pressed() {}
+void SceneryTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void SceneryTool::OnModifierKey3Released() {}
+void SceneryTool::OnModifierKey3Released(ClientState& client_state) {}
 } // namespace Soldank

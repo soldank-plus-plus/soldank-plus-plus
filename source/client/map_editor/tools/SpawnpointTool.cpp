@@ -15,6 +15,7 @@ SpawnpointTool::SpawnpointTool(
 void SpawnpointTool::OnSelect(ClientState& client_state, const State& /*game_state*/)
 {
     client_state.map_editor_state.spawn_point_preview_position = client_state.mouse_map_position;
+    client_state.map_editor_state.current_tool_action_description = "Place Spawn Point";
 }
 
 void SpawnpointTool::OnUnselect(ClientState& /*client_state*/) {}
@@ -63,15 +64,15 @@ void SpawnpointTool::OnMouseMapPositionChange(ClientState& client_state,
     }
 }
 
-void SpawnpointTool::OnModifierKey1Pressed() {}
+void SpawnpointTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void SpawnpointTool::OnModifierKey1Released() {}
+void SpawnpointTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void SpawnpointTool::OnModifierKey2Pressed() {}
+void SpawnpointTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void SpawnpointTool::OnModifierKey2Released() {}
+void SpawnpointTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void SpawnpointTool::OnModifierKey3Pressed() {}
+void SpawnpointTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void SpawnpointTool::OnModifierKey3Released() {}
+void SpawnpointTool::OnModifierKey3Released(ClientState& client_state) {}
 } // namespace Soldank

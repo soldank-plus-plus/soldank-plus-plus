@@ -607,7 +607,8 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("Zoom: %.0f%%", client_state.camera_component.GetZoom() * 100.0F);
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
-                ImGui::Text("Current tool/action description");
+                ImGui::Text("%s",
+                            client_state.map_editor_state.current_tool_action_description.c_str());
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("Mouse position: %.0f, %.0f",
                             client_state.mouse_map_position.x,

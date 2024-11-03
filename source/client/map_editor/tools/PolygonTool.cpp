@@ -15,7 +15,10 @@ PolygonTool::PolygonTool(
 {
 }
 
-void PolygonTool::OnSelect(ClientState& /*client_state*/, const State& /*game_state*/) {}
+void PolygonTool::OnSelect(ClientState& client_state, const State& /*game_state*/)
+{
+    client_state.map_editor_state.current_tool_action_description = "Create Polygon";
+}
 
 void PolygonTool::OnUnselect(ClientState& client_state)
 {
@@ -149,17 +152,17 @@ void PolygonTool::OnMouseMapPositionChange(ClientState& client_state,
     }
 }
 
-void PolygonTool::OnModifierKey1Pressed() {}
+void PolygonTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void PolygonTool::OnModifierKey1Released() {}
+void PolygonTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void PolygonTool::OnModifierKey2Pressed() {}
+void PolygonTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void PolygonTool::OnModifierKey2Released() {}
+void PolygonTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void PolygonTool::OnModifierKey3Pressed() {}
+void PolygonTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void PolygonTool::OnModifierKey3Released() {}
+void PolygonTool::OnModifierKey3Released(ClientState& client_state) {}
 
 PMSColor PolygonTool::GetCurrentPaletteColor(ClientState& client_state)
 {

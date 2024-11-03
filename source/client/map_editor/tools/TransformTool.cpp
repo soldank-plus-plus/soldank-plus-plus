@@ -23,7 +23,7 @@ TransformTool::TransformTool(
 void TransformTool::OnSelect(ClientState& client_state, const State& game_state)
 {
     SetupSelectionBox(client_state, game_state);
-    transform_mode_ = TransformMode::Move;
+    SetTransformMode(TransformMode::Move, client_state);
 }
 
 void TransformTool::OnUnselect(ClientState& client_state)
@@ -278,28 +278,28 @@ void TransformTool::OnMouseMapPositionChange(ClientState& client_state,
     }
 }
 
-void TransformTool::OnModifierKey1Pressed() {}
+void TransformTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void TransformTool::OnModifierKey1Released() {}
+void TransformTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void TransformTool::OnModifierKey2Pressed()
+void TransformTool::OnModifierKey2Pressed(ClientState& client_state)
 {
-    transform_mode_ = TransformMode::Scale;
+    SetTransformMode(TransformMode::Scale, client_state);
 }
 
-void TransformTool::OnModifierKey2Released()
+void TransformTool::OnModifierKey2Released(ClientState& client_state)
 {
-    transform_mode_ = TransformMode::Move;
+    SetTransformMode(TransformMode::Move, client_state);
 }
 
-void TransformTool::OnModifierKey3Pressed()
+void TransformTool::OnModifierKey3Pressed(ClientState& client_state)
 {
-    transform_mode_ = TransformMode::Rotate;
+    SetTransformMode(TransformMode::Rotate, client_state);
 }
 
-void TransformTool::OnModifierKey3Released()
+void TransformTool::OnModifierKey3Released(ClientState& client_state)
 {
-    transform_mode_ = TransformMode::Move;
+    SetTransformMode(TransformMode::Move, client_state);
 }
 
 void TransformTool::SetupSelectionBox(ClientState& client_state, const State& game_state)
@@ -378,6 +378,26 @@ void TransformTool::SetupSelectionBox(ClientState& client_state, const State& ga
         client_state.map_editor_state.vertex_selection_box = { { left, top }, { right, bottom } };
     } else {
         client_state.map_editor_state.vertex_selection_box = std::nullopt;
+    }
+}
+
+void TransformTool::SetTransformMode(TransformMode new_transform_mode, ClientState& client_state)
+{
+    transform_mode_ = new_transform_mode;
+
+    switch (new_transform_mode) {
+        case TransformMode::Move: {
+            client_state.map_editor_state.current_tool_action_description = "Move Selection";
+            break;
+        }
+        case TransformMode::Scale: {
+            client_state.map_editor_state.current_tool_action_description = "Scale Selection";
+            break;
+        }
+        case TransformMode::Rotate: {
+            client_state.map_editor_state.current_tool_action_description = "Rotate Selection";
+            break;
+        }
     }
 }
 } // namespace Soldank

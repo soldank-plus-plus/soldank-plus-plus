@@ -4,15 +4,15 @@
 
 namespace Soldank
 {
-void ColorPickerTool::OnSelect(ClientState& client_state, const State& game_state)
+void ColorPickerTool::OnSelect(ClientState& client_state, const State& /*game_state*/)
 {
-    color_picker_mode_ = ColorPickerMode::ClosestObject;
+    SetColorPickerMode(ColorPickerMode::ClosestObject, client_state);
 }
 
-void ColorPickerTool::OnUnselect(ClientState& client_state) {}
+void ColorPickerTool::OnUnselect(ClientState& /*client_state*/) {}
 
-void ColorPickerTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
-                                                  const State& game_state)
+void ColorPickerTool::OnSceneLeftMouseButtonClick(ClientState& /*client_state*/,
+                                                  const State& /*game_state*/)
 {
 }
 
@@ -77,38 +77,56 @@ void ColorPickerTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
     }
 }
 
-void ColorPickerTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
+void ColorPickerTool::OnSceneRightMouseButtonClick(ClientState& /*client_state*/) {}
 
 void ColorPickerTool::OnSceneRightMouseButtonRelease() {}
 
-void ColorPickerTool::OnMouseScreenPositionChange(ClientState& client_state,
-                                                  glm::vec2 last_mouse_position,
-                                                  glm::vec2 new_mouse_position)
+void ColorPickerTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
+                                                  glm::vec2 /*last_mouse_position*/,
+                                                  glm::vec2 /*new_mouse_position*/)
 {
 }
 
-void ColorPickerTool::OnMouseMapPositionChange(ClientState& client_state,
-                                               glm::vec2 last_mouse_position,
-                                               glm::vec2 new_mouse_position,
-                                               const State& game_state)
+void ColorPickerTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
+                                               glm::vec2 /*last_mouse_position*/,
+                                               glm::vec2 /*new_mouse_position*/,
+                                               const State& /*game_state*/)
 {
 }
 
-void ColorPickerTool::OnModifierKey1Pressed()
+void ColorPickerTool::OnModifierKey1Pressed(ClientState& client_state)
 {
-    color_picker_mode_ = ColorPickerMode::Pixel;
+    SetColorPickerMode(ColorPickerMode::Pixel, client_state);
 }
 
-void ColorPickerTool::OnModifierKey1Released()
+void ColorPickerTool::OnModifierKey1Released(ClientState& client_state)
 {
-    color_picker_mode_ = ColorPickerMode::ClosestObject;
+    SetColorPickerMode(ColorPickerMode::ClosestObject, client_state);
 }
 
-void ColorPickerTool::OnModifierKey2Pressed() {}
+void ColorPickerTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void ColorPickerTool::OnModifierKey2Released() {}
+void ColorPickerTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void ColorPickerTool::OnModifierKey3Pressed() {}
+void ColorPickerTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void ColorPickerTool::OnModifierKey3Released() {}
+void ColorPickerTool::OnModifierKey3Released(ClientState& client_state) {}
+
+void ColorPickerTool::SetColorPickerMode(ColorPickerMode new_color_picker_mode,
+                                         ClientState& client_state)
+{
+    color_picker_mode_ = new_color_picker_mode;
+
+    switch (new_color_picker_mode) {
+        case ColorPickerMode::ClosestObject: {
+            client_state.map_editor_state.current_tool_action_description =
+              "Pick a vertex or scenery color";
+            break;
+        }
+        case ColorPickerMode::Pixel: {
+            client_state.map_editor_state.current_tool_action_description = "Pick a pixel color";
+            break;
+        }
+    }
+}
 } // namespace Soldank

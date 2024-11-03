@@ -104,6 +104,8 @@ struct MapEditorState
     bool should_open_map_settings_modal = false;
 
     glm::vec4 last_requested_pixel_color;
+
+    std::string current_tool_action_description;
 };
 } // namespace Soldank
 

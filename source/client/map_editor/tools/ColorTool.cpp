@@ -13,7 +13,10 @@ ColorTool::ColorTool(
 {
 }
 
-void ColorTool::OnSelect(ClientState& client_state, const State& game_state) {}
+void ColorTool::OnSelect(ClientState& client_state, const State& game_state)
+{
+    client_state.map_editor_state.current_tool_action_description = "Color objects";
+}
 
 void ColorTool::OnUnselect(ClientState& client_state) {}
 
@@ -102,15 +105,15 @@ void ColorTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
     mouse_map_position_ = new_mouse_position;
 }
 
-void ColorTool::OnModifierKey1Pressed() {}
+void ColorTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void ColorTool::OnModifierKey1Released() {}
+void ColorTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void ColorTool::OnModifierKey2Pressed() {}
+void ColorTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void ColorTool::OnModifierKey2Released() {}
+void ColorTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void ColorTool::OnModifierKey3Pressed() {}
+void ColorTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void ColorTool::OnModifierKey3Released() {}
+void ColorTool::OnModifierKey3Released(ClientState& client_state) {}
 } // namespace Soldank

@@ -15,6 +15,7 @@ void VertexSelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
 {
     client_state.map_editor_state.vertex_selection_box = { { mouse_map_position_ },
                                                            { mouse_map_position_ } };
+    client_state.map_editor_state.current_tool_action_description = "Select Vertices";
 }
 
 void VertexSelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
@@ -96,15 +97,15 @@ void VertexSelectionTool::OnMouseMapPositionChange(ClientState& client_state,
     }
 }
 
-void VertexSelectionTool::OnModifierKey1Pressed() {}
+void VertexSelectionTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void VertexSelectionTool::OnModifierKey1Released() {}
+void VertexSelectionTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void VertexSelectionTool::OnModifierKey2Pressed() {}
+void VertexSelectionTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void VertexSelectionTool::OnModifierKey2Released() {}
+void VertexSelectionTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void VertexSelectionTool::OnModifierKey3Pressed() {}
+void VertexSelectionTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void VertexSelectionTool::OnModifierKey3Released() {}
+void VertexSelectionTool::OnModifierKey3Released(ClientState& client_state) {}
 } // namespace Soldank

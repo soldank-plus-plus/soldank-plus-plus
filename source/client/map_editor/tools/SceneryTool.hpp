@@ -28,12 +28,12 @@ public:
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position,
                                   const State& game_state) final;
-    void OnModifierKey1Pressed() final;
-    void OnModifierKey1Released() final;
-    void OnModifierKey2Pressed() final;
-    void OnModifierKey2Released() final;
-    void OnModifierKey3Pressed() final;
-    void OnModifierKey3Released() final;
+    void OnModifierKey1Pressed(ClientState& client_state) final;
+    void OnModifierKey1Released(ClientState& client_state) final;
+    void OnModifierKey2Pressed(ClientState& client_state) final;
+    void OnModifierKey2Released(ClientState& client_state) final;
+    void OnModifierKey3Pressed(ClientState& client_state) final;
+    void OnModifierKey3Released(ClientState& client_state) final;
 
 private:
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
