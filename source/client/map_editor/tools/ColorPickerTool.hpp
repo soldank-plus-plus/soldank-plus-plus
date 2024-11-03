@@ -31,6 +31,15 @@ public:
     void OnModifierKey2Released() final;
     void OnModifierKey3Pressed() final;
     void OnModifierKey3Released() final;
+
+private:
+    enum class ColorPickerMode
+    {
+        ClosestObject = 0,
+        Pixel,
+    };
+
+    ColorPickerMode color_picker_mode_;
 };
 } // namespace Soldank
 

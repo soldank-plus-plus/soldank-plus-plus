@@ -254,6 +254,18 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     }
 }
 
+glm::vec4 Scene::GetPixelColor(const glm::vec2& position)
+{
+    std::array<unsigned char, 3> pixel{};
+    glReadPixels((int)position.x, (int)position.y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel.data());
+    glm::vec4 normalized_color;
+    normalized_color.x = (float)pixel.at(0) / 255.0F;
+    normalized_color.y = (float)pixel.at(1) / 255.0F;
+    normalized_color.z = (float)pixel.at(2) / 255.0F;
+    normalized_color.w = 1.0F;
+    return normalized_color;
+}
+
 void Scene::RenderSoldiers(const State& game_state,
                            const ClientState& client_state,
                            double frame_percent)

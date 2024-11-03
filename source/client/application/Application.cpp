@@ -423,6 +423,14 @@ void Run()
 
     Scene scene(world->GetStateManager(), *client_state);
 
+    client_state->map_editor_state.event_pixel_color_under_cursor_requested.AddObserver([&]() {
+        glm::vec2 mouse_position = window->GetCursorScreenPosition();
+        // glReadPixels requires inverted Y axis for some reason...
+        mouse_position.y = window->GetWindowSize().y - mouse_position.y;
+        client_state->map_editor_state.last_requested_pixel_color =
+          scene.GetPixelColor(mouse_position);
+    });
+
     world->SetShouldStopGameLoopCallback([&]() { return window->ShouldClose(); });
     world->SetPreGameLoopIterationCallback([&]() {
         if (Keyboard::KeyWentDown(GLFW_KEY_ESCAPE)) {

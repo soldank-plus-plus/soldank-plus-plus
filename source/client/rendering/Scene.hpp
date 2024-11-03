@@ -38,6 +38,8 @@ public:
 
     glm::vec2 GetTextureDimensions() const { return polygons_renderer_->GetTextureDimensions(); }
 
+    static glm::vec4 GetPixelColor(const glm::vec2& position);
+
 private:
     Sprites::SpriteManager sprite_manager_;
     BackgroundRenderer background_renderer_;
