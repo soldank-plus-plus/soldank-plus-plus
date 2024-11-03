@@ -14,7 +14,7 @@ MoveSelectionMapEditorAction::MoveSelectionMapEditorAction(
 {
 }
 
-void MoveSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
+void MoveSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>
       polygon_vertices_with_new_position;
@@ -23,14 +23,14 @@ void MoveSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map& m
         polygon_vertices_with_new_position.emplace_back(polygon_vertex,
                                                         old_position + move_offset_);
     }
-    map.MovePolygonVerticesById(polygon_vertices_with_new_position);
+    game_state.map.MovePolygonVerticesById(polygon_vertices_with_new_position);
 
     std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_new_position;
     scenery_ids_with_new_position.reserve(scenery_ids_with_position_.size());
     for (const auto& [scenery_id, old_position] : scenery_ids_with_position_) {
         scenery_ids_with_new_position.emplace_back(scenery_id, old_position + move_offset_);
     }
-    map.MoveSceneriesById(scenery_ids_with_new_position);
+    game_state.map.MoveSceneriesById(scenery_ids_with_new_position);
 
     std::vector<std::pair<unsigned int, glm::ivec2>> spawn_point_ids_with_new_position;
     glm::ivec2 spawn_points_move_offset = move_offset_;
@@ -39,13 +39,13 @@ void MoveSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map& m
         spawn_point_ids_with_new_position.emplace_back(spawn_point_id,
                                                        old_position + spawn_points_move_offset);
     }
-    map.MoveSpawnPointsById(spawn_point_ids_with_new_position);
+    game_state.map.MoveSpawnPointsById(spawn_point_ids_with_new_position);
 }
 
-void MoveSelectionMapEditorAction::Undo(ClientState& /*client_state*/, Map& map)
+void MoveSelectionMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
-    map.MovePolygonVerticesById(polygon_vertices_with_old_position_);
-    map.MoveSceneriesById(scenery_ids_with_position_);
-    map.MoveSpawnPointsById(spawn_point_ids_with_old_position_);
+    game_state.map.MovePolygonVerticesById(polygon_vertices_with_old_position_);
+    game_state.map.MoveSceneriesById(scenery_ids_with_position_);
+    game_state.map.MoveSpawnPointsById(spawn_point_ids_with_old_position_);
 }
 } // namespace Soldank

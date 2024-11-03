@@ -23,17 +23,17 @@ AddObjectsMapEditorAction::AddObjectsMapEditorAction(
     }
 }
 
-void AddObjectsMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
+void AddObjectsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
-    map.AddPolygons(copied_polygons_);
-    map.AddSceneries(copied_sceneries_);
-    map.AddSpawnPoints(copied_spawn_points_);
+    game_state.map.AddPolygons(copied_polygons_);
+    game_state.map.AddSceneries(copied_sceneries_);
+    game_state.map.AddSpawnPoints(copied_spawn_points_);
 }
 
-void AddObjectsMapEditorAction::Undo(ClientState& /*client_state*/, Map& map)
+void AddObjectsMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
-    map.RemovePolygonsById(polygon_ids_to_remove_);
-    map.RemoveSpawnPointsById(spawn_point_ids_to_remove_);
-    map.RemoveSceneriesById(scenery_ids_to_remove_);
+    game_state.map.RemovePolygonsById(polygon_ids_to_remove_);
+    game_state.map.RemoveSpawnPointsById(spawn_point_ids_to_remove_);
+    game_state.map.RemoveSceneriesById(scenery_ids_to_remove_);
 }
 } // namespace Soldank

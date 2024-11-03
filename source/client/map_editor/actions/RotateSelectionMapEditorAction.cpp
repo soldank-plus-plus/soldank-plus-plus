@@ -28,7 +28,7 @@ RotateSelectionMapEditorAction::RotateSelectionMapEditorAction(
     }
 }
 
-void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
+void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     float reference_rotation = Calc::GetAngle(origin_, reference_position_);
     float new_rotation = Calc::GetAngle(origin_, current_mouse_position_);
@@ -52,7 +52,7 @@ void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map&
         }
         new_polygons.emplace_back(polygon_vertices.first, new_polygon);
     }
-    map.SetPolygonsById(new_polygons);
+    game_state.map.SetPolygonsById(new_polygons);
 
     std::vector<std::pair<unsigned int, PMSScenery>> new_sceneries;
     new_sceneries.reserve(original_sceneries_.size());
@@ -73,7 +73,7 @@ void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map&
 
         new_sceneries.emplace_back(scenery_id, new_scenery);
     }
-    map.SetSceneriesById(new_sceneries);
+    game_state.map.SetSceneriesById(new_sceneries);
 
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> new_spawn_points;
     new_spawn_points.reserve(original_spawn_points_.size());
@@ -85,13 +85,13 @@ void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Map&
         new_spawn_point.y = new_position.y;
         new_spawn_points.emplace_back(spawn_point_id, new_spawn_point);
     }
-    map.SetSpawnPointsById(new_spawn_points);
+    game_state.map.SetSpawnPointsById(new_spawn_points);
 }
 
-void RotateSelectionMapEditorAction::Undo(ClientState& /*client_state*/, Map& map)
+void RotateSelectionMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
-    map.SetPolygonsById(original_polygons_);
-    map.SetSceneriesById(original_sceneries_);
-    map.SetSpawnPointsById(original_spawn_points_);
+    game_state.map.SetPolygonsById(original_polygons_);
+    game_state.map.SetSceneriesById(original_sceneries_);
+    game_state.map.SetSpawnPointsById(original_spawn_points_);
 }
 } // namespace Soldank

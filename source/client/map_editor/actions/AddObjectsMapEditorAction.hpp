@@ -16,8 +16,8 @@ public:
         copied_sceneries,
       const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& copied_spawn_points);
 
-    void Execute(ClientState& client_state, Map& map) final;
-    void Undo(ClientState& client_state, Map& map) final;
+    void Execute(ClientState& client_state, State& game_state) final;
+    void Undo(ClientState& client_state, State& game_state) final;
 
 private:
     std::vector<PMSPolygon> copied_polygons_;

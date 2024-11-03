@@ -7,14 +7,14 @@ AddPolygonMapEditorAction::AddPolygonMapEditorAction(const PMSPolygon& new_polyg
 {
 }
 
-void AddPolygonMapEditorAction::Execute(ClientState& /*client_state*/, Map& map)
+void AddPolygonMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
-    added_polygon_ = map.AddNewPolygon(added_polygon_);
+    added_polygon_ = game_state.map.AddNewPolygon(added_polygon_);
 }
 
-void AddPolygonMapEditorAction::Undo(ClientState& client_state, Map& map)
+void AddPolygonMapEditorAction::Undo(ClientState& client_state, State& game_state)
 {
-    map.RemovePolygonById(added_polygon_.id);
+    game_state.map.RemovePolygonById(added_polygon_.id);
     for (unsigned int i = 0; i < client_state.map_editor_state.selected_polygon_vertices.size();
          ++i) {
         if (client_state.map_editor_state.selected_polygon_vertices.at(i).first ==

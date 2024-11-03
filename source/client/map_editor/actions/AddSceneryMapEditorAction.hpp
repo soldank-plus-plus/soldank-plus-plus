@@ -14,8 +14,8 @@ class AddSceneryMapEditorAction final : public MapEditorAction
 public:
     AddSceneryMapEditorAction(const PMSScenery& new_scenery, const std::string& file_name);
 
-    void Execute(ClientState& client_state, Map& map) final;
-    void Undo(ClientState& client_state, Map& map) final;
+    void Execute(ClientState& client_state, State& game_state) final;
+    void Undo(ClientState& client_state, State& game_state) final;
 
 private:
     PMSScenery added_scenery_;

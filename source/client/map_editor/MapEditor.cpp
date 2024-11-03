@@ -38,11 +38,11 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
 {
     add_new_map_editor_action_ =
       [this, &client_state, &game_state](std::unique_ptr<MapEditorAction> new_action) {
-          ExecuteNewAction(client_state, game_state.map, std::move(new_action));
+          ExecuteNewAction(client_state, game_state, std::move(new_action));
       };
     execute_without_adding_map_editor_action_ = [&client_state,
                                                  &game_state](MapEditorAction* new_action) {
-        new_action->Execute(client_state, game_state.map);
+        new_action->Execute(client_state, game_state);
         return new_action;
     };
 
@@ -112,7 +112,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
 
     client_state.event_key_pressed.AddObserver([this, &client_state, &game_state](int key) {
         if (!client_state.map_editor_state.is_modal_or_popup_open) {
-            OnKeyPressed(key, client_state, game_state.map);
+            OnKeyPressed(key, client_state, game_state);
         }
     });
     client_state.event_key_released.AddObserver([this, &client_state](int key) {
@@ -127,10 +127,10 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
       });
 
     client_state.map_editor_state.event_pressed_undo.AddObserver(
-      [this, &client_state, &game_state]() { UndoLastAction(client_state, game_state.map); });
+      [this, &client_state, &game_state]() { UndoLastAction(client_state, game_state); });
 
     client_state.map_editor_state.event_pressed_redo.AddObserver(
-      [this, &client_state, &game_state]() { RedoUndoneAction(client_state, game_state.map); });
+      [this, &client_state, &game_state]() { RedoUndoneAction(client_state, game_state); });
 
     tools_.emplace_back(std::make_unique<TransformTool>(add_new_map_editor_action_,
                                                         execute_without_adding_map_editor_action_));
@@ -157,11 +157,11 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
 
     client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(
       [this, &client_state, &game_state](PMSSpawnPointType new_spawn_point_type) {
-          OnChangeSelectedSpawnPointsTypes(new_spawn_point_type, client_state, game_state.map);
+          OnChangeSelectedSpawnPointsTypes(new_spawn_point_type, client_state, game_state);
       });
     client_state.map_editor_state.event_selected_sceneries_level_changed.AddObserver(
       [this, &client_state, &game_state](int new_level) {
-          OnChangeSelectedSceneriesLevel(new_level, client_state, game_state.map);
+          OnChangeSelectedSceneriesLevel(new_level, client_state, game_state);
       });
     client_state.map_editor_state.event_selected_polygons_bounciness_changed.AddObserver(
       [this, &client_state, &game_state](float new_bounciness) {
@@ -172,7 +172,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
                 return new_polygon;
             },
             client_state,
-            game_state.map);
+            game_state);
       });
     client_state.map_editor_state.event_selected_polygons_type_changed.AddObserver(
       [this, &client_state, &game_state](PMSPolygonType new_polygon_type) {
@@ -183,7 +183,7 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
                 return new_polygon;
             },
             client_state,
-            game_state.map);
+            game_state);
       });
 }
 
@@ -327,22 +327,22 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
       ->OnMouseMapPositionChange(client_state, last_mouse_position, new_mouse_position, game_state);
 }
 
-void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
+void MapEditor::OnKeyPressed(int key, ClientState& client_state, State& game_state)
 {
     if (is_holding_left_ctrl_ && key == GLFW_KEY_S) {
-        map.SaveMap("maps/" + map.GetName());
+        game_state.map.SaveMap("maps/" + game_state.map.GetName());
 
         return;
     }
 
     if (is_holding_left_ctrl_ && is_holding_left_shift_ && key == GLFW_KEY_Z) {
-        RedoUndoneAction(client_state, map);
+        RedoUndoneAction(client_state, game_state);
 
         return;
     }
 
     if (is_holding_left_ctrl_ && key == GLFW_KEY_Z) {
-        UndoLastAction(client_state, map);
+        UndoLastAction(client_state, game_state);
 
         return;
     }
@@ -391,20 +391,20 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
                 continue;
             }
 
-            copied_polygons_.push_back(map.GetPolygons().at(selected_polygon_id));
+            copied_polygons_.push_back(game_state.map.GetPolygons().at(selected_polygon_id));
         }
 
         for (const auto& selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
-            const auto& scenery = map.GetSceneryInstances().at(selected_scenery_id);
+            const auto& scenery = game_state.map.GetSceneryInstances().at(selected_scenery_id);
             copied_sceneries_.push_back(
               { selected_scenery_id,
-                { scenery, map.GetSceneryTypes().at(scenery.style - 1).name } });
+                { scenery, game_state.map.GetSceneryTypes().at(scenery.style - 1).name } });
         }
 
         for (const auto& selected_spawn_point_id :
              client_state.map_editor_state.selected_spawn_point_ids) {
-            copied_spawn_points_.emplace_back(selected_spawn_point_id,
-                                              map.GetSpawnPoints().at(selected_spawn_point_id));
+            copied_spawn_points_.emplace_back(
+              selected_spawn_point_id, game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
         }
 
         return;
@@ -417,7 +417,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
             std::unique_ptr<AddObjectsMapEditorAction> add_copied_objects_action =
               std::make_unique<AddObjectsMapEditorAction>(
                 copied_polygons_, copied_sceneries_, copied_spawn_points_);
-            ExecuteNewAction(client_state, map, std::move(add_copied_objects_action));
+            ExecuteNewAction(client_state, game_state, std::move(add_copied_objects_action));
 
             return;
         }
@@ -436,7 +436,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, Map& map)
     }
 
     if (key == GLFW_KEY_DELETE) {
-        RemoveCurrentSelection(client_state, map);
+        RemoveCurrentSelection(client_state, game_state);
     }
 }
 
@@ -456,7 +456,7 @@ void MapEditor::OnKeyReleased(int key, ClientState& /*client_state*/)
 }
 
 void MapEditor::ExecuteNewAction(ClientState& client_state,
-                                 Map& map,
+                                 State& game_state,
                                  std::unique_ptr<MapEditorAction> new_action)
 {
     if (locked_) {
@@ -464,7 +464,7 @@ void MapEditor::ExecuteNewAction(ClientState& client_state,
     }
 
     map_editor_undone_actions_.clear();
-    new_action->Execute(client_state, map);
+    new_action->Execute(client_state, game_state);
     map_editor_executed_actions_.push_back(std::move(new_action));
     if (map_editor_executed_actions_.size() > ACTION_HISTORY_LIMIT) {
         map_editor_executed_actions_.pop_front();
@@ -473,14 +473,14 @@ void MapEditor::ExecuteNewAction(ClientState& client_state,
     UpdateUndoRedoButtons(client_state);
 }
 
-void MapEditor::UndoLastAction(ClientState& client_state, Map& map)
+void MapEditor::UndoLastAction(ClientState& client_state, State& game_state)
 {
     if (locked_) {
         return;
     }
 
     if (!map_editor_executed_actions_.empty()) {
-        map_editor_executed_actions_.back()->Undo(client_state, map);
+        map_editor_executed_actions_.back()->Undo(client_state, game_state);
         map_editor_undone_actions_.push_back(std::move(map_editor_executed_actions_.back()));
         map_editor_executed_actions_.pop_back();
     }
@@ -488,7 +488,7 @@ void MapEditor::UndoLastAction(ClientState& client_state, Map& map)
     UpdateUndoRedoButtons(client_state);
 }
 
-void MapEditor::RedoUndoneAction(ClientState& client_state, Map& map)
+void MapEditor::RedoUndoneAction(ClientState& client_state, State& game_state)
 {
     if (locked_) {
         return;
@@ -497,7 +497,7 @@ void MapEditor::RedoUndoneAction(ClientState& client_state, Map& map)
     if (!map_editor_undone_actions_.empty()) {
         map_editor_executed_actions_.push_back(std::move(map_editor_undone_actions_.back()));
         map_editor_undone_actions_.pop_back();
-        map_editor_executed_actions_.back()->Execute(client_state, map);
+        map_editor_executed_actions_.back()->Execute(client_state, game_state);
     }
 
     UpdateUndoRedoButtons(client_state);
@@ -509,23 +509,23 @@ void MapEditor::UpdateUndoRedoButtons(ClientState& client_state)
     client_state.map_editor_state.is_redo_enabled = !map_editor_undone_actions_.empty();
 }
 
-void MapEditor::RemoveCurrentSelection(ClientState& client_state, Map& map)
+void MapEditor::RemoveCurrentSelection(ClientState& client_state, State& game_state)
 {
     std::unique_ptr<RemoveSelectionMapEditorAction> remove_selection_action =
-      std::make_unique<RemoveSelectionMapEditorAction>(client_state, map);
-    ExecuteNewAction(client_state, map, std::move(remove_selection_action));
+      std::make_unique<RemoveSelectionMapEditorAction>(client_state, game_state.map);
+    ExecuteNewAction(client_state, game_state, std::move(remove_selection_action));
 }
 
 void MapEditor::OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
                                                  ClientState& client_state,
-                                                 Map& map)
+                                                 State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> selected_spawn_points;
     selected_spawn_points.reserve(client_state.map_editor_state.selected_spawn_point_ids.size());
     for (unsigned int selected_spawn_point_id :
          client_state.map_editor_state.selected_spawn_point_ids) {
-        selected_spawn_points.emplace_back(selected_spawn_point_id,
-                                           map.GetSpawnPoints().at(selected_spawn_point_id));
+        selected_spawn_points.emplace_back(
+          selected_spawn_point_id, game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
     }
     std::unique_ptr<TransformSpawnPointsMapEditorAction> transform_spawn_points_action =
       std::make_unique<TransformSpawnPointsMapEditorAction>(
@@ -534,16 +534,18 @@ void MapEditor::OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_poi
             new_spawn_point.type = new_spawn_point_type;
             return new_spawn_point;
         });
-    ExecuteNewAction(client_state, map, std::move(transform_spawn_points_action));
+    ExecuteNewAction(client_state, game_state, std::move(transform_spawn_points_action));
 }
 
-void MapEditor::OnChangeSelectedSceneriesLevel(int new_level, ClientState& client_state, Map& map)
+void MapEditor::OnChangeSelectedSceneriesLevel(int new_level,
+                                               ClientState& client_state,
+                                               State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSScenery>> selected_sceneries;
     selected_sceneries.reserve(client_state.map_editor_state.selected_scenery_ids.size());
     for (unsigned int selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
-        selected_sceneries.emplace_back(selected_scenery_id,
-                                        map.GetSceneryInstances().at(selected_scenery_id));
+        selected_sceneries.emplace_back(
+          selected_scenery_id, game_state.map.GetSceneryInstances().at(selected_scenery_id));
     }
     std::unique_ptr<TransformSceneriesMapEditorAction> transform_sceneries_action =
       std::make_unique<TransformSceneriesMapEditorAction>(
@@ -552,23 +554,24 @@ void MapEditor::OnChangeSelectedSceneriesLevel(int new_level, ClientState& clien
             new_scenery.level = new_level;
             return new_scenery;
         });
-    ExecuteNewAction(client_state, map, std::move(transform_sceneries_action));
+    ExecuteNewAction(client_state, game_state, std::move(transform_sceneries_action));
 }
 
 void MapEditor::OnTransformSelectedPolygons(
   const std::function<PMSPolygon(const PMSPolygon&)>& transform_function,
   ClientState& client_state,
-  Map& map)
+  State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSPolygon>> selected_polygons;
     selected_polygons.reserve(client_state.map_editor_state.selected_polygon_vertices.size());
     for (const auto& selected_polygon_vertices :
          client_state.map_editor_state.selected_polygon_vertices) {
-        selected_polygons.emplace_back(selected_polygon_vertices.first,
-                                       map.GetPolygons().at(selected_polygon_vertices.first));
+        selected_polygons.emplace_back(
+          selected_polygon_vertices.first,
+          game_state.map.GetPolygons().at(selected_polygon_vertices.first));
     }
     std::unique_ptr<TransformPolygonsMapEditorAction> transform_polygons_action =
       std::make_unique<TransformPolygonsMapEditorAction>(selected_polygons, transform_function);
-    ExecuteNewAction(client_state, map, std::move(transform_polygons_action));
+    ExecuteNewAction(client_state, game_state, std::move(transform_polygons_action));
 }
 } // namespace Soldank

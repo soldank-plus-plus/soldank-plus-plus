@@ -46,26 +46,28 @@ private:
                                   glm::vec2 new_mouse_position,
                                   const State& game_state);
 
-    void OnKeyPressed(int key, ClientState& client_state, Map& map);
+    void OnKeyPressed(int key, ClientState& client_state, State& game_state);
     void OnKeyReleased(int key, ClientState& client_state);
 
     void ExecuteNewAction(ClientState& client_state,
-                          Map& map,
+                          State& game_state,
                           std::unique_ptr<MapEditorAction> new_action);
-    void UndoLastAction(ClientState& client_state, Map& map);
-    void RedoUndoneAction(ClientState& client_state, Map& map);
+    void UndoLastAction(ClientState& client_state, State& game_state);
+    void RedoUndoneAction(ClientState& client_state, State& game_state);
     void UpdateUndoRedoButtons(ClientState& client_state);
 
-    void RemoveCurrentSelection(ClientState& client_state, Map& map);
+    void RemoveCurrentSelection(ClientState& client_state, State& game_state);
 
     void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
                                           ClientState& client_state,
-                                          Map& map);
-    void OnChangeSelectedSceneriesLevel(int new_level, ClientState& client_state, Map& map);
+                                          State& game_state);
+    void OnChangeSelectedSceneriesLevel(int new_level,
+                                        ClientState& client_state,
+                                        State& game_state);
     void OnTransformSelectedPolygons(
       const std::function<PMSPolygon(const PMSPolygon&)>& transform_function,
       ClientState& client_state,
-      Map& map);
+      State& game_state);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;

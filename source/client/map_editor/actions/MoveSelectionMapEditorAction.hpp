@@ -16,8 +16,8 @@ public:
       const std::vector<std::pair<unsigned int, glm::vec2>>& scenery_ids_with_position,
       const std::vector<std::pair<unsigned int, glm::ivec2>>& spawn_point_ids_with_position);
 
-    void Execute(ClientState& client_state, Map& map) final;
-    void Undo(ClientState& client_state, Map& map) final;
+    void Execute(ClientState& client_state, State& game_state) final;
+    void Undo(ClientState& client_state, State& game_state) final;
 
     void SetMoveOffset(const glm::vec2& new_move_offset) { move_offset_ = new_move_offset; }
 
