@@ -512,7 +512,7 @@ void MapEditor::UpdateUndoRedoButtons(ClientState& client_state)
 void MapEditor::RemoveCurrentSelection(ClientState& client_state, State& game_state)
 {
     std::unique_ptr<RemoveSelectionMapEditorAction> remove_selection_action =
-      std::make_unique<RemoveSelectionMapEditorAction>(client_state, game_state.map);
+      std::make_unique<RemoveSelectionMapEditorAction>(client_state, game_state);
     ExecuteNewAction(client_state, game_state, std::move(remove_selection_action));
 }
 

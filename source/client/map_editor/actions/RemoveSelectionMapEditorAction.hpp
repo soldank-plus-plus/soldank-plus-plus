@@ -10,7 +10,7 @@ namespace Soldank
 class RemoveSelectionMapEditorAction final : public MapEditorAction
 {
 public:
-    RemoveSelectionMapEditorAction(const ClientState& client_state, Map& map);
+    RemoveSelectionMapEditorAction(const ClientState& client_state, const State& game_state);
 
     void Execute(ClientState& client_state, State& game_state) final;
     void Undo(ClientState& client_state, State& game_state) final;
@@ -22,6 +22,7 @@ private:
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> removed_spawn_points_;
     std::vector<unsigned int> scenery_ids_to_remove_;
     std::vector<std::pair<unsigned int, std::pair<PMSScenery, std::string>>> removed_sceneries_;
+    std::vector<unsigned int> soldier_ids_to_remove_;
 };
 } // namespace Soldank
 
