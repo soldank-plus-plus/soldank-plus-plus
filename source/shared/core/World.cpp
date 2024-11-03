@@ -28,6 +28,7 @@
 #include "core/animations/states/LegsRunBackAnimationState.hpp"
 #include "core/animations/states/LegsStandAnimationState.hpp"
 
+#include "core/map/PMSEnums.hpp"
 #include "core/physics/Particles.hpp"
 #include "core/physics/SoldierSkeletonPhysics.hpp"
 #include "core/state/Control.hpp"
@@ -381,19 +382,37 @@ const Soldier& World::CreateSoldier(std::optional<unsigned int> force_soldier_id
 
 glm::vec2 World::SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> spawn_position)
 {
-    glm::vec2 initial_player_position;
+    glm::vec2 initial_player_position{ 0.0F, 0.0F };
     if (spawn_position.has_value()) {
         initial_player_position = *spawn_position;
     } else {
-        std::uniform_int_distribution<unsigned int> spawnpoint_id_random_distribution(
-          0, state_manager_->GetState().map.GetSpawnPoints().size() - 1);
+        std::vector<glm::vec2> possible_spawn_point_positions;
+        for (const auto& spawn_point : state_manager_->GetState().map.GetSpawnPoints()) {
+            if (spawn_point.type == PMSSpawnPointType::General ||
+                spawn_point.type == PMSSpawnPointType::Alpha ||
+                spawn_point.type == PMSSpawnPointType::Bravo ||
+                spawn_point.type == PMSSpawnPointType::Charlie ||
+                spawn_point.type == PMSSpawnPointType::Delta) {
 
-        unsigned int random_spawnpoint_id =
-          spawnpoint_id_random_distribution(mersenne_twister_engine_);
+                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
+            }
+        }
 
-        const auto& chosen_spawnpoint =
-          state_manager_->GetState().map.GetSpawnPoints().at(random_spawnpoint_id);
-        initial_player_position = { chosen_spawnpoint.x, chosen_spawnpoint.y };
+        if (possible_spawn_point_positions.empty()) {
+            for (const auto& spawn_point : state_manager_->GetState().map.GetSpawnPoints()) {
+                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
+            }
+        }
+
+        if (!possible_spawn_point_positions.empty()) {
+            std::uniform_int_distribution<unsigned int> spawnpoint_id_random_distribution(
+              0, possible_spawn_point_positions.size() - 1);
+
+            unsigned int random_spawnpoint_id =
+              spawnpoint_id_random_distribution(mersenne_twister_engine_);
+
+            initial_player_position = possible_spawn_point_positions.at(random_spawnpoint_id);
+        }
     }
 
     for (auto& soldier : state_manager_->GetState().soldiers) {
