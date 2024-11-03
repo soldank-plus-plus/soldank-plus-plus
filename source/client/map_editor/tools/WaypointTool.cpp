@@ -31,15 +31,15 @@ void WaypointTool::OnMouseMapPositionChange(ClientState& client_state,
 {
 }
 
-void WaypointTool::OnModifierKey1Pressed() {}
+void WaypointTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void WaypointTool::OnModifierKey1Released() {}
+void WaypointTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void WaypointTool::OnModifierKey2Pressed() {}
+void WaypointTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void WaypointTool::OnModifierKey2Released() {}
+void WaypointTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void WaypointTool::OnModifierKey3Pressed() {}
+void WaypointTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void WaypointTool::OnModifierKey3Released() {}
+void WaypointTool::OnModifierKey3Released(ClientState& client_state) {}
 } // namespace Soldank

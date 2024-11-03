@@ -29,15 +29,15 @@ void TextureTool::OnMouseMapPositionChange(ClientState& client_state,
 {
 }
 
-void TextureTool::OnModifierKey1Pressed() {}
+void TextureTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void TextureTool::OnModifierKey1Released() {}
+void TextureTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void TextureTool::OnModifierKey2Pressed() {}
+void TextureTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void TextureTool::OnModifierKey2Released() {}
+void TextureTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void TextureTool::OnModifierKey3Pressed() {}
+void TextureTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void TextureTool::OnModifierKey3Released() {}
+void TextureTool::OnModifierKey3Released(ClientState& client_state) {}
 } // namespace Soldank

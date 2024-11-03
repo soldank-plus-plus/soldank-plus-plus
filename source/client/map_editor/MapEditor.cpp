@@ -431,14 +431,14 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, State& game_sta
 
     if (key == GLFW_KEY_LEFT_SHIFT) {
         is_holding_left_shift_ = true;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Pressed();
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Pressed(client_state);
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
         is_holding_left_ctrl_ = true;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Pressed();
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Pressed(client_state);
     }
     if (key == GLFW_KEY_LEFT_ALT) {
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Pressed();
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Pressed(client_state);
     }
 
     if (key == GLFW_KEY_DELETE) {
@@ -446,18 +446,18 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, State& game_sta
     }
 }
 
-void MapEditor::OnKeyReleased(int key, ClientState& /*client_state*/)
+void MapEditor::OnKeyReleased(int key, ClientState& client_state)
 {
     if (key == GLFW_KEY_LEFT_SHIFT) {
         is_holding_left_shift_ = false;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Released();
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Released(client_state);
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
         is_holding_left_ctrl_ = false;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Released();
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Released(client_state);
     }
     if (key == GLFW_KEY_LEFT_ALT) {
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Released();
+        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Released(client_state);
     }
 }
 

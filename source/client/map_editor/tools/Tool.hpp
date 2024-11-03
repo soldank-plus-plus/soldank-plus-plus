@@ -29,12 +29,12 @@ public:
                                           glm::vec2 last_mouse_position,
                                           glm::vec2 new_mouse_position,
                                           const State& game_state) = 0;
-    virtual void OnModifierKey1Pressed() = 0;
-    virtual void OnModifierKey1Released() = 0;
-    virtual void OnModifierKey2Pressed() = 0;
-    virtual void OnModifierKey2Released() = 0;
-    virtual void OnModifierKey3Pressed() = 0;
-    virtual void OnModifierKey3Released() = 0;
+    virtual void OnModifierKey1Pressed(ClientState& client_state) = 0;
+    virtual void OnModifierKey1Released(ClientState& client_state) = 0;
+    virtual void OnModifierKey2Pressed(ClientState& client_state) = 0;
+    virtual void OnModifierKey2Released(ClientState& client_state) = 0;
+    virtual void OnModifierKey3Pressed(ClientState& client_state) = 0;
+    virtual void OnModifierKey3Released(ClientState& client_state) = 0;
 
 protected:
     static glm::vec2 SnapMousePositionToGrid(const glm::vec2& current_mouse_position,

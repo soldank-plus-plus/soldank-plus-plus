@@ -33,15 +33,15 @@ void VertexColorTool::OnMouseMapPositionChange(ClientState& client_state,
 {
 }
 
-void VertexColorTool::OnModifierKey1Pressed() {}
+void VertexColorTool::OnModifierKey1Pressed(ClientState& client_state) {}
 
-void VertexColorTool::OnModifierKey1Released() {}
+void VertexColorTool::OnModifierKey1Released(ClientState& client_state) {}
 
-void VertexColorTool::OnModifierKey2Pressed() {}
+void VertexColorTool::OnModifierKey2Pressed(ClientState& client_state) {}
 
-void VertexColorTool::OnModifierKey2Released() {}
+void VertexColorTool::OnModifierKey2Released(ClientState& client_state) {}
 
-void VertexColorTool::OnModifierKey3Pressed() {}
+void VertexColorTool::OnModifierKey3Pressed(ClientState& client_state) {}
 
-void VertexColorTool::OnModifierKey3Released() {}
+void VertexColorTool::OnModifierKey3Released(ClientState& client_state) {}
 } // namespace Soldank
