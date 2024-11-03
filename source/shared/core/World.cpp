@@ -140,7 +140,6 @@ void World::RunLoop(int fps_limit)
                     pre_world_update_callback_();
                 }
                 Update(delta_time.count());
-                last_update_time = std::chrono::system_clock::now();
                 if (post_world_update_callback_) {
                     post_world_update_callback_(state_manager_->GetState());
                 }
@@ -149,6 +148,7 @@ void World::RunLoop(int fps_limit)
                 game_tick++;
                 state_manager_->GetState().game_tick = game_tick;
             }
+            last_update_time = std::chrono::system_clock::now();
 
             timecur = std::chrono::system_clock::now();
             timeacc += timecur - timeprv;
