@@ -52,6 +52,7 @@ private:
         Polygon = 0,
         Scenery,
         SpawnPoint,
+        Soldier,
     };
 
     void SelectNextSingleObject(ClientState& client_state, const State& game_state);
@@ -63,13 +64,15 @@ private:
     bool AddFirstFoundPolygonToSelection(ClientState& client_state, const State& game_state);
     bool AddFirstFoundSceneryToSelection(ClientState& client_state, const State& game_state);
     bool AddFirstFoundSpawnPointToSelection(ClientState& client_state, const State& game_state);
+    bool AddFirstFoundSoldierToSelection(ClientState& client_state, const State& game_state);
     void RemoveLastFoundObjectFromSelection(ClientState& client_state, const State& game_state);
 
     bool IsMouseInSpawnPoint(const ClientState& client_state,
                              const glm::vec2& spawn_point_position) const;
+    bool IsMouseInSoldier(const glm::vec2& soldier_position) const;
     static NextObjectTypeToSelect GetNextObjectTypeToSelect(
       NextObjectTypeToSelect current_object_type_to_select,
-      const Map& map);
+      const State& game_state);
 
     glm::vec2 mouse_map_position_;
 

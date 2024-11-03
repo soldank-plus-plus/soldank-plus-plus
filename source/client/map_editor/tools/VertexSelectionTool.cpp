@@ -63,6 +63,14 @@ void VertexSelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_stat
         }
     }
 
+    client_state.map_editor_state.selected_soldier_ids.clear();
+    for (const auto& soldier : game_state.soldiers) {
+        if (soldier.particle.position.x >= left && soldier.particle.position.x <= right &&
+            soldier.particle.position.y >= top && soldier.particle.position.y <= bottom) {
+            client_state.map_editor_state.selected_soldier_ids.push_back(soldier.id);
+        }
+    }
+
     client_state.map_editor_state.vertex_selection_box = std::nullopt;
 }
 
