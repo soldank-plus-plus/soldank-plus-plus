@@ -36,7 +36,8 @@ ParsedValues Parse(int argc, const char* argv[])
             ("m,map", "Choose a map to load at the start of the game. Only in local", cxxopts::value<std::string>())
             ("fullscreen", "Start the game in fullscreen")
             ("borderless", "Start the game in borderless (windowed) fullscreen")
-            ("windowed", "Start the game in window of a fixed size");
+            ("windowed", "Start the game in window of a fixed size")
+            ("max-fps", "Set FPS limit. Set max-fps to 0 for no limit", cxxopts::value<int>());
         // clang-format on
 
         auto result = options.parse(argc, argv);
@@ -92,6 +93,10 @@ ParsedValues Parse(int argc, const char* argv[])
             parsed_values.window_size_mode = WindowSizeMode::Windowed;
         } else {
             parsed_values.window_size_mode = WindowSizeMode::Fullscreen;
+        }
+
+        if (result.count("max-fps") != 0) {
+            parsed_values.fps_limit = result["max-fps"].as<int>();
         }
 
         parsed_values.is_parsing_successful = true;

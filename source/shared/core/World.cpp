@@ -42,6 +42,7 @@
 #include <ranges>
 #include <memory>
 #include <stdexcept>
+#include <thread>
 #include <tuple>
 #include <chrono>
 
@@ -59,6 +60,10 @@ World::World()
 void World::RunLoop(int fps_limit)
 {
     std::chrono::time_point<std::chrono::system_clock> last_frame_time;
+    std::chrono::time_point<std::chrono::system_clock> last_render_time =
+      std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> last_update_time =
+      std::chrono::system_clock::now();
     auto last_fps_check_time = std::chrono::system_clock::now();
     int frame_count_since_last_fps_check = 0;
     int last_fps = 0;
@@ -103,14 +108,27 @@ void World::RunLoop(int fps_limit)
         timeacc += (timecur - timeprv);
         timeprv = timecur;
 
-        while (fps_limit != 0 && timeacc.count() < 1.0 / (float)fps_limit) {
+        std::chrono::duration<double> render_time_delta =
+          std::chrono::system_clock::now() - last_render_time;
+        std::chrono::duration<double> update_time_delta =
+          std::chrono::system_clock::now() - last_update_time;
+
+        // TODO: Figure out why fps limiting is inaccurate. Leaving it as it is for now because at
+        // least it's working...
+        while (fps_limit != 0 && render_time_delta.count() < 1.0 / (double)fps_limit &&
+               update_time_delta.count() < dt) {
+
+            // TODO: Don't use sleep when VSync is on
+            // Sleep for 0 milliseconds to give the resource to other processes
+            std::this_thread::yield();
+            std::this_thread::sleep_for(std::chrono::milliseconds(0));
+
             timecur = std::chrono::system_clock::now();
             timeacc += timecur - timeprv;
             timeprv = timecur;
 
-            // TODO: Don't use sleep when VSync is on
-            // Sleep for 0 milliseconds to give the resource to other processes
-            std::this_thread::sleep_for(std::chrono::milliseconds(0));
+            render_time_delta = std::chrono::system_clock::now() - last_render_time;
+            update_time_delta = std::chrono::system_clock::now() - last_update_time;
         }
 
         while (timeacc.count() >= dt) {
@@ -122,6 +140,7 @@ void World::RunLoop(int fps_limit)
                     pre_world_update_callback_();
                 }
                 Update(delta_time.count());
+                last_update_time = std::chrono::system_clock::now();
                 if (post_world_update_callback_) {
                     post_world_update_callback_(state_manager_->GetState());
                 }
@@ -144,6 +163,8 @@ void World::RunLoop(int fps_limit)
         if (post_game_loop_iteration_callback_) {
             post_game_loop_iteration_callback_(state_manager_->GetState(), frame_percent, last_fps);
         }
+
+        last_render_time = std::chrono::system_clock::now();
     }
 }
 

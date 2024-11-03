@@ -60,6 +60,8 @@ SteamNetworkingMicroseconds log_time_zero;
 CommandLineParameters::ApplicationMode application_mode;
 WindowSizeMode window_size_mode;
 
+int fps_limit = 0;
+
 void DebugOutput(ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
 {
     SteamNetworkingMicroseconds time = SteamNetworkingUtils()->GetLocalTimestamp() - log_time_zero;
@@ -109,6 +111,7 @@ bool Init(int argc, const char* argv[])
     }
 
     window_size_mode = cli_parameters.window_size_mode;
+    fps_limit = cli_parameters.fps_limit;
 
     std::string map_path;
 
@@ -650,7 +653,7 @@ void Run()
         world->SpawnSoldier(*client_state->client_soldier_id);
     }
 
-    world->RunLoop(Config::FPS_LIMIT);
+    world->RunLoop(fps_limit);
 }
 
 void Free()
