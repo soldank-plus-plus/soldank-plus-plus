@@ -93,6 +93,9 @@ struct ClientState
     Observable<> event_mouse_wheel_scrolled_down;
     Observable<int> event_key_pressed;
     Observable<int> event_key_released;
+
+    Observable<unsigned int> event_respawn_soldier_requested;
+    Observable<unsigned int> event_respawn_player_at_spawn_point_requested;
 };
 } // namespace Soldank
 

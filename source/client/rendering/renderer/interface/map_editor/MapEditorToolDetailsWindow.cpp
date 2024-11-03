@@ -15,7 +15,8 @@ enum class ToolDetailsSubWindowOpenType
     None = 0,
     Polygons,
     Sceneries,
-    SpawnPoints
+    SpawnPoints,
+    Soldiers
 };
 
 void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
@@ -145,6 +146,10 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
 
     switch (sub_window_open_type) {
         case ToolDetailsSubWindowOpenType::None: {
+            if (!client_state.map_editor_state.selected_soldier_ids.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::Soldiers;
+            }
+
             if (!client_state.map_editor_state.selected_spawn_point_ids.empty()) {
                 sub_window_open_type = ToolDetailsSubWindowOpenType::SpawnPoints;
             }
@@ -172,6 +177,12 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
         }
         case ToolDetailsSubWindowOpenType::SpawnPoints: {
             if (client_state.map_editor_state.selected_spawn_point_ids.empty()) {
+                sub_window_open_type = ToolDetailsSubWindowOpenType::None;
+            }
+            break;
+        }
+        case ToolDetailsSubWindowOpenType::Soldiers: {
+            if (client_state.map_editor_state.selected_soldier_ids.empty()) {
                 sub_window_open_type = ToolDetailsSubWindowOpenType::None;
             }
             break;
@@ -330,8 +341,9 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
         sub_window_open_type = ToolDetailsSubWindowOpenType::SpawnPoints;
 
         if (!client_state.map_editor_state.selected_spawn_point_ids.empty()) {
-            const auto& spawn_point = game_state.map.GetSpawnPoints().at(
-              client_state.map_editor_state.selected_spawn_point_ids.at(0));
+            unsigned int selected_spawn_point_id =
+              client_state.map_editor_state.selected_spawn_point_ids.at(0);
+            const auto& spawn_point = game_state.map.GetSpawnPoints().at(selected_spawn_point_id);
 
             static std::vector<std::pair<std::string, PMSSpawnPointType>> spawn_point_options = {
                 { "Player Spawn", PMSSpawnPointType::General },
@@ -369,7 +381,42 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
                 ImGui::EndCombo();
             }
 
+            if (ImGui::Button("Spawn player here")) {
+                client_state.event_respawn_player_at_spawn_point_requested.Notify(
+                  selected_spawn_point_id);
+            }
+
             ImGui::Text("Position %d %d", spawn_point.x, spawn_point.y);
+        }
+    }
+
+    std::string soldiers_header =
+      "Selected " + std::to_string(client_state.map_editor_state.selected_soldier_ids.size()) +
+      " soldiers";
+    if (sub_window_open_type == ToolDetailsSubWindowOpenType::Soldiers) {
+        ImGui::SetNextItemOpen(true);
+    } else {
+        ImGui::SetNextItemOpen(false);
+    }
+    if (ImGui::CollapsingHeader(soldiers_header.c_str())) {
+        sub_window_open_type = ToolDetailsSubWindowOpenType::Soldiers;
+
+        if (!client_state.map_editor_state.selected_soldier_ids.empty()) {
+            unsigned int selected_soldier_id =
+              client_state.map_editor_state.selected_soldier_ids.at(0);
+
+            for (const auto& soldier : game_state.soldiers) {
+                if (soldier.id != selected_soldier_id) {
+                    continue;
+                }
+
+                if (ImGui::Button("Respawn player at random spawn")) {
+                    client_state.event_respawn_soldier_requested.Notify(soldier.id);
+                }
+
+                ImGui::Text(
+                  "Position: %.2f, %.2f", soldier.particle.position.x, soldier.particle.position.y);
+            }
         }
     }
 }

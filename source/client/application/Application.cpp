@@ -321,6 +321,16 @@ void Run()
     client_state->camera_component.UpdateWindowDimensions(
       { client_state->window_width, client_state->window_height });
 
+    client_state->event_respawn_player_at_spawn_point_requested.AddObserver(
+      [&](unsigned int spawn_point_id) {
+          const auto& spawn_point =
+            world->GetStateManager()->GetState().map.GetSpawnPoints().at(spawn_point_id);
+          glm::vec2 position = { spawn_point.x, spawn_point.y };
+          world->SpawnSoldier(*client_state->client_soldier_id, position);
+      });
+    client_state->event_respawn_soldier_requested.AddObserver(
+      [&](unsigned int soldier_id) { world->SpawnSoldier(soldier_id); });
+
     window->RegisterOnScreenResizedObserver([](glm::vec2 new_window_dimensions) {
         client_state->camera_component.UpdateWindowDimensions(new_window_dimensions);
         client_state->event_window_resized.Notify(new_window_dimensions);

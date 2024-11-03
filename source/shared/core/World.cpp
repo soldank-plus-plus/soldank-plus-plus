@@ -29,6 +29,7 @@
 #include "core/animations/states/LegsStandAnimationState.hpp"
 
 #include "core/physics/Particles.hpp"
+#include "core/physics/SoldierSkeletonPhysics.hpp"
 #include "core/state/Control.hpp"
 #include "core/physics/BulletPhysics.hpp"
 #include "core/physics/SoldierPhysics.hpp"
@@ -408,6 +409,7 @@ glm::vec2 World::SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> 
             soldier.weapons[1] =
               WeaponParametersFactory::GetParameters(soldier.weapon_choices[1], false);
             soldier.active_weapon = 0;
+            RepositionSoldierSkeletonParts(soldier);
             world_events_->after_soldier_spawns.Notify(soldier);
             return initial_player_position;
         }
