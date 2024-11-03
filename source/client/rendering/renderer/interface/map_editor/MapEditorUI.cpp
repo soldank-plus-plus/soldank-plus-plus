@@ -606,7 +606,9 @@ void Render(State& game_state, ClientState& client_state)
             if (ImGui::BeginMenuBar()) {
                 ImGui::Text("%s", game_state.map.GetName().c_str());
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
-                ImGui::Text("Zoom: %.0f%%", client_state.camera_component.GetZoom() * 100.0F);
+                ImGui::Text("Zoom: %.0f%%",
+                            // TODO: need to invert zoom on camera class level instead of this
+                            (1.0F / client_state.camera_component.GetZoom()) * 100.0F);
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("%s",
                             client_state.map_editor_state.current_tool_action_description.c_str());
