@@ -30,6 +30,7 @@ struct ParsedValues
     std::optional<std::string> map;
     WindowSizeMode window_size_mode;
     int fps_limit = Config::FPS_LIMIT;
+    bool is_debug_ui_enabled = false;
 };
 
 // NOLINTNEXTLINE modernize-avoid-c-arrays

@@ -37,7 +37,8 @@ ParsedValues Parse(int argc, const char* argv[])
             ("fullscreen", "Start the game in fullscreen")
             ("borderless", "Start the game in borderless (windowed) fullscreen")
             ("windowed", "Start the game in window of a fixed size")
-            ("max-fps", "Set FPS limit. Set max-fps to 0 for no limit", cxxopts::value<int>());
+            ("max-fps", "Set FPS limit. Set max-fps to 0 for no limit", cxxopts::value<int>())
+            ("debug-ui", "Enable Debug UI");
         // clang-format on
 
         auto result = options.parse(argc, argv);
@@ -97,6 +98,10 @@ ParsedValues Parse(int argc, const char* argv[])
 
         if (result.count("max-fps") != 0) {
             parsed_values.fps_limit = result["max-fps"].as<int>();
+        }
+
+        if (result.count("debug-ui") != 0) {
+            parsed_values.is_debug_ui_enabled = true;
         }
 
         parsed_values.is_parsing_successful = true;

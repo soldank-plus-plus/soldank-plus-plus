@@ -186,7 +186,9 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     }
 
     if (client_state.draw_game_debug_interface) {
-        DebugUI::Render(game_state, client_state, frame_percent, fps);
+        if (client_state.is_game_debug_interface_enabled) {
+            DebugUI::Render(game_state, client_state, frame_percent, fps);
+        }
         if (!DebugUI::GetWantCaptureMouse()) {
             cursor_renderer_.Render({ client_state.mouse.x, client_state.mouse.y },
                                     { client_state.window_width, client_state.window_height });

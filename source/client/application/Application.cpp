@@ -123,6 +123,7 @@ bool Init(int argc, const char* argv[])
     window = std::make_unique<Window>();
     world = std::make_shared<World>();
     client_state = std::make_shared<ClientState>();
+    client_state->is_game_debug_interface_enabled = cli_parameters.is_debug_ui_enabled;
 
     switch (application_mode) {
         case CommandLineParameters::ApplicationMode::Default: {
