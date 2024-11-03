@@ -22,6 +22,7 @@
 #include <GLFW/glfw3.h>
 
 #include <memory>
+#include <spdlog/spdlog.h>
 #include <utility>
 
 namespace Soldank
@@ -276,7 +277,24 @@ void MapEditor::OnMouseScrollUp(ClientState& client_state) const
         return;
     }
 
+    // TODO: move it somewhere else where it fits better
+    glm::vec2 old_camera_dimensions = { client_state.camera_component.GetWidth(),
+                                        client_state.camera_component.GetHeight() };
+    glm::vec2 camera_position = client_state.camera;
+    camera_position.y = -camera_position.y;
+    glm::vec2 mouse_camera_diff = client_state.mouse_map_position - camera_position;
+    glm::vec2 mouse_on_view_position = mouse_camera_diff + (old_camera_dimensions / 2.0F);
+    glm::vec2 side_ratio =
+      (mouse_on_view_position - (old_camera_dimensions / 2.0F)) / old_camera_dimensions;
+
     client_state.camera_component.ZoomIn();
+
+    glm::vec2 new_camera_dimensions = { client_state.camera_component.GetWidth(),
+                                        client_state.camera_component.GetHeight() };
+    glm::vec2 pixels_difference = old_camera_dimensions - new_camera_dimensions;
+    side_ratio.y = -side_ratio.y;
+
+    client_state.camera += pixels_difference * side_ratio;
 }
 
 void MapEditor::OnMouseScrollDown(ClientState& client_state) const
@@ -285,7 +303,23 @@ void MapEditor::OnMouseScrollDown(ClientState& client_state) const
         return;
     }
 
+    glm::vec2 old_camera_dimensions = { client_state.camera_component.GetWidth(),
+                                        client_state.camera_component.GetHeight() };
+    glm::vec2 camera_position = client_state.camera;
+    camera_position.y = -camera_position.y;
+    glm::vec2 mouse_camera_diff = client_state.mouse_map_position - camera_position;
+    glm::vec2 mouse_on_view_position = mouse_camera_diff + (old_camera_dimensions / 2.0F);
+    glm::vec2 side_ratio =
+      (mouse_on_view_position - (old_camera_dimensions / 2.0F)) / old_camera_dimensions;
+
     client_state.camera_component.ZoomOut();
+
+    glm::vec2 new_camera_dimensions = { client_state.camera_component.GetWidth(),
+                                        client_state.camera_component.GetHeight() };
+    glm::vec2 pixels_difference = old_camera_dimensions - new_camera_dimensions;
+    side_ratio.y = -side_ratio.y;
+
+    client_state.camera += pixels_difference * side_ratio;
 }
 
 void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
