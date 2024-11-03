@@ -75,6 +75,7 @@ struct MapEditorState
     std::vector<std::pair<unsigned int, std::bitset<3>>> selected_polygon_vertices;
     std::vector<unsigned int> selected_scenery_ids;
     std::vector<unsigned int> selected_spawn_point_ids;
+    std::vector<unsigned int> selected_soldier_ids;
 
     // If specified, render a selection box for the Vertex Selection Tool
     std::optional<std::pair<glm::vec2, glm::vec2>> vertex_selection_box;

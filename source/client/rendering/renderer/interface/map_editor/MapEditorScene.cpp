@@ -63,6 +63,24 @@ void MapEditorScene::Render(State& game_state,
                         camera.GetZoom());
     }
 
+    for (const auto& selected_soldier_id : client_state.map_editor_state.selected_soldier_ids) {
+        for (const auto& soldier : game_state.soldiers) {
+            if (soldier.id != selected_soldier_id) {
+                continue;
+            }
+
+            glm::vec2 start_position = { (float)soldier.particle.position.x - 9.0F,
+                                         (float)soldier.particle.position.y - 25.0F };
+            glm::vec2 end_position = { (float)soldier.particle.position.x + 9.0F,
+                                       (float)soldier.particle.position.y + 5.0F };
+            RenderRectangle(camera.GetView(),
+                            start_position,
+                            end_position,
+                            { 0.8F, 0.2F, 0.2F, 0.7F },
+                            camera.GetZoom());
+        }
+    }
+
     if (client_state.map_editor_state.selected_tool == ToolType::Spawnpoint) {
         PMSSpawnPoint spawn_point{
             .x = (int)client_state.map_editor_state.spawn_point_preview_position.x,
