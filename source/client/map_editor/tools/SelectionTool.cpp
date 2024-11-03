@@ -69,7 +69,10 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
       client_state.map_editor_state.selected_scenery_ids.size();
     unsigned int selected_spawn_points_count =
       client_state.map_editor_state.selected_spawn_point_ids.size();
-    unsigned int selected_objects_count = selected_polygons_count + selected_sceneries_count;
+    unsigned int selected_soldiers_count =
+      client_state.map_editor_state.selected_soldier_ids.size();
+    unsigned int selected_objects_count = selected_polygons_count + selected_sceneries_count +
+                                          selected_spawn_points_count + selected_soldiers_count;
     NextObjectTypeToSelect next_object_type_to_select = NextObjectTypeToSelect::Polygon;
 
     if (selected_objects_count == 1) {
@@ -106,12 +109,31 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
                 start_index = selected_spawn_point_id + 1;
                 next_object_type_to_select = NextObjectTypeToSelect::SpawnPoint;
             }
+        } else if (selected_soldiers_count == 1) {
+            unsigned int selected_soldier_id =
+              client_state.map_editor_state.selected_soldier_ids.at(0);
+            for (const auto& soldier : game_state.soldiers) {
+                if (soldier.id != selected_soldier_id) {
+                    continue;
+                }
+
+                if (IsMouseInSoldier(soldier.particle.position)) {
+                    // If we have only one scenery selected and we still click inside of it then we
+                    // want to "rotate" through objects
+
+                    // selected_soldier_id is soldier.id which starts from 1 instead of 0 that's why
+                    // we don't do +1 here
+                    start_index = selected_soldier_id;
+                    next_object_type_to_select = NextObjectTypeToSelect::Soldier;
+                }
+            }
         }
     }
 
     client_state.map_editor_state.selected_polygon_vertices.clear();
     client_state.map_editor_state.selected_scenery_ids.clear();
     client_state.map_editor_state.selected_spawn_point_ids.clear();
+    client_state.map_editor_state.selected_soldier_ids.clear();
 
     if (map.GetPolygonsCount() == 0 && map.GetSceneryInstances().empty() &&
         map.GetSpawnPoints().empty()) {
@@ -127,21 +149,32 @@ void SelectionTool::SelectNextSingleObject(ClientState& client_state, const Stat
         start_index >= map.GetPolygonsCount()) {
 
         start_index = 0;
-        next_object_type_to_select = GetNextObjectTypeToSelect(next_object_type_to_select, map);
+        next_object_type_to_select =
+          GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
     }
 
     if (next_object_type_to_select == NextObjectTypeToSelect::Scenery &&
         start_index >= map.GetSceneryInstances().size()) {
 
         start_index = 0;
-        next_object_type_to_select = GetNextObjectTypeToSelect(next_object_type_to_select, map);
+        next_object_type_to_select =
+          GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
     }
 
     if (next_object_type_to_select == NextObjectTypeToSelect::SpawnPoint &&
         start_index >= map.GetSpawnPoints().size()) {
 
         start_index = 0;
-        next_object_type_to_select = GetNextObjectTypeToSelect(next_object_type_to_select, map);
+        next_object_type_to_select =
+          GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
+    }
+
+    if (next_object_type_to_select == NextObjectTypeToSelect::Soldier &&
+        start_index >= game_state.soldiers.size()) {
+
+        start_index = 0;
+        next_object_type_to_select =
+          GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
     }
 
     SelectNextObject(client_state, game_state, start_index, next_object_type_to_select);
@@ -157,10 +190,12 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
     unsigned int polygon_candidates_count = 0;
     unsigned int scenery_candidates_count = 0;
     unsigned int spawn_point_candidates_count = 0;
+    unsigned int soldier_candidates_count = 0;
 
     while (polygon_candidates_count < map.GetPolygonsCount() ||
            scenery_candidates_count < map.GetSceneryInstances().size() ||
-           spawn_point_candidates_count < map.GetSpawnPoints().size()) {
+           spawn_point_candidates_count < map.GetSpawnPoints().size() ||
+           soldier_candidates_count < game_state.soldiers.size()) {
 
         switch (next_object_type_to_select) {
             case NextObjectTypeToSelect::Polygon: {
@@ -192,6 +227,19 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
                 }
                 break;
             }
+            case NextObjectTypeToSelect::Soldier: {
+                for (const auto& soldier : game_state.soldiers) {
+                    if (soldier.id != current_index + 1) {
+                        continue;
+                    }
+
+                    if (IsMouseInSoldier(soldier.particle.position)) {
+                        client_state.map_editor_state.selected_soldier_ids.push_back(soldier.id);
+                        return;
+                    }
+                }
+                break;
+            }
         }
 
         ++current_index;
@@ -202,7 +250,7 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
                 if (current_index == map.GetPolygonsCount()) {
                     current_index = 0;
                     next_object_type_to_select =
-                      GetNextObjectTypeToSelect(next_object_type_to_select, map);
+                      GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
                 }
                 break;
             }
@@ -211,7 +259,7 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
                 if (current_index == map.GetSceneryInstances().size()) {
                     current_index = 0;
                     next_object_type_to_select =
-                      GetNextObjectTypeToSelect(next_object_type_to_select, map);
+                      GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
                 }
                 break;
             }
@@ -220,7 +268,16 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
                 if (current_index == map.GetSpawnPoints().size()) {
                     current_index = 0;
                     next_object_type_to_select =
-                      GetNextObjectTypeToSelect(next_object_type_to_select, map);
+                      GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
+                }
+                break;
+            }
+            case NextObjectTypeToSelect::Soldier: {
+                ++soldier_candidates_count;
+                if (current_index == game_state.soldiers.size()) {
+                    current_index = 0;
+                    next_object_type_to_select =
+                      GetNextObjectTypeToSelect(next_object_type_to_select, game_state);
                 }
                 break;
             }
@@ -238,7 +295,13 @@ void SelectionTool::AddFirstFoundObjectToSelection(ClientState& client_state,
         return;
     }
 
-    AddFirstFoundSpawnPointToSelection(client_state, game_state);
+    if (AddFirstFoundSpawnPointToSelection(client_state, game_state)) {
+        return;
+    }
+
+    if (AddFirstFoundSoldierToSelection(client_state, game_state)) {
+        return;
+    }
 }
 
 bool SelectionTool::AddFirstFoundPolygonToSelection(ClientState& client_state,
@@ -326,9 +389,49 @@ bool SelectionTool::AddFirstFoundSpawnPointToSelection(ClientState& client_state
     return false;
 }
 
+bool SelectionTool::AddFirstFoundSoldierToSelection(ClientState& client_state,
+                                                    const State& game_state)
+{
+    for (const auto& soldier : game_state.soldiers) {
+        if (IsMouseInSoldier(soldier.particle.position)) {
+            bool already_selected = false;
+            for (const auto& selected_soldier_id :
+                 client_state.map_editor_state.selected_soldier_ids) {
+                if (soldier.id == selected_soldier_id) {
+                    already_selected = true;
+                    break;
+                }
+            }
+
+            if (!already_selected) {
+                client_state.map_editor_state.selected_soldier_ids.push_back(soldier.id);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void SelectionTool::RemoveLastFoundObjectFromSelection(ClientState& client_state,
                                                        const State& game_state)
 {
+    for (int i = (int)client_state.map_editor_state.selected_soldier_ids.size() - 1; i >= 0; --i) {
+
+        const auto& selected_soldier_id = client_state.map_editor_state.selected_soldier_ids.at(i);
+        for (const auto& soldier : game_state.soldiers) {
+            if (soldier.id != selected_soldier_id) {
+                continue;
+            }
+
+            if (IsMouseInSoldier(soldier.particle.position)) {
+                client_state.map_editor_state.selected_soldier_ids.erase(
+                  client_state.map_editor_state.selected_soldier_ids.begin() + i);
+                return;
+            }
+        }
+    }
+
     const auto& map = game_state.map;
     for (int i = (int)client_state.map_editor_state.selected_spawn_point_ids.size() - 1; i >= 0;
          --i) {
@@ -402,10 +505,21 @@ bool SelectionTool::IsMouseInSpawnPoint(const ClientState& client_state,
            64.0F * current_camera_zoom;
 }
 
+bool SelectionTool::IsMouseInSoldier(const glm::vec2& soldier_position) const
+{
+    float left = soldier_position.x - 9.0F;
+    float right = soldier_position.x + 9.0F;
+    float top = soldier_position.y - 25.0F;
+    float bottom = soldier_position.y + 5.0F;
+    return (mouse_map_position_.x >= left && mouse_map_position_.x <= right &&
+            mouse_map_position_.y >= top && mouse_map_position_.y <= bottom);
+}
+
 SelectionTool::NextObjectTypeToSelect SelectionTool::GetNextObjectTypeToSelect(
   NextObjectTypeToSelect current_object_type_to_select,
-  const Map& map)
+  const State& game_state)
 {
+    const auto& map = game_state.map;
     NextObjectTypeToSelect new_object_type_to_select = current_object_type_to_select;
     switch (current_object_type_to_select) {
         case NextObjectTypeToSelect::Polygon:
@@ -415,6 +529,9 @@ SelectionTool::NextObjectTypeToSelect SelectionTool::GetNextObjectTypeToSelect(
             new_object_type_to_select = NextObjectTypeToSelect::SpawnPoint;
             break;
         case NextObjectTypeToSelect::SpawnPoint:
+            new_object_type_to_select = NextObjectTypeToSelect::Soldier;
+            break;
+        case NextObjectTypeToSelect::Soldier:
             new_object_type_to_select = NextObjectTypeToSelect::Polygon;
             break;
     }
@@ -440,10 +557,16 @@ SelectionTool::NextObjectTypeToSelect SelectionTool::GetNextObjectTypeToSelect(
             }
             break;
         }
+        case NextObjectTypeToSelect::Soldier: {
+            if (game_state.soldiers.empty()) {
+                should_repeat = true;
+            }
+            break;
+        }
     }
 
     if (should_repeat) {
-        return GetNextObjectTypeToSelect(new_object_type_to_select, map);
+        return GetNextObjectTypeToSelect(new_object_type_to_select, game_state);
     }
 
     return new_object_type_to_select;
