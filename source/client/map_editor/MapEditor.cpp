@@ -185,6 +185,8 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
             client_state,
             game_state);
       });
+
+    OnSelectNewTool(client_state.map_editor_state.selected_tool, client_state, game_state);
 }
 
 void MapEditor::Lock()
@@ -329,6 +331,10 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
 
 void MapEditor::OnKeyPressed(int key, ClientState& client_state, State& game_state)
 {
+    if (locked_) {
+        return;
+    }
+
     if (is_holding_left_ctrl_ && key == GLFW_KEY_S) {
         game_state.map.SaveMap("maps/" + game_state.map.GetName());
 

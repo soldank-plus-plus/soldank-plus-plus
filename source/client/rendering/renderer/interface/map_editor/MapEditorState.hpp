@@ -60,6 +60,7 @@ struct MapEditorState
     Observable<int> event_selected_sceneries_level_changed;
     Observable<float> event_selected_polygons_bounciness_changed;
     Observable<PMSPolygonType> event_selected_polygons_type_changed;
+    Observable<> event_pixel_color_under_cursor_requested;
 
     // If specified, we render first edge of the polygon
     // that is being created with the polygon tool
@@ -101,6 +102,8 @@ struct MapEditorState
     std::vector<std::string> all_sceneries_in_directory;
 
     bool should_open_map_settings_modal = false;
+
+    glm::vec4 last_requested_pixel_color;
 };
 } // namespace Soldank
 
