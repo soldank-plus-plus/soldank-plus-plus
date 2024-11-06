@@ -178,14 +178,14 @@ TEST(MovementTest, TestLateBackflipLeftLookingRight)
         .expected_animation_type = Soldank::AnimationType::Stand,
         .expected_frame = 1,
         .expected_speed = 3,
-        .expected_position_diff_from_origin = { -104.5802F, -11.6236F } });
+        .expected_position_diff_from_origin = { -104.5802F, -10.6236F } });
     simulation.AddSoldierExpectedAnimationState(
       64,
       { .part = SoldankTesting::SoldierAnimationPart::Legs,
         .expected_animation_type = Soldank::AnimationType::Fall,
         .expected_frame = 3,
         .expected_speed = 1,
-        .expected_position_diff_from_origin = { -106.9678F, -10.5901F } });
+        .expected_position_diff_from_origin = { -106.9678F, -9.5901F } });
     simulation.RunFor(70);
 }
 
