@@ -77,6 +77,8 @@ public:
         pre_projectile_spawn_callback_ = std::move(callback);
     }
 
+    void SetFPSLimit(int new_fps_limit) final { fps_limit_ = new_fps_limit; }
+
 private:
     std::shared_ptr<StateManager> state_manager_;
     std::unique_ptr<PhysicsEvents> physics_events_;
@@ -95,6 +97,8 @@ private:
     std::mt19937 mersenne_twister_engine_;
 
     AnimationDataManager animation_data_manager_;
+
+    int fps_limit_;
 };
 
 } // namespace Soldank

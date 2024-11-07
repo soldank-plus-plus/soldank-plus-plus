@@ -57,9 +57,12 @@ public:
     bool ShouldClose();
 
     void ResizeCallback(GLFWwindow* window, int width, int height);
+    void OnFocusStateChange(GLFWwindow* window, int focused);
     static void GLFWErrorCallback(int error, const char* description);
 
     void RegisterOnScreenResizedObserver(std::function<void(glm::vec2)> on_screen_resized_observer);
+    void RegisterOnFocusLossObserver(const std::function<void()>& on_window_lost_focus_observer);
+    void RegisterOnFocusGainObserver(const std::function<void()>& on_window_gained_focus_observer);
 
 private:
     int width_;
@@ -68,6 +71,8 @@ private:
     GLFWwindow* glfw_window_;
 
     Observable<glm::vec2> event_screen_resized_;
+    Observable<> event_window_lost_focus_;
+    Observable<> event_window_gained_focus_;
 
     CursorMode current_cursor_mode_;
 };

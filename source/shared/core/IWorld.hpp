@@ -60,6 +60,8 @@ public:
 
     virtual void SetPreSoldierUpdateCallback(TPreSoldierUpdateCallback callback) = 0;
     virtual void SetPreProjectileSpawnCallback(TPreProjectileSpawnCallback callback) = 0;
+
+    virtual void SetFPSLimit(int new_fps_limit) = 0;
 };
 } // namespace Soldank
 
