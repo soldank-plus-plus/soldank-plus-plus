@@ -63,11 +63,6 @@ void Window::Create(WindowSizeMode window_size_mode)
 
     switch (window_size_mode) {
         case WindowSizeMode::Fullscreen: {
-            // TODO: there is a bug where alt-tabbing and then alt-tabbing back makes the scene
-            // disappear. This is a quick workaround which will prevent alt-tabbing out of the game.
-            // Need to handle it gracefully.
-            glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
-
             width_ = video_mode->width;
             height_ = video_mode->height;
             glfw_window_ = glfwCreateWindow(width_, height_, title_.c_str(), monitor, nullptr);

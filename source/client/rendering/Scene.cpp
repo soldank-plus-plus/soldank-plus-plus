@@ -50,6 +50,7 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     Camera& camera = client_state.camera_component;
     camera.Move(new_camera_position.x, new_camera_position.y);
 
+    glViewport(0, 0, (int)client_state.window_width, (int)client_state.window_height);
     glClearColor(168.0F / 255.0F, 163.0F / 255.0F, 148.0F / 255.0F, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
