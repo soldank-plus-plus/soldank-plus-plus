@@ -113,6 +113,10 @@ void Window::Create(WindowSizeMode window_size_mode)
     glfwSetScrollCallback(glfw_window_, Mouse::MouseWheelCallback);
     glfwSetMouseButtonCallback(glfw_window_, Mouse::MouseButtonCallback);
     glfwSetErrorCallback(GLFWErrorCallback);
+    glfwSetWindowFocusCallback(glfw_window_, [](GLFWwindow* glfw_window, int focused) {
+        auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+        window->OnFocusStateChange(glfw_window, focused);
+    });
     SetCursorMode(CursorMode::Locked);
 
     IMGUI_CHECKVERSION();
@@ -220,9 +224,33 @@ void Window::GLFWErrorCallback(int error, const char* description)
     spdlog::error("Error({}): {}", error, description);
 }
 
+void Window::OnFocusStateChange(GLFWwindow* window, int focused)
+{
+    if (window != glfw_window_) {
+        return;
+    }
+
+    if (focused == GL_TRUE) {
+        event_window_gained_focus_.Notify();
+    } else {
+        event_window_lost_focus_.Notify();
+    }
+}
+
 void Window::RegisterOnScreenResizedObserver(
   std::function<void(glm::vec2)> on_screen_resized_observer)
 {
     event_screen_resized_.AddObserver(on_screen_resized_observer);
+}
+
+void Window::RegisterOnFocusLossObserver(const std::function<void()>& on_window_lost_focus_observer)
+{
+    event_window_lost_focus_.AddObserver(on_window_lost_focus_observer);
+}
+
+void Window::RegisterOnFocusGainObserver(
+  const std::function<void()>& on_window_gained_focus_observer)
+{
+    event_window_gained_focus_.AddObserver(on_window_gained_focus_observer);
 }
 } // namespace Soldank

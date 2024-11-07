@@ -337,6 +337,10 @@ void Run()
         client_state->event_window_resized.Notify(new_window_dimensions);
     });
 
+    // Set lower FPS limit when the window is not focused to free up the CPU
+    window->RegisterOnFocusGainObserver([]() { world->SetFPSLimit(fps_limit); });
+    window->RegisterOnFocusLossObserver([]() { world->SetFPSLimit(60); });
+
     if (application_mode == CommandLineParameters::ApplicationMode::MapEditor) {
         window->SetCursorMode(CursorMode::Normal);
         world->GetStateManager()->GetState().paused = true;
@@ -672,6 +676,7 @@ void Run()
         world->SpawnSoldier(*client_state->client_soldier_id);
     }
 
+    world->SetFPSLimit(fps_limit);
     world->RunLoop(fps_limit);
 }
 

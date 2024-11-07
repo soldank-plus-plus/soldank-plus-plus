@@ -55,6 +55,7 @@ World::World()
     , physics_events_(std::make_unique<PhysicsEvents>())
     , world_events_(std::make_unique<WorldEvents>())
     , mersenne_twister_engine_(random_device_())
+    , fps_limit_(0)
 {
     animation_data_manager_.LoadAllAnimationDatas();
 }
@@ -117,7 +118,7 @@ void World::RunLoop(int fps_limit)
 
         // TODO: Figure out why fps limiting is inaccurate. Leaving it as it is for now because at
         // least it's working...
-        while (fps_limit != 0 && render_time_delta.count() < 1.0 / (double)fps_limit &&
+        while (fps_limit_ != 0 && render_time_delta.count() < 1.0 / (double)fps_limit_ &&
                update_time_delta.count() < dt) {
 
             // TODO: Don't use sleep when VSync is on
