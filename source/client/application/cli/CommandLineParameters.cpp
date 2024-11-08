@@ -30,7 +30,7 @@ ParsedValues Parse(int argc, const char* argv[])
             ("l,local", "Start local game")
             ("o,online",
                 "Start online game. You need to provide IP and Port with --ip and --port options")
-            ("e,map-editor", "Opens the application in map editting mode")
+            ("e,map-editor", "Opens the application in map editing mode")
             ("ip", "IP of the server to join", cxxopts::value<std::string>())
             ("port", "Port of the server to join", cxxopts::value<std::uint16_t>())
             ("m,map", "Choose a map to load at the start of the game. Only in local", cxxopts::value<std::string>())
@@ -48,8 +48,10 @@ ParsedValues Parse(int argc, const char* argv[])
             return parsed_values;
         }
 
-        if (result.count("local") + result.count("online") + result.count("mapeditor") > 1) {
-            std::cout << "Options --local and --online can't be used at the same time" << std::endl;
+        if (result.count("local") + result.count("online") + result.count("map-editor") > 1) {
+            std::cout << "Options --local, --online and --map-editor can't be used at the same time"
+                      << std::endl;
+            return parsed_values;
         }
 
         if (result.count("local") != 0) {
