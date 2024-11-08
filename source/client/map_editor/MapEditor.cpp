@@ -504,6 +504,11 @@ void MapEditor::ExecuteNewAction(ClientState& client_state,
         return;
     }
 
+    if (!new_action->CanExecute(client_state, game_state)) {
+        // TODO: Inform the user that the action didn't happen
+        return;
+    }
+
     map_editor_undone_actions_.clear();
     new_action->Execute(client_state, game_state);
     map_editor_executed_actions_.push_back(std::move(new_action));

@@ -12,6 +12,7 @@ class RemoveSelectionMapEditorAction final : public MapEditorAction
 public:
     RemoveSelectionMapEditorAction(const ClientState& client_state, const State& game_state);
 
+    bool CanExecute(const ClientState& client_state, const State& game_state) final;
     void Execute(ClientState& client_state, State& game_state) final;
     void Undo(ClientState& client_state, State& game_state) final;
 

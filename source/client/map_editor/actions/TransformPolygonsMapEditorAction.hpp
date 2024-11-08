@@ -14,6 +14,7 @@ public:
       const std::vector<std::pair<unsigned int, PMSPolygon>>& old_polygons,
       const std::function<PMSPolygon(const PMSPolygon&)>& transform_function);
 
+    bool CanExecute(const ClientState& client_state, const State& game_state) final;
     void Execute(ClientState& client_state, State& game_state) final;
     void Undo(ClientState& client_state, State& game_state) final;
 

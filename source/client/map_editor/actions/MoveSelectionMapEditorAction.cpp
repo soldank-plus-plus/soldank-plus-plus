@@ -63,6 +63,12 @@ void MoveSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State&
     }
 }
 
+bool MoveSelectionMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                              const State& /*game_state*/)
+{
+    return true;
+}
+
 void MoveSelectionMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
 {
     game_state.map.MovePolygonVerticesById(polygon_vertices_with_old_position_);

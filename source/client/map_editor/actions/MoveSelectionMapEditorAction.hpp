@@ -17,6 +17,7 @@ public:
       const std::vector<std::pair<unsigned int, glm::ivec2>>& spawn_point_ids_with_position,
       const std::vector<std::pair<unsigned int, glm::vec2>>& original_soldier_positions);
 
+    bool CanExecute(const ClientState& client_state, const State& game_state) final;
     void Execute(ClientState& client_state, State& game_state) final;
     void Undo(ClientState& client_state, State& game_state) final;
 

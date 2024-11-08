@@ -1,4 +1,5 @@
 #include "map_editor/actions/AddObjectsMapEditorAction.hpp"
+#include "core/map/PMSConstants.hpp"
 
 namespace Soldank
 {
@@ -21,6 +22,26 @@ AddObjectsMapEditorAction::AddObjectsMapEditorAction(
     for (const auto& [copied_spawn_point_id, _] : copied_spawn_points) {
         spawn_point_ids_to_remove_.push_back(copied_spawn_point_id);
     }
+}
+
+bool AddObjectsMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                           const State& game_state)
+{
+    if (copied_polygons_.size() + game_state.map.GetPolygonsCount() > MAX_POLYGONS_COUNT) {
+        return false;
+    }
+
+    if (copied_sceneries_.size() + game_state.map.GetSceneryInstances().size() >
+        MAX_SCENERIES_COUNT) {
+        return false;
+    }
+
+    if (copied_spawn_points_.size() + game_state.map.GetSpawnPoints().size() >
+        MAX_SPAWN_POINTS_COUNT) {
+        return false;
+    }
+
+    return true;
 }
 
 void AddObjectsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)

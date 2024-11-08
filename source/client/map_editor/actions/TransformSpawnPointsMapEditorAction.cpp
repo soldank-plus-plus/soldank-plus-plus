@@ -11,6 +11,12 @@ TransformSpawnPointsMapEditorAction::TransformSpawnPointsMapEditorAction(
 {
 }
 
+bool TransformSpawnPointsMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                                     const State& /*game_state*/)
+{
+    return true;
+}
+
 void TransformSpawnPointsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> new_spawn_points;

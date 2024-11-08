@@ -7,6 +7,12 @@ AddPolygonMapEditorAction::AddPolygonMapEditorAction(const PMSPolygon& new_polyg
 {
 }
 
+bool AddPolygonMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                           const State& game_state)
+{
+    return game_state.map.GetPolygonsCount() + 1 <= MAX_POLYGONS_COUNT;
+}
+
 void AddPolygonMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     added_polygon_ = game_state.map.AddNewPolygon(added_polygon_);
