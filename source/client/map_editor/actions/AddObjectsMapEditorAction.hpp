@@ -16,6 +16,7 @@ public:
         copied_sceneries,
       const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& copied_spawn_points);
 
+    bool CanExecute(const ClientState& client_state, const State& game_state) final;
     void Execute(ClientState& client_state, State& game_state) final;
     void Undo(ClientState& client_state, State& game_state) final;
 

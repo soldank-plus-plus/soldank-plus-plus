@@ -1,5 +1,6 @@
 #include "rendering/renderer/interface/map_editor/MapEditorToolDetailsWindow.hpp"
 
+#include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
 
 #include "imgui.h"
@@ -23,7 +24,7 @@ void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
 {
     unsigned short new_polygon_id = game_state.map.GetPolygonsCount() + 1;
 
-    ImGui::Text("Placing polygon: %hu/5000", new_polygon_id);
+    ImGui::Text("Placing polygon: %hu/%d", new_polygon_id, MAX_POLYGONS_COUNT);
 
     unsigned int placed_vertices_count = 0;
     glm::vec2 first_vertex_position;
@@ -424,7 +425,7 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
 void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
 {
     unsigned short new_scenery_id = game_state.map.GetSceneryInstances().size() + 1;
-    ImGui::Text("Placing scenery: %hu/500", new_scenery_id);
+    ImGui::Text("Placing scenery: %hu/%d", new_scenery_id, MAX_SCENERIES_COUNT);
     ImGui::Text("Scenery type: %s",
                 client_state.map_editor_state.selected_scenery_to_place.c_str());
     ImGui::SeparatorText("Rotation");

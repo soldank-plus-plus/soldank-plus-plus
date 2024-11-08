@@ -448,9 +448,11 @@ void Render(State& game_state, ClientState& client_state)
 
     if (client_state.map_editor_state.is_properties_window_visible) {
         ImGui::Begin("Properties");
-        ImGui::Text("Polygons: %zu", game_state.map.GetPolygons().size());
-        ImGui::Text("Sceneries: %zu/500", game_state.map.GetSceneryInstances().size());
-        ImGui::Text("Spawns: %zu/128", game_state.map.GetSpawnPoints().size());
+        ImGui::Text("Polygons: %zu/%d", game_state.map.GetPolygons().size(), MAX_POLYGONS_COUNT);
+        ImGui::Text(
+          "Sceneries: %zu/%d", game_state.map.GetSceneryInstances().size(), MAX_SCENERIES_COUNT);
+        ImGui::Text(
+          "Spawns: %zu/%d", game_state.map.GetSpawnPoints().size(), MAX_SPAWN_POINTS_COUNT);
         ImGui::Text("Colliders: %zu/128", game_state.map.GetColliders().size());
         ImGui::Text("Waypoints: %zu/500", game_state.map.GetWayPoints().size());
         ImGui::Text("Connections: 0"); // TODO: Add connections of waypoints

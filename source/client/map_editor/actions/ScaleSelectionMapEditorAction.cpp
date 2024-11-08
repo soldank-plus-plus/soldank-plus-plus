@@ -31,6 +31,12 @@ ScaleSelectionMapEditorAction::ScaleSelectionMapEditorAction(
     }
 }
 
+bool ScaleSelectionMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                               const State& /*game_state*/)
+{
+    return true;
+}
+
 void ScaleSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     glm::vec2 scale_factor;

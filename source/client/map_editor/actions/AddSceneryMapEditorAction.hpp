@@ -12,8 +12,9 @@ namespace Soldank
 class AddSceneryMapEditorAction final : public MapEditorAction
 {
 public:
-    AddSceneryMapEditorAction(const PMSScenery& new_scenery, const std::string& file_name);
+    AddSceneryMapEditorAction(const PMSScenery& new_scenery, std::string file_name);
 
+    bool CanExecute(const ClientState& client_state, const State& game_state) final;
     void Execute(ClientState& client_state, State& game_state) final;
     void Undo(ClientState& client_state, State& game_state) final;
 

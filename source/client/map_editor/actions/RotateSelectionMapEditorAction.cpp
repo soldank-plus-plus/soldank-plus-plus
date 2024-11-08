@@ -31,6 +31,12 @@ RotateSelectionMapEditorAction::RotateSelectionMapEditorAction(
     }
 }
 
+bool RotateSelectionMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                                const State& /*game_state*/)
+{
+    return true;
+}
+
 void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     float reference_rotation = Calc::GetAngle(origin_, reference_position_);

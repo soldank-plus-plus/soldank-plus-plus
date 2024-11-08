@@ -11,6 +11,12 @@ TransformPolygonsMapEditorAction::TransformPolygonsMapEditorAction(
 {
 }
 
+bool TransformPolygonsMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                                  const State& /*game_state*/)
+{
+    return true;
+}
+
 void TransformPolygonsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSPolygon>> new_polygons;

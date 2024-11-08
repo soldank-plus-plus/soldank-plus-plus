@@ -13,6 +13,12 @@ ColorObjectsMapEditorAction::ColorObjectsMapEditorAction(
 {
 }
 
+bool ColorObjectsMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                             const State& /*game_state*/)
+{
+    return true;
+}
+
 void ColorObjectsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     std::vector<std::pair<std::pair<unsigned int, unsigned int>, PMSColor>>

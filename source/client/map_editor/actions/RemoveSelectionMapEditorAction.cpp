@@ -39,6 +39,12 @@ RemoveSelectionMapEditorAction::RemoveSelectionMapEditorAction(const ClientState
     }
 }
 
+bool RemoveSelectionMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                                const State& /*game_state*/)
+{
+    return true;
+}
+
 void RemoveSelectionMapEditorAction::Execute(ClientState& client_state, State& game_state)
 {
     game_state.map.RemovePolygonsById(polygon_ids_to_remove_);

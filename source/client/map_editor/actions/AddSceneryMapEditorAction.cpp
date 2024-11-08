@@ -1,13 +1,22 @@
 #include "map_editor/actions/AddSceneryMapEditorAction.hpp"
+#include "core/map/PMSConstants.hpp"
 
 namespace Soldank
 {
 AddSceneryMapEditorAction::AddSceneryMapEditorAction(const PMSScenery& new_scenery,
-                                                     const std::string& file_name)
+                                                     std::string file_name)
     : added_scenery_(new_scenery)
-    , file_name_(file_name)
+    , file_name_(std::move(file_name))
     , added_scenery_id_(0)
 {
+}
+
+bool AddSceneryMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                           const State& game_state)
+{
+    return game_state.map.GetSceneryInstances().size() + 1 <= MAX_SCENERIES_COUNT;
+
+    return true;
 }
 
 void AddSceneryMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)

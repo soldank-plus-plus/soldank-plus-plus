@@ -12,6 +12,7 @@ class AddPolygonMapEditorAction final : public MapEditorAction
 public:
     AddPolygonMapEditorAction(const PMSPolygon& new_polygon);
 
+    bool CanExecute(const ClientState& client_state, const State& game_state) final;
     void Execute(ClientState& client_state, State& game_state) final;
     void Undo(ClientState& client_state, State& game_state) final;
 

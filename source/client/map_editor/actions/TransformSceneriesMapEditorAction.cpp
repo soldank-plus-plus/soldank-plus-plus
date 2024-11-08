@@ -11,6 +11,12 @@ TransformSceneriesMapEditorAction::TransformSceneriesMapEditorAction(
 {
 }
 
+bool TransformSceneriesMapEditorAction::CanExecute(const ClientState& /*client_state*/,
+                                                   const State& /*game_state*/)
+{
+    return true;
+}
+
 void TransformSceneriesMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
 {
     std::vector<std::pair<unsigned int, PMSScenery>> new_sceneries;
