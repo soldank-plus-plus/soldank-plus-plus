@@ -818,7 +818,7 @@ PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
     UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
-    GenerateSectors();
+    are_sectors_generated_ = false;
 
     map_change_events_.added_new_polygon.Notify(new_polygon);
 
@@ -854,7 +854,7 @@ void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)
     UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
-    GenerateSectors();
+    are_sectors_generated_ = false;
 
     map_change_events_.added_new_polygons.Notify(polygons_to_add, map_data_.polygons);
 }
@@ -866,7 +866,8 @@ PMSPolygon Map::RemovePolygonById(unsigned int id)
     UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
-    GenerateSectors();
+    are_sectors_generated_ = false;
+
     map_change_events_.removed_polygon.Notify(removed_polygon, map_data_.polygons);
 
     return removed_polygon;
@@ -908,7 +909,7 @@ void Map::RemovePolygonsById(const std::vector<unsigned int>& polygon_ids)
     UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
-    GenerateSectors();
+    are_sectors_generated_ = false;
 
     map_change_events_.removed_polygons.Notify(removed_polygons, map_data_.polygons);
 }
@@ -939,7 +940,7 @@ void Map::MovePolygonVerticesById(
     UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
-    GenerateSectors();
+    are_sectors_generated_ = false;
 
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
@@ -953,7 +954,7 @@ void Map::SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>
     UpdateMinMaxPolygonPositions();
     FixPolygonIds();
     UpdateBoundaries();
-    GenerateSectors();
+    are_sectors_generated_ = false;
 
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
@@ -1282,6 +1283,41 @@ std::array<glm::vec2, 4> Map::GetSceneryVertexPositions(const PMSScenery& scener
 
 void Map::GenerateSectors()
 {
+    if (are_sectors_generated_) {
+        return;
+    }
+    are_sectors_generated_ = true;
+
+    FixPolygonIds();
+    UpdateMinMaxPolygonPositions();
+    UpdateBoundaries();
+    for (auto& polygon : map_data_.polygons) {
+        // Polygons' vertices have to be arranged in clock-wise order.
+        if (!polygon.AreVerticesClockwise()) {
+            PMSVertex tmp = polygon.vertices[1];
+            polygon.vertices[1] = polygon.vertices[2];
+            polygon.vertices[2] = tmp;
+        }
+
+        for (auto& vertex : polygon.vertices) {
+            vertex.x -= map_data_.center_x;
+            vertex.y -= map_data_.center_y;
+        }
+    }
+    for (auto& scenery : map_data_.scenery_instances) {
+        scenery.x -= map_data_.center_x;
+        scenery.y -= map_data_.center_y;
+    }
+    for (auto& spawn_point : map_data_.spawn_points) {
+        spawn_point.x -= map_data_.center_x;
+        spawn_point.y -= map_data_.center_y;
+    }
+    UpdateMinMaxPolygonPositions();
+    UpdateBoundaries();
+    map_change_events_.modified_polygons.Notify(map_data_.polygons);
+    map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
+    map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
+
     map_data_.sectors_count = 25;
     int n = 2 * map_data_.sectors_count + 1;
     map_data_.sectors_poly = std::vector<std::vector<PMSSector>>(n, std::vector<PMSSector>(n));

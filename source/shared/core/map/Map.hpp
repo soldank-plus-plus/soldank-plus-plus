@@ -269,6 +269,9 @@ public:
 
     std::optional<PMSSpawnPoint> FindFirstSpawnPoint(PMSSpawnPointType spawn_point_type) const;
 
+    void GenerateSectors();
+    glm::vec2 GetCenter() const { return { map_data_.center_x, map_data_.center_y }; }
+
     enum MapBoundary
     {
         TopBoundary = 0,
@@ -343,7 +346,6 @@ private:
     void AppendWayPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
 
     void UpdateBoundaries();
-    void GenerateSectors();
     bool IsPolygonInSector(unsigned short polygon_index,
                            float sector_x,
                            float sector_y,
@@ -354,6 +356,8 @@ private:
     void FixPolygonIds();
     void UpdateMinMaxPolygonPositions(const PMSPolygon& polygon, bool should_notify = true);
     void UpdateMinMaxPolygonPositions();
+
+    bool are_sectors_generated_{};
 };
 } // namespace Soldank
 
