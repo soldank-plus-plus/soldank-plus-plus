@@ -366,6 +366,22 @@ void Run()
         client_state->draw_game_debug_interface = true;
         client_state->camera_component.ResetZoom();
         world->GetStateManager()->GetState().paused = false;
+        if (!world->GetStateManager()->GetState().map.GetPolygons().empty()) {
+            auto vertex =
+              world->GetStateManager()->GetState().map.GetPolygons().at(0).vertices.at(0);
+            glm::vec2 old_polygon_position = { vertex.x, vertex.y };
+
+            world->GetStateManager()->GetState().map.GenerateSectors();
+
+            vertex = world->GetStateManager()->GetState().map.GetPolygons().at(0).vertices.at(0);
+            glm::vec2 move_offset = { vertex.x - old_polygon_position.x,
+                                      vertex.y - old_polygon_position.y };
+
+            // Move soldiers if the map moved
+            for (const auto& soldier : world->GetStateManager()->GetState().soldiers) {
+                world->GetStateManager()->MoveSoldier(soldier.id, move_offset);
+            }
+        }
         window->SetCursorMode(CursorMode::Locked);
         map_editor->Lock();
     });

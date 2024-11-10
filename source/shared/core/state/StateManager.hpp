@@ -28,6 +28,8 @@ public:
     void ChangeSoldierPrimaryWeapon(std::uint8_t soldier_id, WeaponType new_weapon_type);
     void SoldierPickupWeapon(std::uint8_t soldier_id, const Item& item);
     void SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_id);
+    void MoveSoldier(std::uint8_t soldier_id, const glm::vec2& move_offset);
+    void SetSoldierPosition(std::uint8_t soldier_id, const glm::vec2& new_position);
     void ThrowSoldierFlags(std::uint8_t soldier_id);
     glm::vec2 GetSoldierAimDirection(std::uint8_t soldier_id);
 

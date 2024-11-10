@@ -3,6 +3,7 @@
 #include "core/entities/Weapon.hpp"
 #include "core/math/Calc.hpp"
 #include "core/physics/Particles.hpp"
+#include "core/physics/SoldierSkeletonPhysics.hpp"
 #include "core/state/Control.hpp"
 #include "core/entities/WeaponParametersFactory.hpp"
 
@@ -222,6 +223,23 @@ void StateManager::SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_i
           WeaponParametersFactory::GetParameters(WeaponType::ClusterGrenade, false);
         item.active = false;
     }
+}
+
+void StateManager::MoveSoldier(std::uint8_t soldier_id, const glm::vec2& move_offset)
+{
+    Soldier& soldier = GetSoldierRef(soldier_id);
+    glm::vec2 new_soldier_position = soldier.particle.position + move_offset;
+    soldier.particle.position = new_soldier_position;
+    soldier.particle.old_position = new_soldier_position;
+    RepositionSoldierSkeletonParts(soldier);
+}
+
+void StateManager::SetSoldierPosition(std::uint8_t soldier_id, const glm::vec2& new_position)
+{
+    Soldier& soldier = GetSoldierRef(soldier_id);
+    soldier.particle.position = new_position;
+    soldier.particle.old_position = new_position;
+    RepositionSoldierSkeletonParts(soldier);
 }
 
 void StateManager::ThrowSoldierFlags(std::uint8_t soldier_id)
