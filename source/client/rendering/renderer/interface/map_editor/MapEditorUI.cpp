@@ -30,7 +30,12 @@ void Render(State& game_state, ClientState& client_state)
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Save", "CTRL+S")) {
-                    game_state.map.SaveMap("maps/" + game_state.map.GetName());
+                    if (game_state.map.GetName()) {
+                        game_state.map.SaveMap("maps/" + *game_state.map.GetName());
+                        client_state.map_editor_state.is_map_changed = false;
+                    } else {
+                        client_state.map_editor_state.should_open_save_as_modal = true;
+                    }
                 }
                 ImGui::EndMenu();
             }
@@ -103,6 +108,60 @@ void Render(State& game_state, ClientState& client_state)
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
+        }
+
+        static std::array<char, MAP_NAME_MAX_LENGTH> new_map_name_input;
+
+        if (client_state.map_editor_state.should_open_save_as_modal) {
+            client_state.map_editor_state.should_open_save_as_modal = false;
+            new_map_name_input.fill(0);
+            if (game_state.map.GetName()) {
+                unsigned int i = 0;
+                for (char c : *game_state.map.GetName()) {
+                    new_map_name_input.at(i) = c;
+                    ++i;
+                }
+            }
+            ImGui::OpenPopup("Save as...");
+        }
+
+        if (ImGui::BeginPopupModal("Save as...", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            client_state.map_editor_state.is_modal_or_popup_open = true;
+
+            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+                !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
+                ImGui::SetKeyboardFocusHere(0);
+            }
+            if (ImGui::InputText(
+                  "##NewMapNameInput", new_map_name_input.data(), MAP_NAME_MAX_LENGTH)) {
+            }
+
+            float cancel_button_width =
+              ImGui::CalcTextSize("Cancel").x + ImGui::GetStyle().FramePadding.x * 2.F;
+            float save_button_width =
+              ImGui::CalcTextSize("Save").x + ImGui::GetStyle().FramePadding.x * 2.F;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
+                                 cancel_button_width - save_button_width -
+                                 ImGui::GetStyle().ItemSpacing.x);
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Save")) {
+                std::string new_map_name;
+                for (char c : new_map_name_input) {
+                    if (c == 0) {
+                        break;
+                    }
+                    new_map_name += c;
+                }
+                new_map_name += ".pms";
+                game_state.map.SetName(new_map_name);
+                game_state.map.SaveMap("maps/" + new_map_name);
+                client_state.map_editor_state.is_map_changed = false;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
 
         static std::array<char, TEXTURE_NAME_MAX_LENGTH> texture_search_filter;
@@ -573,7 +632,8 @@ void Render(State& game_state, ClientState& client_state)
                     if (client_state.map_editor_state.is_map_changed) {
                         flags |= ImGuiTabItemFlags_UnsavedDocument;
                     }
-                    if (ImGui::BeginTabItem(game_state.map.GetName().c_str(), nullptr, flags)) {
+                    if (ImGui::BeginTabItem(
+                          game_state.map.GetName().value_or("Untitled").c_str(), nullptr, flags)) {
                         ImGui::EndTabItem();
                     }
                     if (ImGui::BeginTabItem("+", nullptr)) {
@@ -606,7 +666,7 @@ void Render(State& game_state, ClientState& client_state)
 
         if (ImGui::Begin("StatusBar", nullptr, flags)) {
             if (ImGui::BeginMenuBar()) {
-                ImGui::Text("%s", game_state.map.GetName().c_str());
+                ImGui::Text("%s", game_state.map.GetName().value_or("Untitled").c_str());
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("Zoom: %.0f%%",
                             // TODO: need to invert zoom on camera class level instead of this

@@ -22,7 +22,7 @@ void Map::CreateEmptyMap()
     map_data_.boundaries_xy[LeftBoundary] = -MAP_BOUNDARY;
     map_data_.boundaries_xy[RightBoundary] = MAP_BOUNDARY;
 
-    map_data_.name = "Untitled.pms";
+    map_data_.name = std::nullopt;
     map_data_.description = "New Soldank++ map";
     map_data_.texture_name = "banana.png";
 
