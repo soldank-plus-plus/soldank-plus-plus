@@ -3,6 +3,7 @@
 
 namespace Soldank
 {
+const int MAP_NAME_MAX_LENGTH = 16;
 const int DESCRIPTION_MAX_LENGTH = 38;
 const int SCENERY_NAME_MAX_LENGTH = 50;
 const int TEXTURE_NAME_MAX_LENGTH = 24;

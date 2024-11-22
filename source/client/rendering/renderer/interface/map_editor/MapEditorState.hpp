@@ -102,6 +102,7 @@ struct MapEditorState
     std::vector<std::string> all_sceneries_in_directory;
 
     bool should_open_map_settings_modal = false;
+    bool should_open_save_as_modal = false;
 
     glm::vec4 last_requested_pixel_color;
 

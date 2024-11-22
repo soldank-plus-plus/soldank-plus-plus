@@ -40,7 +40,7 @@ struct MapData
 
     int version;
 
-    std::string name;
+    std::optional<std::string> name;
     std::string description;
     std::string texture_name;
 
@@ -162,7 +162,8 @@ public:
 
     int GetVersion() const { return map_data_.version; }
 
-    std::string GetName() const { return map_data_.name; }
+    std::optional<std::string> GetName() const { return map_data_.name; }
+    void SetName(const std::string& new_name) { map_data_.name = new_name; }
 
     void SetDescription(const std::string& new_description)
     {

@@ -370,8 +370,12 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, State& game_sta
     }
 
     if (is_holding_left_ctrl_ && key == GLFW_KEY_S) {
-        game_state.map.SaveMap("maps/" + game_state.map.GetName());
-        client_state.map_editor_state.is_map_changed = false;
+        if (game_state.map.GetName()) {
+            game_state.map.SaveMap("maps/" + *game_state.map.GetName());
+            client_state.map_editor_state.is_map_changed = false;
+        } else {
+            client_state.map_editor_state.should_open_save_as_modal = true;
+        }
 
         return;
     }
