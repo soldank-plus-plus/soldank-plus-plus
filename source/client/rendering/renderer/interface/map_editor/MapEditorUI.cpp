@@ -9,6 +9,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <string>
 
@@ -490,7 +491,19 @@ void Render(State& game_state, ClientState& client_state)
             { "Color picker tool (H)", ToolType::ColorPicker },
         };
 
+        static std::vector<ToolType> disabled_tool_types = { ToolType::VertexColor,
+                                                             ToolType::Texture,
+                                                             ToolType::Waypoint };
+
         for (const auto& tool_option : tool_options) {
+            if (std::ranges::contains(disabled_tool_types, tool_option.second)) {
+                ImGui::Selectable(tool_option.first.c_str(),
+                                  client_state.map_editor_state.selected_tool == tool_option.second,
+                                  ImGuiSelectableFlags_Disabled);
+                ImGui::SetItemTooltip("This tool is not implemented yet. Coming soon!");
+                continue;
+            }
+
             if (ImGui::Selectable(tool_option.first.c_str(),
                                   client_state.map_editor_state.selected_tool ==
                                     tool_option.second)) {
