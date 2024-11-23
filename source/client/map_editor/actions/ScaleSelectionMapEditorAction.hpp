@@ -20,7 +20,9 @@ public:
       const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& original_spawn_points,
       const std::vector<std::pair<unsigned int, glm::vec2>>& original_soldier_positions,
       const glm::vec2& origin,
-      const glm::vec2& reference_position);
+      const glm::vec2& reference_position,
+      bool is_scale_horizontal = true,
+      bool is_scale_vertical = true);
 
     bool CanExecute(const ClientState& client_state, const State& game_state) final;
     void Execute(ClientState& client_state, State& game_state) final;
@@ -43,6 +45,9 @@ private:
     glm::vec2 origin_;
     glm::vec2 reference_position_;
     glm::vec2 current_mouse_position_;
+
+    bool is_scale_horizontal_;
+    bool is_scale_vertical_;
 };
 } // namespace Soldank
 

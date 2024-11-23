@@ -33,6 +33,48 @@ void TransformTool::OnUnselect(ClientState& client_state)
 
 void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
 {
+    std::optional<glm::vec2> origin = std::nullopt;
+    bool is_scale_horizontal = true;
+    bool is_scale_vertical = true;
+
+    if (client_state.map_editor_state.vertex_selection_box) {
+        glm::vec2 start_position = client_state.map_editor_state.vertex_selection_box->first;
+        glm::vec2 end_position = client_state.map_editor_state.vertex_selection_box->second;
+        glm::vec2 mid_position = start_position + end_position;
+        mid_position /= 2;
+
+        std::array<glm::vec2, 8> origin_positions = {
+            start_position,
+            glm::vec2{ mid_position.x, start_position.y },
+            glm::vec2{ end_position.x, start_position.y },
+            glm::vec2{ end_position.x, mid_position.y },
+            end_position,
+            glm::vec2{ mid_position.x, end_position.y },
+            glm::vec2{ start_position.x, end_position.y },
+            glm::vec2{ start_position.x, mid_position.y },
+        };
+
+        for (unsigned int i = 0; i < origin_positions.size(); ++i) {
+            const auto& origin_position = origin_positions.at(i);
+            float max_distance = 5.0F * client_state.camera_component.GetZoom();
+
+            if (Calc::SquareDistance(origin_position, client_state.mouse_map_position) <=
+                max_distance * max_distance) {
+
+                unsigned int opposite_origin_id = (i + 4) % origin_positions.size();
+                if (opposite_origin_id == 1 || opposite_origin_id == 5) {
+                    is_scale_horizontal = false;
+                }
+                if (opposite_origin_id == 3 || opposite_origin_id == 7) {
+                    is_scale_vertical = false;
+                }
+
+                origin = origin_positions.at(opposite_origin_id);
+                break;
+            }
+        }
+    }
+
     switch (transform_mode_) {
         case TransformMode::Move: {
             std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>
@@ -94,11 +136,7 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                 break;
             }
 
-            float max_distance = 5.0F * client_state.camera_component.GetZoom();
-
-            if (Calc::SquareDistance(client_state.map_editor_state.vertex_selection_box->second,
-                                     client_state.mouse_map_position) >
-                max_distance * max_distance) {
+            if (!origin.has_value()) {
                 break;
             }
 
@@ -142,15 +180,15 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                 }
             }
 
-            glm::vec2 origin = client_state.map_editor_state.vertex_selection_box->first;
-
             maybe_scale_selection_action_ =
               std::make_unique<ScaleSelectionMapEditorAction>(polygons,
                                                               sceneries,
                                                               spawn_points,
                                                               soldier_positions,
-                                                              origin,
-                                                              client_state.mouse_map_position);
+                                                              *origin,
+                                                              client_state.mouse_map_position,
+                                                              is_scale_horizontal,
+                                                              is_scale_vertical);
 
             break;
         }
@@ -159,11 +197,7 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                 break;
             }
 
-            float max_distance = 5.0F * client_state.camera_component.GetZoom();
-
-            if (Calc::SquareDistance(client_state.map_editor_state.vertex_selection_box->second,
-                                     client_state.mouse_map_position) >
-                max_distance * max_distance) {
+            if (!origin.has_value()) {
                 break;
             }
 
@@ -207,14 +241,12 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                 }
             }
 
-            glm::vec2 origin = client_state.map_editor_state.vertex_selection_box->first;
-
             maybe_rotate_selection_action_ =
               std::make_unique<RotateSelectionMapEditorAction>(polygons,
                                                                sceneries,
                                                                spawn_points,
                                                                soldier_positions,
-                                                               origin,
+                                                               *origin,
                                                                client_state.mouse_map_position);
 
             break;

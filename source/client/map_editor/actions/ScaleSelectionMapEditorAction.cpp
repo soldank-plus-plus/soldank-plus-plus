@@ -17,7 +17,9 @@ ScaleSelectionMapEditorAction::ScaleSelectionMapEditorAction(
   const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& original_spawn_points,
   const std::vector<std::pair<unsigned int, glm::vec2>>& original_soldier_positions,
   const glm::vec2& origin,
-  const glm::vec2& reference_position)
+  const glm::vec2& reference_position,
+  bool is_scale_horizontal,
+  bool is_scale_vertical)
     : original_polygon_vertices_(original_polygon_vertices)
     , original_sceneries_(original_sceneries)
     , original_spawn_points_(original_spawn_points)
@@ -25,6 +27,8 @@ ScaleSelectionMapEditorAction::ScaleSelectionMapEditorAction(
     , origin_(origin)
     , reference_position_(reference_position)
     , current_mouse_position_(reference_position)
+    , is_scale_horizontal_(is_scale_horizontal)
+    , is_scale_vertical_(is_scale_vertical)
 {
     for (const auto& [polygon_vertices, polygon] : original_polygon_vertices) {
         original_polygons_.emplace_back(polygon_vertices.first, polygon);
@@ -58,6 +62,13 @@ void ScaleSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State
     }
 
     scale_factor = numerator / denominator;
+
+    if (!is_scale_horizontal_) {
+        scale_factor.x = 1.0F;
+    }
+    if (!is_scale_vertical_) {
+        scale_factor.y = 1.0F;
+    }
 
     std::vector<std::pair<unsigned int, PMSPolygon>> new_polygons;
     new_polygons.reserve(original_polygon_vertices_.size());
