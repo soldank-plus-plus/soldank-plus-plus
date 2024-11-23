@@ -133,7 +133,7 @@ void SceneriesRenderer::AddNewTexture(const std::filesystem::path& texture_file_
             textures_.emplace_back(std::move(gif_texture));
         } else {
             spdlog::critical("Texture file not found {}", texture_path.string());
-            textures_.emplace_back(0UL);
+            textures_.emplace_back(0U);
         }
     } else {
         if (!std::filesystem::exists(texture_path)) {
@@ -144,7 +144,7 @@ void SceneriesRenderer::AddNewTexture(const std::filesystem::path& texture_file_
             textures_.emplace_back(texture_or_error.value().opengl_id);
         } else {
             spdlog::critical("Texture file not found {}", texture_path.string());
-            textures_.emplace_back(0UL);
+            textures_.emplace_back(0U);
         }
     }
 }
