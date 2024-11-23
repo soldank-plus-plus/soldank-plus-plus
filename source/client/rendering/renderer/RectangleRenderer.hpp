@@ -22,7 +22,7 @@ public:
     RectangleRenderer(RectangleRenderer&&) = delete;
     RectangleRenderer& operator=(RectangleRenderer&& other) = delete;
 
-    void Render(glm::mat4 transform, glm::vec2 position);
+    void Render(const glm::mat4& transform, const glm::vec2& position, const glm::vec4& color);
 
 private:
     Shader shader_;

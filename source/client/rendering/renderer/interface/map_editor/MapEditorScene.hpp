@@ -4,6 +4,7 @@
 #include "rendering/ClientState.hpp"
 #include "rendering/renderer/LineRenderer.hpp"
 #include "rendering/renderer/PolygonsRenderer.hpp"
+#include "rendering/renderer/RectangleRenderer.hpp"
 #include "rendering/renderer/SceneryOutlinesRenderer.hpp"
 
 #include "core/state/StateManager.hpp"
@@ -36,6 +37,7 @@ private:
     SpawnPointRenderer spawn_point_renderer_;
     SingleImageRenderer single_image_renderer_;
     GridRenderer grid_renderer_;
+    RectangleRenderer rectangle_renderer_;
 };
 } // namespace Soldank
 

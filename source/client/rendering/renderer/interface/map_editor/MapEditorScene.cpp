@@ -96,6 +96,28 @@ void MapEditorScene::Render(State& game_state,
         glm::vec4 color = { 0.8F, 0.2F, 0.2F, 1.0F };
         float thickness = camera.GetZoom();
         RenderRectangle(camera.GetView(), start_position, end_position, color, thickness);
+
+        if (client_state.map_editor_state.selected_tool == ToolType::Transform) {
+            glm::vec2 start_position = client_state.map_editor_state.vertex_selection_box->first;
+            glm::vec2 end_position = client_state.map_editor_state.vertex_selection_box->second;
+            glm::vec2 mid_position = start_position + end_position;
+            mid_position /= 2;
+            glm::vec4 color = { 0.8F, 0.7F, 0.7F, 1.0F };
+
+            rectangle_renderer_.Render(camera.GetView(), start_position, color);
+            rectangle_renderer_.Render(camera.GetView(), end_position, color);
+            rectangle_renderer_.Render(
+              camera.GetView(), { start_position.x, end_position.y }, color);
+            rectangle_renderer_.Render(
+              camera.GetView(), { end_position.x, start_position.y }, color);
+
+            rectangle_renderer_.Render(
+              camera.GetView(), { mid_position.x, start_position.y }, color);
+            rectangle_renderer_.Render(
+              camera.GetView(), { start_position.x, mid_position.y }, color);
+            rectangle_renderer_.Render(camera.GetView(), { mid_position.x, end_position.y }, color);
+            rectangle_renderer_.Render(camera.GetView(), { end_position.x, mid_position.y }, color);
+        }
     }
 
     if (client_state.map_editor_state.selected_tool == ToolType::Scenery) {

@@ -12,8 +12,8 @@
 namespace Soldank
 {
 RectangleRenderer::RectangleRenderer()
-    : shader_(ShaderSources::NO_TEXTURE_VERTEX_SHADER_SOURCE,
-              ShaderSources::NO_TEXTURE_FRAGMENT_SHADER_SOURCE)
+    : shader_(ShaderSources::DYNAMIC_COLOR_NO_TEXTURE_VERTEX_SHADER_SOURCE,
+              ShaderSources::DYNAMIC_COLOR_NO_TEXTURE_FRAGMENT_SHADER_SOURCE)
 {
     float bottom_red = 255.0 / 255.0;
     float bottom_green = 0.0 / 255.0;
@@ -46,13 +46,17 @@ RectangleRenderer::~RectangleRenderer()
     Renderer::FreeVBO(vbo_);
 }
 
-void RectangleRenderer::Render(glm::mat4 transform, glm::vec2 position)
+void RectangleRenderer::Render(const glm::mat4& transform,
+                               const glm::vec2& position,
+                               const glm::vec4& color)
 {
     shader_.Use();
     Renderer::SetupVertexArray(vbo_, std::nullopt, true, false);
 
-    transform = glm::translate(transform, glm::vec3(position.x, -position.y, 0.0));
-    shader_.SetMatrix4("transform", transform);
+    glm::mat4 current_transform =
+      glm::translate(transform, glm::vec3(position.x, -position.y, 0.0));
+    shader_.SetMatrix4("transform", current_transform);
+    shader_.SetVec4("color", color);
     Renderer::DrawArrays(GL_TRIANGLES, 0, 6);
 }
 } // namespace Soldank

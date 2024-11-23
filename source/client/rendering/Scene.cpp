@@ -63,7 +63,8 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
     }
 
     if (client_state.draw_server_pov_client_pos) {
-        rectangle_renderer_.Render(camera.GetView(), client_state.soldier_position_server_pov);
+        rectangle_renderer_.Render(
+          camera.GetView(), client_state.soldier_position_server_pov, { 1.0F, 0.0F, 0.0F, 1.0F });
     }
     for (const Bullet& bullet : game_state.bullets) {
         bullet_renderer_.Render(camera.GetView(), bullet, frame_percent);
@@ -250,7 +251,8 @@ void Scene::Render(State& game_state, ClientState& client_state, double frame_pe
         for (const auto& soldier : game_state.soldiers) {
             rectangle_renderer_.Render(
               camera.GetView(),
-              glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y));
+              glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y),
+              { 1.0F, 0.0F, 0.0F, 1.0F });
         }
     }
 }
