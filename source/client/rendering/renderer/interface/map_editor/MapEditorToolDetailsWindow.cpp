@@ -469,12 +469,12 @@ void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
 
 void Render(State& game_state, ClientState& client_state)
 {
+    static ImGuiWindowFlags default_window_flags =
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
+      ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse;
+
     {
-        if (ImGui::Begin("Tool Details",
-                         nullptr,
-                         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize |
-                           ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollWithMouse |
-                           ImGuiWindowFlags_NoCollapse)) {
+        if (ImGui::Begin("Tool Details", nullptr, default_window_flags)) {
 
             switch (client_state.map_editor_state.selected_tool) {
                 case ToolType::Transform:

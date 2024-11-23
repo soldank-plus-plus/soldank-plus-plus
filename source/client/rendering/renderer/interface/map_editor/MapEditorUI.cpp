@@ -27,6 +27,10 @@ void Render(State& game_state, ClientState& client_state)
     client_state.map_editor_state.is_mouse_hovering_over_ui = io.WantCaptureMouse;
     client_state.map_editor_state.is_modal_or_popup_open = false;
 
+    static ImGuiWindowFlags default_window_flags =
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
+      ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse;
+
     {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
@@ -475,7 +479,7 @@ void Render(State& game_state, ClientState& client_state)
     }
 
     if (client_state.map_editor_state.is_tools_window_visible) {
-        ImGui::Begin("Tools");
+        ImGui::Begin("Tools", nullptr, default_window_flags);
 
         static std::vector<std::pair<std::string, ToolType>> tool_options = {
             { "Transform tool (A)", ToolType::Transform },
@@ -519,7 +523,7 @@ void Render(State& game_state, ClientState& client_state)
     }
 
     if (client_state.map_editor_state.is_properties_window_visible) {
-        ImGui::Begin("Properties");
+        ImGui::Begin("Properties", nullptr, default_window_flags);
         ImGui::Text("Polygons: %zu/%d", game_state.map.GetPolygons().size(), MAX_POLYGONS_COUNT);
         ImGui::Text(
           "Sceneries: %zu/%d", game_state.map.GetSceneryInstances().size(), MAX_SCENERIES_COUNT);
@@ -539,7 +543,7 @@ void Render(State& game_state, ClientState& client_state)
 
     if (client_state.map_editor_state.is_display_window_visible) {
         static bool test = false;
-        ImGui::Begin("Display");
+        ImGui::Begin("Display", nullptr, default_window_flags);
 
         ImGui::Checkbox("Background", &client_state.draw_background);
         ImGui::Checkbox("Polygons", &client_state.draw_polygons);
@@ -555,11 +559,7 @@ void Render(State& game_state, ClientState& client_state)
         float palette_width = 204.0F;
         int table_column_count = 12;
 
-        ImGui::Begin("Palette",
-                     nullptr,
-                     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize |
-                       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollWithMouse |
-                       ImGuiWindowFlags_NoCollapse);
+        ImGui::Begin("Palette", nullptr, default_window_flags);
 
         ImGui::SetNextItemWidth(palette_width);
         ImGui::ColorPicker4("##PaletteColorPicker",
