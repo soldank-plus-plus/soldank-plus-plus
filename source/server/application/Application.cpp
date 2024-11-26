@@ -193,7 +193,8 @@ void Application::Run()
         return true;
     });
 
-    world_->RunLoop(60);
+    world_->SetFPSLimit(64);
+    world_->RunLoop();
 
     // Give connections time to finish up.  This is an application layer protocol
     // here, it's not TCP.  Note that if you have an application and you need to be

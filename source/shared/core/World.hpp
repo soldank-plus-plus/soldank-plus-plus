@@ -20,7 +20,7 @@ class World final : public IWorld
 public:
     World();
 
-    void RunLoop(int fps_limit) final;
+    void RunLoop() final;
     void Update(double delta_time) final;
     void UpdateSoldier(unsigned int soldier_id) final;
     const std::shared_ptr<StateManager>& GetStateManager() const final;

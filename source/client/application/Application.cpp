@@ -693,7 +693,7 @@ void Run()
     }
 
     world->SetFPSLimit(fps_limit);
-    world->RunLoop(fps_limit);
+    world->RunLoop();
 }
 
 void Free()
