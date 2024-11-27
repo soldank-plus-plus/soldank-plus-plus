@@ -5,6 +5,13 @@ C++23 implementation of [OpenSoldat](https://github.com/opensoldat/opensoldat) g
 
 [![Discord](https://img.shields.io/discord/1224452056245600417.svg?label=Discord&logo=Discord&colorB=7289da&style=for-the-badge)](https://discord.gg/gvhsk8NZHD)
 
+# Trailers
+[![Soldank++ | Game Official Announcement Trailer](http://img.youtube.com/vi/nD0waXaUw5Y/0.jpg)](http://www.youtube.com/watch?v=nD0waXaUw5Y)
+
+[![Soldank++ | Game Official Teaser Trailer](http://img.youtube.com/vi/Oyx72xEmqaY/0.jpg)](http://www.youtube.com/watch?v=Oyx72xEmqaY)
+
+(Click on the images to go to YouTube)
+
 # Screenshot
 ![screenshot](https://www.dropbox.com/scl/fi/i9yp7clwdossl0j3p3myh/soldank-plus-plus.png?rlkey=oysbty3186yz3jc3mkj2fela9&raw=1)
 
