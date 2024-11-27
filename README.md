@@ -9,7 +9,13 @@ C++23 implementation of [OpenSoldat](https://github.com/opensoldat/opensoldat) g
 ![screenshot](https://www.dropbox.com/scl/fi/i9yp7clwdossl0j3p3myh/soldank-plus-plus.png?rlkey=oysbty3186yz3jc3mkj2fela9&raw=1)
 
 ## Requirements
-The project is written in C++23 and depends on:
+The project uses some of the features from C++23 standard, such as: ranges::contains or std::format.
+Therefore, the minimum versions of the main compilers are:
+- GCC libstdc++ 13
+- Clang libc++ 15
+- Visual Studio 2022 17.6.5
+
+The project is written in C++23 and depends directly on:
 - [OpenGL 2.1+](https://www.opengl.org/)
 - [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 - [glad](https://glad.dav1d.de/)
@@ -21,6 +27,18 @@ The project is written in C++23 and depends on:
 - [GameNetworkingSockets](https://github.com/ValveSoftware/GameNetworkingSockets)
 - [daScript 0.4](https://dascript.org/)
 - [cxxopts](https://github.com/jarro2783/cxxopts)
+- [spdlog](https://github.com/gabime/spdlog)
+- [simpleini](https://github.com/brofield/simpleini)
+- [Dear ImGui](https://github.com/ocornut/imgui)
+- [GoogleTest](https://github.com/google/googletest)
+- [cpp-httplib](https://github.com/yhirose/cpp-httplib)
+- [nlohmann/json](https://json.nlohmann.me/)
+
+And indirectly (some of the above packages use those) on:
+- [Protobuf](https://github.com/protocolbuffers/protobuf)
+- [ZLIB](https://github.com/madler/zlib)
+- [libpng](https://github.com/pnggroup/libpng)
+- [BZip2](https://sourceware.org/bzip2/)
 
 ## Building
 Recommended to build using [vcpkg](https://github.com/microsoft/vcpkg) to prepare
