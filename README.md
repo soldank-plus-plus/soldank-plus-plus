@@ -18,8 +18,8 @@ C++23 implementation of [OpenSoldat](https://github.com/opensoldat/opensoldat) g
 ## Requirements
 The project uses some of the features from C++23 standard, such as: ranges::contains or std::format.
 Therefore, the minimum versions of the main compilers are:
-- GCC libstdc++ 13
-- Clang libc++ 15
+- G++ 13
+- Clang 15
 - Visual Studio 2022 17.6.5
 
 The project is written in C++23 and depends directly on:
@@ -52,6 +52,22 @@ Recommended to build using [vcpkg](https://github.com/microsoft/vcpkg) to prepar
 the package [GameNetworkingSockets](https://github.com/ValveSoftware/GameNetworkingSockets)
 which unfortunately can't be prepared using [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake)
 
+### Linux
+In project root directory run:
+```
+> git clone https://github.com/microsoft/vcpkg
+> ./vcpkg/bootstrap-vcpkg.sh
+```
+
+Make sure you have CMake installed. The project uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to download required packages.
+To install all the required package using:
+```
+> mkdir build
+> cd build
+> cmake ..
+> make
+```
+
 ### Windows
 In project root directory run:
 ```
@@ -66,4 +82,4 @@ To install all the required package using:
 > cd build
 > cmake ..
 ```
-You should now be able to build executables using `make` on linux or to open generated solution in visual studio on windows
+You should now be able to to open generated solution in visual studio on windows and compile the project from there.
