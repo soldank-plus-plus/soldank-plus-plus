@@ -10,15 +10,13 @@
 
 namespace Soldank::CommandLineParameters
 {
-// NOLINTNEXTLINE modernize-avoid-c-arrays
-ParsedValues Parse(int argc, const char* argv[])
+ParsedValues Parse(const std::vector<const char*>& cli_parameters)
 {
     ParsedValues parsed_values;
 
     try {
         std::unique_ptr<cxxopts::Options> allocated(
-          // NOLINTNEXTLINE cppcoreguidelines-pro-bounds-pointer-arithmetic
-          new cxxopts::Options(argv[0], "Soldank++ client"));
+          new cxxopts::Options(cli_parameters[0], "Soldank++ client"));
         auto& options = *allocated;
         options.positional_help("[optional args]").show_positional_help();
 
@@ -41,7 +39,7 @@ ParsedValues Parse(int argc, const char* argv[])
             ("debug-ui", "Enable Debug UI");
         // clang-format on
 
-        auto result = options.parse(argc, argv);
+        auto result = options.parse((int)cli_parameters.size(), cli_parameters.data());
 
         if (result.count("help") != 0) {
             std::cout << options.help({ "", "Group" }) << std::endl;

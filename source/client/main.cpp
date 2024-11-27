@@ -5,6 +5,7 @@
 #include "application/Application.hpp"
 
 #include <exception>
+#include <vector>
 
 // TODO: odkomentować
 // #ifdef _WIN32
@@ -13,11 +14,9 @@
 int main(int argc, const char* argv[])
 // #endif
 {
-    if (!Soldank::Application::Init(argc, argv)) {
-        return 1;
-    }
-    Soldank::Application::Run();
-    Soldank::Application::Free();
+    std::vector<const char*> cli_parameters(argv, argv + argc);
+    Soldank::Application app(cli_parameters);
+    app.Run();
 
     return 0;
 }

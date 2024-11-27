@@ -4,6 +4,7 @@
 #include "application/config/Config.hpp"
 #include <optional>
 #include <string>
+#include <vector>
 #include <cstdint>
 
 namespace Soldank
@@ -33,8 +34,7 @@ struct ParsedValues
     bool is_debug_ui_enabled = false;
 };
 
-// NOLINTNEXTLINE modernize-avoid-c-arrays
-ParsedValues Parse(int argc, const char* argv[]);
+ParsedValues Parse(const std::vector<const char*>& cli_parameters);
 } // namespace Soldank::CommandLineParameters
 
 #endif

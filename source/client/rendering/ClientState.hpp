@@ -40,9 +40,9 @@ struct ClientState
     glm::vec2 soldier_position_server_pov;
 
     std::list<SoldierInputPacket> pending_inputs;
-    bool server_reconciliation;
-    bool client_side_prediction;
-    bool objects_interpolation;
+    bool server_reconciliation = true;
+    bool client_side_prediction = true;
+    bool objects_interpolation = true;
     bool draw_server_pov_client_pos;
 
     int network_lag;
