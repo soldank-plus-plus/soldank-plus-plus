@@ -11,7 +11,7 @@ namespace Soldank
 class Window;
 class IWorld;
 class INetworkingClient;
-class ClientState;
+struct ClientState;
 class NetworkEventDispatcher;
 class MapEditor;
 
