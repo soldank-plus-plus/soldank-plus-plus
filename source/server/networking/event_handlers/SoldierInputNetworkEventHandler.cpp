@@ -24,8 +24,8 @@ NetworkEventHandlerResult SoldierInputNetworkEventHandler::HandleNetworkMessageI
     unsigned int soldier_id = game_server_->GetSoldierIdFromConnectionId(sender_connection_id);
     glm::vec2 soldier_position = { soldier_input_packet.position_x,
                                    soldier_input_packet.position_y };
-    glm::vec2 mouse_position = { soldier_input_packet.mouse_position_x,
-                                 soldier_input_packet.mouse_position_y };
+    glm::vec2 mouse_map_position = { soldier_input_packet.mouse_map_position_x,
+                                     soldier_input_packet.mouse_map_position_y };
     const Control& player_control = soldier_input_packet.control;
 
     // TODO: validate arguments
@@ -57,10 +57,11 @@ NetworkEventHandlerResult SoldierInputNetworkEventHandler::HandleNetworkMessageI
     world_->GetStateManager()->ChangeSoldierControlActionState(
       soldier_id, ControlActionType::Prone, player_control.prone);
 
-    world_->GetStateManager()->ChangeSoldierMousePosition(
+    world_->GetStateManager()->ChangeSoldierMouseMapPosition(
       soldier_id,
-      { mouse_position.x, mouse_position.y }); // TODO: smooth camera handling, probably need to
-                                               // send mouse aim instead of cursor pos in packets
+      { mouse_map_position.x,
+        mouse_map_position.y }); // TODO: smooth camera handling, probably need to
+                                 // send mouse aim instead of cursor pos in packets
     world_->GetStateManager()->ChangeSoldierControlActionState(
       soldier_id, ControlActionType::UseJets, player_control.jets);
     world_->GetStateManager()->ChangeSoldierControlActionState(

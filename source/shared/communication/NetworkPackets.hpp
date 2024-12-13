@@ -18,8 +18,8 @@ struct SoldierInputPacket
     std::uint32_t game_tick;
     float position_x;
     float position_y;
-    float mouse_position_x;
-    float mouse_position_y;
+    float mouse_map_position_x;
+    float mouse_map_position_y;
     Control control;
 };
 #pragma pack(pop)
@@ -48,8 +48,8 @@ struct SoldierStatePacket
     bool on_ground_last_frame;
     bool on_ground_permanent;
     std::uint8_t stance;
-    float mouse_position_x;
-    float mouse_position_y;
+    float mouse_map_position_x;
+    float mouse_map_position_y;
     bool using_jets;
     std::int32_t jets_count;
     std::uint8_t active_weapon;

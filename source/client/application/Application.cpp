@@ -578,20 +578,22 @@ void Application::Run()
 
                 glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
 
-                world_->GetStateManager()->ChangeSoldierMousePosition(client_soldier_id,
-                                                                      mouse_map_position);
+                world_->GetStateManager()->ChangeSoldierMouseMapPosition(client_soldier_id,
+                                                                         mouse_map_position);
             } else {
                 client_state_->camera = { 0.0F, 0.0F };
             }
 
             if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
+                glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
+
                 SoldierInputPacket update_soldier_state_packet{
                     .input_sequence_id = input_sequence_id,
                     .game_tick = world_->GetStateManager()->GetState().game_tick,
                     .position_x = world_->GetSoldier(client_soldier_id).particle.position.x,
                     .position_y = world_->GetSoldier(client_soldier_id).particle.position.y,
-                    .mouse_position_x = mouse_position.x,
-                    .mouse_position_y = mouse_position.y,
+                    .mouse_map_position_x = mouse_map_position.x,
+                    .mouse_map_position_y = mouse_map_position.y,
                     .control = world_->GetSoldier(client_soldier_id).control
                 };
                 input_sequence_id++;

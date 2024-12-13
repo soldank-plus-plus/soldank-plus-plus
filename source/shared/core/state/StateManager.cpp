@@ -128,8 +128,8 @@ void StateManager::SoldierControlApply(
     apply_function(soldier, soldier.control);
 }
 
-void StateManager::ChangeSoldierMousePosition(std::uint8_t soldier_id,
-                                              glm::ivec2 new_mouse_position)
+void StateManager::ChangeSoldierMouseMapPosition(std::uint8_t soldier_id,
+                                                 glm::ivec2 new_mouse_position)
 {
     Soldier& soldier = GetSoldierRef(soldier_id);
     soldier.control.mouse_aim_x = new_mouse_position.x;

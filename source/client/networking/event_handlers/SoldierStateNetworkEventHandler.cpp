@@ -39,8 +39,8 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
     bool on_ground_last_frame = soldier_state_packet.on_ground_last_frame;
     bool on_ground_permanent = soldier_state_packet.on_ground_permanent;
     std::uint8_t stance = soldier_state_packet.stance;
-    float mouse_position_x = soldier_state_packet.mouse_position_x;
-    float mouse_position_y = soldier_state_packet.mouse_position_y;
+    float mouse_map_position_x = soldier_state_packet.mouse_map_position_x;
+    float mouse_map_position_y = soldier_state_packet.mouse_map_position_y;
     bool using_jets = soldier_state_packet.using_jets;
     std::int32_t jets_count = soldier_state_packet.jets_count;
     std::uint8_t active_weapon = soldier_state_packet.active_weapon;
@@ -84,19 +84,8 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
             // TODO: make mouse position not game width and game height dependent
             soldier.game_width = 640.0;
             soldier.game_height = 480.0;
-            soldier.mouse.x = mouse_position_x;
-            soldier.mouse.y = 480.0F - mouse_position_y;
-
-            // soldier.camera.x =
-            //   soldier.particle.position.x + (float)(soldier.mouse.x - (soldier.game_width / 2));
-            // soldier.camera.y = soldier.particle.position.y -
-            //                    (float)((480.0F - soldier.mouse.y) - (soldier.game_height / 2));
-
-            // TODO: server should send mouse_aim and here we should recalculate the rest
-            // soldier.control.mouse_aim_x =
-            //   (soldier.mouse.x - (float)soldier.game_width / 2.0F + soldier.camera.x);
-            // soldier.control.mouse_aim_y =
-            //   (soldier.mouse.y - (float)soldier.game_height / 2.0F + soldier.camera.y);
+            world_->GetStateManager()->ChangeSoldierMouseMapPosition(
+              soldier_id, { mouse_map_position_x, mouse_map_position_y });
 
             if ((float)soldier.control.mouse_aim_x >= soldier.particle.position.x) {
                 soldier.direction = 1;
@@ -154,11 +143,11 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
                 world_->GetStateManager()->ChangeSoldierControlActionState(
                   soldier_id, ControlActionType::Prone, player_control.prone);
 
-                world_->GetStateManager()->ChangeSoldierMousePosition(
+                world_->GetStateManager()->ChangeSoldierMouseMapPosition(
                   soldier_id,
-                  { it->mouse_position_x,
-                    it->mouse_position_y }); // TODO: smooth camera handling, probably need to send
-                                             // mouse aim instead of cursor pos in packets
+                  { it->mouse_map_position_x,
+                    it->mouse_map_position_y }); // TODO: smooth camera handling, probably need to
+                                                 // send mouse aim instead of cursor pos in packets
                 world_->GetStateManager()->ChangeSoldierControlActionState(
                   soldier_id, ControlActionType::UseJets, player_control.jets);
 

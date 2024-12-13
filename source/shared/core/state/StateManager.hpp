@@ -23,7 +23,7 @@ public:
       std::uint8_t soldier_id,
       const std::function<void(const Soldier& soldier, Control& control)>& apply_function);
 
-    void ChangeSoldierMousePosition(std::uint8_t soldier_id, glm::ivec2 new_mouse_position);
+    void ChangeSoldierMouseMapPosition(std::uint8_t soldier_id, glm::ivec2 new_mouse_position);
     void SwitchSoldierWeapon(std::uint8_t soldier_id);
     void ChangeSoldierPrimaryWeapon(std::uint8_t soldier_id, WeaponType new_weapon_type);
     void SoldierPickupWeapon(std::uint8_t soldier_id, const Item& item);

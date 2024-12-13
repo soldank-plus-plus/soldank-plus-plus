@@ -141,8 +141,8 @@ void Application::Run()
                 .on_ground_last_frame = soldier.on_ground_last_frame,
                 .on_ground_permanent = soldier.on_ground_permanent,
                 .stance = soldier.stance,
-                .mouse_position_x = soldier.mouse.x,
-                .mouse_position_y = 480.0F - soldier.mouse.y, // TODO: is it correct?
+                .mouse_map_position_x = (float)soldier.control.mouse_aim_x,
+                .mouse_map_position_y = (float)soldier.control.mouse_aim_y,
                 .using_jets = soldier.control.jets,
                 .jets_count = soldier.jets_count,
                 .active_weapon = soldier.active_weapon,
