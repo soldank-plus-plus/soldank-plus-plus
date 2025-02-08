@@ -23,23 +23,14 @@ LegsJumpSideAnimationState::LegsJumpSideAnimationState(
 {
 }
 
-void LegsJumpSideAnimationState::Enter(Soldier& soldier)
-{
-    jumping_direction_left_ = soldier.control.was_running_left;
-    both_direction_keys_pressed_ = soldier.control.left && soldier.control.right;
-}
-
 std::optional<std::shared_ptr<AnimationState>> LegsJumpSideAnimationState::HandleInput(
   Soldier& soldier)
 {
     if (!soldier.control.left || !soldier.control.right) {
-        both_direction_keys_pressed_ = false;
         soldier.control.was_running_left = soldier.control.left;
     }
-    if (!both_direction_keys_pressed_ && soldier.control.left && soldier.control.right) {
-        both_direction_keys_pressed_ = true;
-    }
-    jumping_direction_left_ = soldier.control.was_running_left;
+
+    bool jumping_direction_left = soldier.control.was_running_left;
 
     if (soldier.control.prone) {
         return std::make_shared<LegsProneAnimationState>(animation_data_manager_);
@@ -101,7 +92,7 @@ std::optional<std::shared_ptr<AnimationState>> LegsJumpSideAnimationState::Handl
         }
     }
 
-    if (!jumping_direction_left_) {
+    if (!jumping_direction_left) {
         if ((GetFrame() > 3) && (GetFrame() < 11)) {
             glm::vec2 particle_force = soldier.particle.GetForce();
             particle_force.x = PhysicsConstants::JUMPDIRSPEED;
@@ -110,7 +101,7 @@ std::optional<std::shared_ptr<AnimationState>> LegsJumpSideAnimationState::Handl
         }
     }
 
-    if (jumping_direction_left_) {
+    if (jumping_direction_left) {
         if (GetType() == AnimationType::JumpSide) {
             if ((GetFrame() > 3) && (GetFrame() < 11)) {
                 glm::vec2 particle_force = soldier.particle.GetForce();
@@ -124,7 +115,7 @@ std::optional<std::shared_ptr<AnimationState>> LegsJumpSideAnimationState::Handl
     return std::nullopt;
 }
 
-void LegsJumpSideAnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events)
+void LegsJumpSideAnimationState::Update(Soldier& soldier, const PhysicsEvents& /*physics_events*/)
 {
     soldier.stance = PhysicsConstants::STANCE_STAND;
 }

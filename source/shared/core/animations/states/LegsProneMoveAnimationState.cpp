@@ -17,24 +17,9 @@ LegsProneMoveAnimationState::LegsProneMoveAnimationState(
 {
 }
 
-void LegsProneMoveAnimationState::Enter(Soldier& soldier)
-{
-    moving_direction_left_ = soldier.control.left;
-    both_direction_keys_pressed_ = soldier.control.left && soldier.control.right;
-}
-
 std::optional<std::shared_ptr<AnimationState>> LegsProneMoveAnimationState::HandleInput(
   Soldier& soldier)
 {
-    if (!soldier.control.left || !soldier.control.right) {
-        both_direction_keys_pressed_ = false;
-        moving_direction_left_ = soldier.control.left;
-    }
-    if (!both_direction_keys_pressed_ && soldier.control.left && soldier.control.right) {
-        both_direction_keys_pressed_ = true;
-        moving_direction_left_ = !moving_direction_left_;
-    }
-
     if (!soldier.control.left && !soldier.control.right) {
         auto new_state = std::make_shared<LegsProneAnimationState>(animation_data_manager_);
         new_state->SetFrame(26);
@@ -42,17 +27,8 @@ std::optional<std::shared_ptr<AnimationState>> LegsProneMoveAnimationState::Hand
     }
 
     if (soldier.on_ground) {
-        bool was_holding_left = soldier.control.left;
-        bool was_holding_right = soldier.control.right;
-        if (moving_direction_left_) {
-            soldier.control.right = false;
-        } else {
-            soldier.control.left = false;
-        }
         auto maybe_rolling_animation_state =
           CommonAnimationStateTransitions::TryTransitionToRolling(soldier, animation_data_manager_);
-        soldier.control.left = was_holding_left;
-        soldier.control.right = was_holding_right;
         if (maybe_rolling_animation_state.has_value()) {
             return *maybe_rolling_animation_state;
         }
@@ -78,7 +54,7 @@ void LegsProneMoveAnimationState::Update(Soldier& soldier, const PhysicsEvents& 
 
     if ((GetFrame() < 4) || (GetFrame() > 14)) {
         if (soldier.on_ground) {
-            if (moving_direction_left_) {
+            if (soldier.control.left) {
                 glm::vec2 particle_force = soldier.particle.GetForce();
                 particle_force.x = -PhysicsConstants::PRONESPEED;
                 soldier.particle.SetForce(particle_force);

@@ -21,12 +21,6 @@ LegsRunBackAnimationState::LegsRunBackAnimationState(
 {
 }
 
-void LegsRunBackAnimationState::Enter(Soldier& soldier)
-{
-    was_holding_left_ = soldier.control.left;
-    was_holding_right_ = soldier.control.right;
-}
-
 std::optional<std::shared_ptr<AnimationState>> LegsRunBackAnimationState::HandleInput(
   Soldier& soldier)
 {
@@ -35,17 +29,8 @@ std::optional<std::shared_ptr<AnimationState>> LegsRunBackAnimationState::Handle
     }
 
     if (soldier.on_ground) {
-        bool was_holding_left = soldier.control.left;
-        bool was_holding_right = soldier.control.right;
-        if (IsRunningLeft(soldier)) {
-            soldier.control.right = false;
-        } else {
-            soldier.control.left = false;
-        }
         auto maybe_rolling_animation_state =
           CommonAnimationStateTransitions::TryTransitionToRolling(soldier, animation_data_manager_);
-        soldier.control.left = was_holding_left;
-        soldier.control.right = was_holding_right;
         if (maybe_rolling_animation_state.has_value()) {
             return *maybe_rolling_animation_state;
         }
@@ -60,8 +45,6 @@ std::optional<std::shared_ptr<AnimationState>> LegsRunBackAnimationState::Handle
         }
 
         if (soldier.control.up) {
-            was_holding_right_ = soldier.control.right;
-            was_holding_left_ = soldier.control.left;
             return std::nullopt;
         }
 
@@ -69,20 +52,16 @@ std::optional<std::shared_ptr<AnimationState>> LegsRunBackAnimationState::Handle
     }
 
     if (soldier.control.up && soldier.on_ground) {
-        soldier.control.was_running_left = IsRunningLeft(soldier);
+        soldier.control.was_running_left = soldier.control.left;
         return std::make_shared<LegsJumpSideAnimationState>(animation_data_manager_);
     }
 
-    if (!was_holding_left_ || !soldier.control.right) {
-        if (soldier.control.left && soldier.direction == -1) {
-            return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
-        }
+    if (soldier.control.left && soldier.direction == -1) {
+        return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
     }
 
-    if (!was_holding_right_ || !soldier.control.left) {
-        if (soldier.control.right && soldier.direction == 1) {
-            return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
-        }
+    if (soldier.control.right && soldier.direction == 1) {
+        return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
     }
 
     // if using jets, reset animation because first frame looks like "directional" jetting
@@ -94,12 +73,10 @@ std::optional<std::shared_ptr<AnimationState>> LegsRunBackAnimationState::Handle
         return std::make_shared<LegsRunBackAnimationState>(animation_data_manager_);
     }
 
-    was_holding_right_ = soldier.control.right;
-    was_holding_left_ = soldier.control.left;
     return std::nullopt;
 }
 
-void LegsRunBackAnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events)
+void LegsRunBackAnimationState::Update(Soldier& soldier, const PhysicsEvents& /*physics_events*/)
 {
     soldier.stance = PhysicsConstants::STANCE_STAND;
 
@@ -124,28 +101,5 @@ void LegsRunBackAnimationState::Update(Soldier& soldier, const PhysicsEvents& ph
             soldier.particle.SetForce(particle_force);
         }
     }
-}
-
-bool LegsRunBackAnimationState::IsRunningLeft(const Soldier& soldier) const
-{
-    if (soldier.control.left && soldier.control.right) {
-        if (soldier.direction == 1) {
-            if (!was_holding_right_) {
-                // right was just pressed so should be running right
-                return false;
-            }
-        }
-
-        if (soldier.direction == -1) {
-            if (!was_holding_left_) {
-                // left was just pressed so should be running left
-                return true;
-            }
-        }
-
-        return soldier.direction == 1;
-    }
-
-    return soldier.control.left;
 }
 } // namespace Soldank
