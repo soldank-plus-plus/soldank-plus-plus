@@ -2,6 +2,7 @@
 
 #include "communication/NetworkPackets.hpp"
 
+#include "core/entities/Soldier.hpp"
 #include "core/physics/SoldierSkeletonPhysics.hpp"
 
 #include "spdlog/spdlog.h"
@@ -116,10 +117,25 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
                     // CheckSkeletonOutOfBounds;
                 }
             }
+            for (auto it = client_state_->soldier_snapshot_history.begin();
+                 it != client_state_->soldier_snapshot_history.end();
+                 ++it) {
+                if (it->first == last_processed_input_id + 1) {
+                    it->second.CompareAndLog(soldier);
+                }
+            }
         }
     }
 
     if (client_state_->server_reconciliation && is_soldier_id_me) {
+        for (auto it = client_state_->soldier_snapshot_history.begin();
+             it != client_state_->soldier_snapshot_history.end();) {
+            if (it->first <= last_processed_input_id) {
+                it = client_state_->soldier_snapshot_history.erase(it);
+            } else {
+                break;
+            }
+        }
         for (auto it = client_state_->pending_inputs.begin();
              it != client_state_->pending_inputs.end();) {
             if (it->input_sequence_id <= last_processed_input_id) {

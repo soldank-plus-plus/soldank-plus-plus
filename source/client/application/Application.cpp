@@ -596,6 +596,10 @@ void Application::Run()
                     .mouse_map_position_y = mouse_map_position.y,
                     .control = world_->GetSoldier(client_soldier_id).control
                 };
+                if (client_state_->server_reconciliation) {
+                    client_state_->soldier_snapshot_history.emplace_back(
+                      input_sequence_id, world_->GetSoldier(client_soldier_id));
+                }
                 input_sequence_id++;
                 if (client_state_->server_reconciliation) {
                     client_state_->pending_inputs.push_back(update_soldier_state_packet);
