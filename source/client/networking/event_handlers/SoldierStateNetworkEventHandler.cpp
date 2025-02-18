@@ -121,6 +121,8 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
                  it != client_state_->soldier_snapshot_history.end();
                  ++it) {
                 if (it->first == last_processed_input_id + 1) {
+                    // TODO: It looks like body_animation_frame and
+                    // legs_animation_frame are always behind the server by 1 frame
                     it->second.CompareAndLog(soldier);
                 }
             }

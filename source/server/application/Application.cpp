@@ -193,7 +193,12 @@ void Application::Run()
         return true;
     });
 
-    world_->SetFPSLimit(64);
+    // Increased tick rate to 240 (tickrate * 4) because when it was 64
+    // (which is higher than the tickrate - 60) on the client there was
+    // always a difference of one frame (i.e. there was a visual bug where
+    // soldier was always getting teleported few pixels behind)
+    // TODO: Figure out why it's related and possibly fix
+    world_->SetFPSLimit(240);
     world_->RunLoop();
 
     // Give connections time to finish up.  This is an application layer protocol
