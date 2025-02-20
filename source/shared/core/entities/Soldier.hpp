@@ -69,6 +69,42 @@ struct Soldier
 
     bool grenade_can_throw;
 };
+
+class SoldierSnapshot
+{
+public:
+    SoldierSnapshot(const Soldier& soldier);
+
+    void CompareAndLog(const Soldier& other_soldier);
+
+private:
+    AnimationType body_animation_type_;
+    AnimationType legs_animation_type_;
+
+    std::uint32_t body_animation_frame_;
+    std::uint32_t legs_animation_frame_;
+
+    std::int32_t body_animation_speed_;
+    std::int32_t legs_animation_speed_;
+
+    std::int32_t body_animation_count_;
+    std::int32_t legs_animation_count_;
+
+    bool on_ground_;
+
+    Control control_;
+
+    glm::vec2 position_;
+    glm::vec2 old_position_;
+
+    std::int32_t jets_count_;
+    std::int32_t jets_count_prev_;
+
+    std::uint8_t stance_;
+
+    glm::vec2 velocity_;
+    glm::vec2 force_;
+};
 } // namespace Soldank
 
 #endif

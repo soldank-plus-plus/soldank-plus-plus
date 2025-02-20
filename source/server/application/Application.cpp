@@ -129,9 +129,11 @@ void Application::Run()
                 .body_animation_type = soldier.body_animation->GetType(),
                 .body_animation_frame = soldier.body_animation->GetFrame(),
                 .body_animation_speed = soldier.body_animation->GetSpeed(),
+                .body_animation_count = soldier.body_animation->GetCount(),
                 .legs_animation_type = soldier.legs_animation->GetType(),
                 .legs_animation_frame = soldier.legs_animation->GetFrame(),
                 .legs_animation_speed = soldier.legs_animation->GetSpeed(),
+                .legs_animation_count = soldier.legs_animation->GetCount(),
                 .velocity_x = soldier.particle.GetVelocity().x,
                 .velocity_y = soldier.particle.GetVelocity().y,
                 .force_x = soldier.particle.GetForce().x,
@@ -193,7 +195,12 @@ void Application::Run()
         return true;
     });
 
-    world_->SetFPSLimit(64);
+    // Increased tick rate to 240 (tickrate * 4) because when it was 64
+    // (which is higher than the tickrate - 60) on the client there was
+    // always a difference of one frame (i.e. there was a visual bug where
+    // soldier was always getting teleported few pixels behind)
+    // TODO: Figure out why it's related and possibly fix
+    world_->SetFPSLimit(240);
     world_->RunLoop();
 
     // Give connections time to finish up.  This is an application layer protocol

@@ -2,6 +2,7 @@
 
 #include "communication/NetworkPackets.hpp"
 
+#include "core/entities/Soldier.hpp"
 #include "core/physics/SoldierSkeletonPhysics.hpp"
 
 #include "spdlog/spdlog.h"
@@ -28,9 +29,11 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
     AnimationType body_animation_type = soldier_state_packet.body_animation_type;
     std::uint32_t body_animation_frame = soldier_state_packet.body_animation_frame;
     std::int32_t body_animation_speed = soldier_state_packet.body_animation_speed;
+    std::int32_t body_animation_count = soldier_state_packet.body_animation_count;
     AnimationType legs_animation_type = soldier_state_packet.legs_animation_type;
     std::uint32_t legs_animation_frame = soldier_state_packet.legs_animation_frame;
     std::int32_t legs_animation_speed = soldier_state_packet.legs_animation_speed;
+    std::int32_t legs_animation_count = soldier_state_packet.legs_animation_count;
     glm::vec2 soldier_velocity = { soldier_state_packet.velocity_x,
                                    soldier_state_packet.velocity_y };
     glm::vec2 soldier_force = { soldier_state_packet.force_x, soldier_state_packet.force_y };
@@ -64,12 +67,14 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
             soldier.body_animation->Enter(soldier);
             soldier.body_animation->SetFrame(body_animation_frame);
             soldier.body_animation->SetSpeed(body_animation_speed);
+            soldier.body_animation->SetCount(body_animation_count);
 
             soldier.legs_animation->Exit(soldier, world_->GetPhysicsEvents());
             soldier.legs_animation = world_->GetLegsAnimationState(legs_animation_type);
             soldier.legs_animation->Enter(soldier);
             soldier.legs_animation->SetFrame(legs_animation_frame);
             soldier.legs_animation->SetSpeed(legs_animation_speed);
+            soldier.legs_animation->SetCount(legs_animation_count);
 
             soldier.particle.SetVelocity(soldier_velocity);
             soldier.particle.SetForce(soldier_force);
@@ -103,23 +108,32 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
             if (!is_soldier_id_me || !client_state_->client_side_prediction) {
                 RepositionSoldierSkeletonParts(soldier);
 
-                if (!soldier.dead_meat) {
-                    soldier.body_animation->DoAnimation();
-                    soldier.legs_animation->DoAnimation();
-                    soldier.skeleton->DoVerletTimestepFor(22, 29);
-                    soldier.skeleton->DoVerletTimestepFor(24, 30);
-                }
-
+                // TODO: Figure out if the below section is needed, I have a hunch that it is not
                 if (soldier.dead_meat) {
                     soldier.skeleton->DoVerletTimestep();
                     soldier.particle.position = soldier.skeleton->GetPos(12);
                     // CheckSkeletonOutOfBounds;
                 }
             }
+            for (auto it = client_state_->soldier_snapshot_history.begin();
+                 it != client_state_->soldier_snapshot_history.end();
+                 ++it) {
+                if (it->first == last_processed_input_id + 1) {
+                    it->second.CompareAndLog(soldier);
+                }
+            }
         }
     }
 
     if (client_state_->server_reconciliation && is_soldier_id_me) {
+        for (auto it = client_state_->soldier_snapshot_history.begin();
+             it != client_state_->soldier_snapshot_history.end();) {
+            if (it->first <= last_processed_input_id) {
+                it = client_state_->soldier_snapshot_history.erase(it);
+            } else {
+                break;
+            }
+        }
         for (auto it = client_state_->pending_inputs.begin();
              it != client_state_->pending_inputs.end();) {
             if (it->input_sequence_id <= last_processed_input_id) {

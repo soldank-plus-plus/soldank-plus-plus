@@ -1,6 +1,7 @@
 #ifndef __CLIENT_STATE_HPP__
 #define __CLIENT_STATE_HPP__
 
+#include "core/entities/Soldier.hpp"
 #include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
 #include "rendering/components/Camera.hpp"
 
@@ -40,6 +41,7 @@ struct ClientState
     glm::vec2 soldier_position_server_pov;
 
     std::list<SoldierInputPacket> pending_inputs;
+    std::list<std::pair<std::uint32_t, SoldierSnapshot>> soldier_snapshot_history;
     bool server_reconciliation = true;
     bool client_side_prediction = true;
     bool objects_interpolation = true;

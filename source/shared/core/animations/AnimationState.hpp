@@ -35,6 +35,9 @@ public:
     void SetFrame(unsigned int new_frame) { frame_ = new_frame; }
     void SetNextFrame() { frame_++; }
 
+    int GetCount() const { return count_; }
+    void SetCount(int new_count) { count_ = new_count; }
+
     // This method calls a shooting event to spawn a projectile for the current primary weapon
     // if a player presses the fire button. It has a separate method for that because it's a shared
     // functionality between many animation types and players are allowed to shoot during
