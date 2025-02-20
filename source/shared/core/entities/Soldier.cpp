@@ -73,6 +73,8 @@ SoldierSnapshot::SoldierSnapshot(const Soldier& soldier)
     , legs_animation_frame_(soldier.legs_animation->GetFrame())
     , body_animation_speed_(soldier.body_animation->GetSpeed())
     , legs_animation_speed_(soldier.legs_animation->GetSpeed())
+    , body_animation_count_(soldier.body_animation->GetCount())
+    , legs_animation_count_(soldier.legs_animation->GetCount())
     , on_ground_(soldier.on_ground)
     , control_(soldier.control)
     , position_(soldier.particle.position)
@@ -117,6 +119,17 @@ void SoldierSnapshot::CompareAndLog(const Soldier& other_soldier)
         spdlog::debug("legs_animation_speed difference: {} != {}",
                       legs_animation_speed_,
                       other_soldier.legs_animation->GetSpeed());
+    }
+
+    if (body_animation_count_ != other_soldier.body_animation->GetCount()) {
+        spdlog::debug("body_animation_count difference: {} != {}",
+                      body_animation_count_,
+                      other_soldier.body_animation->GetCount());
+    }
+    if (legs_animation_count_ != other_soldier.legs_animation->GetCount()) {
+        spdlog::debug("legs_animation_count difference: {} != {}",
+                      legs_animation_count_,
+                      other_soldier.legs_animation->GetCount());
     }
 
     if (on_ground_ != other_soldier.on_ground) {

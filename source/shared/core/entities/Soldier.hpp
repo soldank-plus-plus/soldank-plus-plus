@@ -87,6 +87,9 @@ private:
     std::int32_t body_animation_speed_;
     std::int32_t legs_animation_speed_;
 
+    std::int32_t body_animation_count_;
+    std::int32_t legs_animation_count_;
+
     bool on_ground_;
 
     Control control_;

@@ -36,9 +36,11 @@ struct SoldierStatePacket
     AnimationType body_animation_type;
     std::uint32_t body_animation_frame;
     std::int32_t body_animation_speed;
+    std::int32_t body_animation_count;
     AnimationType legs_animation_type;
     std::uint32_t legs_animation_frame;
     std::int32_t legs_animation_speed;
+    std::int32_t legs_animation_count;
     float velocity_x;
     float velocity_y;
     float force_x;
