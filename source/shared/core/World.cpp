@@ -111,7 +111,7 @@ void World::RunLoop()
             std::chrono::duration<double> dt_in_duration{ dt };
             timeacc -= dt_in_duration;
 
-            if (!state_manager_->GetState().paused) {
+            if (!state_manager_->IsGamePaused()) {
                 if (pre_world_update_callback_) {
                     pre_world_update_callback_();
                 }
@@ -131,7 +131,7 @@ void World::RunLoop()
         }
 
         double frame_percent = 1.0F;
-        if (!state_manager_->GetState().paused) {
+        if (!state_manager_->IsGamePaused()) {
             frame_percent = std::min(1.0, std::max(0.0, timeacc.count() / dt));
         }
 

@@ -307,7 +307,7 @@ void Application::Run()
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
         window_->SetCursorMode(CursorMode::Normal);
-        world_->GetStateManager()->GetState().paused = true;
+        world_->GetStateManager()->PauseGame();
     }
 
     client_state_->map_editor_state.event_pressed_play.AddObserver([&]() {
@@ -329,7 +329,7 @@ void Application::Run()
         client_state_->draw_map_editor_interface = false;
         client_state_->draw_game_debug_interface = true;
         client_state_->camera_component.ResetZoom();
-        world_->GetStateManager()->GetState().paused = false;
+        world_->GetStateManager()->UnPauseGame();
         if (!world_->GetStateManager()->GetMap().GetPolygons().empty()) {
             auto vertex = world_->GetStateManager()->GetMap().GetPolygons().at(0).vertices.at(0);
             glm::vec2 old_polygon_position = { vertex.x, vertex.y };
@@ -356,7 +356,7 @@ void Application::Run()
                 client_state_->draw_game_interface = false;
                 client_state_->draw_map_editor_interface = true;
                 client_state_->draw_game_debug_interface = false;
-                world_->GetStateManager()->GetState().paused = true;
+                world_->GetStateManager()->PauseGame();
                 window_->SetCursorMode(CursorMode::Normal);
                 map_editor_->Unlock();
             } else {
@@ -427,11 +427,10 @@ void Application::Run()
             (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
              client_state_->draw_game_interface)) {
             if (Keyboard::KeyWentDown(GLFW_KEY_F10)) {
-                world_->GetStateManager()->GetState().paused =
-                  !world_->GetStateManager()->GetState().paused;
+                world_->GetStateManager()->TogglePauseGame();
             }
 
-            if (world_->GetStateManager()->GetState().paused) {
+            if (world_->GetStateManager()->IsGamePaused()) {
                 glm::vec2 mouse_position = { Mouse::GetX(), Mouse::GetY() };
 
                 client_state_->camera_prev = client_state_->camera;

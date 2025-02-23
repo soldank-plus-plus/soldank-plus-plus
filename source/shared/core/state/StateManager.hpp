@@ -45,6 +45,11 @@ public:
     unsigned int GetGameTick() const { return state_.game_tick; }
     void SetGameTick(unsigned int new_game_tick) { state_.game_tick = new_game_tick; }
 
+    bool IsGamePaused() const { return state_.paused; }
+    void PauseGame() { state_.paused = true; }
+    void UnPauseGame() { state_.paused = false; }
+    void TogglePauseGame() { state_.paused = !state_.paused; }
+
 private:
     Soldier& GetSoldierRef(std::uint8_t soldier_id);
     Item& GetItemRef(std::uint8_t item_id);
