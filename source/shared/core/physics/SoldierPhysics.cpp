@@ -66,7 +66,8 @@ void Update(State& state,
             Soldier& soldier,
             const PhysicsEvents& physics_events,
             const AnimationDataManager& animation_data_manager,
-            std::vector<BulletParams>& bullet_emitter)
+            std::vector<BulletParams>& bullet_emitter,
+            float gravity)
 {
     const Map& map = state.map;
     float body_y = 0.0f;
@@ -162,26 +163,25 @@ void Update(State& state,
     if (jets_can_be_applied && soldier.control.jets && (soldier.jets_count > 0)) {
         if (soldier.on_ground) {
             glm::vec2 particle_force = soldier.particle.GetForce();
-            if (state.gravity > 0.05F) {
+            if (gravity > 0.05F) {
                 soldier.particle.SetForce({ particle_force.x, -2.5F * PhysicsConstants::JETSPEED });
             } else {
-                soldier.particle.SetForce({ particle_force.x, -2.5F * (state.gravity * 2.0F) });
+                soldier.particle.SetForce({ particle_force.x, -2.5F * (gravity * 2.0F) });
             }
         } else if (soldier.stance != PhysicsConstants::STANCE_PRONE) {
             glm::vec2 particle_force = soldier.particle.GetForce();
-            if (state.gravity > 0.05F) {
+            if (gravity > 0.05F) {
                 soldier.particle.SetForce(
                   { particle_force.x, particle_force.y - PhysicsConstants::JETSPEED });
             } else {
-                soldier.particle.SetForce(
-                  { particle_force.x, particle_force.y - state.gravity * 2.0F });
+                soldier.particle.SetForce({ particle_force.x, particle_force.y - gravity * 2.0F });
             }
         } else {
             glm::vec2 particle_force = soldier.particle.GetForce();
             soldier.particle.SetForce(
               { particle_force.x +
                   (float)soldier.direction *
-                    (state.gravity > 0.05F ? PhysicsConstants::JETSPEED / 2.0F : state.gravity),
+                    (gravity > 0.05F ? PhysicsConstants::JETSPEED / 2.0F : gravity),
                 particle_force.y });
         }
         soldier.jets_count -= 1;

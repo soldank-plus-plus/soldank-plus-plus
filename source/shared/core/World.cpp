@@ -166,6 +166,9 @@ void World::RunLoop()
 
 void World::Update(double /*delta_time*/)
 {
+    // TODO: move this somewhere else
+    static float gravity = 0.06F;
+
     auto removed_bullets_range = std::ranges::remove_if(
       state_manager_->GetState().bullets, [](const Bullet& bullet) { return !bullet.active; });
     state_manager_->GetState().bullets.erase(removed_bullets_range.begin(),
@@ -187,7 +190,8 @@ void World::Update(double /*delta_time*/)
                                        soldier,
                                        *physics_events_,
                                        animation_data_manager_,
-                                       bullet_emitter);
+                                       bullet_emitter,
+                                       gravity);
                 if (soldier.dead_meat) {
                     soldier.ticks_to_respawn--;
                     if (soldier.ticks_to_respawn <= 0) {
@@ -222,6 +226,7 @@ void World::Update(double /*delta_time*/)
 
 void World::UpdateSoldier(unsigned int soldier_id)
 {
+    static float gravity = 0.06F;
     std::vector<BulletParams> bullet_emitter;
 
     for (auto& soldier : state_manager_->GetState().soldiers) {
@@ -230,7 +235,8 @@ void World::UpdateSoldier(unsigned int soldier_id)
                                    soldier,
                                    *physics_events_,
                                    animation_data_manager_,
-                                   bullet_emitter);
+                                   bullet_emitter,
+                                   gravity);
         }
     }
 }

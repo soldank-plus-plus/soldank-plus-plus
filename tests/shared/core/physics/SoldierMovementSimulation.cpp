@@ -122,18 +122,23 @@ void SoldierMovementSimulation::AddSoldierExpectedAnimationState(
 
 void SoldierMovementSimulation::RunUntilSoldierOnGround()
 {
+    static float gravity = 0.06F;
+
     Soldank::State& state = state_manager_.GetState();
     auto& current_soldier = *state.soldiers.begin();
     while (!current_soldier.on_ground) {
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
         Soldank::SoldierPhysics::Update(
-          state, current_soldier, physics_events, animation_data_manager_, bullet_emitter);
+          state, current_soldier, physics_events, animation_data_manager_, bullet_emitter, gravity);
     }
 }
 
 void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
 {
+    // TODO: Move this somewhere else
+    static float gravity = 0.06F;
+
     Soldank::State& state = state_manager_.GetState();
     auto& current_soldier = *state.soldiers.begin();
     glm::vec2 soldier_position_origin = current_soldier.particle.position;
@@ -154,7 +159,7 @@ void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
         Soldank::SoldierPhysics::Update(
-          state, current_soldier, physics_events, animation_data_manager_, bullet_emitter);
+          state, current_soldier, physics_events, animation_data_manager_, bullet_emitter, gravity);
 
         if (animations_to_check_at_tick_.contains(current_tick)) {
             CheckSoldierAnimationStates(current_soldier,

@@ -16,11 +16,9 @@ struct State
     unsigned int game_tick;
     bool paused;
     Map map;
-    float gravity = 0.06F;
     std::list<Bullet> bullets;
     std::list<Soldier> soldiers;
     std::vector<Item> items;
-    std::vector<unsigned int> colliding_polygon_ids;
 };
 } // namespace Soldank
 
