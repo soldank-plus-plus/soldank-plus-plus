@@ -41,6 +41,8 @@ public:
     Item& CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style);
     void SetItemPosition(unsigned int id, glm::vec2 new_position);
     void MoveItemIntoDirection(unsigned int id, glm::vec2 direction);
+    void TransformItems(const std::function<void(Item& item)>& transform_item_function);
+    void RemoveInactiveItems();
 
     unsigned int GetGameTick() const { return state_.game_tick; }
     void SetGameTick(unsigned int new_game_tick) { state_.game_tick = new_game_tick; }

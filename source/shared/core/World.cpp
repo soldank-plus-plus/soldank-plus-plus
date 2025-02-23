@@ -171,9 +171,7 @@ void World::Update(double /*delta_time*/)
     state_manager_->GetState().bullets.erase(removed_bullets_range.begin(),
                                              removed_bullets_range.end());
 
-    auto removed_items_range = std::ranges::remove_if(
-      state_manager_->GetState().items, [](const Item& item) { return !item.active; });
-    state_manager_->GetState().items.erase(removed_items_range.begin(), removed_items_range.end());
+    state_manager_->RemoveInactiveItems();
 
     std::vector<BulletParams> bullet_emitter;
 
@@ -216,9 +214,8 @@ void World::Update(double /*delta_time*/)
         }
     }
 
-    for (auto& item : state_manager_->GetState().items) {
-        ItemPhysics::Update(state_manager_->GetState(), item, *physics_events_);
-    }
+    state_manager_->TransformItems(
+      [&](auto& item) { ItemPhysics::Update(state_manager_->GetState(), item, *physics_events_); });
 
     state_manager_->ClearBulletEmitter();
 }

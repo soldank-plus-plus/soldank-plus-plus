@@ -510,6 +510,20 @@ void StateManager::MoveItemIntoDirection(unsigned int id, glm::vec2 direction)
     }
 }
 
+void StateManager::TransformItems(const std::function<void(Item& item)>& transform_item_function)
+{
+    for (auto& item : state_.items) {
+        transform_item_function(item);
+    }
+}
+
+void StateManager::RemoveInactiveItems()
+{
+    auto removed_items_range =
+      std::ranges::remove_if(state_.items, [](const Item& item) { return !item.active; });
+    state_.items.erase(removed_items_range.begin(), removed_items_range.end());
+}
+
 Soldier& StateManager::GetSoldierRef(std::uint8_t soldier_id)
 {
     for (auto& soldier : state_.soldiers) {
