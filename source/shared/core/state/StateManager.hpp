@@ -42,6 +42,9 @@ public:
     void SetItemPosition(unsigned int id, glm::vec2 new_position);
     void MoveItemIntoDirection(unsigned int id, glm::vec2 direction);
 
+    unsigned int GetGameTick() const { return state_.game_tick; }
+    void SetGameTick(unsigned int new_game_tick) { state_.game_tick = new_game_tick; }
+
 private:
     Soldier& GetSoldierRef(std::uint8_t soldier_id);
     Item& GetItemRef(std::uint8_t item_id);

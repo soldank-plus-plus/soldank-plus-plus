@@ -122,7 +122,7 @@ void World::RunLoop()
 
                 world_updates++;
                 game_tick++;
-                state_manager_->GetState().game_tick = game_tick;
+                state_manager_->SetGameTick(game_tick);
             }
 
             timecur = std::chrono::system_clock::now();

@@ -454,7 +454,7 @@ void Application::Run()
             networking_client_->SetLag(client_state_->network_lag);
             networking_client_->Update(client_network_event_dispatcher_);
 
-            if ((world_->GetStateManager()->GetState().game_tick % 60 == 0)) {
+            if ((world_->GetStateManager()->GetGameTick() % 60 == 0)) {
                 if (client_state_->ping_timer.IsRunning()) {
                     client_state_->ping_timer.Update();
                     if (client_state_->ping_timer.IsOverThreshold()) {
@@ -588,7 +588,7 @@ void Application::Run()
 
                 SoldierInputPacket update_soldier_state_packet{
                     .input_sequence_id = input_sequence_id,
-                    .game_tick = world_->GetStateManager()->GetState().game_tick,
+                    .game_tick = world_->GetStateManager()->GetGameTick(),
                     .position_x = world_->GetSoldier(client_soldier_id).particle.position.x,
                     .position_y = world_->GetSoldier(client_soldier_id).particle.position.y,
                     .mouse_map_position_x = mouse_map_position.x,
