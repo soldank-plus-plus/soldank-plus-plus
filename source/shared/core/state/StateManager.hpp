@@ -15,6 +15,7 @@ class StateManager
 {
 public:
     State& GetState() { return state_; }
+    Map& GetMap() { return state_.map; }
 
     void ChangeSoldierControlActionState(std::uint8_t soldier_id,
                                          ControlActionType control_action_type,

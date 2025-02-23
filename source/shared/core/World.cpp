@@ -202,7 +202,7 @@ void World::Update(double /*delta_time*/)
 
     for (auto& bullet : state_manager_->GetState().bullets) {
         BulletPhysics::UpdateBullet(
-          *physics_events_, bullet, state_manager_->GetState().map, state_manager_->GetState());
+          *physics_events_, bullet, state_manager_->GetMap(), state_manager_->GetState());
     }
 
     for (const auto& bullet_params : state_manager_->GetBulletEmitter()) {
@@ -381,7 +381,7 @@ glm::vec2 World::SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> 
         initial_player_position = *spawn_position;
     } else {
         std::vector<glm::vec2> possible_spawn_point_positions;
-        for (const auto& spawn_point : state_manager_->GetState().map.GetSpawnPoints()) {
+        for (const auto& spawn_point : state_manager_->GetMap().GetSpawnPoints()) {
             if (spawn_point.type == PMSSpawnPointType::General ||
                 spawn_point.type == PMSSpawnPointType::Alpha ||
                 spawn_point.type == PMSSpawnPointType::Bravo ||
@@ -393,7 +393,7 @@ glm::vec2 World::SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> 
         }
 
         if (possible_spawn_point_positions.empty()) {
-            for (const auto& spawn_point : state_manager_->GetState().map.GetSpawnPoints()) {
+            for (const auto& spawn_point : state_manager_->GetMap().GetSpawnPoints()) {
                 possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
             }
         }

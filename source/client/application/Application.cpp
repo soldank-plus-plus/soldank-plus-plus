@@ -155,9 +155,9 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     spdlog::debug("{} Map: {}", map_path.empty(), map_path);
 
     if (map_path.empty()) {
-        world_->GetStateManager()->GetState().map.CreateEmptyMap();
+        world_->GetStateManager()->GetMap().CreateEmptyMap();
     } else {
-        world_->GetStateManager()->GetState().map.LoadMap(map_path);
+        world_->GetStateManager()->GetMap().LoadMap(map_path);
     }
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
@@ -289,7 +289,7 @@ void Application::Run()
     client_state_->event_respawn_player_at_spawn_point_requested.AddObserver(
       [&](unsigned int spawn_point_id) {
           const auto& spawn_point =
-            world_->GetStateManager()->GetState().map.GetSpawnPoints().at(spawn_point_id);
+            world_->GetStateManager()->GetMap().GetSpawnPoints().at(spawn_point_id);
           glm::vec2 position = { spawn_point.x, spawn_point.y };
           world_->SpawnSoldier(*client_state_->client_soldier_id, position);
       });
@@ -330,14 +330,13 @@ void Application::Run()
         client_state_->draw_game_debug_interface = true;
         client_state_->camera_component.ResetZoom();
         world_->GetStateManager()->GetState().paused = false;
-        if (!world_->GetStateManager()->GetState().map.GetPolygons().empty()) {
-            auto vertex =
-              world_->GetStateManager()->GetState().map.GetPolygons().at(0).vertices.at(0);
+        if (!world_->GetStateManager()->GetMap().GetPolygons().empty()) {
+            auto vertex = world_->GetStateManager()->GetMap().GetPolygons().at(0).vertices.at(0);
             glm::vec2 old_polygon_position = { vertex.x, vertex.y };
 
-            world_->GetStateManager()->GetState().map.GenerateSectors();
+            world_->GetStateManager()->GetMap().GenerateSectors();
 
-            vertex = world_->GetStateManager()->GetState().map.GetPolygons().at(0).vertices.at(0);
+            vertex = world_->GetStateManager()->GetMap().GetPolygons().at(0).vertices.at(0);
             glm::vec2 move_offset = { vertex.x - old_polygon_position.x,
                                       vertex.y - old_polygon_position.y };
 

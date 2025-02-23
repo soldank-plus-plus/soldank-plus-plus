@@ -40,7 +40,7 @@ Application::Application()
     : world_(std::make_shared<World>())
     , lobby_client_(std::make_shared<LobbyClient>())
 {
-    world_->GetStateManager()->GetState().map.LoadMap("maps/ctf_Ash.pms");
+    world_->GetStateManager()->GetMap().LoadMap("maps/ctf_Ash.pms");
     spdlog::set_level(spdlog::level::debug);
 
     bool da_script_initialized = InitDaScriptModule();

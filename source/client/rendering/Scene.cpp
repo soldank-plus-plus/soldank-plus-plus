@@ -21,12 +21,12 @@
 namespace Soldank
 {
 Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& client_state)
-    : background_renderer_(game_state->GetState().map)
-    , polygons_renderer_(std::make_unique<PolygonsRenderer>(
-        game_state->GetState().map,
-        std::string(game_state->GetState().map.GetTextureName())))
-    , polygon_outlines_renderer_(game_state->GetState().map, { 1.0F, 1.0F, 1.0F, 1.0F })
-    , sceneries_renderer_(game_state->GetState().map)
+    : background_renderer_(game_state->GetMap())
+    , polygons_renderer_(
+        std::make_unique<PolygonsRenderer>(game_state->GetMap(),
+                                           std::string(game_state->GetMap().GetTextureName())))
+    , polygon_outlines_renderer_(game_state->GetMap(), { 1.0F, 1.0F, 1.0F, 1.0F })
+    , sceneries_renderer_(game_state->GetMap())
     , soldier_renderer_(sprite_manager_)
     , cursor_renderer_(client_state)
     , text_renderer_("play-regular.ttf", 48)
