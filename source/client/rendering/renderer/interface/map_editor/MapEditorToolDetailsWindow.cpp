@@ -20,7 +20,7 @@ enum class ToolDetailsSubWindowOpenType
     Soldiers
 };
 
-void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
+void RenderPolygonToolDetails(const State& game_state, ClientState& client_state)
 {
     unsigned short new_polygon_id = game_state.map.GetPolygonsCount() + 1;
 
@@ -141,7 +141,7 @@ void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
     }
 }
 
-void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
+void RenderSelectionToolDetails(const State& game_state, ClientState& client_state)
 {
     static ToolDetailsSubWindowOpenType sub_window_open_type = ToolDetailsSubWindowOpenType::None;
 
@@ -422,7 +422,7 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
     }
 }
 
-void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
+void RenderSceneryToolDetails(const State& game_state, ClientState& client_state)
 {
     unsigned short new_scenery_id = game_state.map.GetSceneryInstances().size() + 1;
     ImGui::Text("Placing scenery: %hu/%d", new_scenery_id, MAX_SCENERIES_COUNT);
@@ -467,7 +467,7 @@ void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
     }
 }
 
-void Render(State& game_state, ClientState& client_state)
+void Render(const State& game_state, ClientState& client_state)
 {
     static ImGuiWindowFlags default_window_flags =
       ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |

@@ -232,7 +232,7 @@ void AddControlActionTypes(const Control& soldier_control,
     }
 }
 
-void Render(State& game_state, ClientState& client_state, double /*frame_percent*/, int fps)
+void Render(const State& game_state, ClientState& client_state, double /*frame_percent*/, int fps)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent(client_state.mouse.x, client_state.window_height - client_state.mouse.y);

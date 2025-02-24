@@ -20,7 +20,7 @@ class MapEditorScene
 public:
     MapEditorScene(ClientState& client_state, State& game_state);
 
-    void Render(State& game_state,
+    void Render(const State& game_state,
                 ClientState& client_state,
                 const PolygonsRenderer& polygons_renderer);
 

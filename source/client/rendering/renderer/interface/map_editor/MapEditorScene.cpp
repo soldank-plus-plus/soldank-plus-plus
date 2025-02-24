@@ -18,7 +18,7 @@ MapEditorScene::MapEditorScene(ClientState& client_state, State& game_state)
       [this](const std::string& file_name) { single_image_renderer_.SetTexture(file_name); });
 }
 
-void MapEditorScene::Render(State& game_state,
+void MapEditorScene::Render(const State& game_state,
                             ClientState& client_state,
                             const PolygonsRenderer& polygons_renderer)
 {

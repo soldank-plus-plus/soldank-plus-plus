@@ -77,7 +77,8 @@ struct MapChangeEvents
     Observable<const PMSSpawnPoint&, unsigned int> removed_spawn_point;
     Observable<const std::vector<PMSSpawnPoint>&> removed_spawn_points;
     Observable<const std::vector<PMSSpawnPoint>&> added_spawn_points;
-    Observable<const PMSColor&, const PMSColor&, std::span<float, 4>> changed_background_color;
+    Observable<const PMSColor&, const PMSColor&, std::span<const float, 4>>
+      changed_background_color;
     Observable<const std::string&> changed_texture_name;
     Observable<const PMSScenery&, unsigned int> added_new_scenery;
     Observable<const PMSScenery&, unsigned int, const std::vector<PMSScenery>&> removed_scenery;
@@ -188,7 +189,7 @@ public:
     }
     PMSColor GetBackgroundBottomColor() const { return map_data_.background_bottom_color; }
 
-    std::span<float, 4> GetBoundaries() { return map_data_.boundaries_xy; }
+    std::span<const float, 4> GetBoundaries() const { return map_data_.boundaries_xy; }
 
     const std::vector<PMSPolygon>& GetPolygons() const { return map_data_.polygons; }
 

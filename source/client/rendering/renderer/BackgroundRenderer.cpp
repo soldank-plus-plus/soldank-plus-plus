@@ -13,7 +13,7 @@ BackgroundRenderer::BackgroundRenderer(Map& map)
 {
     PMSColor background_bottom_color = map.GetBackgroundBottomColor();
     PMSColor background_top_color = map.GetBackgroundTopColor();
-    std::span<float, 4> boundaries = map.GetBoundaries();
+    std::span<const float, 4> boundaries = map.GetBoundaries();
     std::vector<float> vertices;
 
     GenerateGLBufferVertices(background_top_color, background_bottom_color, boundaries, vertices);
@@ -21,8 +21,9 @@ BackgroundRenderer::BackgroundRenderer(Map& map)
     vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
 
     map.GetMapChangeEvents().changed_background_color.AddObserver(
-      [this](
-        const PMSColor& top_color, const PMSColor& bottom_color, std::span<float, 4> boundaries) {
+      [this](const PMSColor& top_color,
+             const PMSColor& bottom_color,
+             std::span<const float, 4> boundaries) {
           OnChangeBackgroundColor(top_color, bottom_color, boundaries);
       });
 }
@@ -42,7 +43,7 @@ void BackgroundRenderer::Render(glm::mat4 transform)
 
 void BackgroundRenderer::OnChangeBackgroundColor(const PMSColor& top_color,
                                                  const PMSColor& bottom_color,
-                                                 std::span<float, 4> boundaries)
+                                                 std::span<const float, 4> boundaries)
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(top_color, bottom_color, boundaries, vertices);
@@ -51,7 +52,7 @@ void BackgroundRenderer::OnChangeBackgroundColor(const PMSColor& top_color,
 
 void BackgroundRenderer::GenerateGLBufferVertices(PMSColor background_top_color,
                                                   PMSColor background_bottom_color,
-                                                  std::span<float, 4> boundaries,
+                                                  std::span<const float, 4> boundaries,
                                                   std::vector<float>& destination_vertices)
 {
     float bottom_red = (float)background_bottom_color.red / 255.0F;

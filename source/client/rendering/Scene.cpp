@@ -40,7 +40,10 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& clien
     SetupImGuiTheme();
 }
 
-void Scene::Render(State& game_state, ClientState& client_state, double frame_percent, int fps)
+void Scene::Render(const State& game_state,
+                   ClientState& client_state,
+                   double frame_percent,
+                   int fps)
 {
     // TODO: handle it better, this is not a good place for this to be
     client_state.current_polygon_texture_dimensions = polygons_renderer_->GetTextureDimensions();

@@ -187,6 +187,41 @@ MapEditor::MapEditor(ClientState& client_state, State& game_state)
             game_state);
       });
 
+    client_state.map_editor_state.event_save_map.AddObserver(
+      [&game_state](const std::string& map_name) { game_state.map.SaveMap(map_name); });
+    client_state.map_editor_state.event_set_map_name.AddObserver(
+      [&game_state](const std::string& map_name) { game_state.map.SetName(map_name); });
+    client_state.map_editor_state.event_set_map_description.AddObserver(
+      [&game_state](const std::string& description) {
+          game_state.map.SetDescription(description);
+      });
+    client_state.map_editor_state.event_set_map_weather_type.AddObserver(
+      [&game_state](PMSWeatherType weather_type) { game_state.map.SetWeatherType(weather_type); });
+    client_state.map_editor_state.event_set_map_step_type.AddObserver(
+      [&game_state](PMSStepType step_type) { game_state.map.SetStepType(step_type); });
+    client_state.map_editor_state.event_set_map_grenades_count.AddObserver(
+      [&game_state](unsigned char grenades_count) {
+          game_state.map.SetGrenadesCount(grenades_count);
+      });
+    client_state.map_editor_state.event_set_map_medikits_count.AddObserver(
+      [&game_state](unsigned char medikits_count) {
+          game_state.map.SetMedikitsCount(medikits_count);
+      });
+    client_state.map_editor_state.event_set_map_jet_count.AddObserver(
+      [&game_state](int jet_count) { game_state.map.SetJetCount(jet_count); });
+    client_state.map_editor_state.event_set_map_background_top_color.AddObserver(
+      [&game_state](const PMSColor& background_top_color) {
+          game_state.map.SetBackgroundTopColor(background_top_color);
+      });
+    client_state.map_editor_state.event_set_map_background_bottom_color.AddObserver(
+      [&game_state](const PMSColor& background_bottom_color) {
+          game_state.map.SetBackgroundBottomColor(background_bottom_color);
+      });
+    client_state.map_editor_state.event_set_map_texture_name.AddObserver(
+      [&game_state](const std::string& texture_name) {
+          game_state.map.SetTextureName(texture_name);
+      });
+
     OnSelectNewTool(client_state.map_editor_state.selected_tool, client_state, game_state);
 }
 

@@ -7,7 +7,7 @@
 
 namespace Soldank::MapEditorUI
 {
-void Render(State& game_state, ClientState& client_state);
+void Render(const State& game_state, ClientState& client_state);
 }
 
 #endif

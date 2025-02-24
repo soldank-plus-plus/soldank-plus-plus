@@ -15,7 +15,7 @@
 
 namespace Soldank::MapEditorUI
 {
-void Render(State& game_state, ClientState& client_state)
+void Render(const State& game_state, ClientState& client_state)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent(client_state.mouse.x, client_state.mouse.y);
@@ -36,7 +36,8 @@ void Render(State& game_state, ClientState& client_state)
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Save", "CTRL+S")) {
                     if (game_state.map.GetName()) {
-                        game_state.map.SaveMap("maps/" + *game_state.map.GetName());
+                        client_state.map_editor_state.event_save_map.Notify(
+                          "maps/" + *game_state.map.GetName());
                         client_state.map_editor_state.is_map_changed = false;
                     } else {
                         client_state.map_editor_state.should_open_save_as_modal = true;
@@ -161,8 +162,8 @@ void Render(State& game_state, ClientState& client_state)
                     new_map_name += c;
                 }
                 new_map_name += ".pms";
-                game_state.map.SetName(new_map_name);
-                game_state.map.SaveMap("maps/" + new_map_name);
+                client_state.map_editor_state.event_set_map_name.Notify(new_map_name);
+                client_state.map_editor_state.event_save_map.Notify("maps/" + new_map_name);
                 client_state.map_editor_state.is_map_changed = false;
                 ImGui::CloseCurrentPopup();
             }
@@ -209,7 +210,8 @@ void Render(State& game_state, ClientState& client_state)
             if (ImGui::InputText("##DescriptionInput",
                                  client_state.map_editor_state.map_description_input.data(),
                                  DESCRIPTION_MAX_LENGTH)) {
-                game_state.map.SetDescription(client_state.map_editor_state.map_description_input);
+                client_state.map_editor_state.event_set_map_description.Notify(
+                  client_state.map_editor_state.map_description_input);
             }
 
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
@@ -234,7 +236,8 @@ void Render(State& game_state, ClientState& client_state)
                         if (ImGui::Selectable(weather_option.first.c_str(),
                                               game_state.map.GetWeatherType() ==
                                                 weather_option.second)) {
-                            game_state.map.SetWeatherType(weather_option.second);
+                            client_state.map_editor_state.event_set_map_weather_type.Notify(
+                              weather_option.second);
                         }
                     }
                     ImGui::EndCombo();
@@ -252,7 +255,8 @@ void Render(State& game_state, ClientState& client_state)
                     for (const auto& step_option : step_options) {
                         if (ImGui::Selectable(step_option.first.c_str(),
                                               game_state.map.GetStepType() == step_option.second)) {
-                            game_state.map.SetStepType(step_option.second);
+                            client_state.map_editor_state.event_set_map_step_type.Notify(
+                              step_option.second);
                         }
                     }
                     ImGui::EndCombo();
@@ -271,7 +275,7 @@ void Render(State& game_state, ClientState& client_state)
                 if (grenades_count > 12) {
                     grenades_count = 12;
                 }
-                game_state.map.SetGrenadesCount(grenades_count);
+                client_state.map_editor_state.event_set_map_grenades_count.Notify(grenades_count);
             }
             ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
 
@@ -287,50 +291,50 @@ void Render(State& game_state, ClientState& client_state)
                 if (medikits_count > 12) {
                     medikits_count = 12;
                 }
-                game_state.map.SetMedikitsCount(medikits_count);
+                client_state.map_editor_state.event_set_map_medikits_count.Notify(medikits_count);
             }
             ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
 
             ImVec2 jet_fuel_buttons_size(ImGui::GetContentRegionAvail().x / 4.0F - 9.0F, 0);
             ImGui::SeparatorText("Jet fuel:");
             if (ImGui::Button("None##JetFuelInputNone", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(0);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(0);
             }
             ImGui::SetItemTooltip("Value: 0");
             ImGui::SameLine();
             if (ImGui::Button("Minimal##JetFuelInputMinimal", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(12);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(12);
             }
             ImGui::SetItemTooltip("Value: 12");
             ImGui::SameLine();
             if (ImGui::Button("Very Low##JetFuelInputVeryLow", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(45);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(45);
             }
             ImGui::SetItemTooltip("Value: 45");
             ImGui::SameLine();
             if (ImGui::Button("Low##JetFuelInputLow", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(95);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(95);
             }
 
             // new line
             ImGui::SetItemTooltip("Value: 95");
             if (ImGui::Button("Normal##JetFuelInputNormal", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(190);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(190);
             }
             ImGui::SetItemTooltip("Value: 190");
             ImGui::SameLine();
             if (ImGui::Button("High##JetFuelInputHigh", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(320);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(320);
             }
             ImGui::SetItemTooltip("Value: 320");
             ImGui::SameLine();
             if (ImGui::Button("Extreme##JetFuelInputExtreme", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(800);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(800);
             }
             ImGui::SetItemTooltip("Value: 800");
             ImGui::SameLine();
             if (ImGui::Button("Infinite##JetFuelInputInfinite", jet_fuel_buttons_size)) {
-                game_state.map.SetJetCount(25999);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(25999);
             }
             ImGui::SetItemTooltip("Value: 25999");
             int jet_count = game_state.map.GetJetCount();
@@ -342,7 +346,7 @@ void Render(State& game_state, ClientState& client_state)
                 if (jet_count > 25999) {
                     jet_count = 25999;
                 }
-                game_state.map.SetJetCount(jet_count);
+                client_state.map_editor_state.event_set_map_jet_count.Notify(jet_count);
             }
             ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
 
@@ -385,7 +389,8 @@ void Render(State& game_state, ClientState& client_state)
                           (unsigned char)(im_top_background_color.z * 255.0F);
                         top_background_color.alpha =
                           (unsigned char)(im_top_background_color.w * 255.0F);
-                        game_state.map.SetBackgroundTopColor(top_background_color);
+                        client_state.map_editor_state.event_set_map_background_top_color.Notify(
+                          top_background_color);
                     }
                     ImGui::EndPopup();
                 }
@@ -415,7 +420,8 @@ void Render(State& game_state, ClientState& client_state)
                           (unsigned char)(im_bottom_background_color.z * 255.0F);
                         bottom_background_color.alpha =
                           (unsigned char)(im_bottom_background_color.w * 255.0F);
-                        game_state.map.SetBackgroundBottomColor(bottom_background_color);
+                        client_state.map_editor_state.event_set_map_background_bottom_color.Notify(
+                          bottom_background_color);
                     }
                     ImGui::EndPopup();
                 }
@@ -452,7 +458,8 @@ void Render(State& game_state, ClientState& client_state)
                                                   game_state.map.GetTextureName() ||
                                                 texture_file_name == map_texture_in_png.string())) {
 
-                            game_state.map.SetTextureName(texture_file_name);
+                            client_state.map_editor_state.event_set_map_texture_name.Notify(
+                              texture_file_name);
                         }
                     }
                     ImGui::EndCombo();

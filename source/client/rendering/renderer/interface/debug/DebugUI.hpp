@@ -6,7 +6,7 @@
 
 namespace Soldank::DebugUI
 {
-void Render(State& game_state, ClientState& client_state, double frame_percent, int fps);
+void Render(const State& game_state, ClientState& client_state, double frame_percent, int fps);
 bool GetWantCaptureMouse();
 } // namespace Soldank::DebugUI
 
