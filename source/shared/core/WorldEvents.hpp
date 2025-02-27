@@ -8,7 +8,7 @@ namespace Soldank
 {
 struct WorldEvents
 {
-    Observable<Soldier&> after_soldier_spawns;
+    Observable<const Soldier&> after_soldier_spawns;
     Observable<Soldier&> soldier_died;
 };
 } // namespace Soldank

@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <functional>
+#include <random>
 
 namespace Soldank
 {
@@ -33,6 +34,13 @@ public:
     void SetSoldierPosition(std::uint8_t soldier_id, const glm::vec2& new_position);
     void ThrowSoldierFlags(std::uint8_t soldier_id);
     glm::vec2 GetSoldierAimDirection(std::uint8_t soldier_id);
+    void TransformSoldier(std::uint8_t soldier_id,
+                          const std::function<void(Soldier&)>& transform_soldier_function);
+    void TransformSoldiers(const std::function<void(Soldier&)>& transform_soldier_function);
+    const Soldier& GetSoldier(std::uint8_t soldier_id) const;
+    const Soldier& CreateSoldier(AnimationDataManager& animation_data_manager,
+                                 std::optional<unsigned int> force_soldier_id);
+    glm::vec2 SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> spawn_position);
 
     void CreateProjectile(const BulletParams& bullet_params);
     const std::vector<BulletParams>& GetBulletEmitter() const;
@@ -58,6 +66,9 @@ private:
 
     State state_;
     std::vector<BulletParams> bullet_emitter_;
+
+    std::random_device random_device_{};
+    std::mt19937 mersenne_twister_engine_{ random_device_() };
 };
 } // namespace Soldank
 

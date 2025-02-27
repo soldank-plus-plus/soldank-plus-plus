@@ -66,7 +66,7 @@ void CoreEventHandler::ObserveAll(IWorld* world)
 
 void CoreEventHandler::ObserveAllWorldEvents(IWorld* world)
 {
-    world->GetWorldEvents().after_soldier_spawns.AddObserver([](Soldier& soldier) {
+    world->GetWorldEvents().after_soldier_spawns.AddObserver([](const Soldier& soldier) {
         spdlog::debug("soldier {} spawned at ({}, {})",
                       soldier.id,
                       soldier.particle.position.x,

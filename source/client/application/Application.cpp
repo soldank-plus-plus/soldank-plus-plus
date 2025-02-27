@@ -312,14 +312,8 @@ void Application::Run()
 
     client_state_->map_editor_state.event_pressed_play.AddObserver([&]() {
         std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
-        bool is_soldier_active = false;
-        bool is_soldier_alive = false;
-        for (const auto& soldier : world_->GetStateManager()->GetState().soldiers) {
-            if (soldier.id == client_soldier_id && soldier.active) {
-                is_soldier_active = true;
-                is_soldier_alive = !soldier.dead_meat;
-            }
-        }
+        bool is_soldier_active = world_->GetStateManager()->GetSoldier(client_soldier_id).active;
+        bool is_soldier_alive = !world_->GetStateManager()->GetSoldier(client_soldier_id).dead_meat;
 
         if (!is_soldier_active || !is_soldier_alive) {
             world_->SpawnSoldier(*client_state_->client_soldier_id);
@@ -341,9 +335,9 @@ void Application::Run()
                                       vertex.y - old_polygon_position.y };
 
             // Move soldiers if the map moved
-            for (const auto& soldier : world_->GetStateManager()->GetState().soldiers) {
+            world_->GetStateManager()->TransformSoldiers([&](auto& soldier) {
                 world_->GetStateManager()->MoveSoldier(soldier.id, move_offset);
-            }
+            });
         }
         window_->SetCursorMode(CursorMode::Locked);
         map_editor_->Lock();
@@ -478,14 +472,10 @@ void Application::Run()
 
         if (client_state_->client_soldier_id.has_value()) {
             std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
-            bool is_soldier_active = false;
-            bool is_soldier_alive = false;
-            for (const auto& soldier : world_->GetStateManager()->GetState().soldiers) {
-                if (soldier.id == client_soldier_id && soldier.active) {
-                    is_soldier_active = true;
-                    is_soldier_alive = !soldier.dead_meat;
-                }
-            }
+            bool is_soldier_active =
+              world_->GetStateManager()->GetSoldier(client_soldier_id).active;
+            bool is_soldier_alive =
+              !world_->GetStateManager()->GetSoldier(client_soldier_id).dead_meat;
 
             if (is_soldier_active) {
                 if (is_soldier_alive) {

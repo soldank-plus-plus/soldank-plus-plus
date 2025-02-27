@@ -316,6 +316,127 @@ glm::vec2 StateManager::GetSoldierAimDirection(std::uint8_t soldier_id)
     return aim_direction;
 }
 
+void StateManager::TransformSoldier(std::uint8_t soldier_id,
+                                    const std::function<void(Soldier&)>& transform_soldier_function)
+{
+    Soldier& soldier = GetSoldierRef(soldier_id);
+    if (!soldier.active) {
+        spdlog::warn("Trying to transform inactive soldier of id: {}", soldier_id);
+        return;
+    }
+    transform_soldier_function(soldier);
+}
+
+void StateManager::TransformSoldiers(
+  const std::function<void(Soldier&)>& transform_soldier_function)
+{
+    for (auto it = state_.soldiers.begin(); it != state_.soldiers.end(); ++it) {
+        if (!it->active) {
+            continue;
+        }
+
+        transform_soldier_function(*it);
+    }
+}
+
+const Soldier& StateManager::GetSoldier(std::uint8_t soldier_id) const
+{
+    for (const auto& soldier : state_.soldiers) {
+        if (soldier.id == soldier_id) {
+            return soldier;
+        }
+    }
+
+    spdlog::critical("Trying to access soldier of invalid id: {}", soldier_id);
+    std::unreachable();
+}
+
+const Soldier& StateManager::CreateSoldier(AnimationDataManager& animation_data_manager,
+                                           std::optional<unsigned int> force_soldier_id)
+{
+    unsigned int new_soldier_id = NAN;
+
+    if (!force_soldier_id.has_value()) {
+        std::vector<unsigned int> current_soldier_ids;
+        for (const auto& soldier : state_.soldiers) {
+            current_soldier_ids.push_back(soldier.id);
+        }
+        std::sort(current_soldier_ids.begin(), current_soldier_ids.end());
+        unsigned int free_soldier_id = 1;
+        while (free_soldier_id <= current_soldier_ids.size() &&
+               current_soldier_ids.at(free_soldier_id - 1) == free_soldier_id) {
+            free_soldier_id++;
+        }
+
+        new_soldier_id = free_soldier_id;
+    } else {
+        new_soldier_id = *force_soldier_id;
+    }
+
+    std::vector<Weapon> weapons{
+        { WeaponParametersFactory::GetParameters(WeaponType::DesertEagles, false) },
+        { WeaponParametersFactory::GetParameters(WeaponType::Knife, false) },
+        { WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false) }
+    };
+    state_.soldiers.emplace_back(new_soldier_id,
+                                 animation_data_manager,
+                                 ParticleSystem::Load(ParticleSystemType::Soldier),
+                                 weapons);
+
+    return state_.soldiers.back();
+}
+
+glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
+                                     std::optional<glm::vec2> spawn_position)
+{
+    glm::vec2 initial_player_position{ 0.0F, 0.0F };
+    if (spawn_position.has_value()) {
+        initial_player_position = *spawn_position;
+    } else {
+        std::vector<glm::vec2> possible_spawn_point_positions;
+        for (const auto& spawn_point : state_.map.GetSpawnPoints()) {
+            if (spawn_point.type == PMSSpawnPointType::General ||
+                spawn_point.type == PMSSpawnPointType::Alpha ||
+                spawn_point.type == PMSSpawnPointType::Bravo ||
+                spawn_point.type == PMSSpawnPointType::Charlie ||
+                spawn_point.type == PMSSpawnPointType::Delta) {
+
+                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
+            }
+        }
+
+        if (possible_spawn_point_positions.empty()) {
+            for (const auto& spawn_point : state_.map.GetSpawnPoints()) {
+                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
+            }
+        }
+
+        if (!possible_spawn_point_positions.empty()) {
+            std::uniform_int_distribution<unsigned int> spawnpoint_id_random_distribution(
+              0, possible_spawn_point_positions.size() - 1);
+
+            unsigned int random_spawnpoint_id =
+              spawnpoint_id_random_distribution(mersenne_twister_engine_);
+
+            initial_player_position = possible_spawn_point_positions.at(random_spawnpoint_id);
+        }
+    }
+
+    auto& soldier = GetSoldierRef(soldier_id);
+    soldier.particle.position = initial_player_position;
+    soldier.particle.old_position = initial_player_position;
+    soldier.active = true;
+    soldier.particle.active = true;
+    soldier.health = 150.0;
+    soldier.dead_meat = false;
+    soldier.weapons[0] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[0], false);
+    soldier.weapons[1] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[1], false);
+    soldier.active_weapon = 0;
+    RepositionSoldierSkeletonParts(soldier);
+
+    return initial_player_position;
+}
+
 void StateManager::CreateProjectile(const BulletParams& bullet_params)
 {
     bullet_emitter_.push_back(bullet_params);
