@@ -120,7 +120,7 @@ void CoreEventHandler::ObserveAllPhysicsEvents(IWorld* world)
                 soldier.id,
                 0.0F // TODO: Add push
             };
-            world->GetStateManager()->CreateProjectile(params);
+            world->GetStateManager()->EnqueueNewProjectile(params);
             world->GetStateManager()->ChangeSoldierPrimaryWeapon(soldier.id, WeaponType::NoWeapon);
         } else {
             spdlog::debug("soldier {} throws a weapon", soldier.id);
@@ -158,7 +158,7 @@ void CoreEventHandler::ObserveAllPhysicsEvents(IWorld* world)
         std::vector<BulletParams> bullet_emitter;
         SoldierPhysics::Fire(soldier, bullet_emitter);
         for (auto& bullet_params : bullet_emitter) {
-            world->GetStateManager()->CreateProjectile(bullet_params);
+            world->GetStateManager()->EnqueueNewProjectile(bullet_params);
         }
     });
     world->GetPhysicsEvents().soldier_collides_with_item.AddObserver(

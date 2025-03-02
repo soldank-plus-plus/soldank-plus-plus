@@ -45,12 +45,15 @@ public:
     void ForEachSoldier(
       const std::function<void(const Soldier& soldier)>& for_each_soldier_function) const;
 
+    void EnqueueNewProjectile(const BulletParams& bullet_params);
     void CreateProjectile(const BulletParams& bullet_params);
     const std::vector<BulletParams>& GetBulletEmitter() const;
     void ClearBulletEmitter();
     void ForEachBullet(
       const std::function<void(const Bullet& bullet)>& for_each_bullet_function) const;
     std::size_t GetBulletsCount() const { return state_.bullets.size(); }
+    void TransformBullets(const std::function<void(Bullet& bullet)>& transform_bullet_function);
+    void RemoveInactiveBullets();
 
     Item& CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style);
     void SetItemPosition(unsigned int id, glm::vec2 new_position);

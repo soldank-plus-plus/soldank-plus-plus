@@ -445,9 +445,14 @@ void StateManager::ForEachSoldier(
     }
 }
 
-void StateManager::CreateProjectile(const BulletParams& bullet_params)
+void StateManager::EnqueueNewProjectile(const BulletParams& bullet_params)
 {
     bullet_emitter_.push_back(bullet_params);
+}
+
+void StateManager::CreateProjectile(const BulletParams& bullet_params)
+{
+    state_.bullets.emplace_back(bullet_params);
 }
 
 const std::vector<BulletParams>& StateManager::GetBulletEmitter() const
@@ -466,6 +471,21 @@ void StateManager::ForEachBullet(
     for (const auto& bullet : state_.bullets) {
         for_each_bullet_function(bullet);
     }
+}
+
+void StateManager::TransformBullets(
+  const std::function<void(Bullet& bullet)>& transform_bullet_function)
+{
+    for (auto& bullet : state_.bullets) {
+        transform_bullet_function(bullet);
+    }
+}
+
+void StateManager::RemoveInactiveBullets()
+{
+    auto removed_bullets_range =
+      std::ranges::remove_if(state_.bullets, [](const Bullet& bullet) { return !bullet.active; });
+    state_.bullets.erase(removed_bullets_range.begin(), removed_bullets_range.end());
 }
 
 Item& StateManager::CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style)

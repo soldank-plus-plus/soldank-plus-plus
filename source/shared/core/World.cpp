@@ -37,6 +37,7 @@
 #include "core/physics/ItemPhysics.hpp"
 #include "core/entities/WeaponParametersFactory.hpp"
 
+#include "core/state/State.hpp"
 #include "spdlog/spdlog.h"
 
 #include <algorithm>
@@ -168,11 +169,7 @@ void World::Update(double /*delta_time*/)
     // TODO: move this somewhere else
     static float gravity = 0.06F;
 
-    auto removed_bullets_range = std::ranges::remove_if(
-      state_manager_->GetState().bullets, [](const Bullet& bullet) { return !bullet.active; });
-    state_manager_->GetState().bullets.erase(removed_bullets_range.begin(),
-                                             removed_bullets_range.end());
-
+    state_manager_->RemoveInactiveBullets();
     state_manager_->RemoveInactiveItems();
 
     std::vector<BulletParams> bullet_emitter;
@@ -199,10 +196,10 @@ void World::Update(double /*delta_time*/)
         }
     });
 
-    for (auto& bullet : state_manager_->GetState().bullets) {
+    state_manager_->TransformBullets([&](auto& bullet) {
         BulletPhysics::UpdateBullet(
           *physics_events_, bullet, state_manager_->GetMap(), state_manager_->GetState());
-    }
+    });
 
     for (const auto& bullet_params : state_manager_->GetBulletEmitter()) {
         bool should_spawn_projectile = false;
@@ -211,7 +208,7 @@ void World::Update(double /*delta_time*/)
         }
 
         if (should_spawn_projectile) {
-            state_manager_->GetState().bullets.emplace_back(bullet_params);
+            state_manager_->CreateProjectile(bullet_params);
         }
     }
 
