@@ -129,8 +129,12 @@ void SoldierMovementSimulation::RunUntilSoldierOnGround()
     while (!current_soldier.on_ground) {
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
-        Soldank::SoldierPhysics::Update(
-          state, current_soldier, physics_events, animation_data_manager_, bullet_emitter, gravity);
+        Soldank::SoldierPhysics::Update(state_manager_,
+                                        current_soldier,
+                                        physics_events,
+                                        animation_data_manager_,
+                                        bullet_emitter,
+                                        gravity);
     }
 }
 
@@ -158,8 +162,12 @@ void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
 
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
-        Soldank::SoldierPhysics::Update(
-          state, current_soldier, physics_events, animation_data_manager_, bullet_emitter, gravity);
+        Soldank::SoldierPhysics::Update(state_manager_,
+                                        current_soldier,
+                                        physics_events,
+                                        animation_data_manager_,
+                                        bullet_emitter,
+                                        gravity);
 
         if (animations_to_check_at_tick_.contains(current_tick)) {
             CheckSoldierAnimationStates(current_soldier,

@@ -181,7 +181,7 @@ void World::Update(double /*delta_time*/)
         }
 
         if (should_update_current_soldier) {
-            SoldierPhysics::Update(state_manager_->GetState(),
+            SoldierPhysics::Update(*state_manager_,
                                    soldier,
                                    *physics_events_,
                                    animation_data_manager_,
@@ -198,7 +198,7 @@ void World::Update(double /*delta_time*/)
 
     state_manager_->TransformBullets([&](auto& bullet) {
         BulletPhysics::UpdateBullet(
-          *physics_events_, bullet, state_manager_->GetMap(), state_manager_->GetState());
+          *physics_events_, bullet, state_manager_->GetMap(), *state_manager_);
     });
 
     for (const auto& bullet_params : state_manager_->GetBulletEmitter()) {
@@ -213,7 +213,7 @@ void World::Update(double /*delta_time*/)
     }
 
     state_manager_->TransformItems(
-      [&](auto& item) { ItemPhysics::Update(state_manager_->GetState(), item, *physics_events_); });
+      [&](auto& item) { ItemPhysics::Update(*state_manager_, item, *physics_events_); });
 
     state_manager_->ClearBulletEmitter();
 }
@@ -224,7 +224,7 @@ void World::UpdateSoldier(unsigned int soldier_id)
     std::vector<BulletParams> bullet_emitter;
 
     state_manager_->TransformSoldier(soldier_id, [&](Soldier& soldier) {
-        SoldierPhysics::Update(state_manager_->GetState(),
+        SoldierPhysics::Update(*state_manager_,
                                soldier,
                                *physics_events_,
                                animation_data_manager_,

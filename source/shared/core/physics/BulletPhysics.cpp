@@ -21,12 +21,15 @@ static std::optional<std::pair<glm::vec2, unsigned int>> CheckMapCollision(Bulle
 static bool CollidesWithPoly(const PMSPolygon& poly, TeamType team);
 static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physics_events,
                                                       Bullet& bullet,
-                                                      const Map& map,
-                                                      State& state,
+                                                      StateManager& state_manager,
                                                       float lasthitdist);
-static glm::vec2 GetSoldierCollisionPoint(Soldier& soldier);
+static glm::vec2 GetSoldierCollisionPoint(const Soldier& soldier);
+static std::optional<int> FindSoldierCollisionPoint(const Soldier& soldier, const Bullet& bullet);
 
-void UpdateBullet(const PhysicsEvents& physics_events, Bullet& bullet, const Map& map, State& state)
+void UpdateBullet(const PhysicsEvents& physics_events,
+                  Bullet& bullet,
+                  const Map& map,
+                  StateManager& state_manager)
 {
     bullet.velocity_prev = bullet.particle.velocity_;
     bullet.particle.Euler();
@@ -68,7 +71,7 @@ void UpdateBullet(const PhysicsEvents& physics_events, Bullet& bullet, const Map
         bullet.active = false;
     }
 
-    auto soldier_collision = CheckSoldierCollision(physics_events, bullet, map, state, -1.0F);
+    auto soldier_collision = CheckSoldierCollision(physics_events, bullet, state_manager, -1.0F);
     if (soldier_collision.has_value()) {
         bullet.active = false;
         spdlog::debug("soldier hit");
@@ -136,13 +139,10 @@ static bool CollidesWithPoly(const PMSPolygon& poly, TeamType team)
 
 static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physics_events,
                                                       Bullet& bullet,
-                                                      const Map& map,
-                                                      State& state,
+                                                      StateManager& state_manager,
                                                       float lasthitdist)
 {
     // TODO: can't throw knife (with short hold) because it immediately collides with the owner
-    const auto body_parts_priority = std::array{ 12, 11, 10, 6, 5, 4, 3 };
-
     std::optional<glm::vec2> result = std::nullopt;
 
     int arrow_resist = 280; // TODO: this is a constant
@@ -157,79 +157,35 @@ static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physi
     // Iterate through sprites
     if (bullet.style != BulletType::ClusterGrenade) {
         // TODO: filter soldiers by distance
-        for (auto& soldier : state.soldiers) {
-            auto col = GetSoldierCollisionPoint(soldier);
-
-            int where = 0;
-            int r = 0;
-            const int part_radius = 7; // TODO: const
-            if (bullet.style != BulletType::FragGrenade) {
-                r = part_radius;
-            } else {
-                r = part_radius + 1;
-            }
-
-            glm::vec2 start_point;
-            glm::vec2 end_point;
-            // Pre-calculate some points if it's a melee weapon
-            if (bullet.style == BulletType::Fist || bullet.style == BulletType::Blade) {
-                pos = bullet.particle.position;
-
-                // TODO: implement this
-                // glm::vec2 buttstock_position_offset =
-                // state.soldiers[bullet.owner].GetHandsAimDirection();
-            } else {
-                start_point = bullet.particle.position;
-                end_point = bullet.particle.position + bullet.particle.GetVelocity();
-            }
-
-            // Check for collision with the body parts
-            float min_dist = 9999999; // TODO: max float
-
-            for (auto body_part_id : body_parts_priority) {
-                auto body_part_offset =
-                  soldier.skeleton->GetPos(body_part_id) - soldier.particle.position;
-                auto col_pos = col + body_part_offset;
-
-                // TODO: check opensoldat code
-                if (bullet.style != BulletType::Fist && bullet.style != BulletType::Blade) {
-                    col_pos.x -= 2.0F;
-                }
-
-                auto p = Calc::LineCircleCollision(start_point, end_point, col_pos, r);
-                if (p.has_value()) {
-                    pos = *p;
-                    auto dist = Calc::SquareDistance(start_point, pos);
-
-                    if (dist < min_dist) {
-                        where = body_part_id;
-                        min_dist = dist;
-                    }
-                }
-            }
-
+        const auto* soldier = state_manager.FindSoldier([&](const auto& soldier) {
+            auto where = FindSoldierCollisionPoint(soldier, bullet);
+            return where.has_value();
+        });
+        if (soldier != nullptr) {
+            // TODO: FindSoldierCollisionPoint is called twice, inefficient
+            auto where = FindSoldierCollisionPoint(*soldier, bullet);
             // temporary:
             // if (where != 0) {
             //     return glm::vec2{ 0, 0 };
             // }
 
             if ((bullet.style != BulletType::Fist && bullet.style != BulletType::Blade) ||
-                soldier.id != bullet.owner_id) {
+                soldier->id != bullet.owner_id) {
 
-                if (where != 0) {
+                if (where.has_value()) {
                     // order collision
                     if (lasthitdist > -1) {
                         a = pos - bullet.particle.old_position;
                         auto dist = Calc::Vec2Length(a);
 
                         if (dist > lasthitdist) {
-                            break;
+                            return result;
                         }
                     }
 
                     // soldier.brain.pissed_off = bullet.owner_id
 
-                    auto norm = pos - soldier.skeleton->GetPos(where);
+                    auto norm = pos - soldier->skeleton->GetPos(*where);
                     norm = Calc::Vec2Scale(norm, 1.3);
                     norm.y = -norm.y;
 
@@ -248,7 +204,7 @@ static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physi
                     //     if (NoCollision and WEAPON_NOCOLLISION_SELF<> 0)
                     //         and(Owner = j) then Continue;
 
-                    if (!soldier.dead_meat) {
+                    if (!soldier->dead_meat) {
                         if (bullet.style != BulletType::FragGrenade &&
                             bullet.style != BulletType::Flame &&
                             bullet.style != BulletType::Arrow) {
@@ -276,12 +232,12 @@ static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physi
                                 // TODO: play hit sound
                                 auto hitbox_modifier = 1.0F;
                                 // TODO: take hitbox_modifier
-                                if (where <= 4) {
+                                if (*where <= 4) {
                                     hitbox_modifier =
                                       WeaponParametersFactory::GetParameters(
                                         bullet.weapon, false /* TODO realistic or not*/)
                                         .modifier_legs;
-                                } else if (where <= 11) {
+                                } else if (*where <= 11) {
                                     hitbox_modifier =
                                       WeaponParametersFactory::GetParameters(
                                         bullet.weapon, false /* TODO realistic or not*/)
@@ -294,14 +250,16 @@ static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physi
                                 }
 
                                 auto speed = Calc::Vec2Length(bullet_velocity);
-                                auto was_dead = soldier.dead_meat;
+                                auto was_dead = soldier->dead_meat;
                                 // TODO: hit soldier
                                 auto hit_multiply =
                                   WeaponParametersFactory::GetParameters(
                                     bullet.weapon, false /* TODO realistic or not*/)
                                     .hit_multiply;
                                 auto damage = speed * hit_multiply * hitbox_modifier;
-                                physics_events.soldier_hit_by_bullet.Notify(soldier, damage);
+                                state_manager.TransformSoldier(soldier->id, [&](auto& soldier) {
+                                    physics_events.soldier_hit_by_bullet.Notify(soldier, damage);
+                                });
 
                                 // TODO: hit spray
                                 // TODO: drop weapon if hit from close distance
@@ -320,10 +278,13 @@ static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physi
                                       Calc::Vec2Scale(bullet_velocity, 0.9F));
                                     bullet_velocity = bullet.particle.GetVelocity();
                                     // TODO: Hit(HIT_TYPE_BODYHIT)
-                                    continue;
+                                    // TODO: If hit soldier is dead, the bullet should not get
+                                    // destroyed instead, the bullet should penetrate and fly
+                                    // further
+                                    // continue;
                                 }
 
-                                if (soldier.dead_meat || speed > 23) {
+                                if (soldier->dead_meat || speed > 23) {
                                     bullet.particle.SetVelocity(
                                       Calc::Vec2Scale(bullet_velocity, 0.75F));
                                     bullet_velocity = bullet.particle.GetVelocity();
@@ -363,6 +324,10 @@ static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physi
                                 // TODO
                                 break;
                             }
+                            case BulletType::ClusterGrenade: {
+                                // TODO
+                                break;
+                            }
                             case BulletType::ThrownKnife: {
                                 // TODO
                                 break;
@@ -374,15 +339,71 @@ static std::optional<glm::vec2> CheckSoldierCollision(const PhysicsEvents& physi
                     }
                 }
             }
-        }
+        };
     }
 
     return result;
 }
 
-static glm::vec2 GetSoldierCollisionPoint(Soldier& soldier)
+static glm::vec2 GetSoldierCollisionPoint(const Soldier& soldier)
 {
     // TODO: check in opensoldat code
     return soldier.particle.position;
+}
+
+static std::optional<int> FindSoldierCollisionPoint(const Soldier& soldier, const Bullet& bullet)
+{
+    const auto body_parts_priority = std::array{ 12, 11, 10, 6, 5, 4, 3 };
+    glm::vec2 pos;
+    auto col = GetSoldierCollisionPoint(soldier);
+
+    std::optional<int> where = std::nullopt;
+    int r = 0;
+    const int part_radius = 7; // TODO: const
+    if (bullet.style != BulletType::FragGrenade) {
+        r = part_radius;
+    } else {
+        r = part_radius + 1;
+    }
+
+    glm::vec2 start_point;
+    glm::vec2 end_point;
+    // Pre-calculate some points if it's a melee weapon
+    if (bullet.style == BulletType::Fist || bullet.style == BulletType::Blade) {
+        pos = bullet.particle.position;
+
+        // TODO: implement this
+        // glm::vec2 buttstock_position_offset =
+        // state.soldiers[bullet.owner].GetHandsAimDirection();
+    } else {
+        start_point = bullet.particle.position;
+        end_point = bullet.particle.position + bullet.particle.GetVelocity();
+    }
+
+    // Check for collision with the body parts
+    float min_dist = 9999999; // TODO: max float
+
+    for (auto body_part_id : body_parts_priority) {
+        auto body_part_offset = soldier.skeleton->GetPos(body_part_id) - soldier.particle.position;
+        auto col_pos = col + body_part_offset;
+
+        // TODO: check opensoldat code
+        if (bullet.style != BulletType::Fist && bullet.style != BulletType::Blade) {
+            col_pos.x -= 2.0F;
+        }
+
+        auto p = Calc::LineCircleCollision(start_point, end_point, col_pos, r);
+        if (p.has_value()) {
+            pos = *p;
+            auto dist = Calc::SquareDistance(start_point, pos);
+
+            if (dist < min_dist) {
+                where = body_part_id;
+                min_dist = dist;
+            }
+        }
+    }
+
+    return where;
 }
 } // namespace Soldank::BulletPhysics

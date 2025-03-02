@@ -445,6 +445,18 @@ void StateManager::ForEachSoldier(
     }
 }
 
+const Soldier* StateManager::FindSoldier(
+  const std::function<bool(const Soldier& soldier)>& predicate) const
+{
+    for (const Soldier& soldier : state_.soldiers) {
+        if (predicate(soldier)) {
+            return &soldier;
+        }
+    }
+
+    return nullptr;
+}
+
 void StateManager::EnqueueNewProjectile(const BulletParams& bullet_params)
 {
     bullet_emitter_.push_back(bullet_params);
