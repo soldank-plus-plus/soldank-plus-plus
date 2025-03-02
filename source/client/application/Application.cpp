@@ -615,8 +615,7 @@ void Application::Run()
           if (!client_state_->objects_interpolation) {
               frame_percent = 1.0F;
           }
-          scene.Render(
-            world_->GetStateManager()->GetState(), *client_state_, frame_percent, last_fps);
+          scene.Render(*world_->GetStateManager(), *client_state_, frame_percent, last_fps);
 
           window_->SwapBuffers();
           window_->PollInput();

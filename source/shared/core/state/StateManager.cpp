@@ -437,6 +437,14 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
     return initial_player_position;
 }
 
+void StateManager::ForEachSoldier(
+  const std::function<void(const Soldier& soldier)>& for_each_soldier_function) const
+{
+    for (const Soldier& soldier : state_.soldiers) {
+        for_each_soldier_function(soldier);
+    }
+}
+
 void StateManager::CreateProjectile(const BulletParams& bullet_params)
 {
     bullet_emitter_.push_back(bullet_params);
@@ -450,6 +458,14 @@ const std::vector<BulletParams>& StateManager::GetBulletEmitter() const
 void StateManager::ClearBulletEmitter()
 {
     bullet_emitter_.clear();
+}
+
+void StateManager::ForEachBullet(
+  const std::function<void(const Bullet& bullet)>& for_each_bullet_function) const
+{
+    for (const auto& bullet : state_.bullets) {
+        for_each_bullet_function(bullet);
+    }
 }
 
 Item& StateManager::CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style)
@@ -643,6 +659,14 @@ void StateManager::RemoveInactiveItems()
     auto removed_items_range =
       std::ranges::remove_if(state_.items, [](const Item& item) { return !item.active; });
     state_.items.erase(removed_items_range.begin(), removed_items_range.end());
+}
+
+void StateManager::ForEachItem(
+  const std::function<void(const Item& item)>& for_each_item_function) const
+{
+    for (const Item& item : state_.items) {
+        for_each_item_function(item);
+    }
 }
 
 Soldier& StateManager::GetSoldierRef(std::uint8_t soldier_id)

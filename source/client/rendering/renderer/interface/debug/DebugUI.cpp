@@ -232,7 +232,10 @@ void AddControlActionTypes(const Control& soldier_control,
     }
 }
 
-void Render(const State& game_state, ClientState& client_state, double /*frame_percent*/, int fps)
+void Render(const StateManager& game_state_manager,
+            ClientState& client_state,
+            double /*frame_percent*/,
+            int fps)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent(client_state.mouse.x, client_state.window_height - client_state.mouse.y);
@@ -265,12 +268,12 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
 
         ImGui::Checkbox("Smooth camera", &client_state.smooth_camera);
         ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0F / (float)fps, fps);
-        ImGui::Text("Bullets in game: %zu", game_state.bullets.size());
+        ImGui::Text("Bullets in game: %zu", game_state_manager.GetBulletsCount());
         if (ImGui::Button("/kill")) {
             client_state.kill_button_just_pressed = true;
         }
         if (client_state.client_soldier_id.has_value()) {
-            for (const auto& soldier : game_state.soldiers) {
+            game_state_manager.ForEachSoldier([&](const auto& soldier) {
                 if (*client_state.client_soldier_id == soldier.id) {
                     ImGui::Text("Player ID: %d", soldier.id);
                     ImGui::Text("Position: %.3f, %.3f",
@@ -278,10 +281,10 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
                                 soldier.particle.position.y);
 
                     auto rx = ((int)((soldier.particle.position.x /
-                                      (float)game_state.map.GetSectorsSize()))) +
+                                      (float)game_state_manager.GetConstMap().GetSectorsSize()))) +
                               25;
                     auto ry = ((int)((soldier.particle.position.y /
-                                      (float)game_state.map.GetSectorsSize()))) +
+                                      (float)game_state_manager.GetConstMap().GetSectorsSize()))) +
                               25;
 
                     ImGui::Text("Sector: %d, %d", rx, ry);
@@ -289,7 +292,7 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
                         ImGui::Text("SOLDIER IS ON GROUND");
                     }
                 }
-            }
+            });
         }
         ImGui::End();
     }
@@ -350,14 +353,14 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
             if (!recording_started) {
                 recorded_animations.clear();
                 recorded_actions.clear();
-                game_tick_when_started_recording = game_state.game_tick;
+                game_tick_when_started_recording = game_state_manager.GetGameTick();
 
                 if (client_state.client_soldier_id.has_value()) {
-                    for (const auto& soldier : game_state.soldiers) {
+                    game_state_manager.ForEachSoldier([&](const auto& soldier) {
                         if (*client_state.client_soldier_id == soldier.id) {
                             recorded_animations.push_back(
                               { .is_legs = false,
-                                .game_tick = game_state.game_tick,
+                                .game_tick = game_state_manager.GetGameTick(),
                                 .animation_type = soldier.body_animation->GetType(),
                                 .frame = soldier.body_animation->GetFrame(),
                                 .speed = soldier.body_animation->GetSpeed(),
@@ -366,7 +369,7 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
                             last_added_body_animation = recorded_animations.back();
                             recorded_animations.push_back(
                               { .is_legs = true,
-                                .game_tick = game_state.game_tick,
+                                .game_tick = game_state_manager.GetGameTick(),
                                 .animation_type = soldier.legs_animation->GetType(),
                                 .frame = soldier.legs_animation->GetFrame(),
                                 .speed = soldier.legs_animation->GetSpeed(),
@@ -377,9 +380,9 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
                             last_control = soldier.control;
 
                             AddControlActionTypes(
-                              soldier.control, recorded_actions, game_state.game_tick);
+                              soldier.control, recorded_actions, game_state_manager.GetGameTick());
                         }
-                    }
+                    });
                 }
             }
             recording_started = !recording_started;
@@ -387,13 +390,13 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
 
         if (recording_started) {
             if (client_state.client_soldier_id.has_value()) {
-                for (const auto& soldier : game_state.soldiers) {
+                game_state_manager.ForEachSoldier([&](const auto& soldier) {
                     if (*client_state.client_soldier_id == soldier.id) {
                         if (last_added_legs_animation.animation_type !=
                             soldier.legs_animation->GetType()) {
                             recorded_animations.push_back(
                               { .is_legs = true,
-                                .game_tick = game_state.game_tick,
+                                .game_tick = game_state_manager.GetGameTick(),
                                 .animation_type = soldier.legs_animation->GetType(),
                                 .frame = soldier.legs_animation->GetFrame(),
                                 .speed = soldier.legs_animation->GetSpeed(),
@@ -405,7 +408,7 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
                             soldier.body_animation->GetType()) {
                             recorded_animations.push_back(
                               { .is_legs = false,
-                                .game_tick = game_state.game_tick,
+                                .game_tick = game_state_manager.GetGameTick(),
                                 .animation_type = soldier.body_animation->GetType(),
                                 .frame = soldier.body_animation->GetFrame(),
                                 .speed = soldier.body_animation->GetSpeed(),
@@ -414,10 +417,12 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
                             last_added_body_animation = recorded_animations.back();
                         }
 
-                        AddControlActionTypesIfChanged(
-                          last_control, soldier.control, recorded_actions, game_state.game_tick);
+                        AddControlActionTypesIfChanged(last_control,
+                                                       soldier.control,
+                                                       recorded_actions,
+                                                       game_state_manager.GetGameTick());
                     }
-                }
+                });
             }
         }
 
@@ -453,11 +458,11 @@ void Render(const State& game_state, ClientState& client_state, double /*frame_p
 
         if (recording_started) {
             if (client_state.client_soldier_id.has_value()) {
-                for (const auto& soldier : game_state.soldiers) {
+                game_state_manager.ForEachSoldier([&](const auto& soldier) {
                     if (*client_state.client_soldier_id == soldier.id) {
                         last_control = soldier.control;
                     }
-                }
+                });
             }
         }
     }

@@ -15,7 +15,7 @@
 
 namespace Soldank::MapEditorUI
 {
-void Render(const State& game_state, ClientState& client_state)
+void Render(const StateManager& game_state_manager, ClientState& client_state)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent(client_state.mouse.x, client_state.mouse.y);
@@ -35,9 +35,9 @@ void Render(const State& game_state, ClientState& client_state)
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Save", "CTRL+S")) {
-                    if (game_state.map.GetName()) {
+                    if (game_state_manager.GetConstMap().GetName()) {
                         client_state.map_editor_state.event_save_map.Notify(
-                          "maps/" + *game_state.map.GetName());
+                          "maps/" + *game_state_manager.GetConstMap().GetName());
                         client_state.map_editor_state.is_map_changed = false;
                     } else {
                         client_state.map_editor_state.should_open_save_as_modal = true;
@@ -121,9 +121,9 @@ void Render(const State& game_state, ClientState& client_state)
         if (client_state.map_editor_state.should_open_save_as_modal) {
             client_state.map_editor_state.should_open_save_as_modal = false;
             new_map_name_input.fill(0);
-            if (game_state.map.GetName()) {
+            if (game_state_manager.GetConstMap().GetName()) {
                 unsigned int i = 0;
-                for (char c : *game_state.map.GetName()) {
+                for (char c : *game_state_manager.GetConstMap().GetName()) {
                     new_map_name_input.at(i) = c;
                     ++i;
                 }
@@ -203,7 +203,8 @@ void Render(const State& game_state, ClientState& client_state)
 
             static std::string drag_int_tooltip =
               "Drag left or right to change.\n\nDouble-click to input text manually.";
-            client_state.map_editor_state.map_description_input = game_state.map.GetDescription();
+            client_state.map_editor_state.map_description_input =
+              game_state_manager.GetConstMap().GetDescription();
             client_state.map_editor_state.map_description_input += (char)0;
             ImGui::SeparatorText("Description");
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
@@ -230,11 +231,12 @@ void Render(const State& game_state, ClientState& client_state)
                     { "Snow", PMSWeatherType::Snow },
                 };
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::BeginCombo("##WeatherInput",
-                                      game_state.map.GetWeatherTypeText().c_str())) {
+                if (ImGui::BeginCombo(
+                      "##WeatherInput",
+                      game_state_manager.GetConstMap().GetWeatherTypeText().c_str())) {
                     for (const auto& weather_option : weather_options) {
                         if (ImGui::Selectable(weather_option.first.c_str(),
-                                              game_state.map.GetWeatherType() ==
+                                              game_state_manager.GetConstMap().GetWeatherType() ==
                                                 weather_option.second)) {
                             client_state.map_editor_state.event_set_map_weather_type.Notify(
                               weather_option.second);
@@ -251,10 +253,12 @@ void Render(const State& game_state, ClientState& client_state)
                     { "None", PMSStepType::None },
                 };
                 // ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::BeginCombo("##StepsInput", game_state.map.GetStepTypeText().c_str())) {
+                if (ImGui::BeginCombo("##StepsInput",
+                                      game_state_manager.GetConstMap().GetStepTypeText().c_str())) {
                     for (const auto& step_option : step_options) {
                         if (ImGui::Selectable(step_option.first.c_str(),
-                                              game_state.map.GetStepType() == step_option.second)) {
+                                              game_state_manager.GetConstMap().GetStepType() ==
+                                                step_option.second)) {
                             client_state.map_editor_state.event_set_map_step_type.Notify(
                               step_option.second);
                         }
@@ -266,7 +270,7 @@ void Render(const State& game_state, ClientState& client_state)
 
             ImGui::Separator();
             float drag_int_width = ImGui::CalcTextSize("Medical kits: 99").x + 50.0F;
-            int grenades_count = game_state.map.GetGrenadesCount();
+            int grenades_count = game_state_manager.GetConstMap().GetGrenadesCount();
             ImGui::SetNextItemWidth(drag_int_width);
             if (ImGui::DragInt("##GrenadesInput", &grenades_count, 0.1F, 0, 12, "Grenades: %d")) {
                 if (grenades_count < 0) {
@@ -281,7 +285,7 @@ void Render(const State& game_state, ClientState& client_state)
 
             ImGui::SameLine();
 
-            int medikits_count = game_state.map.GetMedikitsCount();
+            int medikits_count = game_state_manager.GetConstMap().GetMedikitsCount();
             ImGui::SetNextItemWidth(drag_int_width);
             if (ImGui::DragInt(
                   "##MedikitsInput", &medikits_count, 0.1F, 0, 12, "Medical kits: %d")) {
@@ -337,7 +341,7 @@ void Render(const State& game_state, ClientState& client_state)
                 client_state.map_editor_state.event_set_map_jet_count.Notify(25999);
             }
             ImGui::SetItemTooltip("Value: 25999");
-            int jet_count = game_state.map.GetJetCount();
+            int jet_count = game_state_manager.GetConstMap().GetJetCount();
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
             if (ImGui::DragInt("##JetFuelCustomInput", &jet_count, 1.0F, 0, 25999)) {
                 if (jet_count < 0) {
@@ -365,7 +369,8 @@ void Render(const State& game_state, ClientState& client_state)
                                          ImGui::GetContentRegionAvail().x / 2.0F + 15.0F);
 
                 ImGui::TableSetColumnIndex(0);
-                PMSColor top_background_color = game_state.map.GetBackgroundTopColor();
+                PMSColor top_background_color =
+                  game_state_manager.GetConstMap().GetBackgroundTopColor();
                 ImVec4 im_top_background_color = ImVec4((float)top_background_color.red / 255.0F,
                                                         (float)top_background_color.green / 255.0F,
                                                         (float)top_background_color.blue / 255.0F,
@@ -395,7 +400,8 @@ void Render(const State& game_state, ClientState& client_state)
                     ImGui::EndPopup();
                 }
 
-                PMSColor bottom_background_color = game_state.map.GetBackgroundBottomColor();
+                PMSColor bottom_background_color =
+                  game_state_manager.GetConstMap().GetBackgroundBottomColor();
                 ImVec4 im_bottom_background_color =
                   ImVec4((float)bottom_background_color.red / 255.0F,
                          (float)bottom_background_color.green / 255.0F,
@@ -429,7 +435,7 @@ void Render(const State& game_state, ClientState& client_state)
                 ImGui::TableSetColumnIndex(1);
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                 if (ImGui::BeginCombo("##TextureComboPicker",
-                                      game_state.map.GetTextureName().c_str())) {
+                                      game_state_manager.GetConstMap().GetTextureName().c_str())) {
 
                     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
                         !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
@@ -443,7 +449,8 @@ void Render(const State& game_state, ClientState& client_state)
                     std::erase(search_filter, 0);
                     ImGui::Separator();
 
-                    std::filesystem::path map_texture_in_png = game_state.map.GetTextureName();
+                    std::filesystem::path map_texture_in_png =
+                      game_state_manager.GetConstMap().GetTextureName();
                     map_texture_in_png.replace_extension(".png");
                     for (const auto& texture_file_name :
                          client_state.map_editor_state.all_textures_in_directory) {
@@ -453,10 +460,11 @@ void Render(const State& game_state, ClientState& client_state)
                             continue;
                         }
 
-                        if (ImGui::Selectable(texture_file_name.c_str(),
-                                              texture_file_name ==
-                                                  game_state.map.GetTextureName() ||
-                                                texture_file_name == map_texture_in_png.string())) {
+                        if (ImGui::Selectable(
+                              texture_file_name.c_str(),
+                              texture_file_name ==
+                                  game_state_manager.GetConstMap().GetTextureName() ||
+                                texture_file_name == map_texture_in_png.string())) {
 
                             client_state.map_editor_state.event_set_map_texture_name.Notify(
                               texture_file_name);
@@ -531,19 +539,25 @@ void Render(const State& game_state, ClientState& client_state)
 
     if (client_state.map_editor_state.is_properties_window_visible) {
         ImGui::Begin("Properties", nullptr, default_window_flags);
-        ImGui::Text("Polygons: %zu/%d", game_state.map.GetPolygons().size(), MAX_POLYGONS_COUNT);
-        ImGui::Text(
-          "Sceneries: %zu/%d", game_state.map.GetSceneryInstances().size(), MAX_SCENERIES_COUNT);
-        ImGui::Text(
-          "Spawns: %zu/%d", game_state.map.GetSpawnPoints().size(), MAX_SPAWN_POINTS_COUNT);
-        ImGui::Text("Colliders: %zu/128", game_state.map.GetColliders().size());
-        ImGui::Text("Waypoints: %zu/500", game_state.map.GetWayPoints().size());
+        ImGui::Text("Polygons: %zu/%d",
+                    game_state_manager.GetConstMap().GetPolygons().size(),
+                    MAX_POLYGONS_COUNT);
+        ImGui::Text("Sceneries: %zu/%d",
+                    game_state_manager.GetConstMap().GetSceneryInstances().size(),
+                    MAX_SCENERIES_COUNT);
+        ImGui::Text("Spawns: %zu/%d",
+                    game_state_manager.GetConstMap().GetSpawnPoints().size(),
+                    MAX_SPAWN_POINTS_COUNT);
+        ImGui::Text("Colliders: %zu/128", game_state_manager.GetConstMap().GetColliders().size());
+        ImGui::Text("Waypoints: %zu/500", game_state_manager.GetConstMap().GetWayPoints().size());
         ImGui::Text("Connections: 0"); // TODO: Add connections of waypoints
         glm::vec2 map_dimensions;
-        map_dimensions.x = game_state.map.GetBoundaries()[Map::MapBoundary::RightBoundary] -
-                           game_state.map.GetBoundaries()[Map::MapBoundary::LeftBoundary];
-        map_dimensions.y = game_state.map.GetBoundaries()[Map::MapBoundary::BottomBoundary] -
-                           game_state.map.GetBoundaries()[Map::MapBoundary::TopBoundary];
+        map_dimensions.x =
+          game_state_manager.GetConstMap().GetBoundaries()[Map::MapBoundary::RightBoundary] -
+          game_state_manager.GetConstMap().GetBoundaries()[Map::MapBoundary::LeftBoundary];
+        map_dimensions.y =
+          game_state_manager.GetConstMap().GetBoundaries()[Map::MapBoundary::BottomBoundary] -
+          game_state_manager.GetConstMap().GetBoundaries()[Map::MapBoundary::TopBoundary];
         ImGui::Text("Dimensions: %.0fx%.0f", map_dimensions.x, map_dimensions.y);
         ImGui::End();
     }
@@ -626,7 +640,7 @@ void Render(const State& game_state, ClientState& client_state)
     }
 
     if (client_state.map_editor_state.is_tool_details_window_visible) {
-        MapEditorToolDetailsWindow::Render(game_state, client_state);
+        MapEditorToolDetailsWindow::Render(game_state_manager, client_state);
     }
 
     {
@@ -653,7 +667,9 @@ void Render(const State& game_state, ClientState& client_state)
                         flags |= ImGuiTabItemFlags_UnsavedDocument;
                     }
                     if (ImGui::BeginTabItem(
-                          game_state.map.GetName().value_or("Untitled").c_str(), nullptr, flags)) {
+                          game_state_manager.GetConstMap().GetName().value_or("Untitled").c_str(),
+                          nullptr,
+                          flags)) {
                         ImGui::EndTabItem();
                     }
                     if (ImGui::BeginTabItem("+", nullptr)) {
@@ -686,7 +702,8 @@ void Render(const State& game_state, ClientState& client_state)
 
         if (ImGui::Begin("StatusBar", nullptr, flags)) {
             if (ImGui::BeginMenuBar()) {
-                ImGui::Text("%s", game_state.map.GetName().value_or("Untitled").c_str());
+                ImGui::Text(
+                  "%s", game_state_manager.GetConstMap().GetName().value_or("Untitled").c_str());
                 ImGui::SameLine(0, viewport->Size.x / 10.0F);
                 ImGui::Text("Zoom: %.0f%%",
                             // TODO: need to invert zoom on camera class level instead of this
