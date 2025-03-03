@@ -8,7 +8,7 @@
 
 #include "rendering/ClientState.hpp"
 
-#include "core/state/State.hpp"
+#include "core/state/StateManager.hpp"
 #include "core/math/Glm.hpp"
 
 #include <deque>
@@ -21,7 +21,7 @@ namespace Soldank
 class MapEditor
 {
 public:
-    MapEditor(ClientState& client_state, State& game_state);
+    MapEditor(ClientState& client_state, StateManager& game_state_manager);
 
     void Lock();
     void Unlock();
@@ -29,9 +29,13 @@ public:
 private:
     static const int ACTION_HISTORY_LIMIT = 50;
 
-    void OnSelectNewTool(ToolType tool_type, ClientState& client_state, const State& game_state);
-    void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state);
-    void OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state);
+    void OnSelectNewTool(ToolType tool_type,
+                         ClientState& client_state,
+                         const StateManager& game_state_manager);
+    void OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                     const StateManager& game_state_manager);
+    void OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                       const StateManager& game_state_manager);
     void OnSceneRightMouseButtonClick(ClientState& client_state);
     void OnSceneRightMouseButtonRelease();
     void OnSceneMiddleMouseButtonClick(ClientState& client_state);
@@ -44,30 +48,30 @@ private:
     void OnMouseMapPositionChange(ClientState& client_state,
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position,
-                                  const State& game_state);
+                                  const StateManager& game_state_manager);
 
-    void OnKeyPressed(int key, ClientState& client_state, State& game_state);
+    void OnKeyPressed(int key, ClientState& client_state, StateManager& game_state_manager);
     void OnKeyReleased(int key, ClientState& client_state);
 
     void ExecuteNewAction(ClientState& client_state,
-                          State& game_state,
+                          StateManager& game_state_manager,
                           std::unique_ptr<MapEditorAction> new_action);
-    void UndoLastAction(ClientState& client_state, State& game_state);
-    void RedoUndoneAction(ClientState& client_state, State& game_state);
+    void UndoLastAction(ClientState& client_state, StateManager& game_state_manager);
+    void RedoUndoneAction(ClientState& client_state, StateManager& game_state_manager);
     void UpdateUndoRedoButtons(ClientState& client_state);
 
-    void RemoveCurrentSelection(ClientState& client_state, State& game_state);
+    void RemoveCurrentSelection(ClientState& client_state, StateManager& game_state_manager);
 
     void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
                                           ClientState& client_state,
-                                          State& game_state);
+                                          StateManager& game_state_manager);
     void OnChangeSelectedSceneriesLevel(int new_level,
                                         ClientState& client_state,
-                                        State& game_state);
+                                        StateManager& game_state_manager);
     void OnTransformSelectedPolygons(
       const std::function<PMSPolygon(const PMSPolygon&)>& transform_function,
       ClientState& client_state,
-      State& game_state);
+      StateManager& game_state_manager);
 
     ToolType selected_tool_;
     std::vector<std::unique_ptr<Tool>> tools_;

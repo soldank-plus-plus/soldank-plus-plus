@@ -2,13 +2,17 @@
 
 namespace Soldank
 {
-void TextureTool::OnSelect(ClientState& client_state, const State& game_state) {}
+void TextureTool::OnSelect(ClientState& client_state, const StateManager& game_state_manager) {}
 
 void TextureTool::OnUnselect(ClientState& client_state) {}
 
-void TextureTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) {}
+void TextureTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                              const StateManager& game_state_manager)
+{
+}
 
-void TextureTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state)
+void TextureTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                                const StateManager& game_state_manager)
 {
 }
 
@@ -25,7 +29,7 @@ void TextureTool::OnMouseScreenPositionChange(ClientState& client_state,
 void TextureTool::OnMouseMapPositionChange(ClientState& client_state,
                                            glm::vec2 last_mouse_position,
                                            glm::vec2 new_mouse_position,
-                                           const State& game_state)
+                                           const StateManager& game_state_manager)
 {
 }
 

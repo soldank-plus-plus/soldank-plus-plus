@@ -10,11 +10,12 @@ namespace Soldank
 class RemoveSelectionMapEditorAction final : public MapEditorAction
 {
 public:
-    RemoveSelectionMapEditorAction(const ClientState& client_state, const State& game_state);
+    RemoveSelectionMapEditorAction(const ClientState& client_state,
+                                   const StateManager& game_state_manager);
 
-    bool CanExecute(const ClientState& client_state, const State& game_state) final;
-    void Execute(ClientState& client_state, State& game_state) final;
-    void Undo(ClientState& client_state, State& game_state) final;
+    bool CanExecute(const ClientState& client_state, const StateManager& game_state_manager) final;
+    void Execute(ClientState& client_state, StateManager& game_state_manager) final;
+    void Undo(ClientState& client_state, StateManager& game_state_manager) final;
 
 private:
     std::vector<unsigned int> polygon_ids_to_remove_;

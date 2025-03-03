@@ -142,8 +142,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         case CommandLineParameters::ApplicationMode::MapEditor: {
             client_state_->draw_map_editor_interface = true;
             client_state_->draw_game_interface = false;
-            map_editor_ =
-              std::make_unique<MapEditor>(*client_state_, world_->GetStateManager()->GetState());
+            map_editor_ = std::make_unique<MapEditor>(*client_state_, *world_->GetStateManager());
             spdlog::info("Application mode = MapEditor");
             break;
         }

@@ -21,11 +21,13 @@ public:
       const std::function<void(MapEditorAction*)>& execute_without_adding_map_editor_action);
     ~TransformTool() final = default;
 
-    void OnSelect(ClientState& client_state, const State& game_state) final;
+    void OnSelect(ClientState& client_state, const StateManager& game_state_manager) final;
     void OnUnselect(ClientState& client_state) final;
 
-    void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) final;
-    void OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state) final;
+    void OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                     const StateManager& game_state_manager) final;
+    void OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                       const StateManager& game_state_manager) final;
     void OnSceneRightMouseButtonClick(ClientState& client_state) final;
     void OnSceneRightMouseButtonRelease() final;
     void OnMouseScreenPositionChange(ClientState& client_state,
@@ -34,7 +36,7 @@ public:
     void OnMouseMapPositionChange(ClientState& client_state,
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position,
-                                  const State& game_state) final;
+                                  const StateManager& game_state_manager) final;
     void OnModifierKey1Pressed(ClientState& client_state) final;
     void OnModifierKey1Released(ClientState& client_state) final;
     void OnModifierKey2Pressed(ClientState& client_state) final;
@@ -50,7 +52,8 @@ private:
         Rotate
     };
 
-    static void SetupSelectionBox(ClientState& client_state, const State& game_state);
+    static void SetupSelectionBox(ClientState& client_state,
+                                  const StateManager& game_state_manager);
 
     void SetTransformMode(TransformMode new_transform_mode, ClientState& client_state);
 

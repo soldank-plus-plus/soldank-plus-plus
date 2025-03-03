@@ -3,7 +3,10 @@
 
 namespace Soldank
 {
-void VertexSelectionTool::OnSelect(ClientState& client_state, const State& game_state) {}
+void VertexSelectionTool::OnSelect(ClientState& client_state,
+                                   const StateManager& game_state_manager)
+{
+}
 
 void VertexSelectionTool::OnUnselect(ClientState& client_state)
 {
@@ -11,7 +14,7 @@ void VertexSelectionTool::OnUnselect(ClientState& client_state)
 }
 
 void VertexSelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
-                                                      const State& game_state)
+                                                      const StateManager& /*game_state_manager*/)
 {
     client_state.map_editor_state.vertex_selection_box = { { mouse_map_position_ },
                                                            { mouse_map_position_ } };
@@ -19,9 +22,9 @@ void VertexSelectionTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
 }
 
 void VertexSelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
-                                                        const State& game_state)
+                                                        const StateManager& game_state_manager)
 {
-    const Map& map = game_state.map;
+    const Map& map = game_state_manager.GetConstMap();
 
     glm::vec2 selection_start_position = client_state.map_editor_state.vertex_selection_box->first;
     glm::vec2 selection_end_position = client_state.map_editor_state.vertex_selection_box->second;
@@ -65,12 +68,12 @@ void VertexSelectionTool::OnSceneLeftMouseButtonRelease(ClientState& client_stat
     }
 
     client_state.map_editor_state.selected_soldier_ids.clear();
-    for (const auto& soldier : game_state.soldiers) {
+    game_state_manager.ForEachSoldier([&](const auto& soldier) {
         if (soldier.particle.position.x >= left && soldier.particle.position.x <= right &&
             soldier.particle.position.y >= top && soldier.particle.position.y <= bottom) {
             client_state.map_editor_state.selected_soldier_ids.push_back(soldier.id);
         }
-    }
+    });
 
     client_state.map_editor_state.vertex_selection_box = std::nullopt;
 }
@@ -88,7 +91,7 @@ void VertexSelectionTool::OnMouseScreenPositionChange(ClientState& client_state,
 void VertexSelectionTool::OnMouseMapPositionChange(ClientState& client_state,
                                                    glm::vec2 /*last_mouse_position*/,
                                                    glm::vec2 new_mouse_position,
-                                                   const State& /*game_state*/)
+                                                   const StateManager& /*game_state*/)
 {
     mouse_map_position_ = new_mouse_position;
 

@@ -445,6 +445,19 @@ void StateManager::ForEachSoldier(
     }
 }
 
+void StateManager::ForSoldier(
+  std::uint8_t soldier_id,
+  const std::function<void(const Soldier& soldier)>& for_soldier_function) const
+{
+    for (const Soldier& soldier : state_.soldiers) {
+        if (soldier.id != soldier_id) {
+            continue;
+        }
+
+        for_soldier_function(soldier);
+    }
+}
+
 const Soldier* StateManager::FindSoldier(
   const std::function<bool(const Soldier& soldier)>& predicate) const
 {
@@ -455,6 +468,22 @@ const Soldier* StateManager::FindSoldier(
     }
 
     return nullptr;
+}
+
+void StateManager::RemoveSoldier(std::uint8_t soldier_id)
+{
+    for (Soldier& soldier : state_.soldiers) {
+        if (soldier.id != soldier_id) {
+            continue;
+        }
+
+        soldier.active = false;
+    }
+}
+
+std::size_t StateManager::GetSoldiersCount() const
+{
+    return state_.soldiers.size();
 }
 
 void StateManager::EnqueueNewProjectile(const BulletParams& bullet_params)

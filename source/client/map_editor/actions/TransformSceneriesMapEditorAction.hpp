@@ -14,9 +14,9 @@ public:
       const std::vector<std::pair<unsigned int, PMSScenery>>& old_sceneries,
       const std::function<PMSScenery(const PMSScenery&)>& transform_function);
 
-    bool CanExecute(const ClientState& client_state, const State& game_state) final;
-    void Execute(ClientState& client_state, State& game_state) final;
-    void Undo(ClientState& client_state, State& game_state) final;
+    bool CanExecute(const ClientState& client_state, const StateManager& game_state_manager) final;
+    void Execute(ClientState& client_state, StateManager& game_state_manager) final;
+    void Undo(ClientState& client_state, StateManager& game_state_manager) final;
 
 private:
     std::vector<std::pair<unsigned int, PMSScenery>> old_sceneries_;

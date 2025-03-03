@@ -8,19 +8,20 @@ AddPolygonMapEditorAction::AddPolygonMapEditorAction(const PMSPolygon& new_polyg
 }
 
 bool AddPolygonMapEditorAction::CanExecute(const ClientState& /*client_state*/,
-                                           const State& game_state)
+                                           const StateManager& game_state_manager)
 {
-    return game_state.map.GetPolygonsCount() + 1 <= MAX_POLYGONS_COUNT;
+    return game_state_manager.GetConstMap().GetPolygonsCount() + 1 <= MAX_POLYGONS_COUNT;
 }
 
-void AddPolygonMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
+void AddPolygonMapEditorAction::Execute(ClientState& /*client_state*/,
+                                        StateManager& game_state_manager)
 {
-    added_polygon_ = game_state.map.AddNewPolygon(added_polygon_);
+    added_polygon_ = game_state_manager.GetMap().AddNewPolygon(added_polygon_);
 }
 
-void AddPolygonMapEditorAction::Undo(ClientState& client_state, State& game_state)
+void AddPolygonMapEditorAction::Undo(ClientState& client_state, StateManager& game_state_manager)
 {
-    game_state.map.RemovePolygonById(added_polygon_.id);
+    game_state_manager.GetMap().RemovePolygonById(added_polygon_.id);
     for (unsigned int i = 0; i < client_state.map_editor_state.selected_polygon_vertices.size();
          ++i) {
         if (client_state.map_editor_state.selected_polygon_vertices.at(i).first ==

@@ -21,9 +21,9 @@ public:
       const glm::vec2& origin,
       const glm::vec2& reference_position);
 
-    bool CanExecute(const ClientState& client_state, const State& game_state) final;
-    void Execute(ClientState& client_state, State& game_state) final;
-    void Undo(ClientState& client_state, State& game_state) final;
+    bool CanExecute(const ClientState& client_state, const StateManager& game_state_manager) final;
+    void Execute(ClientState& client_state, StateManager& game_state_manager) final;
+    void Undo(ClientState& client_state, StateManager& game_state_manager) final;
 
     void SetCurrentMousePosition(const glm::vec2& new_current_mouse_position)
     {

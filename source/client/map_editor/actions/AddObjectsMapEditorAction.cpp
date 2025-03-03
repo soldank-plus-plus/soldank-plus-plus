@@ -25,18 +25,19 @@ AddObjectsMapEditorAction::AddObjectsMapEditorAction(
 }
 
 bool AddObjectsMapEditorAction::CanExecute(const ClientState& /*client_state*/,
-                                           const State& game_state)
+                                           const StateManager& game_state_manager)
 {
-    if (copied_polygons_.size() + game_state.map.GetPolygonsCount() > MAX_POLYGONS_COUNT) {
+    if (copied_polygons_.size() + game_state_manager.GetConstMap().GetPolygonsCount() >
+        MAX_POLYGONS_COUNT) {
         return false;
     }
 
-    if (copied_sceneries_.size() + game_state.map.GetSceneryInstances().size() >
+    if (copied_sceneries_.size() + game_state_manager.GetConstMap().GetSceneryInstances().size() >
         MAX_SCENERIES_COUNT) {
         return false;
     }
 
-    if (copied_spawn_points_.size() + game_state.map.GetSpawnPoints().size() >
+    if (copied_spawn_points_.size() + game_state_manager.GetConstMap().GetSpawnPoints().size() >
         MAX_SPAWN_POINTS_COUNT) {
         return false;
     }
@@ -44,17 +45,19 @@ bool AddObjectsMapEditorAction::CanExecute(const ClientState& /*client_state*/,
     return true;
 }
 
-void AddObjectsMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
+void AddObjectsMapEditorAction::Execute(ClientState& /*client_state*/,
+                                        StateManager& game_state_manager)
 {
-    game_state.map.AddPolygons(copied_polygons_);
-    game_state.map.AddSceneries(copied_sceneries_);
-    game_state.map.AddSpawnPoints(copied_spawn_points_);
+    game_state_manager.GetMap().AddPolygons(copied_polygons_);
+    game_state_manager.GetMap().AddSceneries(copied_sceneries_);
+    game_state_manager.GetMap().AddSpawnPoints(copied_spawn_points_);
 }
 
-void AddObjectsMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
+void AddObjectsMapEditorAction::Undo(ClientState& /*client_state*/,
+                                     StateManager& game_state_manager)
 {
-    game_state.map.RemovePolygonsById(polygon_ids_to_remove_);
-    game_state.map.RemoveSpawnPointsById(spawn_point_ids_to_remove_);
-    game_state.map.RemoveSceneriesById(scenery_ids_to_remove_);
+    game_state_manager.GetMap().RemovePolygonsById(polygon_ids_to_remove_);
+    game_state_manager.GetMap().RemoveSpawnPointsById(spawn_point_ids_to_remove_);
+    game_state_manager.GetMap().RemoveSceneriesById(scenery_ids_to_remove_);
 }
 } // namespace Soldank

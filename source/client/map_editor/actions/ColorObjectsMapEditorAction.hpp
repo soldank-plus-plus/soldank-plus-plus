@@ -18,9 +18,9 @@ public:
         polygon_vertices_with_old_color,
       const std::vector<std::pair<unsigned int, PMSColor>>& scenery_ids_with_old_color);
 
-    bool CanExecute(const ClientState& client_state, const State& game_state) final;
-    void Execute(ClientState& client_state, State& game_state) final;
-    void Undo(ClientState& client_state, State& game_state) final;
+    bool CanExecute(const ClientState& client_state, const StateManager& game_state_manager) final;
+    void Execute(ClientState& client_state, StateManager& game_state_manager) final;
+    void Undo(ClientState& client_state, StateManager& game_state_manager) final;
 
 private:
     PMSColor new_color_;

@@ -10,21 +10,23 @@ AddSpawnPointMapEditorAction::AddSpawnPointMapEditorAction(const PMSSpawnPoint& 
 }
 
 bool AddSpawnPointMapEditorAction::CanExecute(const ClientState& /*client_state*/,
-                                              const State& game_state)
+                                              const StateManager& game_state_manager)
 {
-    return game_state.map.GetSpawnPoints().size() + 1 <= MAX_SPAWN_POINTS_COUNT;
+    return game_state_manager.GetConstMap().GetSpawnPoints().size() + 1 <= MAX_SPAWN_POINTS_COUNT;
 
     return true;
 }
 
-void AddSpawnPointMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
+void AddSpawnPointMapEditorAction::Execute(ClientState& /*client_state*/,
+                                           StateManager& game_state_manager)
 {
-    added_spawn_point_id_ = game_state.map.AddNewSpawnPoint(added_spawn_point_);
+    added_spawn_point_id_ = game_state_manager.GetMap().AddNewSpawnPoint(added_spawn_point_);
 }
 
-void AddSpawnPointMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
+void AddSpawnPointMapEditorAction::Undo(ClientState& /*client_state*/,
+                                        StateManager& game_state_manager)
 {
-    added_spawn_point_ = game_state.map.RemoveSpawnPointById(added_spawn_point_id_);
+    added_spawn_point_ = game_state_manager.GetMap().RemoveSpawnPointById(added_spawn_point_id_);
     // TODO: remove from selection when implemented
 }
 } // namespace Soldank

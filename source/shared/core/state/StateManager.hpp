@@ -44,7 +44,11 @@ public:
     glm::vec2 SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> spawn_position);
     void ForEachSoldier(
       const std::function<void(const Soldier& soldier)>& for_each_soldier_function) const;
+    void ForSoldier(std::uint8_t soldier_id,
+                    const std::function<void(const Soldier& soldier)>& for_soldier_function) const;
     const Soldier* FindSoldier(const std::function<bool(const Soldier& soldier)>& predicate) const;
+    void RemoveSoldier(std::uint8_t soldier_id);
+    std::size_t GetSoldiersCount() const;
 
     void EnqueueNewProjectile(const BulletParams& bullet_params);
     void CreateProjectile(const BulletParams& bullet_params);

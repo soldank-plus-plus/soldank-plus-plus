@@ -12,23 +12,25 @@ TransformSceneriesMapEditorAction::TransformSceneriesMapEditorAction(
 }
 
 bool TransformSceneriesMapEditorAction::CanExecute(const ClientState& /*client_state*/,
-                                                   const State& /*game_state*/)
+                                                   const StateManager& /*game_state_manager*/)
 {
     return true;
 }
 
-void TransformSceneriesMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
+void TransformSceneriesMapEditorAction::Execute(ClientState& /*client_state*/,
+                                                StateManager& game_state_manager)
 {
     std::vector<std::pair<unsigned int, PMSScenery>> new_sceneries;
     for (const auto& old_scenery : old_sceneries_) {
         PMSScenery new_scenery = transform_function_(old_scenery.second);
         new_sceneries.emplace_back(old_scenery.first, new_scenery);
     }
-    game_state.map.SetSceneriesById(new_sceneries);
+    game_state_manager.GetMap().SetSceneriesById(new_sceneries);
 }
 
-void TransformSceneriesMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
+void TransformSceneriesMapEditorAction::Undo(ClientState& /*client_state*/,
+                                             StateManager& game_state_manager)
 {
-    game_state.map.SetSceneriesById(old_sceneries_);
+    game_state_manager.GetMap().SetSceneriesById(old_sceneries_);
 }
 } // namespace Soldank
