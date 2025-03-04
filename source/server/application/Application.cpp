@@ -117,10 +117,10 @@ void Application::Run()
     world_->SetShouldStopGameLoopCallback([&]() { return false; });
     world_->SetPreGameLoopIterationCallback([&]() {});
     world_->SetPreWorldUpdateCallback([&]() { game_server_->Update(); });
-    world_->SetPostWorldUpdateCallback([&](const State& state) {
-        for (const auto& soldier : state.soldiers) {
+    world_->SetPostWorldUpdateCallback([&](const StateManager& state_manager) {
+        state_manager.ForEachSoldier([&](const auto& soldier) {
             SoldierStatePacket update_soldier_state_packet{
-                .game_tick = state.game_tick,
+                .game_tick = state_manager.GetGameTick(),
                 .player_id = soldier.id,
                 .position_x = soldier.particle.position.x,
                 .position_y = soldier.particle.position.y,
@@ -152,10 +152,10 @@ void Application::Run()
             };
             game_server_->SendNetworkMessageToAll(
               { NetworkEvent::SoldierState, update_soldier_state_packet });
-        }
+        });
 
         // Re-register the server in the lobby every 3 minutes
-        if (state.game_tick % (3600 * 3) == 0) {
+        if (state_manager.GetGameTick() % (3600 * 3) == 0) {
             lobby_client_->Register(server_state_->server_name, server_state_->server_port);
         }
 
@@ -174,7 +174,7 @@ void Application::Run()
         // }
     });
     world_->SetPostGameLoopIterationCallback(
-      [&](const State& state, double frame_percent, int last_fps) {});
+      [&](const StateManager& /*state_manager*/, double /*frame_percent*/, int /*last_fps*/) {});
     world_->SetPreProjectileSpawnCallback([&](const BulletParams& bullet_params) {
         ProjectileSpawnPacket projectile_spawn_packet{
             .projectile_id = 0, // TODO: set the correct ID

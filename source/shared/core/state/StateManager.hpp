@@ -15,9 +15,9 @@ namespace Soldank
 class StateManager
 {
 public:
-    State& GetState() { return state_; }
     Map& GetMap() { return state_.map; } // TODO: Change this to const
     const Map& GetConstMap() const { return state_.map; }
+    void OverrideMap(const Map& map) { state_.map = map; }
 
     void ChangeSoldierControlActionState(std::uint8_t soldier_id,
                                          ControlActionType control_action_type,
@@ -39,8 +39,10 @@ public:
                           const std::function<void(Soldier&)>& transform_soldier_function);
     void TransformSoldiers(const std::function<void(Soldier&)>& transform_soldier_function);
     const Soldier& GetSoldier(std::uint8_t soldier_id) const;
-    const Soldier& CreateSoldier(AnimationDataManager& animation_data_manager,
-                                 std::optional<unsigned int> force_soldier_id);
+    const Soldier& CreateSoldier(
+      AnimationDataManager& animation_data_manager,
+      std::optional<unsigned int> force_soldier_id,
+      const std::shared_ptr<Soldank::ParticleSystem>& soldier_skeleton = nullptr);
     glm::vec2 SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> spawn_position);
     void ForEachSoldier(
       const std::function<void(const Soldier& soldier)>& for_each_soldier_function) const;

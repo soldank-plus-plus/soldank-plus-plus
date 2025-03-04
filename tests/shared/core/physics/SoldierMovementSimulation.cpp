@@ -9,13 +9,12 @@ namespace SoldankTesting
 {
 SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader& file_reader)
 {
-    Soldank::State& state = state_manager_.GetState();
     auto map =
       SoldankTesting::MapBuilder::Empty()
         ->AddPolygon(
           { 0.0F, 0.0F }, { 100.0F, 0.0F }, { 50.0F, 50.0F }, Soldank::PMSPolygonType::Normal)
         ->Build();
-    state.map = *map;
+    state_manager_.OverrideMap(*map);
     animation_data_manager_.LoadAllAnimationDatas(file_reader);
     std::vector<Soldank::Weapon> weapons{
         { Soldank::WeaponParametersFactory::GetParameters(
@@ -25,13 +24,11 @@ SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader&
         { Soldank::WeaponParametersFactory::GetParameters(
           Soldank::WeaponType::FragGrenade, false, file_reader) }
     };
-    state.soldiers.emplace_back(
-      0,
+    state_manager_.CreateSoldier(
       animation_data_manager_,
-      Soldank::ParticleSystem::Load(Soldank::ParticleSystemType::Soldier, 4.5F, file_reader),
-      weapons);
-    state.soldiers.back().particle.position = glm::vec2{ 0.0F, -29.0F };
-    state.soldiers.back().particle.old_position = glm::vec2{ 0.0F, -29.0F };
+      0,
+      Soldank::ParticleSystem::Load(Soldank::ParticleSystemType::Soldier, 4.5F, file_reader));
+    state_manager_.SetSoldierPosition(0, { 0.0F, -29.0F });
 }
 
 void SoldierMovementSimulation::HoldRight()
@@ -120,21 +117,28 @@ void SoldierMovementSimulation::AddSoldierExpectedAnimationState(
     animations_to_check_at_tick_.at(tick).push_back(soldier_expected_animation_state);
 }
 
-void SoldierMovementSimulation::RunUntilSoldierOnGround()
+void SoldierMovementSimulation::RunUntilSoldierOnGround(unsigned int ticks_limit)
 {
     static float gravity = 0.06F;
+    ticks_limit = 5;
+    unsigned int ticks = 0;
 
-    Soldank::State& state = state_manager_.GetState();
-    auto& current_soldier = *state.soldiers.begin();
+    const auto& current_soldier = state_manager_.GetSoldier(0);
     while (!current_soldier.on_ground) {
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
-        Soldank::SoldierPhysics::Update(state_manager_,
-                                        current_soldier,
-                                        physics_events,
-                                        animation_data_manager_,
-                                        bullet_emitter,
-                                        gravity);
+        state_manager_.TransformSoldier(0, [&](auto& soldier) {
+            Soldank::SoldierPhysics::Update(state_manager_,
+                                            soldier,
+                                            physics_events,
+                                            animation_data_manager_,
+                                            bullet_emitter,
+                                            gravity);
+        });
+        ++ticks;
+        if (ticks == ticks_limit) {
+            break;
+        }
     }
 }
 
@@ -143,8 +147,7 @@ void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
     // TODO: Move this somewhere else
     static float gravity = 0.06F;
 
-    Soldank::State& state = state_manager_.GetState();
-    auto& current_soldier = *state.soldiers.begin();
+    const auto& current_soldier = state_manager_.GetSoldier(0);
     glm::vec2 soldier_position_origin = current_soldier.particle.position;
     for (unsigned int current_tick = 0; current_tick < ticks_to_run; current_tick++) {
         if (controls_to_change_at_tick_.contains(current_tick)) {
@@ -162,12 +165,14 @@ void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
 
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
-        Soldank::SoldierPhysics::Update(state_manager_,
-                                        current_soldier,
-                                        physics_events,
-                                        animation_data_manager_,
-                                        bullet_emitter,
-                                        gravity);
+        state_manager_.TransformSoldier(0, [&](auto& soldier) {
+            Soldank::SoldierPhysics::Update(state_manager_,
+                                            soldier,
+                                            physics_events,
+                                            animation_data_manager_,
+                                            bullet_emitter,
+                                            gravity);
+        });
 
         if (animations_to_check_at_tick_.contains(current_tick)) {
             CheckSoldierAnimationStates(current_soldier,

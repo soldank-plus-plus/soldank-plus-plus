@@ -56,7 +56,7 @@ public:
       unsigned int tick,
       const SoldierExpectedAnimationState& soldier_expected_animation_state);
 
-    void RunUntilSoldierOnGround();
+    void RunUntilSoldierOnGround(unsigned int ticks_limit = 5000);
 
     void RunFor(unsigned int ticks_to_run);
 

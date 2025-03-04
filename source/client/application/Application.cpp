@@ -608,13 +608,13 @@ void Application::Run()
             client_state_->camera = { 0.0F, 0.0F };
         }
     });
-    world_->SetPostWorldUpdateCallback([&](const State& /*state*/) {});
+    world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {});
     world_->SetPostGameLoopIterationCallback(
-      [&](const State& /*state*/, double frame_percent, int last_fps) {
+      [&](const StateManager& state_manager, double frame_percent, int last_fps) {
           if (!client_state_->objects_interpolation) {
               frame_percent = 1.0F;
           }
-          scene.Render(*world_->GetStateManager(), *client_state_, frame_percent, last_fps);
+          scene.Render(state_manager, *client_state_, frame_percent, last_fps);
 
           window_->SwapBuffers();
           window_->PollInput();

@@ -117,7 +117,7 @@ void World::RunLoop()
                 }
                 Update(delta_time.count());
                 if (post_world_update_callback_) {
-                    post_world_update_callback_(state_manager_->GetState());
+                    post_world_update_callback_(*state_manager_);
                 }
 
                 world_updates++;
@@ -136,7 +136,7 @@ void World::RunLoop()
         }
 
         if (post_game_loop_iteration_callback_) {
-            post_game_loop_iteration_callback_(state_manager_->GetState(), frame_percent, last_fps);
+            post_game_loop_iteration_callback_(*state_manager_, frame_percent, last_fps);
         }
 
         timecur = std::chrono::system_clock::now();

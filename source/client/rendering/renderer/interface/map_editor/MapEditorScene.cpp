@@ -9,9 +9,11 @@
 
 namespace Soldank
 {
-MapEditorScene::MapEditorScene(ClientState& client_state, State& game_state)
-    : polygon_vertex_outlines_renderer_(client_state, game_state.map, { 1.0F, 0.0F, 0.0F, 0.5F })
-    , scenery_outlines_renderer_(game_state.map, { 1.0F, 0.0F, 0.0F, 0.5F })
+MapEditorScene::MapEditorScene(ClientState& client_state, StateManager& game_state_manager)
+    : polygon_vertex_outlines_renderer_(client_state,
+                                        game_state_manager.GetMap(),
+                                        { 1.0F, 0.0F, 0.0F, 0.5F })
+    , scenery_outlines_renderer_(game_state_manager.GetMap(), { 1.0F, 0.0F, 0.0F, 0.5F })
 {
     client_state.map_editor_state.map_description_input.reserve(DESCRIPTION_MAX_LENGTH);
     client_state.map_editor_state.event_scenery_texture_changed.AddObserver(

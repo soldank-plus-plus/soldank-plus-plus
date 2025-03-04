@@ -351,8 +351,10 @@ const Soldier& StateManager::GetSoldier(std::uint8_t soldier_id) const
     std::unreachable();
 }
 
-const Soldier& StateManager::CreateSoldier(AnimationDataManager& animation_data_manager,
-                                           std::optional<unsigned int> force_soldier_id)
+const Soldier& StateManager::CreateSoldier(
+  AnimationDataManager& animation_data_manager,
+  std::optional<unsigned int> force_soldier_id,
+  const std::shared_ptr<Soldank::ParticleSystem>& soldier_skeleton)
 {
     unsigned int new_soldier_id = NAN;
 
@@ -378,10 +380,16 @@ const Soldier& StateManager::CreateSoldier(AnimationDataManager& animation_data_
         { WeaponParametersFactory::GetParameters(WeaponType::Knife, false) },
         { WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false) }
     };
-    state_.soldiers.emplace_back(new_soldier_id,
-                                 animation_data_manager,
-                                 ParticleSystem::Load(ParticleSystemType::Soldier),
-                                 weapons);
+
+    if (soldier_skeleton) {
+        state_.soldiers.emplace_back(
+          new_soldier_id, animation_data_manager, soldier_skeleton, weapons);
+    } else {
+        state_.soldiers.emplace_back(new_soldier_id,
+                                     animation_data_manager,
+                                     ParticleSystem::Load(ParticleSystemType::Soldier),
+                                     weapons);
+    }
 
     return state_.soldiers.back();
 }
