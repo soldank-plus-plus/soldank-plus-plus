@@ -7,20 +7,24 @@
 #include "core/entities/Item.hpp"
 
 #include <vector>
-#include <list>
+#include <array>
 
 namespace Soldank
 {
+const std::size_t MAX_BULLETS_COUNT = 256;
+const std::size_t MAX_SOLDIERS_COUNT = 32;
+const std::size_t MAX_ITEMS_COUNT = 128;
+
 struct State
 {
-    unsigned int game_tick;
-    bool paused;
+    State(AnimationDataManager& animation_data_manager, std::shared_ptr<ParticleSystem> skeleton);
+
+    unsigned int game_tick{};
+    bool paused{};
     Map map;
-    float gravity = 0.06F;
-    std::list<Bullet> bullets;
-    std::list<Soldier> soldiers;
-    std::vector<Item> items;
-    std::vector<unsigned int> colliding_polygon_ids;
+    std::array<Bullet, MAX_BULLETS_COUNT> bullets;
+    std::array<Soldier, MAX_SOLDIERS_COUNT> soldiers;
+    std::array<Item, MAX_ITEMS_COUNT> items;
 };
 } // namespace Soldank
 

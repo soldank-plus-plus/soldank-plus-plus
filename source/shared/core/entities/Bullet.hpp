@@ -26,23 +26,24 @@ struct BulletParams
 
 struct Bullet
 {
+    Bullet() = default;
     Bullet(BulletParams bullet_params);
 
-    bool active = true;
-    BulletType style;
-    WeaponType weapon;
-    TeamType team;
-    std::uint8_t owner_id;
-    Particle particle;
-    glm::vec2 initial_position;
-    glm::vec2 velocity_prev;
-    std::int16_t timeout;
-    std::int16_t timeout_prev;
-    float timeout_real;
-    float hit_multiply;
-    float hit_multiply_prev;
+    bool active = false;
+    BulletType style{};
+    WeaponType weapon{};
+    TeamType team{};
+    std::uint8_t owner_id{};
+    Particle particle{};
+    glm::vec2 initial_position{};
+    glm::vec2 velocity_prev{};
+    std::int16_t timeout{};
+    std::int16_t timeout_prev{};
+    float timeout_real{};
+    float hit_multiply{};
+    float hit_multiply_prev{};
     std::uint32_t degrade_count = 0;
-    float push;
+    float push{};
 };
 } // namespace Soldank
 

@@ -15,7 +15,7 @@ PolygonTool::PolygonTool(
 {
 }
 
-void PolygonTool::OnSelect(ClientState& client_state, const State& /*game_state*/)
+void PolygonTool::OnSelect(ClientState& client_state, const StateManager& /*game_state_manager*/)
 {
     client_state.map_editor_state.current_tool_action_description = "Create Polygon";
 }
@@ -27,7 +27,7 @@ void PolygonTool::OnUnselect(ClientState& client_state)
 }
 
 void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
-                                              const State& /*game_state*/)
+                                              const StateManager& /*game_state_manager*/)
 {
     if (client_state.map_editor_state.polygon_tool_wip_polygon) {
         client_state.map_editor_state.polygon_tool_wip_polygon->bounciness =
@@ -77,7 +77,7 @@ void PolygonTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
 }
 
 void PolygonTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
-                                                const State& /*game_state*/)
+                                                const StateManager& /*game_state_manager*/)
 {
 }
 
@@ -97,13 +97,13 @@ void PolygonTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
 void PolygonTool::OnMouseMapPositionChange(ClientState& client_state,
                                            glm::vec2 /*last_mouse_position*/,
                                            glm::vec2 new_mouse_position,
-                                           const State& game_state)
+                                           const StateManager& game_state_manager)
 {
     bool alread_snapped = false;
     float closest_distance = SNAP_TO_VERTICES_DISTANCE * SNAP_TO_VERTICES_DISTANCE *
                              client_state.camera_component.GetZoom();
     if (client_state.map_editor_state.is_snap_to_vertices_enabled) {
-        for (const auto& polygon : game_state.map.GetPolygons()) {
+        for (const auto& polygon : game_state_manager.GetConstMap().GetPolygons()) {
             for (const auto& vertex : polygon.vertices) {
                 float square_distance =
                   Calc::SquareDistance(new_mouse_position, { vertex.x, vertex.y });

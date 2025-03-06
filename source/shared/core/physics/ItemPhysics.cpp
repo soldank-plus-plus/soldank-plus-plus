@@ -5,7 +5,7 @@
 #include "core/map/Map.hpp"
 #include "core/map/PMSEnums.hpp"
 #include "core/math/Calc.hpp"
-#include "core/state/State.hpp"
+#include "core/state/StateManager.hpp"
 #include "core/physics/PhysicsEvents.hpp"
 #include "core/physics/Constants.hpp"
 #include "core/types/BulletType.hpp"
@@ -22,7 +22,7 @@ const int FLAG_HOLDING_FORCEUP = -14;
 const float GRAV = 0.06;
 const int BASE_RADIUS = 75;
 
-void Update(State& state, Item& item, const PhysicsEvents& physics_events)
+void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physics_events)
 {
     bool was_static = item.static_type;
 
@@ -39,32 +39,28 @@ void Update(State& state, Item& item, const PhysicsEvents& physics_events)
                 if (IsItemTypeFlag(item.style)) {
                     if (i == 1) {
                         if (CheckMapCollision(item,
-                                              state.map,
+                                              state_manager.GetConstMap(),
                                               item.skeleton->GetPos(i).x - 10,
                                               item.skeleton->GetPos(i).y - 8,
                                               i,
-                                              state,
                                               physics_events) ||
                             CheckMapCollision(item,
-                                              state.map,
+                                              state_manager.GetConstMap(),
                                               item.skeleton->GetPos(i).x + 10,
                                               item.skeleton->GetPos(i).y - 8,
                                               i,
-                                              state,
                                               physics_events) ||
                             CheckMapCollision(item,
-                                              state.map,
+                                              state_manager.GetConstMap(),
                                               item.skeleton->GetPos(i).x - 10,
                                               item.skeleton->GetPos(i).y,
                                               i,
-                                              state,
                                               physics_events) ||
                             CheckMapCollision(item,
-                                              state.map,
+                                              state_manager.GetConstMap(),
                                               item.skeleton->GetPos(i).x + 10,
                                               item.skeleton->GetPos(i).y,
                                               i,
-                                              state,
                                               physics_events)) {
                             if (collided) {
                                 collided2 = true;
@@ -80,11 +76,10 @@ void Update(State& state, Item& item, const PhysicsEvents& physics_events)
                         }
                     } else {
                         if (CheckMapCollision(item,
-                                              state.map,
+                                              state_manager.GetConstMap(),
                                               item.skeleton->GetPos(i).x,
                                               item.skeleton->GetPos(i).y,
                                               i,
-                                              state,
                                               physics_events)) {
                             if (collided) {
                                 collided2 = true;
@@ -94,11 +89,10 @@ void Update(State& state, Item& item, const PhysicsEvents& physics_events)
                     }
                 } else {
                     if (CheckMapCollision(item,
-                                          state.map,
+                                          state_manager.GetConstMap(),
                                           item.skeleton->GetPos(i).x,
                                           item.skeleton->GetPos(i).y,
                                           i,
-                                          state,
                                           physics_events)) {
                         if (collided) {
                             collided2 = true;
@@ -130,16 +124,15 @@ void Update(State& state, Item& item, const PhysicsEvents& physics_events)
         }
 
         if (IsItemTypeFlag(item.style) && item.holding_soldier_id > 0) {
-            for (auto soldier_it = state.soldiers.begin(); soldier_it != state.soldiers.end();
-                 ++soldier_it) {
-                if (soldier_it->id == item.holding_soldier_id) {
-                    item.skeleton->SetPos(1, soldier_it->skeleton->GetPos(8));
+            state_manager.ForEachSoldier([&](const auto& soldier) {
+                if (soldier.id == item.holding_soldier_id) {
+                    item.skeleton->SetPos(1, soldier.skeleton->GetPos(8));
                     auto new_force = item.skeleton->GetForce(2);
                     new_force.y += (float)FLAG_HOLDING_FORCEUP * GRAV;
                     item.skeleton->SetForce(2, new_force);
                     item.time_out = FLAG_TIMEOUT;
                 }
-            }
+            });
         }
     }
 
@@ -149,7 +142,7 @@ void Update(State& state, Item& item, const PhysicsEvents& physics_events)
             spawn_point_type = PMSSpawnPointType::BravoFlag;
         }
 
-        auto spawn_point = state.map.FindFirstSpawnPoint(spawn_point_type);
+        auto spawn_point = state_manager.GetConstMap().FindFirstSpawnPoint(spawn_point_type);
         if (spawn_point && Calc::Distance(item.skeleton->GetPos(1),
                                           { spawn_point->x, spawn_point->y }) < BASE_RADIUS) {
             item.in_base = true;
@@ -160,20 +153,20 @@ void Update(State& state, Item& item, const PhysicsEvents& physics_events)
     }
 
     if (item.style != ItemType::M2) {
-        int colliding_player_id = CheckSoldierCollision(item, state);
+        int colliding_player_id = CheckSoldierCollision(item, state_manager);
         if (colliding_player_id >= 0) {
-            for (auto it = state.soldiers.begin(); it != state.soldiers.end(); ++it) {
-                if (colliding_player_id == it->id) {
-                    physics_events.soldier_collides_with_item.Notify(*it, item);
+            state_manager.TransformSoldiers([&](auto& soldier) {
+                if (colliding_player_id == soldier.id) {
+                    physics_events.soldier_collides_with_item.Notify(soldier, item);
                 }
-            }
+            });
         }
     }
 
     // Parachute
     if (item.style == ItemType::Parachute) {
         if (item.holding_soldier_id != 0) {
-            for (auto& soldier : state.soldiers) {
+            state_manager.TransformSoldiers([&](auto& soldier) {
                 if (soldier.id == item.holding_soldier_id) {
                     item.skeleton->SetPos(4, soldier.skeleton->GetPos(12));
                     glm::vec2 force = soldier.particle.GetVelocity();
@@ -190,7 +183,7 @@ void Update(State& state, Item& item, const PhysicsEvents& physics_events)
                         soldier.particle.SetForce({ force.x, GRAV });
                     }
                 }
-            }
+            });
         } else {
             if (item.time_out > 180) {
                 item.time_out = 180;
@@ -237,7 +230,6 @@ bool CheckMapCollision(Item& item,
                        float x,
                        float y,
                        int i,
-                       State& state,
                        const PhysicsEvents& physics_events)
 {
     glm::vec2 pos = { x, y - 0.5F }; // TODO: this looks wrong
@@ -352,7 +344,7 @@ bool CheckMapCollision(Item& item,
 const int STARTHEALTH = 150; // TODO: move me somewhere else
 const int MAXGRENADES = 5;   // TODO: move me somewhere else
 
-int CheckSoldierCollision(Item& item, State& state)
+int CheckSoldierCollision(Item& item, const StateManager& state_manager)
 {
     glm::vec2 a = item.skeleton->GetPos(1) - item.skeleton->GetPos(2);
     float k = Calc::Vec2Length(a) / 2;
@@ -363,20 +355,18 @@ int CheckSoldierCollision(Item& item, State& state)
     float closestdist = 99999999.0;
     int closestplayer = -1;
 
-    for (auto soldier_it = state.soldiers.begin(); soldier_it != state.soldiers.end();
-         ++soldier_it) {
-        if (soldier_it->active &&
-            !soldier_it->dead_meat /* && soldier_it->team != SPECTATOR TODO*/) {
-            glm::vec2 col_pos = soldier_it->particle.position;
+    state_manager.ForEachSoldier([&](const auto& soldier) {
+        if (soldier.active && !soldier.dead_meat /* && soldier_it->team != SPECTATOR TODO*/) {
+            glm::vec2 col_pos = soldier.particle.position;
             glm::vec2 norm = pos - col_pos;
             if (Calc::Vec2Length(norm) >= item.radius) {
                 pos = item.skeleton->GetPos(1);
-                col_pos = soldier_it->particle.position;
+                col_pos = soldier.particle.position;
                 norm = pos - col_pos;
 
                 if (Calc::Vec2Length(norm) >= item.radius) {
                     pos = item.skeleton->GetPos(2);
-                    col_pos = soldier_it->particle.position;
+                    col_pos = soldier.particle.position;
                     norm = pos - col_pos;
                 }
             }
@@ -390,12 +380,12 @@ int CheckSoldierCollision(Item& item, State& state)
                     // if (!(IsItemTypeFlag(item.style) && soldier_it->cease_fire_counter >
                     // 0)) {
                     closestdist = dist;
-                    closestplayer = soldier_it->id;
+                    closestplayer = soldier.id;
                     // }
                 }
             }
         }
-    }
+    });
 
     return closestplayer;
 }

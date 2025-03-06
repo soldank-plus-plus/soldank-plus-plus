@@ -32,12 +32,13 @@ RotateSelectionMapEditorAction::RotateSelectionMapEditorAction(
 }
 
 bool RotateSelectionMapEditorAction::CanExecute(const ClientState& /*client_state*/,
-                                                const State& /*game_state*/)
+                                                const StateManager& /*game_state_manager*/)
 {
     return true;
 }
 
-void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, State& game_state)
+void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/,
+                                             StateManager& game_state_manager)
 {
     float reference_rotation = Calc::GetAngle(origin_, reference_position_);
     float new_rotation = Calc::GetAngle(origin_, current_mouse_position_);
@@ -61,7 +62,7 @@ void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Stat
         }
         new_polygons.emplace_back(polygon_vertices.first, new_polygon);
     }
-    game_state.map.SetPolygonsById(new_polygons);
+    game_state_manager.GetMap().SetPolygonsById(new_polygons);
 
     std::vector<std::pair<unsigned int, PMSScenery>> new_sceneries;
     new_sceneries.reserve(original_sceneries_.size());
@@ -82,7 +83,7 @@ void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Stat
 
         new_sceneries.emplace_back(scenery_id, new_scenery);
     }
-    game_state.map.SetSceneriesById(new_sceneries);
+    game_state_manager.GetMap().SetSceneriesById(new_sceneries);
 
     std::vector<std::pair<unsigned int, PMSSpawnPoint>> new_spawn_points;
     new_spawn_points.reserve(original_spawn_points_.size());
@@ -94,42 +95,35 @@ void RotateSelectionMapEditorAction::Execute(ClientState& /*client_state*/, Stat
         new_spawn_point.y = new_position.y;
         new_spawn_points.emplace_back(spawn_point_id, new_spawn_point);
     }
-    game_state.map.SetSpawnPointsById(new_spawn_points);
+    game_state_manager.GetMap().SetSpawnPointsById(new_spawn_points);
 
     // TODO: start using StateManager to avoid looping over all soldiers all the time
     // TODO: StateManager should handle moving and repositioning skeleton parts
     //       and then should notify Observers about the move
     for (const auto& [soldier_id, soldier_position] : original_soldier_positions_) {
-        for (auto& soldier : game_state.soldiers) {
-            if (soldier.id != soldier_id) {
-                continue;
-            }
-
-            glm::vec2 new_soldier_position =
-              Calc::RotatePoint(soldier_position, origin_, rotation_factor);
-
+        glm::vec2 new_soldier_position =
+          Calc::RotatePoint(soldier_position, origin_, rotation_factor);
+        game_state_manager.TransformSoldier(soldier_id, [new_soldier_position](auto& soldier) {
             soldier.particle.position = new_soldier_position;
             soldier.particle.old_position = new_soldier_position;
             RepositionSoldierSkeletonParts(soldier);
-        }
+        });
     }
 }
 
-void RotateSelectionMapEditorAction::Undo(ClientState& /*client_state*/, State& game_state)
+void RotateSelectionMapEditorAction::Undo(ClientState& /*client_state*/,
+                                          StateManager& game_state_manager)
 {
-    game_state.map.SetPolygonsById(original_polygons_);
-    game_state.map.SetSceneriesById(original_sceneries_);
-    game_state.map.SetSpawnPointsById(original_spawn_points_);
+    game_state_manager.GetMap().SetPolygonsById(original_polygons_);
+    game_state_manager.GetMap().SetSceneriesById(original_sceneries_);
+    game_state_manager.GetMap().SetSpawnPointsById(original_spawn_points_);
     for (const auto& [soldier_id, soldier_position] : original_soldier_positions_) {
-        for (auto& soldier : game_state.soldiers) {
-            if (soldier.id != soldier_id) {
-                continue;
-            }
-
-            soldier.particle.position = soldier_position;
-            soldier.particle.old_position = soldier_position;
+        glm::vec2 soldier_pos = soldier_position;
+        game_state_manager.TransformSoldier(soldier_id, [soldier_pos](auto& soldier) {
+            soldier.particle.position = soldier_pos;
+            soldier.particle.old_position = soldier_pos;
             RepositionSoldierSkeletonParts(soldier);
-        }
+        });
     }
 }
 } // namespace Soldank

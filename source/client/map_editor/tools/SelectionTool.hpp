@@ -18,11 +18,13 @@ class SelectionTool final : public Tool
 public:
     ~SelectionTool() final = default;
 
-    void OnSelect(ClientState& client_state, const State& game_state) final;
+    void OnSelect(ClientState& client_state, const StateManager& game_state_manager) final;
     void OnUnselect(ClientState& client_state) final;
 
-    void OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state) final;
-    void OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state) final;
+    void OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                     const StateManager& game_state_manager) final;
+    void OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                       const StateManager& game_state_manager) final;
     void OnSceneRightMouseButtonClick(ClientState& client_state) final;
     void OnSceneRightMouseButtonRelease() final;
     void OnMouseScreenPositionChange(ClientState& client_state,
@@ -31,7 +33,7 @@ public:
     void OnMouseMapPositionChange(ClientState& client_state,
                                   glm::vec2 last_mouse_position,
                                   glm::vec2 new_mouse_position,
-                                  const State& game_state) final;
+                                  const StateManager& game_state_manager) final;
     void OnModifierKey1Pressed(ClientState& client_state) final;
     void OnModifierKey1Released(ClientState& client_state) final;
     void OnModifierKey2Pressed(ClientState& client_state) final;
@@ -55,17 +57,23 @@ private:
         Soldier,
     };
 
-    void SelectNextSingleObject(ClientState& client_state, const State& game_state);
+    void SelectNextSingleObject(ClientState& client_state, const StateManager& game_state_manager);
     void SelectNextObject(ClientState& client_state,
-                          const State& game_state,
+                          const StateManager& game_state_manager,
                           unsigned int start_index,
                           NextObjectTypeToSelect next_object_type_to_select);
-    void AddFirstFoundObjectToSelection(ClientState& client_state, const State& game_state);
-    bool AddFirstFoundPolygonToSelection(ClientState& client_state, const State& game_state);
-    bool AddFirstFoundSceneryToSelection(ClientState& client_state, const State& game_state);
-    bool AddFirstFoundSpawnPointToSelection(ClientState& client_state, const State& game_state);
-    bool AddFirstFoundSoldierToSelection(ClientState& client_state, const State& game_state);
-    void RemoveLastFoundObjectFromSelection(ClientState& client_state, const State& game_state);
+    void AddFirstFoundObjectToSelection(ClientState& client_state,
+                                        const StateManager& game_state_manager);
+    bool AddFirstFoundPolygonToSelection(ClientState& client_state,
+                                         const StateManager& game_state_manager);
+    bool AddFirstFoundSceneryToSelection(ClientState& client_state,
+                                         const StateManager& game_state_manager);
+    bool AddFirstFoundSpawnPointToSelection(ClientState& client_state,
+                                            const StateManager& game_state_manager);
+    bool AddFirstFoundSoldierToSelection(ClientState& client_state,
+                                         const StateManager& game_state_manager);
+    void RemoveLastFoundObjectFromSelection(ClientState& client_state,
+                                            const StateManager& game_state_manager);
 
     bool IsMouseInSpawnPoint(const ClientState& client_state,
                              const glm::vec2& spawn_point_position) const;
@@ -73,7 +81,7 @@ private:
     void SetSelectionMode(SelectionMode new_selection_mode, ClientState& client_state);
     static NextObjectTypeToSelect GetNextObjectTypeToSelect(
       NextObjectTypeToSelect current_object_type_to_select,
-      const State& game_state);
+      const StateManager& game_state_manager);
 
     glm::vec2 mouse_map_position_;
 

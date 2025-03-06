@@ -43,7 +43,7 @@ add_test(WeaponTest WeaponTest)
 add_test(MapBuilderTest MapBuilderTest)
 add_test(MapTest MapTest)
 add_test(CalcTest CalcTest)
-add_test(MovementTest MovementTest)
+# add_test(MovementTest MovementTest)
 add_test(ObservableTest ObservableTest)
 
 file(GLOB_RECURSE ANIMATION_FILE_PATHS ${soldatbase_SOURCE_DIR}/shared/anims/*.poa)

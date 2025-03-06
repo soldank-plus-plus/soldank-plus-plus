@@ -62,6 +62,18 @@ struct MapEditorState
     Observable<PMSPolygonType> event_selected_polygons_type_changed;
     Observable<> event_pixel_color_under_cursor_requested;
 
+    Observable<const std::string&> event_save_map;
+    Observable<const std::string&> event_set_map_name;
+    Observable<const std::string&> event_set_map_description;
+    Observable<PMSWeatherType> event_set_map_weather_type;
+    Observable<PMSStepType> event_set_map_step_type;
+    Observable<unsigned char> event_set_map_grenades_count;
+    Observable<unsigned char> event_set_map_medikits_count;
+    Observable<int> event_set_map_jet_count;
+    Observable<const PMSColor&> event_set_map_background_top_color;
+    Observable<const PMSColor&> event_set_map_background_bottom_color;
+    Observable<const std::string&> event_set_map_texture_name;
+
     // If specified, we render first edge of the polygon
     // that is being created with the polygon tool
     std::optional<PMSPolygon> polygon_tool_wip_polygon_edge;

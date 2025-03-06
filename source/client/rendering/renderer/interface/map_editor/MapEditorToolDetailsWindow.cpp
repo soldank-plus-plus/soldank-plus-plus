@@ -20,9 +20,9 @@ enum class ToolDetailsSubWindowOpenType
     Soldiers
 };
 
-void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
+void RenderPolygonToolDetails(const StateManager& game_state_manager, ClientState& client_state)
 {
-    unsigned short new_polygon_id = game_state.map.GetPolygonsCount() + 1;
+    unsigned short new_polygon_id = game_state_manager.GetConstMap().GetPolygonsCount() + 1;
 
     ImGui::Text("Placing polygon: %hu/%d", new_polygon_id, MAX_POLYGONS_COUNT);
 
@@ -141,7 +141,7 @@ void RenderPolygonToolDetails(State& game_state, ClientState& client_state)
     }
 }
 
-void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
+void RenderSelectionToolDetails(const StateManager& game_state_manager, ClientState& client_state)
 {
     static ToolDetailsSubWindowOpenType sub_window_open_type = ToolDetailsSubWindowOpenType::None;
 
@@ -202,7 +202,7 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
         sub_window_open_type = ToolDetailsSubWindowOpenType::Polygons;
 
         if (!client_state.map_editor_state.selected_polygon_vertices.empty()) {
-            const auto& polygon = game_state.map.GetPolygons().at(
+            const auto& polygon = game_state_manager.GetConstMap().GetPolygons().at(
               client_state.map_editor_state.selected_polygon_vertices.at(0).first);
 
             static std::vector<std::pair<std::string, PMSPolygonType>> polygon_type_options = {
@@ -255,8 +255,10 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
             for (const auto& selected_polygon_vertices :
                  client_state.map_editor_state.selected_polygon_vertices) {
 
-                if (game_state.map.GetPolygons().at(selected_polygon_vertices.first).polygon_type !=
-                    PMSPolygonType::Bouncy) {
+                if (game_state_manager.GetConstMap()
+                      .GetPolygons()
+                      .at(selected_polygon_vertices.first)
+                      .polygon_type != PMSPolygonType::Bouncy) {
                     are_all_selected_bouncy = false;
                 }
             }
@@ -297,9 +299,10 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
         sub_window_open_type = ToolDetailsSubWindowOpenType::Sceneries;
 
         if (!client_state.map_editor_state.selected_scenery_ids.empty()) {
-            const auto& scenery = game_state.map.GetSceneryInstances().at(
+            const auto& scenery = game_state_manager.GetConstMap().GetSceneryInstances().at(
               client_state.map_editor_state.selected_scenery_ids.at(0));
-            const auto& scenery_type = game_state.map.GetSceneryTypes().at(scenery.style - 1);
+            const auto& scenery_type =
+              game_state_manager.GetConstMap().GetSceneryTypes().at(scenery.style - 1);
 
             std::string current_level_text;
 
@@ -344,7 +347,8 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
         if (!client_state.map_editor_state.selected_spawn_point_ids.empty()) {
             unsigned int selected_spawn_point_id =
               client_state.map_editor_state.selected_spawn_point_ids.at(0);
-            const auto& spawn_point = game_state.map.GetSpawnPoints().at(selected_spawn_point_id);
+            const auto& spawn_point =
+              game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id);
 
             static std::vector<std::pair<std::string, PMSSpawnPointType>> spawn_point_options = {
                 { "Player Spawn", PMSSpawnPointType::General },
@@ -406,9 +410,10 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
             unsigned int selected_soldier_id =
               client_state.map_editor_state.selected_soldier_ids.at(0);
 
-            for (const auto& soldier : game_state.soldiers) {
+            game_state_manager.ForEachSoldier([&](const auto& soldier) {
+                // TODO: implement different method to execute the lambda for one soldier
                 if (soldier.id != selected_soldier_id) {
-                    continue;
+                    return;
                 }
 
                 if (ImGui::Button("Respawn player at random spawn")) {
@@ -417,14 +422,15 @@ void RenderSelectionToolDetails(State& game_state, ClientState& client_state)
 
                 ImGui::Text(
                   "Position: %.2f, %.2f", soldier.particle.position.x, soldier.particle.position.y);
-            }
+            });
         }
     }
 }
 
-void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
+void RenderSceneryToolDetails(const StateManager& game_state_manager, ClientState& client_state)
 {
-    unsigned short new_scenery_id = game_state.map.GetSceneryInstances().size() + 1;
+    unsigned short new_scenery_id =
+      game_state_manager.GetConstMap().GetSceneryInstances().size() + 1;
     ImGui::Text("Placing scenery: %hu/%d", new_scenery_id, MAX_SCENERIES_COUNT);
     ImGui::Text("Scenery type: %s",
                 client_state.map_editor_state.selected_scenery_to_place.c_str());
@@ -467,7 +473,7 @@ void RenderSceneryToolDetails(State& game_state, ClientState& client_state)
     }
 }
 
-void Render(State& game_state, ClientState& client_state)
+void Render(const StateManager& game_state_manager, ClientState& client_state)
 {
     static ImGuiWindowFlags default_window_flags =
       ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
@@ -480,12 +486,12 @@ void Render(State& game_state, ClientState& client_state)
                 case ToolType::Transform:
                     break;
                 case ToolType::Polygon: {
-                    RenderPolygonToolDetails(game_state, client_state);
+                    RenderPolygonToolDetails(game_state_manager, client_state);
                     break;
                 }
                 case ToolType::VertexSelection:
                 case ToolType::Selection: {
-                    RenderSelectionToolDetails(game_state, client_state);
+                    RenderSelectionToolDetails(game_state_manager, client_state);
                     break;
                 }
                 case ToolType::VertexColor:
@@ -493,7 +499,7 @@ void Render(State& game_state, ClientState& client_state)
                 case ToolType::Texture:
                     break;
                 case ToolType::Scenery: {
-                    RenderSceneryToolDetails(game_state, client_state);
+                    RenderSceneryToolDetails(game_state_manager, client_state);
                     break;
                 }
                 case ToolType::Waypoint:

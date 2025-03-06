@@ -90,17 +90,12 @@ void GameServer::OnSteamNetConnectionStatusChanged(
                                                                     p_info->m_hConn);
                 player_poll_group_->CloseConnection(p_info);
 
-                auto& state = world_->GetStateManager()->GetState();
-                spdlog::info("CLOSING CONNECTION soldiers size before: {}", state.soldiers.size());
-                for (auto it = state.soldiers.begin(); it != state.soldiers.end();) {
-                    if (it->id == soldier_id) {
-                        it = state.soldiers.erase(it);
-                    } else {
-                        it++;
-                    }
-                }
+                spdlog::info("CLOSING CONNECTION soldiers size before: {}",
+                             world_->GetStateManager()->GetSoldiersCount());
+                world_->GetStateManager()->RemoveSoldier(soldier_id);
 
-                spdlog::info("CLOSING CONNECTION soldiers size after: {}", state.soldiers.size());
+                spdlog::info("CLOSING CONNECTION soldiers size after: {}",
+                             world_->GetStateManager()->GetSoldiersCount());
 
                 server_state_->last_processed_input_id.at(soldier_id) = 0;
             }

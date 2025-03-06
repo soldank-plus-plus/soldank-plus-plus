@@ -12,7 +12,7 @@ SpawnpointTool::SpawnpointTool(
 {
 }
 
-void SpawnpointTool::OnSelect(ClientState& client_state, const State& /*game_state*/)
+void SpawnpointTool::OnSelect(ClientState& client_state, const StateManager& /*game_state_manager*/)
 {
     client_state.map_editor_state.spawn_point_preview_position = client_state.mouse_map_position;
     client_state.map_editor_state.current_tool_action_description = "Place Spawn Point";
@@ -21,7 +21,7 @@ void SpawnpointTool::OnSelect(ClientState& client_state, const State& /*game_sta
 void SpawnpointTool::OnUnselect(ClientState& /*client_state*/) {}
 
 void SpawnpointTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
-                                                 const State& /*game_state*/)
+                                                 const StateManager& /*game_state_manager*/)
 {
     PMSSpawnPoint new_spawn_point{
         .active = 1,
@@ -34,7 +34,7 @@ void SpawnpointTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
 }
 
 void SpawnpointTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
-                                                   const State& /*game_state*/)
+                                                   const StateManager& /*game_state_manager*/)
 {
 }
 
@@ -54,7 +54,7 @@ void SpawnpointTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
 void SpawnpointTool::OnMouseMapPositionChange(ClientState& client_state,
                                               glm::vec2 /*last_mouse_position*/,
                                               glm::vec2 new_mouse_position,
-                                              const State& /*game_state*/)
+                                              const StateManager& /*game_state_manager*/)
 {
     if (client_state.map_editor_state.is_snap_to_grid_enabled) {
         client_state.map_editor_state.spawn_point_preview_position = SnapMousePositionToGrid(

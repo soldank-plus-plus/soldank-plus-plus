@@ -26,11 +26,8 @@ NetworkEventHandlerResult SoldierInfoNetworkEventHandler::HandleNetworkMessageIm
     if (!is_soldier_id_me) {
         spdlog::info("({}) {} has joined the server", soldier_id, player_nick);
         world_->CreateSoldier(soldier_id);
-        for (auto& soldier : world_->GetStateManager()->GetState().soldiers) {
-            if (soldier.id == soldier_id) {
-                soldier.active = true;
-            }
-        }
+        world_->GetStateManager()->TransformSoldier(soldier_id,
+                                                    [](auto& soldier) { soldier.active = true; });
     }
 
     return NetworkEventHandlerResult::Success;

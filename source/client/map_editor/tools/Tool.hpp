@@ -2,7 +2,7 @@
 #define __TOOL_HPP__
 
 #include "rendering/ClientState.hpp"
-#include "core/state/State.hpp"
+#include "core/state/StateManager.hpp"
 
 #include "core/math/Glm.hpp"
 
@@ -13,13 +13,13 @@ class Tool
 public:
     virtual ~Tool() = default;
 
-    virtual void OnSelect(ClientState& client_state, const State& game_state) = 0;
+    virtual void OnSelect(ClientState& client_state, const StateManager& game_state_manager) = 0;
     virtual void OnUnselect(ClientState& client_state) = 0;
 
     virtual void OnSceneLeftMouseButtonClick(ClientState& client_state,
-                                             const State& game_state) = 0;
+                                             const StateManager& game_state_manager) = 0;
     virtual void OnSceneLeftMouseButtonRelease(ClientState& client_state,
-                                               const State& game_state) = 0;
+                                               const StateManager& game_state_manager) = 0;
     virtual void OnSceneRightMouseButtonClick(ClientState& client_state) = 0;
     virtual void OnSceneRightMouseButtonRelease() = 0;
     virtual void OnMouseScreenPositionChange(ClientState& client_state,
@@ -28,7 +28,7 @@ public:
     virtual void OnMouseMapPositionChange(ClientState& client_state,
                                           glm::vec2 last_mouse_position,
                                           glm::vec2 new_mouse_position,
-                                          const State& game_state) = 0;
+                                          const StateManager& game_state_manager) = 0;
     virtual void OnModifierKey1Pressed(ClientState& client_state) = 0;
     virtual void OnModifierKey1Released(ClientState& client_state) = 0;
     virtual void OnModifierKey2Pressed(ClientState& client_state) = 0;

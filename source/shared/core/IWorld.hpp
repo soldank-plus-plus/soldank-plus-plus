@@ -19,8 +19,8 @@ protected:
     using TShouldStopGameLoopCallback = std::function<bool()>;
     using TPreGameLoopIterationCallback = std::function<void()>;
     using TPreWorldUpdateCallback = std::function<void()>;
-    using TPostWorldUpdateCallback = std::function<void(const State& state)>;
-    using TPostGameLoopIterationCallback = std::function<void(const State&, double, int)>;
+    using TPostWorldUpdateCallback = std::function<void(const StateManager& state)>;
+    using TPostGameLoopIterationCallback = std::function<void(const StateManager&, double, int)>;
 
     using TPreSoldierUpdateCallback = std::function<bool(const Soldier&)>;
     using TPreProjectileSpawnCallback = std::function<bool(const BulletParams&)>;

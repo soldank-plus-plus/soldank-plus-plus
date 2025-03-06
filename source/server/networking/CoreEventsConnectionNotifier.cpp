@@ -18,7 +18,7 @@ void CoreEventsConnectionNotifier::ObserveAll(IGameServer* game_server,
 void CoreEventsConnectionNotifier::ObserveAllWorldEvents(IGameServer* game_server,
                                                          WorldEvents& world_events)
 {
-    world_events.after_soldier_spawns.AddObserver([game_server](Soldier& soldier) {
+    world_events.after_soldier_spawns.AddObserver([game_server](const Soldier& soldier) {
         game_server->SendNetworkMessageToAll(NetworkMessage(NetworkEvent::SpawnSoldier,
                                                             soldier.id,
                                                             soldier.particle.position.x,

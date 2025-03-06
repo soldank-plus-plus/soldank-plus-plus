@@ -27,7 +27,6 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
     TeamType team = projectile_spawn_packet.team;
     std::uint8_t owner_id = projectile_spawn_packet.owner_id;
 
-    auto& state = world_->GetStateManager()->GetState();
     BulletParams bullet_params{ style,
                                 weapon,
                                 { position_x, position_y },
@@ -36,7 +35,7 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
                                 hit_multiply,
                                 team,
                                 owner_id };
-    state.bullets.emplace_back(bullet_params);
+    world_->GetStateManager()->CreateProjectile(bullet_params);
     return NetworkEventHandlerResult::Success;
 }
 } // namespace Soldank

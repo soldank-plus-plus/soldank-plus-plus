@@ -7,21 +7,20 @@ namespace Soldank
 {
 struct Item;
 class Map;
-struct State;
+class StateManager;
 struct PhysicsEvents;
 } // namespace Soldank
 
 namespace Soldank::ItemPhysics
 {
-void Update(State& state, Item& item, const PhysicsEvents& physics_events);
+void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physics_events);
 bool CheckMapCollision(Item& item,
                        const Map& map,
                        float x,
                        float y,
                        int i,
-                       State& state,
                        const PhysicsEvents& physics_events);
-int CheckSoldierCollision(Item& item, State& state);
+int CheckSoldierCollision(Item& item, const StateManager& state_manager);
 } // namespace Soldank::ItemPhysics
 
 #endif

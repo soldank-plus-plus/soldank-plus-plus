@@ -7,6 +7,7 @@
 #include "shared_lib_testing/MapBuilder.hpp"
 
 #include <gtest/gtest.h>
+#include <memory>
 
 namespace SoldankTesting
 {
@@ -56,7 +57,7 @@ public:
       unsigned int tick,
       const SoldierExpectedAnimationState& soldier_expected_animation_state);
 
-    void RunUntilSoldierOnGround();
+    void RunUntilSoldierOnGround(unsigned int ticks_limit = 5000);
 
     void RunFor(unsigned int ticks_to_run);
 
@@ -78,7 +79,7 @@ private:
     void TurnSoldierLeft();
     void TurnSoldierRight();
 
-    Soldank::StateManager state_manager_;
+    std::unique_ptr<Soldank::StateManager> state_manager_;
     Soldank::AnimationDataManager animation_data_manager_;
 
     std::unordered_map<unsigned int, SoldierExpectedAnimationStates> animations_to_check_at_tick_;

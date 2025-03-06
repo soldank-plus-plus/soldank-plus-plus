@@ -9,16 +9,18 @@
 
 namespace Soldank
 {
-MapEditorScene::MapEditorScene(ClientState& client_state, State& game_state)
-    : polygon_vertex_outlines_renderer_(client_state, game_state.map, { 1.0F, 0.0F, 0.0F, 0.5F })
-    , scenery_outlines_renderer_(game_state.map, { 1.0F, 0.0F, 0.0F, 0.5F })
+MapEditorScene::MapEditorScene(ClientState& client_state, StateManager& game_state_manager)
+    : polygon_vertex_outlines_renderer_(client_state,
+                                        game_state_manager.GetMap(),
+                                        { 1.0F, 0.0F, 0.0F, 0.5F })
+    , scenery_outlines_renderer_(game_state_manager.GetMap(), { 1.0F, 0.0F, 0.0F, 0.5F })
 {
     client_state.map_editor_state.map_description_input.reserve(DESCRIPTION_MAX_LENGTH);
     client_state.map_editor_state.event_scenery_texture_changed.AddObserver(
       [this](const std::string& file_name) { single_image_renderer_.SetTexture(file_name); });
 }
 
-void MapEditorScene::Render(State& game_state,
+void MapEditorScene::Render(const StateManager& game_state_manager,
                             ClientState& client_state,
                             const PolygonsRenderer& polygons_renderer)
 {
@@ -43,7 +45,7 @@ void MapEditorScene::Render(State& game_state,
     polygon_vertex_outlines_renderer_.Render(camera.GetView());
 
     if (client_state.map_editor_state.draw_spawn_points) {
-        for (const auto& spawn_point : game_state.map.GetSpawnPoints()) {
+        for (const auto& spawn_point : game_state_manager.GetConstMap().GetSpawnPoints()) {
             spawn_point_renderer_.Render(camera.GetView(), spawn_point, camera.GetZoom());
         }
     }
@@ -51,7 +53,8 @@ void MapEditorScene::Render(State& game_state,
     for (const auto& selected_spawn_point_id :
          client_state.map_editor_state.selected_spawn_point_ids) {
 
-        const auto& spawn_point = game_state.map.GetSpawnPoints().at(selected_spawn_point_id);
+        const auto& spawn_point =
+          game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id);
         glm::vec2 start_position = { (float)spawn_point.x - 9.0F * camera.GetZoom(),
                                      (float)spawn_point.y - 9.0F * camera.GetZoom() };
         glm::vec2 end_position = { (float)spawn_point.x + 9.0F * camera.GetZoom(),
@@ -64,9 +67,10 @@ void MapEditorScene::Render(State& game_state,
     }
 
     for (const auto& selected_soldier_id : client_state.map_editor_state.selected_soldier_ids) {
-        for (const auto& soldier : game_state.soldiers) {
+        game_state_manager.ForEachSoldier([&](const auto& soldier) {
+            // TODO: implement different method to execute the lambda for one soldier
             if (soldier.id != selected_soldier_id) {
-                continue;
+                return;
             }
 
             glm::vec2 start_position = { (float)soldier.particle.position.x - 9.0F,
@@ -78,7 +82,7 @@ void MapEditorScene::Render(State& game_state,
                             end_position,
                             { 0.8F, 0.2F, 0.2F, 0.7F },
                             camera.GetZoom());
-        }
+        });
     }
 
     if (client_state.map_editor_state.selected_tool == ToolType::Spawnpoint) {
@@ -144,7 +148,7 @@ void MapEditorScene::Render(State& game_state,
           client_state.camera_component.GetZoom());
     }
 
-    MapEditorUI::Render(game_state, client_state);
+    MapEditorUI::Render(game_state_manager, client_state);
 }
 
 void MapEditorScene::RenderRectangle(const glm::mat4& transform,

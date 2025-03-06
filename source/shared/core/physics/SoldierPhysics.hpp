@@ -6,7 +6,7 @@
 #include "core/physics/Particles.hpp"
 #include "core/physics/PhysicsEvents.hpp"
 #include "core/state/Control.hpp"
-#include "core/state/State.hpp"
+#include "core/state/StateManager.hpp"
 #include "core/entities/Weapon.hpp"
 #include "core/entities/Bullet.hpp"
 #include "core/entities/Soldier.hpp"
@@ -25,18 +25,18 @@ const Weapon& GetTertiaryWeapon(Soldier& soldier);
 void SwitchWeapon(Soldier& soldier);
 void UpdateKeys(Soldier& soldier, const Control& control);
 void HandleSpecialPolytypes(const Map& map, PMSPolygonType polytype, Soldier& soldier);
-void Update(State& state,
+void Update(StateManager& state_manager,
             Soldier& soldier,
             const PhysicsEvents& physics_events,
             const AnimationDataManager& animation_data_manager,
-            std::vector<BulletParams>& bullet_emitter);
+            std::vector<BulletParams>& bullet_emitter,
+            float gravity);
 
 bool CheckMapCollision(Soldier& soldier,
                        const Map& map,
                        float x,
                        float y,
                        int area,
-                       State& state,
                        const PhysicsEvents& physics_events);
 bool CheckMapVerticesCollision(Soldier& soldier,
                                const Map& map,
@@ -44,21 +44,14 @@ bool CheckMapVerticesCollision(Soldier& soldier,
                                float y,
                                float r,
                                bool has_collided,
-                               State& state,
                                const PhysicsEvents& physics_events);
 bool CheckRadiusMapCollision(Soldier& soldier,
                              const Map& map,
                              float x,
                              float y,
                              bool has_collided,
-                             State& state,
                              const PhysicsEvents& physics_events);
-bool CheckSkeletonMapCollision(Soldier& soldier,
-                               const Map& map,
-                               unsigned int i,
-                               float x,
-                               float y,
-                               State& state);
+bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i, float x, float y);
 void Fire(Soldier& soldier, std::vector<BulletParams>& bullet_emitter);
 } // namespace Soldank::SoldierPhysics
 

@@ -37,6 +37,7 @@
 #include "core/physics/ItemPhysics.hpp"
 #include "core/entities/WeaponParametersFactory.hpp"
 
+#include "core/state/State.hpp"
 #include "spdlog/spdlog.h"
 
 #include <algorithm>
@@ -51,13 +52,13 @@
 namespace Soldank
 {
 World::World()
-    : state_manager_(std::make_shared<StateManager>())
-    , physics_events_(std::make_unique<PhysicsEvents>())
+
+    : physics_events_(std::make_unique<PhysicsEvents>())
     , world_events_(std::make_unique<WorldEvents>())
-    , mersenne_twister_engine_(random_device_())
     , fps_limit_(0)
 {
     animation_data_manager_.LoadAllAnimationDatas();
+    state_manager_ = std::make_shared<StateManager>(animation_data_manager_);
 }
 
 void World::RunLoop()
@@ -111,18 +112,18 @@ void World::RunLoop()
             std::chrono::duration<double> dt_in_duration{ dt };
             timeacc -= dt_in_duration;
 
-            if (!state_manager_->GetState().paused) {
+            if (!state_manager_->IsGamePaused()) {
                 if (pre_world_update_callback_) {
                     pre_world_update_callback_();
                 }
                 Update(delta_time.count());
                 if (post_world_update_callback_) {
-                    post_world_update_callback_(state_manager_->GetState());
+                    post_world_update_callback_(*state_manager_);
                 }
 
                 world_updates++;
                 game_tick++;
-                state_manager_->GetState().game_tick = game_tick;
+                state_manager_->SetGameTick(game_tick);
             }
 
             timecur = std::chrono::system_clock::now();
@@ -131,12 +132,12 @@ void World::RunLoop()
         }
 
         double frame_percent = 1.0F;
-        if (!state_manager_->GetState().paused) {
+        if (!state_manager_->IsGamePaused()) {
             frame_percent = std::min(1.0, std::max(0.0, timeacc.count() / dt));
         }
 
         if (post_game_loop_iteration_callback_) {
-            post_game_loop_iteration_callback_(state_manager_->GetState(), frame_percent, last_fps);
+            post_game_loop_iteration_callback_(*state_manager_, frame_percent, last_fps);
         }
 
         timecur = std::chrono::system_clock::now();
@@ -166,44 +167,37 @@ void World::RunLoop()
 
 void World::Update(double /*delta_time*/)
 {
-    auto removed_bullets_range = std::ranges::remove_if(
-      state_manager_->GetState().bullets, [](const Bullet& bullet) { return !bullet.active; });
-    state_manager_->GetState().bullets.erase(removed_bullets_range.begin(),
-                                             removed_bullets_range.end());
-
-    auto removed_items_range = std::ranges::remove_if(
-      state_manager_->GetState().items, [](const Item& item) { return !item.active; });
-    state_manager_->GetState().items.erase(removed_items_range.begin(), removed_items_range.end());
+    // TODO: move this somewhere else
+    static float gravity = 0.06F;
 
     std::vector<BulletParams> bullet_emitter;
 
-    for (auto& soldier : state_manager_->GetState().soldiers) {
-        if (soldier.active) {
-            bool should_update_current_soldier = true;
-            if (pre_soldier_update_callback_) {
-                should_update_current_soldier = pre_soldier_update_callback_(soldier);
-            }
+    state_manager_->TransformSoldiers([&](auto& soldier) {
+        bool should_update_current_soldier = true;
+        if (pre_soldier_update_callback_) {
+            should_update_current_soldier = pre_soldier_update_callback_(soldier);
+        }
 
-            if (should_update_current_soldier) {
-                SoldierPhysics::Update(state_manager_->GetState(),
-                                       soldier,
-                                       *physics_events_,
-                                       animation_data_manager_,
-                                       bullet_emitter);
-                if (soldier.dead_meat) {
-                    soldier.ticks_to_respawn--;
-                    if (soldier.ticks_to_respawn <= 0) {
-                        SpawnSoldier(soldier.id);
-                    }
+        if (should_update_current_soldier) {
+            SoldierPhysics::Update(*state_manager_,
+                                   soldier,
+                                   *physics_events_,
+                                   animation_data_manager_,
+                                   bullet_emitter,
+                                   gravity);
+            if (soldier.dead_meat) {
+                soldier.ticks_to_respawn--;
+                if (soldier.ticks_to_respawn <= 0) {
+                    SpawnSoldier(soldier.id);
                 }
             }
         }
-    }
+    });
 
-    for (auto& bullet : state_manager_->GetState().bullets) {
+    state_manager_->TransformBullets([&](auto& bullet) {
         BulletPhysics::UpdateBullet(
-          *physics_events_, bullet, state_manager_->GetState().map, state_manager_->GetState());
-    }
+          *physics_events_, bullet, state_manager_->GetMap(), *state_manager_);
+    });
 
     for (const auto& bullet_params : state_manager_->GetBulletEmitter()) {
         bool should_spawn_projectile = false;
@@ -212,30 +206,29 @@ void World::Update(double /*delta_time*/)
         }
 
         if (should_spawn_projectile) {
-            state_manager_->GetState().bullets.emplace_back(bullet_params);
+            state_manager_->CreateProjectile(bullet_params);
         }
     }
 
-    for (auto& item : state_manager_->GetState().items) {
-        ItemPhysics::Update(state_manager_->GetState(), item, *physics_events_);
-    }
+    state_manager_->TransformItems(
+      [&](auto& item) { ItemPhysics::Update(*state_manager_, item, *physics_events_); });
 
     state_manager_->ClearBulletEmitter();
 }
 
 void World::UpdateSoldier(unsigned int soldier_id)
 {
+    static float gravity = 0.06F;
     std::vector<BulletParams> bullet_emitter;
 
-    for (auto& soldier : state_manager_->GetState().soldiers) {
-        if (soldier.active && soldier.id == soldier_id) {
-            SoldierPhysics::Update(state_manager_->GetState(),
-                                   soldier,
-                                   *physics_events_,
-                                   animation_data_manager_,
-                                   bullet_emitter);
-        }
-    }
+    state_manager_->TransformSoldier(soldier_id, [&](Soldier& soldier) {
+        SoldierPhysics::Update(*state_manager_,
+                               soldier,
+                               *physics_events_,
+                               animation_data_manager_,
+                               bullet_emitter,
+                               gravity);
+    });
 }
 
 const std::shared_ptr<StateManager>& World::GetStateManager() const
@@ -245,13 +238,7 @@ const std::shared_ptr<StateManager>& World::GetStateManager() const
 
 const Soldier& World::GetSoldier(unsigned int soldier_id) const
 {
-    for (const auto& soldier : state_manager_->GetState().soldiers) {
-        if (soldier.id == soldier_id) {
-            return soldier;
-        }
-    }
-
-    std::unreachable();
+    return state_manager_->GetSoldier(soldier_id);
 }
 
 PhysicsEvents& World::GetPhysicsEvents()
@@ -341,127 +328,40 @@ std::shared_ptr<AnimationState> World::GetLegsAnimationState(AnimationType anima
 
 const Soldier& World::CreateSoldier(std::optional<unsigned int> force_soldier_id)
 {
-    unsigned int new_soldier_id = NAN;
-
-    if (!force_soldier_id.has_value()) {
-        std::vector<unsigned int> current_soldier_ids;
-        for (const auto& soldier : state_manager_->GetState().soldiers) {
-            current_soldier_ids.push_back(soldier.id);
-        }
-        std::sort(current_soldier_ids.begin(), current_soldier_ids.end());
-        unsigned int free_soldier_id = 1;
-        while (free_soldier_id <= current_soldier_ids.size() &&
-               current_soldier_ids.at(free_soldier_id - 1) == free_soldier_id) {
-            free_soldier_id++;
-        }
-
-        new_soldier_id = free_soldier_id;
-    } else {
-        new_soldier_id = *force_soldier_id;
-    }
-
-    std::vector<Weapon> weapons{
-        { WeaponParametersFactory::GetParameters(WeaponType::DesertEagles, false) },
-        { WeaponParametersFactory::GetParameters(WeaponType::Knife, false) },
-        { WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false) }
-    };
-    state_manager_->GetState().soldiers.emplace_back(
-      new_soldier_id,
-      animation_data_manager_,
-      ParticleSystem::Load(ParticleSystemType::Soldier),
-      weapons);
-
-    return state_manager_->GetState().soldiers.back();
+    return state_manager_->CreateSoldier(force_soldier_id);
 }
 
 glm::vec2 World::SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> spawn_position)
 {
-    glm::vec2 initial_player_position{ 0.0F, 0.0F };
-    if (spawn_position.has_value()) {
-        initial_player_position = *spawn_position;
-    } else {
-        std::vector<glm::vec2> possible_spawn_point_positions;
-        for (const auto& spawn_point : state_manager_->GetState().map.GetSpawnPoints()) {
-            if (spawn_point.type == PMSSpawnPointType::General ||
-                spawn_point.type == PMSSpawnPointType::Alpha ||
-                spawn_point.type == PMSSpawnPointType::Bravo ||
-                spawn_point.type == PMSSpawnPointType::Charlie ||
-                spawn_point.type == PMSSpawnPointType::Delta) {
-
-                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
-            }
-        }
-
-        if (possible_spawn_point_positions.empty()) {
-            for (const auto& spawn_point : state_manager_->GetState().map.GetSpawnPoints()) {
-                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
-            }
-        }
-
-        if (!possible_spawn_point_positions.empty()) {
-            std::uniform_int_distribution<unsigned int> spawnpoint_id_random_distribution(
-              0, possible_spawn_point_positions.size() - 1);
-
-            unsigned int random_spawnpoint_id =
-              spawnpoint_id_random_distribution(mersenne_twister_engine_);
-
-            initial_player_position = possible_spawn_point_positions.at(random_spawnpoint_id);
-        }
-    }
-
-    for (auto& soldier : state_manager_->GetState().soldiers) {
-        if (soldier.id == soldier_id) {
-            soldier.particle.position = initial_player_position;
-            soldier.particle.old_position = initial_player_position;
-            soldier.active = true;
-            soldier.particle.active = true;
-            soldier.health = 150.0;
-            soldier.dead_meat = false;
-            soldier.weapons[0] =
-              WeaponParametersFactory::GetParameters(soldier.weapon_choices[0], false);
-            soldier.weapons[1] =
-              WeaponParametersFactory::GetParameters(soldier.weapon_choices[1], false);
-            soldier.active_weapon = 0;
-            RepositionSoldierSkeletonParts(soldier);
-            world_events_->after_soldier_spawns.Notify(soldier);
-            return initial_player_position;
-        }
-    }
-
-    spdlog::critical("[SpawnSoldier] Wrong soldier_id ({})", soldier_id);
-    std::unreachable();
+    auto initial_soldier_position = state_manager_->SpawnSoldier(soldier_id, spawn_position);
+    world_events_->after_soldier_spawns.Notify(state_manager_->GetSoldier(soldier_id));
+    return initial_soldier_position;
 }
 
 void World::KillSoldier(unsigned int soldier_id)
 {
-    for (auto& soldier : state_manager_->GetState().soldiers) {
-        if (soldier.id == soldier_id && !soldier.dead_meat) {
-            soldier.health = 0;
-            soldier.dead_meat = true;
-            soldier.ticks_to_respawn = 180; // 3 seconds
-            world_events_->soldier_died.Notify(soldier);
-        }
-    }
+    state_manager_->TransformSoldier(soldier_id, [&](Soldier& soldier) {
+        soldier.health = 0;
+        soldier.dead_meat = true;
+        soldier.ticks_to_respawn = 180; // 3 seconds
+        world_events_->soldier_died.Notify(soldier);
+    });
 }
 
 void World::HitSoldier(unsigned int soldier_id, float damage)
 {
-    for (auto& soldier : state_manager_->GetState().soldiers) {
-        if (soldier.id == soldier_id) {
-            soldier.health -= damage;
-        }
-    }
+    state_manager_->TransformSoldier(soldier_id,
+                                     [damage](Soldier& soldier) { soldier.health -= damage; });
 }
 
 void World::UpdateWeaponChoices(unsigned int soldier_id,
                                 WeaponType primary_weapon_type,
                                 WeaponType secondary_weapon_type)
 {
-    for (auto& soldier : state_manager_->GetState().soldiers) {
-        if (soldier.id == soldier_id) {
-            soldier.weapon_choices[0] = primary_weapon_type;
-            soldier.weapon_choices[1] = secondary_weapon_type;
-        }
-    }
+    state_manager_->TransformSoldier(
+      soldier_id, [primary_weapon_type, secondary_weapon_type](Soldier& soldier) {
+          soldier.weapon_choices[0] = primary_weapon_type;
+          soldier.weapon_choices[1] = secondary_weapon_type;
+      });
 }
 } // namespace Soldank

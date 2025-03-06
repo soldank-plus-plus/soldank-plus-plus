@@ -2,15 +2,17 @@
 
 namespace Soldank
 {
-void WaypointTool::OnSelect(ClientState& client_state, const State& game_state) {}
+void WaypointTool::OnSelect(ClientState& client_state, const StateManager& game_state_manager) {}
 
 void WaypointTool::OnUnselect(ClientState& client_state) {}
 
-void WaypointTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
+void WaypointTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                               const StateManager& game_state_manager)
 {
 }
 
-void WaypointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state)
+void WaypointTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                                 const StateManager& game_state_manager)
 {
 }
 
@@ -27,7 +29,7 @@ void WaypointTool::OnMouseScreenPositionChange(ClientState& client_state,
 void WaypointTool::OnMouseMapPositionChange(ClientState& client_state,
                                             glm::vec2 last_mouse_position,
                                             glm::vec2 new_mouse_position,
-                                            const State& game_state)
+                                            const StateManager& game_state_manager)
 {
 }
 

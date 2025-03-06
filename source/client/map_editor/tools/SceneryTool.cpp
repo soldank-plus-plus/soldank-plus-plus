@@ -9,7 +9,7 @@ SceneryTool::SceneryTool(
 {
 }
 
-void SceneryTool::OnSelect(ClientState& client_state, const State& game_state)
+void SceneryTool::OnSelect(ClientState& client_state, const StateManager& /*game_state_manager*/)
 {
     client_state.map_editor_state.scenery_to_place.scale_x = 1.0F;
     client_state.map_editor_state.scenery_to_place.scale_y = 1.0F;
@@ -19,7 +19,8 @@ void SceneryTool::OnSelect(ClientState& client_state, const State& game_state)
 
 void SceneryTool::OnUnselect(ClientState& client_state) {}
 
-void SceneryTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
+void SceneryTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                              const StateManager& /*game_state_manager*/)
 {
     client_state.map_editor_state.scenery_to_place.color.red =
       (unsigned char)(client_state.map_editor_state.palette_current_color.at(0) * 255.0F);
@@ -38,7 +39,8 @@ void SceneryTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const S
     add_new_map_editor_action_(std::move(add_polygon_action));
 }
 
-void SceneryTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state)
+void SceneryTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                                const StateManager& game_state_manager)
 {
 }
 
@@ -58,7 +60,7 @@ void SceneryTool::OnMouseScreenPositionChange(ClientState& client_state,
 void SceneryTool::OnMouseMapPositionChange(ClientState& client_state,
                                            glm::vec2 /*last_mouse_position*/,
                                            glm::vec2 new_mouse_position,
-                                           const State& /*game_state*/)
+                                           const StateManager& /*game_state_manager*/)
 {
     if (client_state.map_editor_state.is_snap_to_grid_enabled) {
         glm::vec2 snapped_mouse_position = SnapMousePositionToGrid(

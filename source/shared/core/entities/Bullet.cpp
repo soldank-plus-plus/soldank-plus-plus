@@ -1,9 +1,11 @@
 #include "Bullet.hpp"
+#include "core/types/TeamType.hpp"
 
 namespace Soldank
 {
 Bullet::Bullet(BulletParams params)
-    : style(params.style)
+    : active(true)
+    , style(params.style)
     , weapon(params.weapon)
     , team(params.team)
     , owner_id(params.owner_id)

@@ -82,6 +82,12 @@ WeaponType ItemTypeToWeaponType(ItemType item_type)
     std::unreachable();
 }
 
+StateManager::StateManager(AnimationDataManager& animation_data_manager,
+                           std::shared_ptr<ParticleSystem> skeleton)
+    : state_(animation_data_manager, std::move(skeleton))
+{
+}
+
 void StateManager::ChangeSoldierControlActionState(std::uint8_t soldier_id,
                                                    ControlActionType control_action_type,
                                                    bool new_state)
@@ -316,9 +322,201 @@ glm::vec2 StateManager::GetSoldierAimDirection(std::uint8_t soldier_id)
     return aim_direction;
 }
 
-void StateManager::CreateProjectile(const BulletParams& bullet_params)
+void StateManager::TransformSoldier(std::uint8_t soldier_id,
+                                    const std::function<void(Soldier&)>& transform_soldier_function)
+{
+    Soldier& soldier = GetSoldierRef(soldier_id);
+    if (!soldier.active) {
+        spdlog::warn("Trying to transform inactive soldier of id: {}", soldier_id);
+        return;
+    }
+    transform_soldier_function(soldier);
+}
+
+void StateManager::TransformSoldiers(
+  const std::function<void(Soldier&)>& transform_soldier_function)
+{
+    for (auto& soldier : state_.soldiers) {
+        if (!soldier.active) {
+            continue;
+        }
+
+        transform_soldier_function(soldier);
+    }
+}
+
+const Soldier& StateManager::GetSoldier(std::uint8_t soldier_id) const
+{
+    if (soldier_id >= state_.soldiers.size()) {
+        spdlog::critical("Trying to access soldier of invalid id: {}", soldier_id);
+        std::unreachable();
+    }
+
+    return state_.soldiers.at(soldier_id);
+}
+
+const Soldier& StateManager::CreateSoldier(std::optional<unsigned int> force_soldier_id)
+{
+    unsigned int new_soldier_id = NAN;
+
+    if (!force_soldier_id.has_value()) {
+        unsigned int free_soldier_id = 0;
+        for (const auto& soldier : state_.soldiers) {
+            if (!soldier.active) {
+                break;
+            }
+
+            ++free_soldier_id;
+        }
+
+        new_soldier_id = free_soldier_id;
+    } else {
+        new_soldier_id = *force_soldier_id;
+    }
+
+    std::vector<Weapon> weapons{
+        { WeaponParametersFactory::GetParameters(WeaponType::DesertEagles, false) },
+        { WeaponParametersFactory::GetParameters(WeaponType::Knife, false) },
+        { WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false) }
+    };
+
+    spdlog::debug("new_soldier_id {}", new_soldier_id);
+    state_.soldiers.at(new_soldier_id).SetDefaultValues();
+    state_.soldiers.at(new_soldier_id).active = true;
+    state_.soldiers.at(new_soldier_id).id = new_soldier_id;
+
+    return state_.soldiers.back();
+}
+
+glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
+                                     std::optional<glm::vec2> spawn_position)
+{
+    glm::vec2 initial_player_position{ 0.0F, 0.0F };
+    if (spawn_position.has_value()) {
+        initial_player_position = *spawn_position;
+    } else {
+        std::vector<glm::vec2> possible_spawn_point_positions;
+        for (const auto& spawn_point : state_.map.GetSpawnPoints()) {
+            if (spawn_point.type == PMSSpawnPointType::General ||
+                spawn_point.type == PMSSpawnPointType::Alpha ||
+                spawn_point.type == PMSSpawnPointType::Bravo ||
+                spawn_point.type == PMSSpawnPointType::Charlie ||
+                spawn_point.type == PMSSpawnPointType::Delta) {
+
+                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
+            }
+        }
+
+        if (possible_spawn_point_positions.empty()) {
+            for (const auto& spawn_point : state_.map.GetSpawnPoints()) {
+                possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
+            }
+        }
+
+        if (!possible_spawn_point_positions.empty()) {
+            std::uniform_int_distribution<unsigned int> spawnpoint_id_random_distribution(
+              0, possible_spawn_point_positions.size() - 1);
+
+            unsigned int random_spawnpoint_id =
+              spawnpoint_id_random_distribution(mersenne_twister_engine_);
+
+            initial_player_position = possible_spawn_point_positions.at(random_spawnpoint_id);
+        }
+    }
+
+    auto& soldier = GetSoldierRef(soldier_id);
+    soldier.particle.position = initial_player_position;
+    soldier.particle.old_position = initial_player_position;
+    soldier.active = true;
+    soldier.particle.active = true;
+    soldier.health = 150.0;
+    soldier.dead_meat = false;
+    soldier.weapons[0] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[0], false);
+    soldier.weapons[1] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[1], false);
+    soldier.active_weapon = 0;
+    RepositionSoldierSkeletonParts(soldier);
+
+    return initial_player_position;
+}
+
+void StateManager::ForEachSoldier(
+  const std::function<void(const Soldier& soldier)>& for_each_soldier_function) const
+{
+    for (const Soldier& soldier : state_.soldiers) {
+        if (!soldier.active) {
+            continue;
+        }
+
+        for_each_soldier_function(soldier);
+    }
+}
+
+void StateManager::ForSoldier(
+  std::uint8_t soldier_id,
+  const std::function<void(const Soldier& soldier)>& for_soldier_function) const
+{
+    if (soldier_id >= state_.soldiers.size()) {
+        spdlog::critical("Trying to access soldier of invalid id: {}", soldier_id);
+        std::unreachable();
+    }
+
+    for_soldier_function(state_.soldiers.at(soldier_id));
+}
+
+const Soldier* StateManager::FindSoldier(
+  const std::function<bool(const Soldier& soldier)>& predicate) const
+{
+    for (const Soldier& soldier : state_.soldiers) {
+        if (!soldier.active) {
+            continue;
+        }
+
+        if (predicate(soldier)) {
+            return &soldier;
+        }
+    }
+
+    return nullptr;
+}
+
+void StateManager::RemoveSoldier(std::uint8_t soldier_id)
+{
+    if (soldier_id >= state_.soldiers.size()) {
+        spdlog::critical("Trying to access soldier of invalid id: {}", soldier_id);
+        std::unreachable();
+    }
+
+    state_.soldiers.at(soldier_id).active = false;
+}
+
+std::size_t StateManager::GetSoldiersCount() const
+{
+    return state_.soldiers.size();
+}
+
+void StateManager::EnqueueNewProjectile(const BulletParams& bullet_params)
 {
     bullet_emitter_.push_back(bullet_params);
+}
+
+void StateManager::CreateProjectile(const BulletParams& bullet_params)
+{
+    bool is_bullet_created = false;
+    for (auto& bullet : state_.bullets) {
+        if (bullet.active) {
+            continue;
+        }
+
+        bullet = bullet_params;
+        bullet.active = true;
+        is_bullet_created = true;
+
+        break;
+    }
+
+    if (!is_bullet_created) {
+        spdlog::warn("Could not create a new projectile because the limit is exceeded");
+    }
 }
 
 const std::vector<BulletParams>& StateManager::GetBulletEmitter() const
@@ -331,18 +529,56 @@ void StateManager::ClearBulletEmitter()
     bullet_emitter_.clear();
 }
 
+void StateManager::ForEachBullet(
+  const std::function<void(const Bullet& bullet)>& for_each_bullet_function) const
+{
+    for (const auto& bullet : state_.bullets) {
+        if (!bullet.active) {
+            continue;
+        }
+
+        for_each_bullet_function(bullet);
+    }
+}
+
+std::size_t StateManager::GetBulletsCount() const
+{
+    std::size_t bullets_count = 0;
+
+    for (const auto& bullet : state_.bullets) {
+        if (!bullet.active) {
+            continue;
+        }
+
+        ++bullets_count;
+    }
+
+    return bullets_count;
+}
+
+void StateManager::TransformBullets(
+  const std::function<void(Bullet& bullet)>& transform_bullet_function)
+{
+    for (auto& bullet : state_.bullets) {
+        if (!bullet.active) {
+            continue;
+        }
+
+        transform_bullet_function(bullet);
+    }
+}
+
 Item& StateManager::CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style)
 {
-    std::vector<std::uint8_t> current_ids;
     std::uint8_t new_id = 0;
-    current_ids.reserve(state_.items.size());
     for (const auto& item : state_.items) {
-        current_ids.push_back(item.id);
+        if (!item.active) {
+            break;
+        }
+
+        ++new_id;
     }
-    std::sort(current_ids.begin(), current_ids.end());
-    while (new_id < current_ids.size() && new_id == current_ids.at(new_id)) {
-        new_id++;
-    }
+
     Item new_item;
     new_item.active = true;
     new_item.style = style;
@@ -487,8 +723,12 @@ Item& StateManager::CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemTy
             break;
     }
 
-    state_.items.push_back(new_item);
-    SetItemPosition(state_.items.size() - 1, position);
+    if (new_id >= state_.items.size()) {
+        spdlog::critical("Trying to create a new item but array is full, id: {}", new_id);
+    }
+
+    state_.items.at(new_id) = new_item;
+    SetItemPosition(new_id, position);
 
     return state_.items.back();
 }
@@ -510,27 +750,46 @@ void StateManager::MoveItemIntoDirection(unsigned int id, glm::vec2 direction)
     }
 }
 
+void StateManager::TransformItems(const std::function<void(Item& item)>& transform_item_function)
+{
+    for (auto& item : state_.items) {
+        if (!item.active) {
+            continue;
+        }
+
+        transform_item_function(item);
+    }
+}
+
+void StateManager::ForEachItem(
+  const std::function<void(const Item& item)>& for_each_item_function) const
+{
+    for (const Item& item : state_.items) {
+        if (!item.active) {
+            continue;
+        }
+
+        for_each_item_function(item);
+    }
+}
+
 Soldier& StateManager::GetSoldierRef(std::uint8_t soldier_id)
 {
-    for (auto& soldier : state_.soldiers) {
-        if (soldier.id == soldier_id) {
-            return soldier;
-        }
+    if (soldier_id >= state_.soldiers.size()) {
+        spdlog::critical("Trying to access soldier of invalid id: {}", soldier_id);
+        std::unreachable();
     }
 
-    spdlog::critical("Trying to access soldier of invalid id: {}", soldier_id);
-    std::unreachable();
+    return state_.soldiers.at(soldier_id);
 }
 
 Item& StateManager::GetItemRef(std::uint8_t item_id)
 {
-    for (auto& item : state_.items) {
-        if (item.id == item_id) {
-            return item;
-        }
+    if (item_id >= state_.items.size()) {
+        spdlog::critical("Trying to access item of invalid id: {}", item_id);
+        std::unreachable();
     }
 
-    spdlog::critical("Trying to access item of invalid id: {}", item_id);
-    std::unreachable();
+    return state_.items.at(item_id);
 }
 } // namespace Soldank

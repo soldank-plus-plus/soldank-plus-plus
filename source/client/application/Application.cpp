@@ -142,8 +142,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         case CommandLineParameters::ApplicationMode::MapEditor: {
             client_state_->draw_map_editor_interface = true;
             client_state_->draw_game_interface = false;
-            map_editor_ =
-              std::make_unique<MapEditor>(*client_state_, world_->GetStateManager()->GetState());
+            map_editor_ = std::make_unique<MapEditor>(*client_state_, *world_->GetStateManager());
             spdlog::info("Application mode = MapEditor");
             break;
         }
@@ -155,9 +154,9 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     spdlog::debug("{} Map: {}", map_path.empty(), map_path);
 
     if (map_path.empty()) {
-        world_->GetStateManager()->GetState().map.CreateEmptyMap();
+        world_->GetStateManager()->GetMap().CreateEmptyMap();
     } else {
-        world_->GetStateManager()->GetState().map.LoadMap(map_path);
+        world_->GetStateManager()->GetMap().LoadMap(map_path);
     }
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
@@ -289,7 +288,7 @@ void Application::Run()
     client_state_->event_respawn_player_at_spawn_point_requested.AddObserver(
       [&](unsigned int spawn_point_id) {
           const auto& spawn_point =
-            world_->GetStateManager()->GetState().map.GetSpawnPoints().at(spawn_point_id);
+            world_->GetStateManager()->GetMap().GetSpawnPoints().at(spawn_point_id);
           glm::vec2 position = { spawn_point.x, spawn_point.y };
           world_->SpawnSoldier(*client_state_->client_soldier_id, position);
       });
@@ -307,19 +306,13 @@ void Application::Run()
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
         window_->SetCursorMode(CursorMode::Normal);
-        world_->GetStateManager()->GetState().paused = true;
+        world_->GetStateManager()->PauseGame();
     }
 
     client_state_->map_editor_state.event_pressed_play.AddObserver([&]() {
         std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
-        bool is_soldier_active = false;
-        bool is_soldier_alive = false;
-        for (const auto& soldier : world_->GetStateManager()->GetState().soldiers) {
-            if (soldier.id == client_soldier_id && soldier.active) {
-                is_soldier_active = true;
-                is_soldier_alive = !soldier.dead_meat;
-            }
-        }
+        bool is_soldier_active = world_->GetStateManager()->GetSoldier(client_soldier_id).active;
+        bool is_soldier_alive = !world_->GetStateManager()->GetSoldier(client_soldier_id).dead_meat;
 
         if (!is_soldier_active || !is_soldier_alive) {
             world_->SpawnSoldier(*client_state_->client_soldier_id);
@@ -329,22 +322,21 @@ void Application::Run()
         client_state_->draw_map_editor_interface = false;
         client_state_->draw_game_debug_interface = true;
         client_state_->camera_component.ResetZoom();
-        world_->GetStateManager()->GetState().paused = false;
-        if (!world_->GetStateManager()->GetState().map.GetPolygons().empty()) {
-            auto vertex =
-              world_->GetStateManager()->GetState().map.GetPolygons().at(0).vertices.at(0);
+        world_->GetStateManager()->UnPauseGame();
+        if (!world_->GetStateManager()->GetMap().GetPolygons().empty()) {
+            auto vertex = world_->GetStateManager()->GetMap().GetPolygons().at(0).vertices.at(0);
             glm::vec2 old_polygon_position = { vertex.x, vertex.y };
 
-            world_->GetStateManager()->GetState().map.GenerateSectors();
+            world_->GetStateManager()->GetMap().GenerateSectors();
 
-            vertex = world_->GetStateManager()->GetState().map.GetPolygons().at(0).vertices.at(0);
+            vertex = world_->GetStateManager()->GetMap().GetPolygons().at(0).vertices.at(0);
             glm::vec2 move_offset = { vertex.x - old_polygon_position.x,
                                       vertex.y - old_polygon_position.y };
 
             // Move soldiers if the map moved
-            for (const auto& soldier : world_->GetStateManager()->GetState().soldiers) {
+            world_->GetStateManager()->TransformSoldiers([&](auto& soldier) {
                 world_->GetStateManager()->MoveSoldier(soldier.id, move_offset);
-            }
+            });
         }
         window_->SetCursorMode(CursorMode::Locked);
         map_editor_->Lock();
@@ -357,7 +349,7 @@ void Application::Run()
                 client_state_->draw_game_interface = false;
                 client_state_->draw_map_editor_interface = true;
                 client_state_->draw_game_debug_interface = false;
-                world_->GetStateManager()->GetState().paused = true;
+                world_->GetStateManager()->PauseGame();
                 window_->SetCursorMode(CursorMode::Normal);
                 map_editor_->Unlock();
             } else {
@@ -428,11 +420,10 @@ void Application::Run()
             (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
              client_state_->draw_game_interface)) {
             if (Keyboard::KeyWentDown(GLFW_KEY_F10)) {
-                world_->GetStateManager()->GetState().paused =
-                  !world_->GetStateManager()->GetState().paused;
+                world_->GetStateManager()->TogglePauseGame();
             }
 
-            if (world_->GetStateManager()->GetState().paused) {
+            if (world_->GetStateManager()->IsGamePaused()) {
                 glm::vec2 mouse_position = { Mouse::GetX(), Mouse::GetY() };
 
                 client_state_->camera_prev = client_state_->camera;
@@ -455,7 +446,7 @@ void Application::Run()
             networking_client_->SetLag(client_state_->network_lag);
             networking_client_->Update(client_network_event_dispatcher_);
 
-            if ((world_->GetStateManager()->GetState().game_tick % 60 == 0)) {
+            if ((world_->GetStateManager()->GetGameTick() % 60 == 0)) {
                 if (client_state_->ping_timer.IsRunning()) {
                     client_state_->ping_timer.Update();
                     if (client_state_->ping_timer.IsOverThreshold()) {
@@ -480,14 +471,10 @@ void Application::Run()
 
         if (client_state_->client_soldier_id.has_value()) {
             std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
-            bool is_soldier_active = false;
-            bool is_soldier_alive = false;
-            for (const auto& soldier : world_->GetStateManager()->GetState().soldiers) {
-                if (soldier.id == client_soldier_id && soldier.active) {
-                    is_soldier_active = true;
-                    is_soldier_alive = !soldier.dead_meat;
-                }
-            }
+            bool is_soldier_active =
+              world_->GetStateManager()->GetSoldier(client_soldier_id).active;
+            bool is_soldier_alive =
+              !world_->GetStateManager()->GetSoldier(client_soldier_id).dead_meat;
 
             if (is_soldier_active) {
                 if (is_soldier_alive) {
@@ -589,7 +576,7 @@ void Application::Run()
 
                 SoldierInputPacket update_soldier_state_packet{
                     .input_sequence_id = input_sequence_id,
-                    .game_tick = world_->GetStateManager()->GetState().game_tick,
+                    .game_tick = world_->GetStateManager()->GetGameTick(),
                     .position_x = world_->GetSoldier(client_soldier_id).particle.position.x,
                     .position_y = world_->GetSoldier(client_soldier_id).particle.position.y,
                     .mouse_map_position_x = mouse_map_position.x,
@@ -621,14 +608,13 @@ void Application::Run()
             client_state_->camera = { 0.0F, 0.0F };
         }
     });
-    world_->SetPostWorldUpdateCallback([&](const State& /*state*/) {});
+    world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {});
     world_->SetPostGameLoopIterationCallback(
-      [&](const State& /*state*/, double frame_percent, int last_fps) {
+      [&](const StateManager& state_manager, double frame_percent, int last_fps) {
           if (!client_state_->objects_interpolation) {
               frame_percent = 1.0F;
           }
-          scene.Render(
-            world_->GetStateManager()->GetState(), *client_state_, frame_percent, last_fps);
+          scene.Render(state_manager, *client_state_, frame_percent, last_fps);
 
           window_->SwapBuffers();
           window_->PollInput();

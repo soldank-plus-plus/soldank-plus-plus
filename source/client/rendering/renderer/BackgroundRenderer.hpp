@@ -29,10 +29,10 @@ public:
 private:
     void OnChangeBackgroundColor(const PMSColor& top_color,
                                  const PMSColor& bottom_color,
-                                 std::span<float, 4> boundaries);
+                                 std::span<const float, 4> boundaries);
     static void GenerateGLBufferVertices(PMSColor background_top_color,
                                          PMSColor background_bottom_color,
-                                         std::span<float, 4> boundaries,
+                                         std::span<const float, 4> boundaries,
                                          std::vector<float>& destination_vertices);
 
     Shader shader_;

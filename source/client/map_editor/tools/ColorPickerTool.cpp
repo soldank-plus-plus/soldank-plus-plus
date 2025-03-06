@@ -4,7 +4,8 @@
 
 namespace Soldank
 {
-void ColorPickerTool::OnSelect(ClientState& client_state, const State& /*game_state*/)
+void ColorPickerTool::OnSelect(ClientState& client_state,
+                               const StateManager& /*game_state_manager*/)
 {
     SetColorPickerMode(ColorPickerMode::ClosestObject, client_state);
 }
@@ -12,19 +13,19 @@ void ColorPickerTool::OnSelect(ClientState& client_state, const State& /*game_st
 void ColorPickerTool::OnUnselect(ClientState& /*client_state*/) {}
 
 void ColorPickerTool::OnSceneLeftMouseButtonClick(ClientState& /*client_state*/,
-                                                  const State& /*game_state*/)
+                                                  const StateManager& /*game_state_manager*/)
 {
 }
 
 void ColorPickerTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
-                                                    const State& game_state)
+                                                    const StateManager& game_state_manager)
 {
     float max_square_distance = 40.0F * 40.0F;
 
     switch (color_picker_mode_) {
         case ColorPickerMode::ClosestObject: {
-            for (int i = game_state.map.GetPolygonsCount() - 1; i >= 0; --i) {
-                const auto& polygon = game_state.map.GetPolygons().at(i);
+            for (int i = game_state_manager.GetConstMap().GetPolygonsCount() - 1; i >= 0; --i) {
+                const auto& polygon = game_state_manager.GetConstMap().GetPolygons().at(i);
 
                 if (Map::PointInPoly(client_state.mouse_map_position, polygon)) {
                     for (const auto& vertex : polygon.vertices) {
@@ -45,8 +46,9 @@ void ColorPickerTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
                 }
             }
 
-            for (int i = game_state.map.GetSceneryInstances().size() - 1; i >= 0; --i) {
-                const auto& scenery = game_state.map.GetSceneryInstances().at(i);
+            for (int i = game_state_manager.GetConstMap().GetSceneryInstances().size() - 1; i >= 0;
+                 --i) {
+                const auto& scenery = game_state_manager.GetConstMap().GetSceneryInstances().at(i);
 
                 if (Map::PointInScenery(client_state.mouse_map_position, scenery)) {
                     client_state.map_editor_state.palette_current_color.at(0) =
@@ -90,7 +92,7 @@ void ColorPickerTool::OnMouseScreenPositionChange(ClientState& /*client_state*/,
 void ColorPickerTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
                                                glm::vec2 /*last_mouse_position*/,
                                                glm::vec2 /*new_mouse_position*/,
-                                               const State& /*game_state*/)
+                                               const StateManager& /*game_state_manager*/)
 {
 }
 

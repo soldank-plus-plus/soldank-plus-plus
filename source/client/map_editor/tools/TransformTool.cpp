@@ -20,9 +20,9 @@ TransformTool::TransformTool(
 {
 }
 
-void TransformTool::OnSelect(ClientState& client_state, const State& game_state)
+void TransformTool::OnSelect(ClientState& client_state, const StateManager& game_state_manager)
 {
-    SetupSelectionBox(client_state, game_state);
+    SetupSelectionBox(client_state, game_state_manager);
     SetTransformMode(TransformMode::Move, client_state);
 }
 
@@ -31,7 +31,8 @@ void TransformTool::OnUnselect(ClientState& client_state)
     client_state.map_editor_state.vertex_selection_box = std::nullopt;
 }
 
-void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
+void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                                const StateManager& game_state_manager)
 {
     std::optional<glm::vec2> origin = std::nullopt;
     bool is_scale_horizontal = true;
@@ -83,7 +84,8 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                  client_state.map_editor_state.selected_polygon_vertices) {
                 for (unsigned int i = 0; i < 3; ++i) {
                     if (selected_vertices[i]) {
-                        const auto& polygon = game_state.map.GetPolygons().at(selected_polygon_id);
+                        const auto& polygon =
+                          game_state_manager.GetConstMap().GetPolygons().at(selected_polygon_id);
                         polygon_vertices_with_position.push_back(
                           { { selected_polygon_id, i },
                             { polygon.vertices.at(i).x, polygon.vertices.at(i).y } });
@@ -95,8 +97,11 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
             for (const auto& selected_scenery_id :
                  client_state.map_editor_state.selected_scenery_ids) {
                 glm::vec2 position = {
-                    game_state.map.GetSceneryInstances().at(selected_scenery_id).x,
-                    game_state.map.GetSceneryInstances().at(selected_scenery_id).y
+                    game_state_manager.GetConstMap()
+                      .GetSceneryInstances()
+                      .at(selected_scenery_id)
+                      .x,
+                    game_state_manager.GetConstMap().GetSceneryInstances().at(selected_scenery_id).y
                 };
                 scenery_ids_with_position.emplace_back(selected_scenery_id, position);
             }
@@ -105,8 +110,8 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
             for (const auto& selected_spawn_point_id :
                  client_state.map_editor_state.selected_spawn_point_ids) {
                 glm::ivec2 position = {
-                    game_state.map.GetSpawnPoints().at(selected_spawn_point_id).x,
-                    game_state.map.GetSpawnPoints().at(selected_spawn_point_id).y
+                    game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id).x,
+                    game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id).y
                 };
                 spawn_point_ids_with_position.emplace_back(selected_spawn_point_id, position);
             }
@@ -115,13 +120,9 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
             soldier_positions.reserve(client_state.map_editor_state.selected_soldier_ids.size());
             for (const auto& selected_soldier_id :
                  client_state.map_editor_state.selected_soldier_ids) {
-                for (const auto& soldier : game_state.soldiers) {
-                    if (soldier.id != selected_soldier_id) {
-                        continue;
-                    }
-
+                game_state_manager.ForSoldier(selected_soldier_id, [&](const auto& soldier) {
                     soldier_positions.emplace_back(selected_soldier_id, soldier.particle.position);
-                }
+                });
             }
 
             maybe_move_selection_action_ =
@@ -144,9 +145,9 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
             polygons.reserve(client_state.map_editor_state.selected_polygon_vertices.size());
             for (const auto& selected_polygon_vertices :
                  client_state.map_editor_state.selected_polygon_vertices) {
-                polygons.emplace_back(
-                  selected_polygon_vertices,
-                  game_state.map.GetPolygons().at(selected_polygon_vertices.first));
+                polygons.emplace_back(selected_polygon_vertices,
+                                      game_state_manager.GetConstMap().GetPolygons().at(
+                                        selected_polygon_vertices.first));
             }
 
             std::vector<std::pair<unsigned int, PMSScenery>> sceneries;
@@ -155,7 +156,7 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                  client_state.map_editor_state.selected_scenery_ids) {
                 sceneries.emplace_back(
                   selected_scenery_id,
-                  game_state.map.GetSceneryInstances().at(selected_scenery_id));
+                  game_state_manager.GetConstMap().GetSceneryInstances().at(selected_scenery_id));
             }
 
             std::vector<std::pair<unsigned int, PMSSpawnPoint>> spawn_points;
@@ -164,20 +165,16 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                  client_state.map_editor_state.selected_spawn_point_ids) {
                 spawn_points.emplace_back(
                   selected_spawn_point_id,
-                  game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
+                  game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id));
             }
 
             std::vector<std::pair<unsigned int, glm::vec2>> soldier_positions;
             soldier_positions.reserve(client_state.map_editor_state.selected_soldier_ids.size());
             for (const auto& selected_soldier_id :
                  client_state.map_editor_state.selected_soldier_ids) {
-                for (const auto& soldier : game_state.soldiers) {
-                    if (soldier.id != selected_soldier_id) {
-                        continue;
-                    }
-
+                game_state_manager.ForSoldier(selected_soldier_id, [&](const auto& soldier) {
                     soldier_positions.emplace_back(selected_soldier_id, soldier.particle.position);
-                }
+                });
             }
 
             maybe_scale_selection_action_ =
@@ -205,9 +202,9 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
             polygons.reserve(client_state.map_editor_state.selected_polygon_vertices.size());
             for (const auto& selected_polygon_vertices :
                  client_state.map_editor_state.selected_polygon_vertices) {
-                polygons.emplace_back(
-                  selected_polygon_vertices,
-                  game_state.map.GetPolygons().at(selected_polygon_vertices.first));
+                polygons.emplace_back(selected_polygon_vertices,
+                                      game_state_manager.GetConstMap().GetPolygons().at(
+                                        selected_polygon_vertices.first));
             }
 
             std::vector<std::pair<unsigned int, PMSScenery>> sceneries;
@@ -216,7 +213,7 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                  client_state.map_editor_state.selected_scenery_ids) {
                 sceneries.emplace_back(
                   selected_scenery_id,
-                  game_state.map.GetSceneryInstances().at(selected_scenery_id));
+                  game_state_manager.GetConstMap().GetSceneryInstances().at(selected_scenery_id));
             }
 
             std::vector<std::pair<unsigned int, PMSSpawnPoint>> spawn_points;
@@ -225,20 +222,16 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
                  client_state.map_editor_state.selected_spawn_point_ids) {
                 spawn_points.emplace_back(
                   selected_spawn_point_id,
-                  game_state.map.GetSpawnPoints().at(selected_spawn_point_id));
+                  game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id));
             }
 
             std::vector<std::pair<unsigned int, glm::vec2>> soldier_positions;
             soldier_positions.reserve(client_state.map_editor_state.selected_soldier_ids.size());
             for (const auto& selected_soldier_id :
                  client_state.map_editor_state.selected_soldier_ids) {
-                for (const auto& soldier : game_state.soldiers) {
-                    if (soldier.id != selected_soldier_id) {
-                        continue;
-                    }
-
+                game_state_manager.ForSoldier(selected_soldier_id, [&](const auto& soldier) {
                     soldier_positions.emplace_back(selected_soldier_id, soldier.particle.position);
-                }
+                });
             }
 
             maybe_rotate_selection_action_ =
@@ -257,7 +250,7 @@ void TransformTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const
 }
 
 void TransformTool::OnSceneLeftMouseButtonRelease(ClientState& /*client_state*/,
-                                                  const State& /*game_state*/)
+                                                  const StateManager& /*game_state_manager*/)
 {
     if (maybe_move_selection_action_) {
         add_new_map_editor_action_(std::move(*maybe_move_selection_action_));
@@ -288,25 +281,25 @@ void TransformTool::OnMouseScreenPositionChange(ClientState& client_state,
 void TransformTool::OnMouseMapPositionChange(ClientState& client_state,
                                              glm::vec2 /*last_mouse_position*/,
                                              glm::vec2 new_mouse_position,
-                                             const State& game_state)
+                                             const StateManager& game_state_manager)
 {
     if (maybe_move_selection_action_) {
         glm::vec2 move_offset = new_mouse_position - mouse_map_position_on_last_click_;
         (*maybe_move_selection_action_)->SetMoveOffset(move_offset);
         execute_without_adding_map_editor_action_(maybe_move_selection_action_->get());
-        SetupSelectionBox(client_state, game_state);
+        SetupSelectionBox(client_state, game_state_manager);
     }
 
     if (maybe_scale_selection_action_) {
         (*maybe_scale_selection_action_)->SetCurrentMousePosition(new_mouse_position);
         execute_without_adding_map_editor_action_(maybe_scale_selection_action_->get());
-        SetupSelectionBox(client_state, game_state);
+        SetupSelectionBox(client_state, game_state_manager);
     }
 
     if (maybe_rotate_selection_action_) {
         (*maybe_rotate_selection_action_)->SetCurrentMousePosition(new_mouse_position);
         execute_without_adding_map_editor_action_(maybe_rotate_selection_action_->get());
-        SetupSelectionBox(client_state, game_state);
+        SetupSelectionBox(client_state, game_state_manager);
     }
 }
 
@@ -334,7 +327,8 @@ void TransformTool::OnModifierKey3Released(ClientState& client_state)
     SetTransformMode(TransformMode::Move, client_state);
 }
 
-void TransformTool::SetupSelectionBox(ClientState& client_state, const State& game_state)
+void TransformTool::SetupSelectionBox(ClientState& client_state,
+                                      const StateManager& game_state_manager)
 {
     float left = std::numeric_limits<float>::infinity();
     float right = -std::numeric_limits<float>::infinity();
@@ -350,7 +344,7 @@ void TransformTool::SetupSelectionBox(ClientState& client_state, const State& ga
         for (const auto& [polygon_id, vertices] :
              client_state.map_editor_state.selected_polygon_vertices) {
 
-            const auto& polygon = game_state.map.GetPolygons().at(polygon_id);
+            const auto& polygon = game_state_manager.GetConstMap().GetPolygons().at(polygon_id);
             for (unsigned int i = 0; i < 3; ++i) {
                 if (!vertices[i]) {
                     continue;
@@ -365,7 +359,8 @@ void TransformTool::SetupSelectionBox(ClientState& client_state, const State& ga
         }
 
         for (const auto& scenery_id : client_state.map_editor_state.selected_scenery_ids) {
-            const auto& scenery = game_state.map.GetSceneryInstances().at(scenery_id);
+            const auto& scenery =
+              game_state_manager.GetConstMap().GetSceneryInstances().at(scenery_id);
             auto scenery_vertices = Map::GetSceneryVertexPositions(scenery);
             for (const auto& scenery_vertex : scenery_vertices) {
                 left = std::min(left, scenery_vertex.x);
@@ -376,7 +371,8 @@ void TransformTool::SetupSelectionBox(ClientState& client_state, const State& ga
         }
 
         for (const auto& spawn_point_id : client_state.map_editor_state.selected_spawn_point_ids) {
-            const auto& spawn_point = game_state.map.GetSpawnPoints().at(spawn_point_id);
+            const auto& spawn_point =
+              game_state_manager.GetConstMap().GetSpawnPoints().at(spawn_point_id);
             float zoom = client_state.camera_component.GetZoom();
             glm::vec2 top_left_corner = { (float)spawn_point.x - 8.0F * zoom,
                                           (float)spawn_point.y - 8.0F * zoom };
@@ -390,11 +386,7 @@ void TransformTool::SetupSelectionBox(ClientState& client_state, const State& ga
         }
 
         for (const auto& selected_soldier_id : client_state.map_editor_state.selected_soldier_ids) {
-            for (const auto& soldier : game_state.soldiers) {
-                if (soldier.id != selected_soldier_id) {
-                    continue;
-                }
-
+            game_state_manager.ForSoldier(selected_soldier_id, [&](const auto& soldier) {
                 float soldier_left = soldier.particle.position.x - 9.0F;
                 float soldier_right = soldier.particle.position.x + 9.0F;
                 float soldier_top = soldier.particle.position.y - 25.0F;
@@ -404,7 +396,7 @@ void TransformTool::SetupSelectionBox(ClientState& client_state, const State& ga
                 right = std::max(right, soldier_right);
                 top = std::min(top, soldier_top);
                 bottom = std::max(bottom, soldier_bottom);
-            }
+            });
         }
 
         client_state.map_editor_state.vertex_selection_box = { { left, top }, { right, bottom } };

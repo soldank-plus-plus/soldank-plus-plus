@@ -70,13 +70,12 @@ void PlayerPollGroup::AcceptConnection(
 
 void PlayerPollGroup::OnAssignConnection(Connection& connection)
 {
-    const auto& state = world_->GetStateManager()->GetState();
-    for (const auto& soldier : state.soldiers) {
+    world_->GetStateManager()->ForEachSoldier([&](const auto& soldier) {
         std::string player_nick =
           GetConnectionSoldierNick(FindConnectionHandleBySoldierId(soldier.id));
         NetworkMessage network_message(NetworkEvent::SoldierInfo, soldier.id, player_nick);
         SendReliableNetworkMessage(connection.connection_handle, network_message);
-    }
+    });
 
     std::uint8_t soldier_id = world_->CreateSoldier().id;
     connection.soldier_id = soldier_id;

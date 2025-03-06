@@ -13,14 +13,15 @@ ColorTool::ColorTool(
 {
 }
 
-void ColorTool::OnSelect(ClientState& client_state, const State& game_state)
+void ColorTool::OnSelect(ClientState& client_state, const StateManager& /*game_state_manager*/)
 {
     client_state.map_editor_state.current_tool_action_description = "Color objects";
 }
 
 void ColorTool::OnUnselect(ClientState& client_state) {}
 
-void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const State& game_state)
+void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
+                                            const StateManager& game_state_manager)
 {
     bool is_anything_selected = false;
 
@@ -37,7 +38,8 @@ void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
             for (unsigned int i = 0; i < 3; ++i) {
                 if (polygon_vertices.second[i]) {
                     polygon_vertices_to_color.push_back({ { polygon_vertices.first, i },
-                                                          game_state.map.GetPolygons()
+                                                          game_state_manager.GetConstMap()
+                                                            .GetPolygons()
                                                             .at(polygon_vertices.first)
                                                             .vertices.at(i)
                                                             .color });
@@ -46,25 +48,31 @@ void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
         }
         for (const auto& scenery_id : client_state.map_editor_state.selected_scenery_ids) {
             scenery_ids_to_color.emplace_back(
-              scenery_id, game_state.map.GetSceneryInstances().at(scenery_id).color);
+              scenery_id,
+              game_state_manager.GetConstMap().GetSceneryInstances().at(scenery_id).color);
         }
     } else {
-        for (unsigned int polygon_id = 0; polygon_id < game_state.map.GetPolygonsCount();
+        for (unsigned int polygon_id = 0;
+             polygon_id < game_state_manager.GetConstMap().GetPolygonsCount();
              ++polygon_id) {
             if (Map::PointInPoly(mouse_map_position_,
-                                 game_state.map.GetPolygons().at(polygon_id))) {
+                                 game_state_manager.GetConstMap().GetPolygons().at(polygon_id))) {
                 for (unsigned int vertex_id = 0; vertex_id < 3; ++vertex_id) {
-                    polygon_vertices_to_color.push_back(
-                      { { polygon_id, vertex_id },
-                        game_state.map.GetPolygons().at(polygon_id).vertices.at(vertex_id).color });
+                    polygon_vertices_to_color.push_back({ { polygon_id, vertex_id },
+                                                          game_state_manager.GetConstMap()
+                                                            .GetPolygons()
+                                                            .at(polygon_id)
+                                                            .vertices.at(vertex_id)
+                                                            .color });
                 }
             }
         }
-        for (unsigned int i = 0; i < game_state.map.GetSceneryInstances().size(); ++i) {
+        for (unsigned int i = 0; i < game_state_manager.GetConstMap().GetSceneryInstances().size();
+             ++i) {
             if (Map::PointInScenery(mouse_map_position_,
-                                    game_state.map.GetSceneryInstances().at(i))) {
-                scenery_ids_to_color.emplace_back(i,
-                                                  game_state.map.GetSceneryInstances().at(i).color);
+                                    game_state_manager.GetConstMap().GetSceneryInstances().at(i))) {
+                scenery_ids_to_color.emplace_back(
+                  i, game_state_manager.GetConstMap().GetSceneryInstances().at(i).color);
             }
         }
     }
@@ -85,7 +93,10 @@ void ColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state, const Sta
     add_new_map_editor_action_(std::move(color_objects_action));
 }
 
-void ColorTool::OnSceneLeftMouseButtonRelease(ClientState& client_state, const State& game_state) {}
+void ColorTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
+                                              const StateManager& game_state_manager)
+{
+}
 
 void ColorTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
 
@@ -100,7 +111,7 @@ void ColorTool::OnMouseScreenPositionChange(ClientState& client_state,
 void ColorTool::OnMouseMapPositionChange(ClientState& /*client_state*/,
                                          glm::vec2 /*last_mouse_position*/,
                                          glm::vec2 new_mouse_position,
-                                         const State& /*game_state*/)
+                                         const StateManager& /*game_state_manager*/)
 {
     mouse_map_position_ = new_mouse_position;
 }

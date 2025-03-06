@@ -13,7 +13,7 @@ class ParticleSystem;
 
 struct Item
 {
-    bool active;
+    bool active{};
     ItemType style;
     std::uint8_t id;
     std::uint8_t owner;

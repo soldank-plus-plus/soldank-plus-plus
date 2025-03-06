@@ -10,7 +10,6 @@
 
 #include <functional>
 #include <utility>
-#include <random>
 #include <optional>
 
 namespace Soldank
@@ -92,9 +91,6 @@ private:
 
     TPreSoldierUpdateCallback pre_soldier_update_callback_;
     TPreProjectileSpawnCallback pre_projectile_spawn_callback_;
-
-    std::random_device random_device_;
-    std::mt19937 mersenne_twister_engine_;
 
     AnimationDataManager animation_data_manager_;
 

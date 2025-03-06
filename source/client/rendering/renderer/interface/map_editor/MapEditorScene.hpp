@@ -18,9 +18,9 @@ namespace Soldank
 class MapEditorScene
 {
 public:
-    MapEditorScene(ClientState& client_state, State& game_state);
+    MapEditorScene(ClientState& client_state, StateManager& game_state_manager);
 
-    void Render(State& game_state,
+    void Render(const StateManager& game_state_manager,
                 ClientState& client_state,
                 const PolygonsRenderer& polygons_renderer);
 
