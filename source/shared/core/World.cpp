@@ -52,12 +52,13 @@
 namespace Soldank
 {
 World::World()
-    : state_manager_(std::make_shared<StateManager>())
-    , physics_events_(std::make_unique<PhysicsEvents>())
+
+    : physics_events_(std::make_unique<PhysicsEvents>())
     , world_events_(std::make_unique<WorldEvents>())
     , fps_limit_(0)
 {
     animation_data_manager_.LoadAllAnimationDatas();
+    state_manager_ = std::make_shared<StateManager>(animation_data_manager_);
 }
 
 void World::RunLoop()
@@ -168,9 +169,6 @@ void World::Update(double /*delta_time*/)
 {
     // TODO: move this somewhere else
     static float gravity = 0.06F;
-
-    state_manager_->RemoveInactiveBullets();
-    state_manager_->RemoveInactiveItems();
 
     std::vector<BulletParams> bullet_emitter;
 
@@ -330,7 +328,7 @@ std::shared_ptr<AnimationState> World::GetLegsAnimationState(AnimationType anima
 
 const Soldier& World::CreateSoldier(std::optional<unsigned int> force_soldier_id)
 {
-    return state_manager_->CreateSoldier(animation_data_manager_, force_soldier_id);
+    return state_manager_->CreateSoldier(force_soldier_id);
 }
 
 glm::vec2 World::SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> spawn_position)

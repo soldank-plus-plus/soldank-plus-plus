@@ -15,6 +15,10 @@ namespace Soldank
 class StateManager
 {
 public:
+    StateManager(
+      AnimationDataManager& animation_data_manager,
+      std::shared_ptr<ParticleSystem> skeleton = ParticleSystem::Load(ParticleSystemType::Soldier));
+
     Map& GetMap() { return state_.map; } // TODO: Change this to const
     const Map& GetConstMap() const { return state_.map; }
     void OverrideMap(const Map& map) { state_.map = map; }
@@ -39,10 +43,7 @@ public:
                           const std::function<void(Soldier&)>& transform_soldier_function);
     void TransformSoldiers(const std::function<void(Soldier&)>& transform_soldier_function);
     const Soldier& GetSoldier(std::uint8_t soldier_id) const;
-    const Soldier& CreateSoldier(
-      AnimationDataManager& animation_data_manager,
-      std::optional<unsigned int> force_soldier_id,
-      const std::shared_ptr<Soldank::ParticleSystem>& soldier_skeleton = nullptr);
+    const Soldier& CreateSoldier(std::optional<unsigned int> force_soldier_id);
     glm::vec2 SpawnSoldier(unsigned int soldier_id, std::optional<glm::vec2> spawn_position);
     void ForEachSoldier(
       const std::function<void(const Soldier& soldier)>& for_each_soldier_function) const;
@@ -58,15 +59,13 @@ public:
     void ClearBulletEmitter();
     void ForEachBullet(
       const std::function<void(const Bullet& bullet)>& for_each_bullet_function) const;
-    std::size_t GetBulletsCount() const { return state_.bullets.size(); }
+    std::size_t GetBulletsCount() const;
     void TransformBullets(const std::function<void(Bullet& bullet)>& transform_bullet_function);
-    void RemoveInactiveBullets();
 
     Item& CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style);
     void SetItemPosition(unsigned int id, glm::vec2 new_position);
     void MoveItemIntoDirection(unsigned int id, glm::vec2 direction);
     void TransformItems(const std::function<void(Item& item)>& transform_item_function);
-    void RemoveInactiveItems();
     void ForEachItem(const std::function<void(const Item& item)>& for_each_item_function) const;
 
     unsigned int GetGameTick() const { return state_.game_tick; }

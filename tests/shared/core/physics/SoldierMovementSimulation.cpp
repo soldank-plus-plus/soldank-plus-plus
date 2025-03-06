@@ -14,8 +14,11 @@ SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader&
         ->AddPolygon(
           { 0.0F, 0.0F }, { 100.0F, 0.0F }, { 50.0F, 50.0F }, Soldank::PMSPolygonType::Normal)
         ->Build();
-    state_manager_.OverrideMap(*map);
     animation_data_manager_.LoadAllAnimationDatas(file_reader);
+    state_manager_ = std::make_unique<Soldank::StateManager>(
+      animation_data_manager_,
+      Soldank::ParticleSystem::Load(Soldank::ParticleSystemType::Soldier, 4.5F, file_reader));
+    state_manager_->OverrideMap(*map);
     std::vector<Soldank::Weapon> weapons{
         { Soldank::WeaponParametersFactory::GetParameters(
           Soldank::WeaponType::DesertEagles, false, file_reader) },
@@ -24,26 +27,23 @@ SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader&
         { Soldank::WeaponParametersFactory::GetParameters(
           Soldank::WeaponType::FragGrenade, false, file_reader) }
     };
-    state_manager_.CreateSoldier(
-      animation_data_manager_,
-      0,
-      Soldank::ParticleSystem::Load(Soldank::ParticleSystemType::Soldier, 4.5F, file_reader));
-    state_manager_.SetSoldierPosition(0, { 0.0F, -29.0F });
+    state_manager_->CreateSoldier(0);
+    state_manager_->SetSoldierPosition(0, { 0.0F, -29.0F });
 }
 
 void SoldierMovementSimulation::HoldRight()
 {
-    state_manager_.ChangeSoldierControlActionState(0, Soldank::ControlActionType::MoveRight, true);
+    state_manager_->ChangeSoldierControlActionState(0, Soldank::ControlActionType::MoveRight, true);
 }
 
 void SoldierMovementSimulation::HoldLeft()
 {
-    state_manager_.ChangeSoldierControlActionState(0, Soldank::ControlActionType::MoveLeft, true);
+    state_manager_->ChangeSoldierControlActionState(0, Soldank::ControlActionType::MoveLeft, true);
 }
 
 void SoldierMovementSimulation::HoldJump()
 {
-    state_manager_.ChangeSoldierControlActionState(0, Soldank::ControlActionType::Jump, true);
+    state_manager_->ChangeSoldierControlActionState(0, Soldank::ControlActionType::Jump, true);
 }
 
 void SoldierMovementSimulation::HoldRightAt(unsigned int tick)
@@ -123,12 +123,12 @@ void SoldierMovementSimulation::RunUntilSoldierOnGround(unsigned int ticks_limit
     ticks_limit = 5;
     unsigned int ticks = 0;
 
-    const auto& current_soldier = state_manager_.GetSoldier(0);
+    const auto& current_soldier = state_manager_->GetSoldier(0);
     while (!current_soldier.on_ground) {
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
-        state_manager_.TransformSoldier(0, [&](auto& soldier) {
-            Soldank::SoldierPhysics::Update(state_manager_,
+        state_manager_->TransformSoldier(0, [&](auto& soldier) {
+            Soldank::SoldierPhysics::Update(*state_manager_,
                                             soldier,
                                             physics_events,
                                             animation_data_manager_,
@@ -147,13 +147,13 @@ void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
     // TODO: Move this somewhere else
     static float gravity = 0.06F;
 
-    const auto& current_soldier = state_manager_.GetSoldier(0);
+    const auto& current_soldier = state_manager_->GetSoldier(0);
     glm::vec2 soldier_position_origin = current_soldier.particle.position;
     for (unsigned int current_tick = 0; current_tick < ticks_to_run; current_tick++) {
         if (controls_to_change_at_tick_.contains(current_tick)) {
             const auto& controls_to_change = controls_to_change_at_tick_.at(current_tick);
             for (const auto& control_to_change : controls_to_change) {
-                state_manager_.ChangeSoldierControlActionState(
+                state_manager_->ChangeSoldierControlActionState(
                   current_soldier.id, control_to_change.control_type, control_to_change.new_state);
             }
         }
@@ -165,8 +165,8 @@ void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
 
         std::vector<Soldank::BulletParams> bullet_emitter;
         Soldank::PhysicsEvents physics_events;
-        state_manager_.TransformSoldier(0, [&](auto& soldier) {
-            Soldank::SoldierPhysics::Update(state_manager_,
+        state_manager_->TransformSoldier(0, [&](auto& soldier) {
+            Soldank::SoldierPhysics::Update(*state_manager_,
                                             soldier,
                                             physics_events,
                                             animation_data_manager_,
@@ -243,11 +243,11 @@ void SoldierMovementSimulation::AddControlToChangeAt(unsigned int tick,
 
 void SoldierMovementSimulation::TurnSoldierLeft()
 {
-    state_manager_.ChangeSoldierMouseMapPosition(0, { -6400.0F, 0.0F });
+    state_manager_->ChangeSoldierMouseMapPosition(0, { -6400.0F, 0.0F });
 }
 
 void SoldierMovementSimulation::TurnSoldierRight()
 {
-    state_manager_.ChangeSoldierMouseMapPosition(0, { 6400.0F, 0.0F });
+    state_manager_->ChangeSoldierMouseMapPosition(0, { 6400.0F, 0.0F });
 }
 } // namespace SoldankTesting

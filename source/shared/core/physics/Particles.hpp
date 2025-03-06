@@ -15,6 +15,8 @@ namespace Soldank
 class Particle
 {
 public:
+    Particle() = default;
+
     Particle(bool _active,
              glm::vec2 _position,
              glm::vec2 _old_position,
@@ -35,18 +37,18 @@ public:
     void SetForce(glm::vec2 new_force) { force_ = new_force; }
     float GetOneOverMass() const { return one_over_mass_; }
 
-    bool active;
-    glm::vec2 position;
-    glm::vec2 old_position;
-    glm::vec2 velocity_;
+    bool active{ false };
+    glm::vec2 position{};
+    glm::vec2 old_position{};
+    glm::vec2 velocity_{};
 
 private:
-    glm::vec2 force_;
-    float one_over_mass_;
-    float timestep_;
-    float gravity_;
-    float e_damping_;
-    float v_damping_;
+    glm::vec2 force_{};
+    float one_over_mass_{};
+    float timestep_{};
+    float gravity_{};
+    float e_damping_{};
+    float v_damping_{};
 };
 
 struct Constraint

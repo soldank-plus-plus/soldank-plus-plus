@@ -291,19 +291,16 @@ void Scene::RenderSoldiers(const StateManager& game_state_manager,
             // skip rendering player's soldier sprites now because we will render it later
             return;
         }
-        if (soldier.active) {
-            soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
-        }
+
+        soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
     });
 
     // Render player's soldier last because it's the most important for the player to see their
     // soldier on top of others
     if (client_state.client_soldier_id.has_value()) {
         unsigned int client_soldier_id = *client_state.client_soldier_id;
-        game_state_manager.ForEachSoldier([&](const auto& soldier) {
-            if (soldier.id == client_soldier_id && soldier.active) {
-                soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
-            }
+        game_state_manager.ForSoldier(client_soldier_id, [&](const auto& soldier) {
+            soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
         });
     }
 }
