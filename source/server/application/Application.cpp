@@ -188,6 +188,8 @@ void Application::Run()
             .hit_multiply = bullet_params.hit_multiply,
             .team = bullet_params.team,
             .owner_id = bullet_params.owner_id,
+            .last_processed_input_id =
+              server_state_->last_processed_input_id.at(bullet_params.owner_id)
         };
         game_server_->SendNetworkMessageToAll(
           { NetworkEvent::ProjectileSpawn, projectile_spawn_packet });

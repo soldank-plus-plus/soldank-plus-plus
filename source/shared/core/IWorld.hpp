@@ -30,6 +30,7 @@ public:
     virtual void RunLoop() = 0;
     virtual void Update(double delta_time) = 0;
     virtual void UpdateSoldier(unsigned int soldier_id) = 0;
+    virtual void UpdateProjectile(unsigned int projectile_id) = 0;
     virtual const std::shared_ptr<StateManager>& GetStateManager() const = 0;
     virtual const Soldier& GetSoldier(unsigned int soldier_id) const = 0;
     virtual PhysicsEvents& GetPhysicsEvents() = 0;

@@ -80,6 +80,7 @@ struct ProjectileSpawnPacket
     float hit_multiply;
     TeamType team;
     std::uint8_t owner_id;
+    std::uint32_t last_processed_input_id;
 };
 #pragma pack(pop)
 } // namespace Soldank

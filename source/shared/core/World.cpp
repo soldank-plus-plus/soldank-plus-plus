@@ -231,6 +231,14 @@ void World::UpdateSoldier(unsigned int soldier_id)
     });
 }
 
+void World::UpdateProjectile(unsigned int projectile_id)
+{
+    state_manager_->TransformBullet(projectile_id, [&](auto& projectile) {
+        BulletPhysics::UpdateBullet(
+          *physics_events_, projectile, state_manager_->GetMap(), *state_manager_);
+    });
+}
+
 const std::shared_ptr<StateManager>& World::GetStateManager() const
 {
     return state_manager_;

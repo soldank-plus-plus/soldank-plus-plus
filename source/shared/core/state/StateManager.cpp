@@ -499,24 +499,25 @@ void StateManager::EnqueueNewProjectile(const BulletParams& bullet_params)
     bullet_emitter_.push_back(bullet_params);
 }
 
-void StateManager::CreateProjectile(const BulletParams& bullet_params)
+const Bullet* StateManager::CreateProjectile(const BulletParams& bullet_params)
 {
-    bool is_bullet_created = false;
-    for (auto& bullet : state_.bullets) {
+    for (unsigned int bullet_id = 0; bullet_id < state_.bullets.size(); ++bullet_id) {
+        auto& bullet = state_.bullets.at(bullet_id);
+
         if (bullet.active) {
             continue;
         }
 
         bullet = bullet_params;
         bullet.active = true;
-        is_bullet_created = true;
+        bullet.id = bullet_id;
 
-        break;
+        return &bullet;
     }
 
-    if (!is_bullet_created) {
-        spdlog::warn("Could not create a new projectile because the limit is exceeded");
-    }
+    spdlog::warn("Could not create a new projectile because the limit is exceeded");
+
+    return nullptr;
 }
 
 const std::vector<BulletParams>& StateManager::GetBulletEmitter() const
@@ -565,6 +566,15 @@ void StateManager::TransformBullets(
         }
 
         transform_bullet_function(bullet);
+    }
+}
+
+void StateManager::TransformBullet(
+  std::uint8_t bullet_id,
+  const std::function<void(Bullet& bullet)>& transform_bullet_function)
+{
+    if (state_.bullets.at(bullet_id).active) {
+        transform_bullet_function(state_.bullets.at(bullet_id));
     }
 }
 

@@ -165,7 +165,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             std::make_shared<AssignPlayerIdNetworkEventHandler>(world_, client_state_),
             std::make_shared<PingCheckNetworkEventHandler>(client_state_),
             std::make_shared<PlayerLeaveNetworkEventHandler>(world_),
-            std::make_shared<ProjectileSpawnNetworkEventHandler>(world_),
+            std::make_shared<ProjectileSpawnNetworkEventHandler>(world_, client_state_),
             std::make_shared<SoldierInfoNetworkEventHandler>(world_, client_state_),
             std::make_shared<SoldierStateNetworkEventHandler>(world_, client_state_),
             std::make_shared<SpawnSoldierNetworkEventHandler>(world_),

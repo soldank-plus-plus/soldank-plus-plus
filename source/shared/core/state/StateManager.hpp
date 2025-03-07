@@ -54,13 +54,15 @@ public:
     std::size_t GetSoldiersCount() const;
 
     void EnqueueNewProjectile(const BulletParams& bullet_params);
-    void CreateProjectile(const BulletParams& bullet_params);
+    const Bullet* CreateProjectile(const BulletParams& bullet_params);
     const std::vector<BulletParams>& GetBulletEmitter() const;
     void ClearBulletEmitter();
     void ForEachBullet(
       const std::function<void(const Bullet& bullet)>& for_each_bullet_function) const;
     std::size_t GetBulletsCount() const;
     void TransformBullets(const std::function<void(Bullet& bullet)>& transform_bullet_function);
+    void TransformBullet(std::uint8_t bullet_id,
+                         const std::function<void(Bullet& bullet)>& transform_bullet_function);
 
     Item& CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style);
     void SetItemPosition(unsigned int id, glm::vec2 new_position);

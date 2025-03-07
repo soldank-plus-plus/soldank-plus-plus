@@ -6,8 +6,10 @@
 namespace Soldank
 {
 ProjectileSpawnNetworkEventHandler::ProjectileSpawnNetworkEventHandler(
-  const std::shared_ptr<IWorld>& world)
+  const std::shared_ptr<IWorld>& world,
+  const std::shared_ptr<ClientState>& client_state)
     : world_(world)
+    , client_state_(client_state)
 {
 }
 
@@ -26,6 +28,7 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
     float hit_multiply = projectile_spawn_packet.hit_multiply;
     TeamType team = projectile_spawn_packet.team;
     std::uint8_t owner_id = projectile_spawn_packet.owner_id;
+    std::uint32_t last_processed_input_id = projectile_spawn_packet.last_processed_input_id;
 
     BulletParams bullet_params{ style,
                                 weapon,
@@ -35,7 +38,24 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
                                 hit_multiply,
                                 team,
                                 owner_id };
-    world_->GetStateManager()->CreateProjectile(bullet_params);
+    const auto* bullet = world_->GetStateManager()->CreateProjectile(bullet_params);
+
+    if (bullet == nullptr) {
+        return NetworkEventHandlerResult::Failure;
+    }
+
+    if (client_state_->server_reconciliation) {
+        for (auto it = client_state_->pending_inputs.begin();
+             it != client_state_->pending_inputs.end();
+             ++it) {
+            if (it->input_sequence_id <= last_processed_input_id) {
+                continue;
+            }
+
+            world_->UpdateProjectile(bullet->id);
+        }
+    }
+
     return NetworkEventHandlerResult::Success;
 }
 } // namespace Soldank

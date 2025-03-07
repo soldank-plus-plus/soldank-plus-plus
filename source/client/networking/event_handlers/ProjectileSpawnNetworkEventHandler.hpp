@@ -5,13 +5,15 @@
 #include "core/IWorld.hpp"
 
 #include "communication/NetworkEventDispatcher.hpp"
+#include "rendering/ClientState.hpp"
 
 namespace Soldank
 {
 class ProjectileSpawnNetworkEventHandler : public NetworkEventHandlerBase<ProjectileSpawnPacket>
 {
 public:
-    ProjectileSpawnNetworkEventHandler(const std::shared_ptr<IWorld>& world);
+    ProjectileSpawnNetworkEventHandler(const std::shared_ptr<IWorld>& world,
+                                       const std::shared_ptr<ClientState>& client_state);
 
 private:
     NetworkEvent GetTargetNetworkEvent() const override { return NetworkEvent::ProjectileSpawn; }
@@ -21,6 +23,7 @@ private:
       ProjectileSpawnPacket projectile_spawn_packet) override;
 
     std::shared_ptr<IWorld> world_;
+    std::shared_ptr<ClientState> client_state_;
 };
 } // namespace Soldank
 

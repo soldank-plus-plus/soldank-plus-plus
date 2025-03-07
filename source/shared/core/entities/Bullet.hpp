@@ -29,6 +29,7 @@ struct Bullet
     Bullet() = default;
     Bullet(BulletParams bullet_params);
 
+    std::uint8_t id{};
     bool active = false;
     BulletType style{};
     WeaponType weapon{};
