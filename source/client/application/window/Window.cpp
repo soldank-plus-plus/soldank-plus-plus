@@ -1,6 +1,6 @@
 #include "Window.hpp"
 
-#include "application/config/Config.hpp"
+#include "application/config/ClientConfig.hpp"
 #include "application/input/Keyboard.hpp"
 #include "application/input/Mouse.hpp"
 #include "application/window/Window.hpp"
@@ -16,7 +16,7 @@
 namespace Soldank
 {
 Window::Window()
-    : Window("Soldank++", Config::INITIAL_WINDOW_WIDTH, Config::INITIAL_WINDOWS_HEIGHT)
+    : Window("Soldank++", ClientConfig::INITIAL_WINDOW_WIDTH, ClientConfig::INITIAL_WINDOWS_HEIGHT)
 {
 }
 

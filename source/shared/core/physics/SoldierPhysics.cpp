@@ -69,7 +69,8 @@ void Update(StateManager& state_manager,
             const PhysicsEvents& physics_events,
             const AnimationDataManager& animation_data_manager,
             std::vector<BulletParams>& bullet_emitter,
-            float gravity)
+            float gravity,
+            bool can_soldier_shoot)
 {
     const Map& map = state_manager.GetConstMap();
     float body_y = 0.0F;
@@ -143,7 +144,9 @@ void Update(StateManager& state_manager,
         soldier.legs_animation->Enter(soldier);
     }
 
-    soldier.body_animation->TryToShoot(soldier, physics_events);
+    if (soldier.body_animation->TryToShoot(soldier, physics_events) && can_soldier_shoot) {
+        Fire(soldier, bullet_emitter);
+    }
     soldier.body_animation->TryToThrowFlags(soldier, physics_events);
     auto maybe_new_body_animation_state_machine = soldier.body_animation->HandleInput(soldier);
     if (maybe_new_body_animation_state_machine.has_value()) {

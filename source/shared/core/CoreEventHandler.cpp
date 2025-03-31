@@ -155,11 +155,11 @@ void CoreEventHandler::ObserveAllPhysicsEvents(IWorld* world)
         }
     });
     world->GetPhysicsEvents().soldier_fires_primary_weapon.AddObserver([world](Soldier& soldier) {
-        std::vector<BulletParams> bullet_emitter;
-        SoldierPhysics::Fire(soldier, bullet_emitter);
-        for (auto& bullet_params : bullet_emitter) {
-            world->GetStateManager()->EnqueueNewProjectile(bullet_params);
-        }
+        // std::vector<BulletParams> bullet_emitter;
+        // SoldierPhysics::Fire(soldier, bullet_emitter);
+        // for (auto& bullet_params : bullet_emitter) {
+        //     world->GetStateManager()->EnqueueNewProjectile(bullet_params);
+        // }
     });
     world->GetPhysicsEvents().soldier_collides_with_item.AddObserver(
       [world](Soldier& soldier, Item& item) {

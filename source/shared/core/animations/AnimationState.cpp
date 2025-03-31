@@ -52,19 +52,22 @@ bool AnimationState::IsAny(const std::vector<AnimationType>& animations) const
     });
 }
 
-void AnimationState::TryToShoot(Soldier& soldier, const PhysicsEvents& physics_events) const
+bool AnimationState::TryToShoot(Soldier& soldier, const PhysicsEvents& physics_events) const
 {
     if (soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind == WeaponType::NoWeapon ||
         soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind == WeaponType::Knife) {
 
         // We don't spawn projectiles for punching or stabbing... These have to be handled by the
         // animation
-        return;
+        return false;
     }
 
     if (soldier.control.fire && IsSoldierShootingPossible(soldier)) {
         physics_events.soldier_fires_primary_weapon.Notify(soldier);
+        return true;
     }
+
+    return false;
 }
 
 void AnimationState::TryToThrowFlags(Soldier& soldier, const PhysicsEvents& physics_events) const

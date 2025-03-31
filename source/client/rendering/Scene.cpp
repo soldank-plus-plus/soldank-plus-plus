@@ -8,7 +8,7 @@
 #include "rendering/renderer/interface/ImGuiThemes.hpp"
 
 #include "application/input/Mouse.hpp"
-#include "application/config/Config.hpp"
+#include "application/config/ClientConfig.hpp"
 
 #include "core/entities/Bullet.hpp"
 #include "core/math/Calc.hpp"
@@ -255,7 +255,7 @@ void Scene::Render(const StateManager& game_state_manager,
         }
     }
 
-    if (Config::DEBUG_DRAW) {
+    if (ClientConfig::DEBUG_DRAW) {
         game_state_manager.ForEachSoldier([&](const auto& soldier) {
             rectangle_renderer_.Render(
               camera.GetView(),

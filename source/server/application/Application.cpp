@@ -116,7 +116,15 @@ void Application::Run()
 
     world_->SetShouldStopGameLoopCallback([&]() { return false; });
     world_->SetPreGameLoopIterationCallback([&]() {});
-    world_->SetPreWorldUpdateCallback([&]() { game_server_->Update(); });
+    world_->SetPreWorldUpdateCallback([&]() {
+        for (auto& bullet_creation_count_per_tick :
+             server_state_->bullet_creation_count_per_tick_per_player) {
+
+            bullet_creation_count_per_tick = 0;
+        }
+
+        game_server_->Update();
+    });
     world_->SetPostWorldUpdateCallback([&](const StateManager& state_manager) {
         state_manager.ForEachSoldier([&](const auto& soldier) {
             SoldierStatePacket update_soldier_state_packet{
@@ -175,26 +183,27 @@ void Application::Run()
     });
     world_->SetPostGameLoopIterationCallback(
       [&](const StateManager& /*state_manager*/, double /*frame_percent*/, int /*last_fps*/) {});
-    world_->SetPreProjectileSpawnCallback([&](const BulletParams& bullet_params) {
+    world_->SetPreProjectileSpawnCallback([&](const BulletParams& bullet_params) { return true; });
+    world_->SetPostProjectileSpawnCallback([&](const Bullet& bullet) {
         ProjectileSpawnPacket projectile_spawn_packet{
-            .projectile_id = 0, // TODO: set the correct ID
-            .style = bullet_params.style,
-            .weapon = bullet_params.weapon,
-            .position_x = bullet_params.position.x,
-            .position_y = bullet_params.position.y,
-            .velocity_x = bullet_params.velocity.x,
-            .velocity_y = bullet_params.velocity.y,
-            .timeout = bullet_params.timeout,
-            .hit_multiply = bullet_params.hit_multiply,
-            .team = bullet_params.team,
-            .owner_id = bullet_params.owner_id,
-            .last_processed_input_id =
-              server_state_->last_processed_input_id.at(bullet_params.owner_id)
+            .projectile_id = bullet.id,
+            .style = bullet.style,
+            .weapon = bullet.weapon,
+            .position_x = bullet.particle.position.x,
+            .position_y = bullet.particle.position.y,
+            .velocity_x = bullet.particle.GetVelocity().x,
+            .velocity_y = bullet.particle.GetVelocity().y,
+            .timeout = bullet.timeout,
+            .hit_multiply = bullet.hit_multiply,
+            .team = bullet.team,
+            .owner_id = bullet.owner_id,
+            .last_processed_input_id = server_state_->last_processed_input_id.at(bullet.owner_id),
+            .creation_order =
+              server_state_->bullet_creation_count_per_tick_per_player.at(bullet.owner_id)
         };
         game_server_->SendNetworkMessageToAll(
           { NetworkEvent::ProjectileSpawn, projectile_spawn_packet });
-
-        return true;
+        ++server_state_->bullet_creation_count_per_tick_per_player.at(bullet.owner_id);
     });
 
     // Increased tick rate to 240 (tickrate * 4) because when it was 64

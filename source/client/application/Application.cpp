@@ -1,7 +1,7 @@
 #include "Application.hpp"
 
 #include "application/cli/CommandLineParameters.hpp"
-#include "application/config/Config.hpp"
+#include "application/config/ClientConfig.hpp"
 #include "application/input/Keyboard.hpp"
 #include "application/input/Mouse.hpp"
 #include "application/input/PlayerInput.hpp"
@@ -442,6 +442,12 @@ void Application::Run()
     world_->SetPreWorldUpdateCallback([&]() {
         client_state_->colliding_polygon_ids.clear();
 
+        for (auto& bullet_creation_count_per_tick :
+             client_state_->bullet_creation_count_per_tick_per_player) {
+
+            bullet_creation_count_per_tick = 0;
+        }
+
         if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
             networking_client_->SetLag(client_state_->network_lag);
             networking_client_->Update(client_network_event_dispatcher_);
@@ -586,9 +592,7 @@ void Application::Run()
                 if (client_state_->server_reconciliation) {
                     client_state_->soldier_snapshot_history.emplace_back(
                       input_sequence_id, world_->GetSoldier(client_soldier_id));
-                }
-                input_sequence_id++;
-                if (client_state_->server_reconciliation) {
+
                     client_state_->pending_inputs.push_back(update_soldier_state_packet);
                 }
                 networking_client_->SendNetworkMessage(
@@ -608,7 +612,8 @@ void Application::Run()
             client_state_->camera = { 0.0F, 0.0F };
         }
     });
-    world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {});
+    world_->SetPostWorldUpdateCallback(
+      [&](const StateManager& /*state_manager*/) { ++input_sequence_id; });
     world_->SetPostGameLoopIterationCallback(
       [&](const StateManager& state_manager, double frame_percent, int last_fps) {
           if (!client_state_->objects_interpolation) {
@@ -634,8 +639,28 @@ void Application::Run()
 
         return false;
     });
-    world_->SetPreProjectileSpawnCallback([&](const BulletParams& /*bullet_params*/) {
-        return application_mode_ != CommandLineParameters::ApplicationMode::Online;
+    world_->SetPreProjectileSpawnCallback([&](const BulletParams& bullet_params) {
+        spdlog::debug("bullet pre creation, owner_id = {}", bullet_params.owner_id);
+        if (application_mode_ != CommandLineParameters::ApplicationMode::Online) {
+            return true;
+        }
+
+        if (client_state_->client_soldier_id.has_value()) {
+            if (*client_state_->client_soldier_id == bullet_params.owner_id &&
+                client_state_->client_side_prediction) {
+                return true;
+            }
+        }
+
+        return false;
+    });
+    world_->SetPostProjectileSpawnCallback([&](const Bullet& bullet) {
+        client_state_->created_bullets_history.push_back(
+          { .input_sequence_id = input_sequence_id,
+            .creation_order =
+              client_state_->bullet_creation_count_per_tick_per_player.at(bullet.owner_id),
+            .bullet = bullet });
+        ++client_state_->bullet_creation_count_per_tick_per_player.at(bullet.owner_id);
     });
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::Local ||

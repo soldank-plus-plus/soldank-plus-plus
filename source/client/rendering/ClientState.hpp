@@ -6,6 +6,7 @@
 #include "rendering/components/Camera.hpp"
 
 #include "core/math/Glm.hpp"
+#include "core/config/Config.hpp"
 
 #include "communication/NetworkPackets.hpp"
 #include "communication/PingTimer.hpp"
@@ -17,6 +18,13 @@
 
 namespace Soldank
 {
+struct BulletHistoryMetadata
+{
+    std::uint32_t input_sequence_id{};
+    std::int32_t creation_order{};
+    Bullet bullet;
+};
+
 struct ClientState
 {
     /**
@@ -42,6 +50,8 @@ struct ClientState
 
     std::list<SoldierInputPacket> pending_inputs;
     std::list<std::pair<std::uint32_t, SoldierSnapshot>> soldier_snapshot_history;
+    std::list<BulletHistoryMetadata> created_bullets_history;
+    std::array<std::int32_t, Config::MAX_PLAYERS> bullet_creation_count_per_tick_per_player;
     bool server_reconciliation = true;
     bool client_side_prediction = true;
     bool objects_interpolation = true;

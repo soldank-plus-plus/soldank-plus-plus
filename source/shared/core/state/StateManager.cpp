@@ -10,6 +10,7 @@
 #include "core/types/ItemType.hpp"
 #include "spdlog/spdlog.h"
 #include <algorithm>
+#include <type_traits>
 #include <utility>
 
 namespace Soldank
@@ -573,9 +574,22 @@ void StateManager::TransformBullet(
   std::uint8_t bullet_id,
   const std::function<void(Bullet& bullet)>& transform_bullet_function)
 {
-    if (state_.bullets.at(bullet_id).active) {
-        transform_bullet_function(state_.bullets.at(bullet_id));
-    }
+    // if (state_.bullets.at(bullet_id).active) {
+    transform_bullet_function(state_.bullets.at(bullet_id));
+    // }
+}
+
+void StateManager::SwapProjectiles(std::uint8_t first_projectile_id,
+                                   std::uint8_t second_projectile_id)
+{
+    std::swap(state_.bullets.at(first_projectile_id), state_.bullets.at(second_projectile_id));
+    state_.bullets.at(first_projectile_id).id = first_projectile_id;
+    state_.bullets.at(second_projectile_id).id = second_projectile_id;
+}
+
+const Bullet& StateManager::GetBullet(std::uint8_t bullet_id) const
+{
+    return state_.bullets.at(bullet_id);
 }
 
 Item& StateManager::CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style)

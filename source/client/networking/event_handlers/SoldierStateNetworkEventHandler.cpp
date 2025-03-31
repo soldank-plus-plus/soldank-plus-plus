@@ -117,6 +117,7 @@ NetworkEventHandlerResult SoldierStateNetworkEventHandler::HandleNetworkMessageI
              it != client_state_->soldier_snapshot_history.end();
              ++it) {
             if (it->first == last_processed_input_id + 1) {
+                soldier.is_shooting = it->second.IsShooting();
                 it->second.CompareAndLog(soldier);
             }
         }

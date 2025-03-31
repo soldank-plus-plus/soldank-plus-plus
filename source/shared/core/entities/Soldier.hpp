@@ -80,6 +80,8 @@ public:
 
     void CompareAndLog(const Soldier& other_soldier);
 
+    bool IsShooting() const { return is_shooting_; }
+
 private:
     AnimationType body_animation_type_;
     AnimationType legs_animation_type_;
@@ -107,6 +109,8 @@ private:
 
     glm::vec2 velocity_;
     glm::vec2 force_;
+
+    bool is_shooting_;
 };
 } // namespace Soldank
 

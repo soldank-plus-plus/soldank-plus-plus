@@ -24,6 +24,7 @@ protected:
 
     using TPreSoldierUpdateCallback = std::function<bool(const Soldier&)>;
     using TPreProjectileSpawnCallback = std::function<bool(const BulletParams&)>;
+    using TPostProjectileSpawnCallback = std::function<void(const Bullet&)>;
 
 public:
     virtual ~IWorld() = default;
@@ -61,6 +62,7 @@ public:
 
     virtual void SetPreSoldierUpdateCallback(TPreSoldierUpdateCallback callback) = 0;
     virtual void SetPreProjectileSpawnCallback(TPreProjectileSpawnCallback callback) = 0;
+    virtual void SetPostProjectileSpawnCallback(TPostProjectileSpawnCallback callback) = 0;
 
     virtual void SetFPSLimit(int new_fps_limit) = 0;
 };

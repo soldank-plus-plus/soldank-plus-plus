@@ -63,6 +63,8 @@ public:
     void TransformBullets(const std::function<void(Bullet& bullet)>& transform_bullet_function);
     void TransformBullet(std::uint8_t bullet_id,
                          const std::function<void(Bullet& bullet)>& transform_bullet_function);
+    void SwapProjectiles(std::uint8_t first_projectile_id, std::uint8_t second_projectile_id);
+    const Bullet& GetBullet(std::uint8_t bullet_id) const;
 
     Item& CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemType style);
     void SetItemPosition(unsigned int id, glm::vec2 new_position);

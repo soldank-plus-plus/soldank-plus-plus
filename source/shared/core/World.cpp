@@ -184,7 +184,8 @@ void World::Update(double /*delta_time*/)
                                    *physics_events_,
                                    animation_data_manager_,
                                    bullet_emitter,
-                                   gravity);
+                                   gravity,
+                                   true);
             if (soldier.dead_meat) {
                 soldier.ticks_to_respawn--;
                 if (soldier.ticks_to_respawn <= 0) {
@@ -199,14 +200,17 @@ void World::Update(double /*delta_time*/)
           *physics_events_, bullet, state_manager_->GetMap(), *state_manager_);
     });
 
-    for (const auto& bullet_params : state_manager_->GetBulletEmitter()) {
+    for (const auto& bullet_params : bullet_emitter) {
         bool should_spawn_projectile = false;
         if (pre_projectile_spawn_callback_) {
             should_spawn_projectile = pre_projectile_spawn_callback_(bullet_params);
         }
 
         if (should_spawn_projectile) {
-            state_manager_->CreateProjectile(bullet_params);
+            const Bullet* created_bullet = state_manager_->CreateProjectile(bullet_params);
+            if (post_projectile_spawn_callback_ && created_bullet != nullptr) {
+                post_projectile_spawn_callback_(*created_bullet);
+            }
         }
     }
 
@@ -227,7 +231,8 @@ void World::UpdateSoldier(unsigned int soldier_id)
                                *physics_events_,
                                animation_data_manager_,
                                bullet_emitter,
-                               gravity);
+                               gravity,
+                               true);
     });
 }
 

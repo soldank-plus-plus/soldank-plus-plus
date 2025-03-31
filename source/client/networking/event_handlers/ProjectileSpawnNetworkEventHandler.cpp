@@ -1,7 +1,10 @@
 #include "networking/event_handlers/ProjectileSpawnNetworkEventHandler.hpp"
 
 #include "communication/NetworkPackets.hpp"
+#include "core/math/Calc.hpp"
 #include "spdlog/spdlog.h"
+
+#include <limits>
 
 namespace Soldank
 {
@@ -17,7 +20,7 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
   unsigned int /*sender_connection_id*/,
   ProjectileSpawnPacket projectile_spawn_packet)
 {
-    // unsigned int projectile_id = projectile_spawn_packet.projectile_id;
+    unsigned int projectile_id = projectile_spawn_packet.projectile_id;
     BulletType style = projectile_spawn_packet.style;
     WeaponType weapon = projectile_spawn_packet.weapon;
     float position_x = projectile_spawn_packet.position_x;
@@ -29,6 +32,56 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
     TeamType team = projectile_spawn_packet.team;
     std::uint8_t owner_id = projectile_spawn_packet.owner_id;
     std::uint32_t last_processed_input_id = projectile_spawn_packet.last_processed_input_id;
+    std::int32_t server_creation_order = projectile_spawn_packet.creation_order;
+
+    bool found_similar_projectile = false;
+    unsigned int similar_projectile_id = 0;
+    float similar_projectile_distance = std::numeric_limits<float>::infinity();
+
+    for (const auto& [input_sequence_id, client_creation_order, past_projectile] :
+         client_state_->created_bullets_history) {
+        if (input_sequence_id != last_processed_input_id) {
+            continue;
+        }
+
+        if (past_projectile.owner_id != owner_id) {
+            continue;
+        }
+
+        if (style != past_projectile.style) {
+            continue;
+        }
+
+        if (weapon != past_projectile.weapon) {
+            continue;
+        }
+
+        if (client_creation_order != server_creation_order) {
+            continue;
+        }
+
+        float position_distance =
+          Calc::SquareDistance({ position_x, position_y }, past_projectile.particle.position);
+
+        if (position_distance < similar_projectile_distance) {
+            found_similar_projectile = true;
+            similar_projectile_id = past_projectile.id;
+            similar_projectile_distance = position_distance;
+        }
+    }
+
+    // remove created bullets from history if they are older than all of our pending_inputs
+    for (auto it = client_state_->created_bullets_history.begin();
+         it != client_state_->created_bullets_history.end();) {
+        if (it->input_sequence_id <=
+            last_processed_input_id - client_state_->pending_inputs.size()) {
+            it = client_state_->created_bullets_history.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    const Bullet* created_projectile = nullptr;
 
     BulletParams bullet_params{ style,
                                 weapon,
@@ -38,9 +91,31 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
                                 hit_multiply,
                                 team,
                                 owner_id };
-    const auto* bullet = world_->GetStateManager()->CreateProjectile(bullet_params);
 
-    if (bullet == nullptr) {
+    if (found_similar_projectile) {
+        spdlog::debug(
+          "projectile_id vs similar_projectile_id: {} vs {}", projectile_id, similar_projectile_id);
+        world_->GetStateManager()->TransformBullet(similar_projectile_id, [&](Bullet& bullet) {
+            bullet = bullet_params;
+            bullet.active = true;
+            bullet.id = similar_projectile_id;
+        });
+        world_->GetStateManager()->SwapProjectiles(projectile_id, similar_projectile_id);
+        for (auto& [input_sequence_id, creation_order, past_projectile] :
+             client_state_->created_bullets_history) {
+
+            if (past_projectile.id == projectile_id) {
+                past_projectile.id = similar_projectile_id;
+            } else if (past_projectile.id == similar_projectile_id) {
+                past_projectile.id = projectile_id;
+            }
+        }
+        created_projectile = &world_->GetStateManager()->GetBullet(projectile_id);
+    } else {
+        created_projectile = world_->GetStateManager()->CreateProjectile(bullet_params);
+    }
+
+    if (created_projectile == nullptr) {
         return NetworkEventHandlerResult::Failure;
     }
 
@@ -52,7 +127,7 @@ NetworkEventHandlerResult ProjectileSpawnNetworkEventHandler::HandleNetworkMessa
                 continue;
             }
 
-            world_->UpdateProjectile(bullet->id);
+            world_->UpdateProjectile(created_projectile->id);
         }
     }
 

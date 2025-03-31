@@ -94,6 +94,7 @@ SoldierSnapshot::SoldierSnapshot(const Soldier& soldier)
     , stance_(soldier.stance)
     , velocity_(soldier.particle.GetVelocity())
     , force_(soldier.particle.GetForce())
+    , is_shooting_(soldier.is_shooting)
 {
 }
 void SoldierSnapshot::CompareAndLog(const Soldier& other_soldier)
@@ -215,6 +216,10 @@ void SoldierSnapshot::CompareAndLog(const Soldier& other_soldier)
                       force_.y,
                       other_soldier.particle.GetForce().x,
                       other_soldier.particle.GetForce().y);
+    }
+
+    if (is_shooting_ != other_soldier.is_shooting) {
+        spdlog::debug("is_shooting difference: {} != {}", is_shooting_, other_soldier.is_shooting);
     }
 }
 } // namespace Soldank

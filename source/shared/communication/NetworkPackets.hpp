@@ -81,6 +81,7 @@ struct ProjectileSpawnPacket
     TeamType team;
     std::uint8_t owner_id;
     std::uint32_t last_processed_input_id;
+    std::int32_t creation_order;
 };
 #pragma pack(pop)
 } // namespace Soldank

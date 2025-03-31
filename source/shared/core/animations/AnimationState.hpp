@@ -42,7 +42,7 @@ public:
     // if a player presses the fire button. It has a separate method for that because it's a shared
     // functionality between many animation types and players are allowed to shoot during
     // animations. That's why we need to handle it in a special way.
-    void TryToShoot(Soldier& soldier, const PhysicsEvents& physics_events) const;
+    bool TryToShoot(Soldier& soldier, const PhysicsEvents& physics_events) const;
 
     // This method calls a flag throwing event.It has a separate method for that because it's a
     // shared functionality between many animation types and players are allowed to shoot during

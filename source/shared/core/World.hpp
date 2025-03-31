@@ -77,6 +77,11 @@ public:
         pre_projectile_spawn_callback_ = std::move(callback);
     }
 
+    void SetPostProjectileSpawnCallback(TPostProjectileSpawnCallback callback) final
+    {
+        post_projectile_spawn_callback_ = std::move(callback);
+    }
+
     void SetFPSLimit(int new_fps_limit) final { fps_limit_ = new_fps_limit; }
 
 private:
@@ -92,6 +97,7 @@ private:
 
     TPreSoldierUpdateCallback pre_soldier_update_callback_;
     TPreProjectileSpawnCallback pre_projectile_spawn_callback_;
+    TPostProjectileSpawnCallback post_projectile_spawn_callback_;
 
     AnimationDataManager animation_data_manager_;
 

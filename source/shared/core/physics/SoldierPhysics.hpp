@@ -30,7 +30,8 @@ void Update(StateManager& state_manager,
             const PhysicsEvents& physics_events,
             const AnimationDataManager& animation_data_manager,
             std::vector<BulletParams>& bullet_emitter,
-            float gravity);
+            float gravity,
+            bool can_soldier_shoot = false);
 
 bool CheckMapCollision(Soldier& soldier,
                        const Map& map,
