@@ -3,6 +3,21 @@
 		"gamenetworkingsockets",
 		"zlib",
 		"bzip2",
-		"libpng"
-	]
+		"libpng",
+        "simpleini",
+        "spdlog",
+        "glm",
+        "cxxopts",
+        "glfw3",
+        "stb",
+        "freetype",
+        {
+            "name": "imgui",
+            "features": ["opengl3-binding", "glfw-binding"]
+        },
+        "gtest",
+        "cpp-httplib",
+        "nlohmann-json"
+	],
+    "builtin-baseline": "73fbcf784ba23819d2c80aa2f6f2219805ae66c5"
 }
