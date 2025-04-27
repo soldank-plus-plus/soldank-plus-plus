@@ -18,87 +18,51 @@ find_package(GameNetworkingSockets CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(BZip2 REQUIRED)
 find_package(PNG REQUIRED)
+find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
+find_package(spdlog CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(cxxopts CONFIG REQUIRED)
 find_package(Protobuf REQUIRED)
+
+if (BUILD_CLIENT_ENABLED)
+    find_package(glfw3 CONFIG REQUIRED)
+    find_package(Stb REQUIRED)
+    find_package(Freetype REQUIRED)
+    find_package(imgui CONFIG REQUIRED)
+endif()
+
+if (BUILD_TESTS_ENABLED)
+    find_package(GTest CONFIG REQUIRED)
+endif()
+
+if (BUILD_SERVER_ENABLED)
+    find_package(httplib CONFIG REQUIRED)
+    find_package(nlohmann_json CONFIG REQUIRED)
+endif()
 
 include(cmake/CPM.cmake)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
-set(CMAKE_CXX_EXTENSIONS On)
+set(CMAKE_CXX_EXTENSIONS Off)
 
-CPMAddPackage("gh:brofield/simpleini#v4.20")
-CPMAddPackage("gh:gabime/spdlog#v1.13.0")
-CPMAddPackage("gh:g-truc/glm#0.9.9.8")
 CPMAddPackage(
     NAME soldatbase
     URL https://github.com/nedik/soldat-base/archive/55c6867a943a6ffc62a57b46eb7742c2e39766aa.tar.gz
 )
-CPMAddPackage("gh:jarro2783/cxxopts#v3.2.1")
-
-if (BUILD_CLIENT_ENABLED)
-    CPMAddPackage("gh:glfw/glfw#3.3.8")
-    CPMAddPackage("gh:nothings/stb#master") # TODO: including master is not recommended
-    if (stb_ADDED)
-        add_library(stb source/client/stb.cpp)
-        target_include_directories(stb PUBLIC ${stb_SOURCE_DIR})
-        add_library(stb::stb ALIAS stb)
-    endif()
-    CPMAddPackage(
-        NAME freetype
-        GITHUB_REPOSITORY freetype/freetype
-        GIT_TAG VER-2-13-2
-        VERSION 2.13.2
-        OPTIONS
-            "FT_DISABLE_HARFBUZZ 1"
-            "FT_DISABLE_BROTLI 1"
-            "SKIP_INSTALL_ALL 1"
-    )
-    if (freetype_ADDED)
-        add_library(Freetype::Freetype ALIAS freetype)
-    endif()
-
-    CPMAddPackage(
-        NAME imgui
-        GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG v1.90.1
-        VERSION 1.90.1
-        DOWNLOAD_ONLY YES
-    )
-    if (imgui_ADDED)
-        file (GLOB imgui_sources ${imgui_SOURCE_DIR}/*.cpp)
-        list (APPEND imgui_sources ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp)
-        list (APPEND imgui_sources ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
-        add_library(imgui STATIC ${imgui_sources})
-        target_link_libraries(imgui PRIVATE glfw)
-        target_include_directories(imgui SYSTEM PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>)
-        add_library(imgui::imgui ALIAS imgui)
-    endif()
-endif()
-
-if (BUILD_TESTS_ENABLED)
-    CPMAddPackage(
-        NAME googletest
-        GITHUB_REPOSITORY google/googletest
-        GIT_TAG v1.14.0
-        VERSION 1.14.0
-        OPTIONS "INSTALL_GTEST OFF" "gtest_force_shared_crt"
-    )
-endif()
 
 if (BUILD_SERVER_ENABLED)
-CPMAddPackage(
-    NAME dascript
-    OPTIONS 
-        "DAS_TOOLS_DISABLED ON"
-        "DAS_TESTS_DISABLED ON"
-        "DAS_PROFILE_DISABLED ON"
-        "DAS_TUTORIAL_DISABLED ON"
-    URL https://github.com/GaijinEntertainment/daScript/archive/9ae1c4cd73d7da06084aedb5741bb1da68b63b88.tar.gz
-    EXCLUDE_FROM_ALL ON
-)
-
-CPMAddPackage("gh:yhirose/cpp-httplib#v0.18.0")
-CPMAddPackage("gh:nlohmann/json#v3.11.3")
+    # Daslang is still in development and is not released in vcpkg so we have to use CPM
+    CPMAddPackage(
+        NAME dascript
+        OPTIONS 
+            "DAS_TOOLS_DISABLED ON"
+            "DAS_TESTS_DISABLED ON"
+            "DAS_PROFILE_DISABLED ON"
+            "DAS_TUTORIAL_DISABLED ON"
+        URL https://github.com/GaijinEntertainment/daScript/archive/9ae1c4cd73d7da06084aedb5741bb1da68b63b88.tar.gz
+        EXCLUDE_FROM_ALL ON
+    )
 endif()
 
 add_subdirectory(extern)
@@ -107,3 +71,4 @@ if (BUILD_TESTS_ENABLED)
     enable_testing()
     add_subdirectory(tests)
 endif()
+

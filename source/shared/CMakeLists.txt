@@ -12,7 +12,7 @@ else()
   target_compile_options(shared_lib PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-target_include_directories(shared_lib PUBLIC ${simpleini_SOURCE_DIR})
+target_include_directories(shared_lib PUBLIC ${SIMPLEINI_INCLUDE_DIRS})
 target_include_directories(shared_lib PUBLIC ${CMAKE_SOURCE_DIR}/source/shared)
 
 target_link_libraries(shared_lib PUBLIC glm::glm)
