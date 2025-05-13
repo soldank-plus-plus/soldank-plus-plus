@@ -45,7 +45,7 @@ jobs:
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp bin/Release/* Soldank++
+          cp bin/* Soldank++
           tar -czvf Soldank++-latest-linux-x64.tar.gz Soldank++
       
       - uses: actions/upload-artifact@v4
