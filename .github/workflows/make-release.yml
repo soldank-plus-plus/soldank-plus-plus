@@ -40,7 +40,6 @@ jobs:
       - name: Install
         run: |
           cmake --build build --target install --config Release
-          cp vcpkg/packages/gamenetworkingsockets_x64-linux/lib/libGameNetworkingSockets.so bin/Release/
 
       - name: Prepare Artifact
         run: |
@@ -76,7 +75,7 @@ jobs:
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp build/bin/Release/* Soldank++
+          cp build/bin/* Soldank++
           Compress-Archive -Path Soldank++ -Destination Soldank++-latest-win32-x64.zip
       
       - uses: actions/upload-artifact@v4
