@@ -49,7 +49,7 @@ jobs:
         run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 60 --slave /usr/bin/g++ g++ /usr/bin/g++-13
 
       - name: Configure
-        run: cmake -Bbuild
+        run: cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug
 
       - name: Build
         run: cmake --build build --config Debug -j4
