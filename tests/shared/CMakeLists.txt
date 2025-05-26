@@ -1,39 +1,39 @@
 add_executable(NetworkEventDispatcherTest communication/NetworkEventDispatcherTest.cpp)
-target_link_libraries(NetworkEventDispatcherTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(NetworkEventDispatcherTest)
 target_link_libraries(NetworkEventDispatcherTest PRIVATE shared_lib)
 
 add_executable(NetworkMessageTest communication/NetworkMessageTest.cpp)
-target_link_libraries(NetworkMessageTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(NetworkMessageTest)
 target_link_libraries(NetworkMessageTest PRIVATE shared_lib)
 
 add_executable(AnimationDataTest core/animations/AnimationDataTest.cpp)
-target_link_libraries(AnimationDataTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(AnimationDataTest)
 target_link_libraries(AnimationDataTest PRIVATE shared_lib)
 
 add_executable(WeaponTest core/entities/WeaponTest.cpp)
-target_link_libraries(WeaponTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(WeaponTest)
 target_link_libraries(WeaponTest PRIVATE shared_lib)
 
 add_executable(MapBuilderTest core/map/MapBuilderTest.cpp)
-target_link_libraries(MapBuilderTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(MapBuilderTest)
 target_link_libraries(MapBuilderTest PRIVATE shared_lib)
 target_link_libraries(MapBuilderTest PRIVATE shared_lib_testing_framework)
 
 add_executable(MapTest core/map/MapTest.cpp)
-target_link_libraries(MapTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(MapTest)
 target_link_libraries(MapTest PRIVATE shared_lib)
 
 add_executable(CalcTest core/math/CalcTest.cpp)
-target_link_libraries(CalcTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(CalcTest)
 target_link_libraries(CalcTest PRIVATE shared_lib)
 
 add_executable(MovementTest core/physics/MovementTest.cpp core/physics/SoldierMovementSimulation.cpp)
-target_link_libraries(MovementTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(MovementTest)
 target_link_libraries(MovementTest PRIVATE shared_lib)
 target_link_libraries(MovementTest PRIVATE shared_lib_testing_framework)
 
 add_executable(ObservableTest core/utility/ObservableTest.cpp)
-target_link_libraries(ObservableTest PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+AddTestOptionsAndLibraries(ObservableTest)
 target_link_libraries(ObservableTest PRIVATE shared_lib)
 
 add_test(NetworkEventDispatcherTest NetworkEventDispatcherTest)

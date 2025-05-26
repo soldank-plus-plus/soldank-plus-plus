@@ -1,2 +1,10 @@
+MACRO(AddTestOptionsAndLibraries TestName)
+  if (BUILD_COMPILE_WITH_COVERAGE)
+    target_compile_options(${TestName} PRIVATE -coverage -fprofile-arcs -ftest-coverage)
+    target_link_options(${TestName} PRIVATE -coverage -fprofile-arcs)
+  endif()
+  target_link_libraries(${TestName} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+ENDMACRO()
+
 add_subdirectory(testing_frameworks/shared_lib_testing)
 add_subdirectory(shared)
