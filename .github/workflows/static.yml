@@ -58,7 +58,7 @@ jobs:
         working-directory: ./build
         run: |
           ctest -T Test -T Coverage
-          lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent,inconsistent
+          lcov --directory . --capture --output-file coverage.info --keep-going
           lcov --extract ./coverage.info '*/source/*' --output-file ./coverage-src.info
           genhtml -o coverage coverage-src.info
   
