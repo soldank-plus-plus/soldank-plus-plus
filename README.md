@@ -1,5 +1,5 @@
 # Soldank++
-**Homepage:** http://soldankpp.com/
+**Homepage:** https://www.soldankpp.app/
 
 C++23 implementation of [OpenSoldat](https://github.com/opensoldat/opensoldat) game engine.
 
