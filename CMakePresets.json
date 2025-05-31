@@ -687,6 +687,14 @@
       }
     },
     {
+      "name": "clang-ninja-debug-all",
+      "displayName": "Test Clang Ninja Debug",
+      "configurePreset": "clang-ninja-debug-all",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
       "name": "clang-ninja-coverage",
       "displayName": "Test Clang Ninja Coverage",
       "configurePreset": "clang-ninja-coverage",

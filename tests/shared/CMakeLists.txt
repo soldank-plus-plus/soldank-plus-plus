@@ -93,6 +93,10 @@ add_executable(ObservableTest core/utility/ObservableTest.cpp)
 AddTestOptionsAndLibraries(ObservableTest)
 target_link_libraries(ObservableTest PRIVATE shared_lib)
 
+add_executable(GetlineTest core/utility/GetlineTest.cpp)
+AddTestOptionsAndLibraries(GetlineTest)
+target_link_libraries(GetlineTest PRIVATE shared_lib)
+
 add_test(NetworkEventDispatcherTest NetworkEventDispatcherTest)
 add_test(NetworkMessageTest NetworkMessageTest)
 add_test(AnimationDataTest AnimationDataTest)
@@ -104,6 +108,7 @@ add_test(MapBuilderTest MapBuilderTest)
 add_test(MapTest MapTest)
 add_test(CalcTest CalcTest)
 # add_test(MovementTest MovementTest)
+add_test(GetlineTest GetlineTest)
 add_test(ObservableTest ObservableTest)
 
 file(GLOB_RECURSE ANIMATION_FILE_PATHS ${soldatbase_SOURCE_DIR}/shared/anims/*.poa)
