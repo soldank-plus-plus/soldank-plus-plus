@@ -75,7 +75,7 @@ jobs:
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp build/bin/* Soldank++
+          cp build/bin/Release/* Soldank++
           Compress-Archive -Path Soldank++ -Destination Soldank++-latest-win32-x64.zip
       
       - uses: actions/upload-artifact@v4
