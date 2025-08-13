@@ -147,12 +147,19 @@ void World::RunLoop()
         std::chrono::duration<double> render_time_delta =
           std::chrono::system_clock::now() - last_render_time;
 
-        while (fps_limit_ != 0 && render_time_delta.count() <= 1.0 / (double)fps_limit_) {
+        double render_time_limit = 1.0 / (double)fps_limit_;
+
+        while (fps_limit_ != 0 && render_time_delta.count() <= render_time_limit) {
+            double time_to_wait_nanos = render_time_limit - render_time_delta.count();
+            // sleep_for isn't super accurate that's why we don't want to wait the exact
+            // amount of time, that's why we do - 0.2
+            int time_to_wait_ms = std::max(0, (int)(1000.0 * time_to_wait_nanos - 0.2));
 
             // TODO: Don't use sleep when VSync is on
-            // Sleep for 0 milliseconds to give the resource to other processes
+            // sleep_for to give the CPU to other processes
+            // with lower FPS, the CPU usage should be lower
             std::this_thread::yield();
-            std::this_thread::sleep_for(std::chrono::milliseconds(0));
+            std::this_thread::sleep_for(std::chrono::milliseconds(time_to_wait_ms));
 
             timecur = std::chrono::system_clock::now();
             timeacc += timecur - timeprv;
