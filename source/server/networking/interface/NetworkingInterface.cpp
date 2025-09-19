@@ -1,16 +1,27 @@
-#include "networking/interface/NetworkingInterface.hpp"
+module;
 
 #include <steam/steamnetworkingsockets.h>
 
 #include "spdlog/spdlog.h"
 
+#include <functional>
+#include <memory>
+#include <cstdint>
+
+export module Networking.Interface.NetworkingInterface;
+
+import Networking.PollGroups.IPollGroup;
+
 namespace Soldank::NetworkingInterface
-{
-namespace
 {
 ISteamNetworkingSockets* interface;
 HSteamListenSocket listen_socket_handle;
 std::vector<std::function<void(SteamNetConnectionStatusChangedCallback_t*)>> observers;
+
+ISteamNetworkingSockets* GetInterface()
+{
+    return interface;
+}
 
 void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* p_info)
 {
@@ -18,17 +29,8 @@ void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCall
         observer(p_info);
     }
 }
-} // namespace
 
-namespace Hidden
-{
-ISteamNetworkingSockets* GetInterface()
-{
-    return interface;
-}
-} // namespace Hidden
-
-void Init(std::uint16_t port)
+export void Init(std::uint16_t port)
 {
     interface = SteamNetworkingSockets();
     SteamNetworkingIPAddr server_local_addr{};
@@ -43,18 +45,24 @@ void Init(std::uint16_t port)
     }
 }
 
-void PollConnectionStateChanges()
+export void PollConnectionStateChanges()
 {
     interface->RunCallbacks();
 }
 
-void RegisterObserver(
+export void RegisterObserver(
   const std::function<void(SteamNetConnectionStatusChangedCallback_t*)>& observer)
 {
     observers.push_back(observer);
 }
 
-void Free()
+export template<class TPollGroup = IPollGroup>
+std::unique_ptr<TPollGroup> CreatePollGroup()
+{
+    return std::make_unique<TPollGroup>(GetInterface());
+}
+
+export void Free()
 {
     interface->CloseListenSocket(listen_socket_handle);
     listen_socket_handle = k_HSteamListenSocket_Invalid;

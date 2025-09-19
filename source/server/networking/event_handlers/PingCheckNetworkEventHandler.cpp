@@ -1,22 +1,32 @@
-#include "networking/event_handlers/PingCheckNetworkEventHandler.hpp"
+module;
 
-#include "spdlog/spdlog.h"
+#include "communication/NetworkEventDispatcher.hpp"
 
-#include <chrono>
+#include <memory>
 
-namespace Soldank
+export module Networking.EventHandlers.PingCheckNetworkEventHandler;
+
+import Networking.IGameServer;
+
+export namespace Soldank
 {
-
-PingCheckNetworkEventHandler::PingCheckNetworkEventHandler(
-  const std::shared_ptr<IGameServer>& game_server)
-    : game_server_(game_server)
+class PingCheckNetworkEventHandler : public NetworkEventHandlerBase<>
 {
-}
+public:
+    PingCheckNetworkEventHandler(const std::shared_ptr<IGameServer>& game_server)
+        : game_server_(game_server)
+    {
+    }
 
-NetworkEventHandlerResult PingCheckNetworkEventHandler::HandleNetworkMessageImpl(
-  unsigned int sender_connection_id)
-{
-    game_server_->SendNetworkMessage(sender_connection_id, { NetworkEvent::PingCheck });
-    return NetworkEventHandlerResult::Success;
-}
+private:
+    NetworkEvent GetTargetNetworkEvent() const override { return NetworkEvent::PingCheck; }
+
+    NetworkEventHandlerResult HandleNetworkMessageImpl(unsigned int sender_connection_id) override
+    {
+        game_server_->SendNetworkMessage(sender_connection_id, { NetworkEvent::PingCheck });
+        return NetworkEventHandlerResult::Success;
+    }
+
+    std::shared_ptr<IGameServer> game_server_;
+};
 } // namespace Soldank

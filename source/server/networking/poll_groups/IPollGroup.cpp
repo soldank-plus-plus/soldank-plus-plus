@@ -1,18 +1,16 @@
-#ifndef __I_POLL_GROUP_HPP__
-#define __I_POLL_GROUP_HPP__
+module;
 
-#include "networking/types/Connection.hpp"
-
-#include "communication/NetworkEvent.hpp"
 #include "communication/NetworkMessage.hpp"
 
-#include <memory>
+#include <steam/steamnetworkingsockets.h>
+
 #include <optional>
 
-class ISteamNetworkingSockets;
-struct SteamNetConnectionStatusChangedCallback_t;
+export module Networking.PollGroups.IPollGroup;
 
-namespace Soldank
+import Networking.Types.Connection;
+
+export namespace Soldank
 {
 class IPollGroup
 {
@@ -59,5 +57,3 @@ private:
     ISteamNetworkingSockets* interface_;
 };
 } // namespace Soldank
-
-#endif

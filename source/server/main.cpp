@@ -1,4 +1,4 @@
-#include "application/Application.hpp"
+import Application;
 
 int main()
 {

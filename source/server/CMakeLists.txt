@@ -1,9 +1,51 @@
-file(GLOB_RECURSE LIB_SOURCES *.cpp)
 file(GLOB_RECURSE HEADER_SOURCES *.hpp)
-list(REMOVE_ITEM LIB_SOURCES main.cpp)
 
+set(server_lib_sources
+    ./scripting/dascript/DaScriptInit.cpp
+)
 
-add_library(server_lib ${LIB_SOURCES} ${HEADER_SOURCES})
+set(server_lib_modules
+    ./application/Application.cpp
+    ./application/ServerState.cpp
+
+    ./scripting/IScriptingEngine.cpp
+    ./scripting/dascript/DaScriptScriptingEngine.cpp
+
+    ./networking/IGameServer.cpp
+    ./networking/GameServer.cpp
+    ./networking/CoreEventsConnectionNotifier.cpp
+    ./networking/LobbyClient.cpp
+    ./networking/event_handlers/KillCommandNetworkEventHandler.cpp
+    ./networking/event_handlers/PingCheckNetworkEventHandler.cpp
+    ./networking/event_handlers/SoldierInputNetworkEventHandler.cpp
+    ./networking/interface/NetworkingInterface.cpp
+    ./networking/poll_groups/IPollGroup.cpp
+    ./networking/poll_groups/PollGroupBase.cpp
+    ./networking/poll_groups/EntryPollGroup.cpp
+    ./networking/poll_groups/PlayerPollGroup.cpp
+    ./networking/types/Connection.cpp
+)
+
+foreach(file_path IN LISTS server_lib_modules)
+    get_filename_component(absolute_path ${file_path} ABSOLUTE)
+    message(${file_path})
+    list(REMOVE_ITEM LIB_SOURCES ${absolute_path})
+endforeach()
+
+add_library(server_lib)
+target_sources(server_lib
+    PUBLIC
+    ${server_lib_sources}
+)
+target_sources(server_lib
+    PUBLIC
+    ${HEADER_SOURCES}
+)
+target_sources(server_lib
+    PUBLIC
+        FILE_SET all_my_modules TYPE CXX_MODULES FILES 
+        ${server_lib_modules}
+)
 
 target_compile_definitions(server_lib PRIVATE ${SERVER_COMPILE_DEFINITIONS})
 

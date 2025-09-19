@@ -4,6 +4,8 @@
 
 using namespace das;
 
+// This cannot be a module because the macro NEED_MODULE(Module_BuiltIn) doesn't work with C++
+// modules
 bool InitDaScriptModule()
 {
     // request all da-script built in modules

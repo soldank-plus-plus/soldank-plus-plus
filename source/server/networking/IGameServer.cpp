@@ -1,9 +1,10 @@
-#ifndef __IGAME_SERVER_HPP__
-#define __IGAME_SERVER_HPP__
+module;
 
 #include "communication/NetworkMessage.hpp"
 
-namespace Soldank
+export module Networking.IGameServer;
+
+export namespace Soldank
 {
 class IGameServer
 {
@@ -18,5 +19,3 @@ public:
     virtual unsigned int GetSoldierIdFromConnectionId(unsigned int connection_id) = 0;
 };
 } // namespace Soldank
-
-#endif

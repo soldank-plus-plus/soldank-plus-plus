@@ -1,12 +1,13 @@
-#ifndef __SERVER_STATE_HPP__
-#define __SERVER_STATE_HPP__
+module;
 
 #include "core/config/Config.hpp"
 
 #include <array>
 #include <string>
 
-namespace Soldank
+export module Application.ServerState;
+
+export namespace Soldank
 {
 struct ServerState
 {
@@ -16,5 +17,3 @@ struct ServerState
     std::uint16_t server_port;
 };
 } // namespace Soldank
-
-#endif

@@ -1,11 +1,12 @@
-#ifndef __CONNECTION_HPP__
-#define __CONNECTION_HPP__
+module;
 
 #include <steam/steamnetworkingsockets.h>
 
 #include <string>
 
-namespace Soldank
+export module Networking.Types.Connection;
+
+export namespace Soldank
 {
 struct Connection
 {
@@ -14,5 +15,3 @@ struct Connection
     unsigned int soldier_id;
 };
 } // namespace Soldank
-
-#endif
