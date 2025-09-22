@@ -44,7 +44,6 @@ endif()
 
 if (BUILD_SERVER_ENABLED)
     find_package(httplib CONFIG REQUIRED)
-    find_package(nlohmann_json CONFIG REQUIRED)
 endif()
 
 include(cmake/CPM.cmake)

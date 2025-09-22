@@ -2,20 +2,25 @@ module;
 
 #include "core/World.hpp"
 
-#include <steam/isteamnetworkingutils.h>
-
 #include "communication/NetworkPackets.hpp"
 #include "communication/NetworkEventDispatcher.hpp"
 
 #include "core/CoreEventHandler.hpp"
+#include "spdlog/spdlog.h"
 
 #include "scripting/dascript/DaScriptInit.hpp"
 
-#include "spdlog/spdlog.h"
+#ifdef _WIN32
+// Need to include winsock2 for windows because of this error:
+// error C2375: 'shutdown': redefinition; different linkage
+// Somehow if not included before SimpleIni, it doesn't compile lol
+#include <winsock2.h>
+#endif
 
-#include <spdlog/common.h>
-#include <steam/steamnetworkingsockets.h>
 #include <SimpleIni.h>
+
+#include <steam/isteamnetworkingutils.h>
+#include <steam/steamnetworkingsockets.h>
 
 #include <cstdlib>
 #include <memory>

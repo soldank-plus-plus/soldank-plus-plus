@@ -3,7 +3,6 @@ module;
 #include "core/data/FileReader.hpp"
 
 #include "spdlog/spdlog.h"
-#include "nlohmann/json.hpp"
 #include "httplib.h"
 
 #include <cstdint>
@@ -14,8 +13,6 @@ module;
 #include <cctype>
 
 export module Networking.LobbyClient;
-
-using json = nlohmann::json;
 
 export namespace Soldank
 {
@@ -75,19 +72,33 @@ public:
 #endif
 
         // TODO: populate with proper settings
-        json server_info = {
-            { "advanced", false },   { "anti_cheat_on", false },   { "bonus_frequency", 0 },
-            { "country", "PL" },     { "current_map", "ctf_Ash" }, { "game_style", "CTF" },
-            { "info", "Test info" }, { "max_players", 12 },        { "name", server_name },
-            { "num_bots", 1 },       { "os", operating_system },   { "players", json::array() },
-            { "port", server_port }, { "private", false },         { "realistic", false },
-            { "respawn", 180 },      { "survival", false },        { "version", "1" },
-            { "wm", false },
-        };
+        std::string server_info = "{";
+
+        server_info += "\"advanced\": false,";
+        server_info += "\"anti_cheat_on\": false,";
+        server_info += "\"bonus_frequency\": 0,";
+        server_info += "\"country\": PL,";
+        server_info += "\"current_map\": \"ctf_Ash\",";
+        server_info += "\"game_style\": \"CTF\",";
+        server_info += "\"info\": \"Test info\",";
+        server_info += "\"max_players\": 12,";
+        server_info += "\"name\": \"server_name\",";
+        server_info += "\"num_bots\": 1,";
+        server_info += "\"os\": \"" + operating_system + "\",";
+        server_info += "\"players\": [],";
+        server_info += "\"port\": " + std::to_string(server_port) + ",";
+        server_info += "\"private\": false,";
+        server_info += "\"realistic\": false,";
+        server_info += "\"respawn\": 180,";
+        server_info += "\"survival\": false,";
+        server_info += "\"version\": \"1\",";
+        server_info += "\"wm\": false,";
+
+        server_info += "}";
 
         for (auto& http_client : http_clients_) {
             auto response = http_client.sender.Post(
-              http_client.api_endpoint + "/servers", server_info.dump(), "application/json");
+              http_client.api_endpoint + "/servers", server_info, "application/json");
             if (response) {
                 if (response->status == 201) {
                     spdlog::info("Registering in the lobby: {}", http_client.sender.host());

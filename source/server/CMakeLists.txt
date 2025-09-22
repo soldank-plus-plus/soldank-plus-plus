@@ -69,7 +69,6 @@ target_link_libraries(server_lib PRIVATE GameNetworkingSockets::GameNetworkingSo
 target_link_libraries(server_lib PRIVATE spdlog::spdlog)
 target_link_libraries(server_lib PRIVATE libDaScript)
 target_link_libraries(server_lib PRIVATE httplib::httplib)
-target_link_libraries(server_lib PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(server_lib PRIVATE Threads::Threads)
 add_dependencies(server_lib libDaScript)
 
@@ -95,7 +94,6 @@ target_link_libraries(server PRIVATE GameNetworkingSockets::GameNetworkingSocket
 target_link_libraries(server PRIVATE spdlog::spdlog)
 target_link_libraries(server PRIVATE libDaScript)
 target_link_libraries(server PRIVATE httplib::httplib)
-target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(server PRIVATE Threads::Threads)
 add_dependencies(server libDaScript)
 target_include_directories(server_lib PRIVATE ${dascript_SOURCE_DIR}/include)

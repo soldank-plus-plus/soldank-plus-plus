@@ -1,9 +1,9 @@
 {
-	"dependencies": [
-		"gamenetworkingsockets",
-		"zlib",
-		"bzip2",
-		"libpng",
+    "dependencies": [
+        "gamenetworkingsockets",
+        "zlib",
+        "bzip2",
+        "libpng",
         "simpleini",
         "spdlog",
         "glm",
@@ -13,11 +13,13 @@
         "freetype",
         {
             "name": "imgui",
-            "features": ["opengl3-binding", "glfw-binding"]
+            "features": [
+                "opengl3-binding",
+                "glfw-binding"
+            ]
         },
         "gtest",
-        "cpp-httplib",
-        "nlohmann-json"
+        "cpp-httplib"
 	],
     "builtin-baseline": "ab2977be50c702126336e5088f4836060733c899"
 }
