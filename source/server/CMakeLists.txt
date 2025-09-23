@@ -1,9 +1,5 @@
 file(GLOB_RECURSE HEADER_SOURCES *.hpp)
 
-set(server_lib_sources
-    ./scripting/dascript/DaScriptInit.cpp
-)
-
 set(server_lib_modules
     ./application/Application.cpp
     ./application/ServerState.cpp
@@ -35,14 +31,6 @@ endforeach()
 add_library(server_lib)
 target_sources(server_lib
     PUBLIC
-    ${server_lib_sources}
-)
-target_sources(server_lib
-    PUBLIC
-    ${HEADER_SOURCES}
-)
-target_sources(server_lib
-    PUBLIC
         FILE_SET all_my_modules TYPE CXX_MODULES FILES 
         ${server_lib_modules}
 )
@@ -62,17 +50,16 @@ endif()
 
 target_include_directories(server_lib PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
 target_include_directories(server_lib PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
-target_include_directories(server_lib PRIVATE ${dascript_SOURCE_DIR}/include)
 
 target_link_libraries(server_lib PRIVATE shared_lib)
 target_link_libraries(server_lib PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
 target_link_libraries(server_lib PRIVATE spdlog::spdlog)
-target_link_libraries(server_lib PRIVATE libDaScript)
+target_link_libraries(server_lib PRIVATE DaScript)
 target_link_libraries(server_lib PRIVATE httplib::httplib)
 target_link_libraries(server_lib PRIVATE Threads::Threads)
-add_dependencies(server_lib libDaScript)
 
 add_executable(server main.cpp)
+
 target_compile_definitions(server PRIVATE ${SERVER_COMPILE_DEFINITIONS})
 
 if(MSVC)
@@ -92,11 +79,10 @@ target_link_libraries(server PRIVATE shared_lib)
 target_link_libraries(server PRIVATE server_lib)
 target_link_libraries(server PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
 target_link_libraries(server PRIVATE spdlog::spdlog)
-target_link_libraries(server PRIVATE libDaScript)
+target_link_libraries(server PRIVATE DaScript)
 target_link_libraries(server PRIVATE httplib::httplib)
 target_link_libraries(server PRIVATE Threads::Threads)
-add_dependencies(server libDaScript)
-target_include_directories(server_lib PRIVATE ${dascript_SOURCE_DIR}/include)
+
 target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
-target_include_directories(server PRIVATE ${dascript_SOURCE_DIR}/include)
+
 install(TARGETS server DESTINATION ${CMAKE_SOURCE_DIR}/bin)

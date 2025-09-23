@@ -8,8 +8,6 @@ module;
 #include "core/CoreEventHandler.hpp"
 #include "spdlog/spdlog.h"
 
-#include "scripting/dascript/DaScriptInit.hpp"
-
 #ifdef _WIN32
 // Need to include winsock2 for windows because of this error:
 // error C2375: 'shutdown': redefinition; different linkage
@@ -52,14 +50,10 @@ public:
         world_->GetStateManager()->GetMap().LoadMap("maps/ctf_Ash.pms");
         spdlog::set_level(spdlog::level::debug);
 
-        bool da_script_initialized = InitDaScriptModule();
-        if (da_script_initialized) {
-            spdlog::info("daScript module initialized");
+        DaScriptScriptingEngine::Init();
+        spdlog::info("daScript module initialized");
 
-            scripting_engine_ = std::make_shared<DaScriptScriptingEngine>();
-        } else {
-            spdlog::error("Could not initialize daScript module");
-        }
+        scripting_engine_ = std::make_shared<DaScriptScriptingEngine>();
 
         server_state_ = std::make_shared<ServerState>();
 
@@ -115,7 +109,7 @@ public:
 
     ~Application()
     {
-        ShutdownDaScriptModule();
+        DaScriptScriptingEngine::Shutdown();
         GameNetworkingSockets_Kill();
     }
 

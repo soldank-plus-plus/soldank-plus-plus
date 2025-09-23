@@ -70,6 +70,11 @@ To install all the required package using:
 > make
 ```
 
+Generate compile_commands for LSP completion by adding this variable to cmake command:
+```
+-DCMAKE_EXPORT_COMPILE_COMMANDS=On
+```
+
 ### Windows
 In project root directory run:
 ```

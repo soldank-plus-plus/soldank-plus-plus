@@ -1,12 +1,12 @@
 module;
 
-#include "daScript/daScript.h"
-
 #include "spdlog/spdlog.h"
 
 export module Scripting.DaScript;
 
 import Scripting.ScriptingEngine;
+
+import Extern.DaScript;
 
 constexpr const char* const TUTORIAL_TEXT = R""""(
 [export]
@@ -22,19 +22,19 @@ public:
     DaScriptScriptingEngine()
     {
         // make file access, introduce string as if it was a file
-        auto f_access = das::make_smart<das::FsFileAccess>();
-        auto file_info = std::make_unique<das::TextFileInfo>(
+        auto f_access = DaScript::make_smart<DaScript::FsFileAccess>();
+        auto file_info = std::make_unique<DaScript::TextFileInfo>(
           TUTORIAL_TEXT, uint32_t(strlen(TUTORIAL_TEXT)), false);
-        f_access->setFileInfo("dummy.das", das::move(file_info));
+        f_access->setFileInfo("dummy.das", std::move(file_info));
         // compile script
-        das::TextPrinter tout;
-        das::ModuleGroup dummy_lib_group;
-        auto program = compileDaScript("dummy.das", f_access, tout, dummy_lib_group);
+        DaScript::TextPrinter tout;
+        DaScript::ModuleGroup dummy_lib_group;
+        auto program = DaScript::compileDaScript("dummy.das", f_access, tout, dummy_lib_group);
         if (program->failed()) {
             spdlog::error("daScript compilation failed");
         }
         // create context
-        das::Context ctx(program->getContextStackSize());
+        DaScript::Context ctx(program->getContextStackSize());
         if (!program->simulate(ctx, tout)) {
             spdlog::error("daScript context creation failed");
         }
@@ -45,6 +45,18 @@ public:
         }
         // call context function
         ctx.evalWithCatch(function, nullptr);
+    }
+
+    static void Init()
+    {
+        DaScript::NeedModuleBuiltIn();
+        DaScript::Module::Initialize();
+    }
+
+    static void Shutdown()
+    {
+        // shut-down daScript, free all memory
+        DaScript::Module::Shutdown();
     }
 };
 } // namespace Soldank
