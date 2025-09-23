@@ -11,8 +11,6 @@ module;
 
 #include "communication/NetworkMessage.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <cassert>
 #include <span>
 
@@ -20,6 +18,8 @@ export module Networking.PollGroups.PlayerPollGroup;
 
 export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -49,7 +49,7 @@ public:
                 break;
             }
             if (messages_count < 0) {
-                spdlog::error("Error checking for messages");
+                Spdlog::error("Error checking for messages");
                 break;
             }
             assert(messages_count == 1 && incoming_message);
@@ -91,7 +91,7 @@ private:
 
         std::uint8_t soldier_id = world_->CreateSoldier().id;
         connection.soldier_id = soldier_id;
-        spdlog::info("OnAssignPlayerId: {}", soldier_id);
+        Spdlog::info("OnAssignPlayerId: {}", soldier_id);
         NetworkMessage network_message(NetworkEvent::AssignPlayerId, soldier_id);
         SendReliableNetworkMessage(connection.connection_handle, network_message);
 

@@ -5,8 +5,6 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <memory>
 
 export module Networking.EventHandlers.SoldierInputNetworkEventHandler;
@@ -14,6 +12,8 @@ export module Networking.EventHandlers.SoldierInputNetworkEventHandler;
 import Networking.IGameServer;
 
 import Application.ServerState;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -45,12 +45,12 @@ private:
         const Control& player_control = soldier_input_packet.control;
 
         // TODO: validate arguments
-        // spdlog::info("{} Soldier pos from client: {} {}",
+        // Spdlog::info("{} Soldier pos from client: {} {}",
         //              input_sequence_id - 1,
         //              soldier_position.x,
         //              soldier_position.y);
         if (input_sequence_id <= server_state_->last_processed_input_id.at(soldier_id)) {
-            spdlog::warn("*************** LATE PACKET ***************************");
+            Spdlog::warn("*************** LATE PACKET ***************************");
             return NetworkEventHandlerResult::Failure;
         }
 

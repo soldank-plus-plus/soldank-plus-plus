@@ -1,12 +1,14 @@
 module;
 
-#include "spdlog/spdlog.h"
+#include <memory>
+#include <cstring>
 
 export module Scripting.DaScript;
 
 import Scripting.ScriptingEngine;
 
 import Extern.DaScript;
+import Extern.Spdlog;
 
 constexpr const char* const TUTORIAL_TEXT = R""""(
 [export]
@@ -31,17 +33,17 @@ public:
         DaScript::ModuleGroup dummy_lib_group;
         auto program = DaScript::compileDaScript("dummy.das", f_access, tout, dummy_lib_group);
         if (program->failed()) {
-            spdlog::error("daScript compilation failed");
+            Spdlog::error("daScript compilation failed");
         }
         // create context
         DaScript::Context ctx(program->getContextStackSize());
         if (!program->simulate(ctx, tout)) {
-            spdlog::error("daScript context creation failed");
+            Spdlog::error("daScript context creation failed");
         }
         // find function. its up to application to check, if function is not null
         auto* function = ctx.findFunction("main");
         if (function == nullptr) {
-            spdlog::error("daScript could not find funtion main");
+            Spdlog::error("daScript could not find funtion main");
         }
         // call context function
         ctx.evalWithCatch(function, nullptr);

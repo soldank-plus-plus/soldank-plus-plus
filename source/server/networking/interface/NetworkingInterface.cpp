@@ -2,8 +2,6 @@ module;
 
 #include <steam/steamnetworkingsockets.h>
 
-#include "spdlog/spdlog.h"
-
 #include <functional>
 #include <memory>
 #include <cstdint>
@@ -11,6 +9,8 @@ module;
 export module Networking.Interface.NetworkingInterface;
 
 import Networking.PollGroups.IPollGroup;
+
+import Extern.Spdlog;
 
 namespace Soldank::NetworkingInterface
 {
@@ -41,7 +41,7 @@ export void Init(std::uint16_t port)
                (void*)SteamNetConnectionStatusChangedCallback);
     listen_socket_handle = interface->CreateListenSocketIP(server_local_addr, 1, &opt);
     if (listen_socket_handle == k_HSteamListenSocket_Invalid) {
-        spdlog::error("Failed to listen on port {}", port);
+        Spdlog::error("Failed to listen on port {}", port);
     }
 }
 

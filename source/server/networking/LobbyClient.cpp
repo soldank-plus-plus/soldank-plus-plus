@@ -2,7 +2,6 @@ module;
 
 #include "core/data/FileReader.hpp"
 
-#include "spdlog/spdlog.h"
 #include "httplib.h"
 
 #include <cstdint>
@@ -13,6 +12,8 @@ module;
 #include <cctype>
 
 export module Networking.LobbyClient;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -25,7 +26,7 @@ public:
         FileReader file_reader;
         auto file_data = file_reader.Read("lobby_servers.txt");
         if (!file_data.has_value()) {
-            spdlog::critical("Could not open lobby servers file: {}", file_path);
+            Spdlog::critical("Could not open lobby servers file: {}", file_path);
         } else {
             std::stringstream data_buffer{ *file_data };
             std::string protocol;
@@ -101,14 +102,14 @@ public:
               http_client.api_endpoint + "/servers", server_info, "application/json");
             if (response) {
                 if (response->status == 201) {
-                    spdlog::info("Registering in the lobby: {}", http_client.sender.host());
+                    Spdlog::info("Registering in the lobby: {}", http_client.sender.host());
                 } else {
-                    spdlog::error("Failed registering in the lobby: {}. Returned status = {}",
+                    Spdlog::error("Failed registering in the lobby: {}. Returned status = {}",
                                   http_client.sender.host(),
                                   response->status);
                 }
             } else {
-                spdlog::error("Could not register the server in the lobby. Error ({}): {}",
+                Spdlog::error("Could not register the server in the lobby. Error ({}): {}",
                               std::to_underlying(response.error()),
                               httplib::to_string(response.error()));
             }

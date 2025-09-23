@@ -3,16 +3,18 @@ module;
 #include "communication/NetworkMessage.hpp"
 
 #include <steam/steamnetworkingsockets.h>
-#include "spdlog/spdlog.h"
 
 #include <cassert>
-#include <utility>
+#include <optional>
 #include <unordered_map>
+#include <format>
 
 export module Networking.PollGroups.PollGroupBase;
 
 export import Networking.PollGroups.IPollGroup;
 import Networking.Types.Connection;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -24,7 +26,7 @@ public:
         , poll_group_handle_(interface->CreatePollGroup())
     {
         if (poll_group_handle_ == k_HSteamNetPollGroup_Invalid) {
-            spdlog::error("Failed to create a player poll group");
+            Spdlog::error("Failed to create a player poll group");
         }
     }
 
@@ -55,7 +57,7 @@ public:
                 debug_log_action = "closed by peer";
             }
 
-            spdlog::info("Connection {} {}, reason {}: {}",
+            Spdlog::info("Connection {} {}, reason {}: {}",
                          connection_info->m_info.m_szConnectionDescription,
                          debug_log_action,
                          connection_info->m_info.m_eEndReason,
@@ -83,7 +85,7 @@ public:
         if (!GetInterface()->SetConnectionPollGroup(connection.connection_handle,
                                                     poll_group_handle_)) {
             GetInterface()->CloseConnection(connection.connection_handle, 0, nullptr, false);
-            spdlog::warn("Failed to set poll group?");
+            Spdlog::warn("Failed to set poll group?");
             return false;
         }
         connections_[connection.connection_handle] = connection;
@@ -189,7 +191,7 @@ protected:
             }
         }
 
-        spdlog::critical("[FindConnectionHandleBySoldierId] Wrong soldier_id");
+        Spdlog::critical("[FindConnectionHandleBySoldierId] Wrong soldier_id");
         return 0;
     }
 

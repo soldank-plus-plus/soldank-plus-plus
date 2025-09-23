@@ -6,13 +6,14 @@ module;
 #include "communication/NetworkEventDispatcher.hpp"
 
 #include "core/CoreEventHandler.hpp"
-#include "spdlog/spdlog.h"
 
 #include <steam/isteamnetworkingutils.h>
 #include <steam/steamnetworkingsockets.h>
 
 #include <cstdlib>
 #include <memory>
+#include <chrono>
+#include <thread>
 
 export module Application;
 
@@ -30,6 +31,7 @@ import Networking.EventHandlers.PingCheckNetworkEventHandler;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 
 import Extern.SimpleIni;
+import Extern.Spdlog;
 
 namespace Soldank
 {
@@ -41,10 +43,10 @@ public:
         , lobby_client_(std::make_shared<LobbyClient>())
     {
         world_->GetStateManager()->GetMap().LoadMap("maps/ctf_Ash.pms");
-        spdlog::set_level(spdlog::level::debug);
+        Spdlog::set_level(Spdlog::level::debug);
 
         DaScriptScriptingEngine::Init();
-        spdlog::info("daScript module initialized");
+        Spdlog::info("daScript module initialized");
 
         scripting_engine_ = std::make_shared<DaScriptScriptingEngine>();
 
@@ -53,18 +55,18 @@ public:
         SimpleIni::CSimpleIniA ini_config;
         SimpleIni::SI_Error rc = ini_config.LoadFile("soldat.ini");
         if (rc < 0) {
-            spdlog::critical("Error: INI File could not be loaded: soldat.ini");
+            Spdlog::critical("Error: INI File could not be loaded: soldat.ini");
             exit(1);
         } else {
             server_state_->server_port = ini_config.GetLongValue("NETWORK", "Port");
             if (server_state_->server_port == 0) {
-                spdlog::critical("Error: Port can't be 0");
+                Spdlog::critical("Error: Port can't be 0");
                 exit(1);
             }
 
             const char* server_name_cstr = ini_config.GetValue("NETWORK", "Server_Name");
             if (server_name_cstr == nullptr) {
-                spdlog::critical("Error: Port can't be 0");
+                Spdlog::critical("Error: Port can't be 0");
                 exit(1);
             }
             server_state_->server_name = server_name_cstr;
@@ -72,7 +74,7 @@ public:
 
         SteamDatagramErrMsg err_msg;
         if (!GameNetworkingSockets_Init(nullptr, err_msg)) {
-            spdlog::error("GameNetworkingSockets_Init failed. {}", std::span(err_msg).data());
+            Spdlog::error("GameNetworkingSockets_Init failed. {}", std::span(err_msg).data());
         }
 
         log_time_zero_ = SteamNetworkingUtils()->GetLocalTimestamp();
@@ -113,7 +115,7 @@ public:
 
     void Run()
     {
-        spdlog::info("Server started!");
+        Spdlog::info("Server started!");
 
         world_->SetShouldStopGameLoopCallback([&]() { return false; });
         world_->SetPreGameLoopIterationCallback([&]() {});
@@ -162,7 +164,7 @@ public:
 
             // for (const auto& soldier : state->soldiers) {
             //     if (soldier.active) {
-            //         spdlog::info("{}, Player {} pos: {}, {}; velocity: {} {}; force: {} {}",
+            //         Spdlog::info("{}, Player {} pos: {}, {}; velocity: {} {}; force: {} {}",
             //                      server_state_->last_processed_input_id,
             //                      soldier.id,
             //                      soldier.particle.position.x,
@@ -218,7 +220,7 @@ private:
     {
         SteamNetworkingMicroseconds time =
           SteamNetworkingUtils()->GetLocalTimestamp() - log_time_zero_;
-        spdlog::info("{} {}", (double)time * 1e-6, message);
+        Spdlog::info("{} {}", (double)time * 1e-6, message);
         fflush(stdout);
         if (output_type == k_ESteamNetworkingSocketsDebugOutputType_Bug) {
             exit(1);

@@ -8,8 +8,6 @@ module;
 #include <steam/steamnetworkingsockets.h>
 #include <steam/isteamnetworkingutils.h>
 
-#include "spdlog/spdlog.h"
-
 #include <memory>
 #include <cassert>
 #include <cstdint>
@@ -22,6 +20,8 @@ import Networking.IGameServer;
 import Networking.Interface.NetworkingInterface;
 import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -100,20 +100,20 @@ private:
                     entry_poll_group_->CloseConnection(p_info);
                 }
                 if (player_poll_group_->IsConnectionAssigned(p_info->m_hConn)) {
-                    spdlog::info("CLOSING CONNECTION conn: {}", p_info->m_hConn);
+                    Spdlog::info("CLOSING CONNECTION conn: {}", p_info->m_hConn);
                     std::uint8_t soldier_id =
                       player_poll_group_->GetConnectionSoldierId(p_info->m_hConn);
-                    spdlog::info("CLOSING CONNECTION soldier_id: {}", soldier_id);
+                    Spdlog::info("CLOSING CONNECTION soldier_id: {}", soldier_id);
                     NetworkMessage network_message(NetworkEvent::PlayerLeave, soldier_id);
                     player_poll_group_->SendReliableNetworkMessageToAll(network_message,
                                                                         p_info->m_hConn);
                     player_poll_group_->CloseConnection(p_info);
 
-                    spdlog::info("CLOSING CONNECTION soldiers size before: {}",
+                    Spdlog::info("CLOSING CONNECTION soldiers size before: {}",
                                  world_->GetStateManager()->GetSoldiersCount());
                     world_->GetStateManager()->RemoveSoldier(soldier_id);
 
-                    spdlog::info("CLOSING CONNECTION soldiers size after: {}",
+                    Spdlog::info("CLOSING CONNECTION soldiers size after: {}",
                                  world_->GetStateManager()->GetSoldiersCount());
 
                     server_state_->last_processed_input_id.at(soldier_id) = 0;
