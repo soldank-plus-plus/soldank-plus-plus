@@ -49,12 +49,13 @@ else()
 endif()
 
 target_include_directories(server_lib PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
-target_include_directories(server_lib PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
+# target_include_directories(server_lib PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
 
 target_link_libraries(server_lib PRIVATE shared_lib)
 target_link_libraries(server_lib PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
 target_link_libraries(server_lib PRIVATE spdlog::spdlog)
 target_link_libraries(server_lib PRIVATE DaScript)
+target_link_libraries(server_lib PRIVATE SimpleIni)
 target_link_libraries(server_lib PRIVATE httplib::httplib)
 target_link_libraries(server_lib PRIVATE Threads::Threads)
 

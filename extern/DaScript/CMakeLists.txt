@@ -14,8 +14,6 @@ target_sources(DaScript
         DaScript.cpp
 )
 
-target_compile_definitions(DaScript PRIVATE ${SERVER_COMPILE_DEFINITIONS})
-
 if(MSVC)
     target_compile_options(DaScript PRIVATE /Wall)
 else()

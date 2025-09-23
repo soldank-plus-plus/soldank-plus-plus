@@ -8,15 +8,6 @@ module;
 #include "core/CoreEventHandler.hpp"
 #include "spdlog/spdlog.h"
 
-#ifdef _WIN32
-// Need to include winsock2 for windows because of this error:
-// error C2375: 'shutdown': redefinition; different linkage
-// Somehow if not included before SimpleIni, it doesn't compile lol
-#include <winsock2.h>
-#endif
-
-#include <SimpleIni.h>
-
 #include <steam/isteamnetworkingutils.h>
 #include <steam/steamnetworkingsockets.h>
 
@@ -38,6 +29,8 @@ import Networking.EventHandlers.KillCommandNetworkEventHandler;
 import Networking.EventHandlers.PingCheckNetworkEventHandler;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 
+import Extern.SimpleIni;
+
 namespace Soldank
 {
 export class Application
@@ -57,8 +50,8 @@ public:
 
         server_state_ = std::make_shared<ServerState>();
 
-        CSimpleIniA ini_config;
-        SI_Error rc = ini_config.LoadFile("soldat.ini");
+        SimpleIni::CSimpleIniA ini_config;
+        SimpleIni::SI_Error rc = ini_config.LoadFile("soldat.ini");
         if (rc < 0) {
             spdlog::critical("Error: INI File could not be loaded: soldat.ini");
             exit(1);
