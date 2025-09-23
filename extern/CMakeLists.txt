@@ -4,4 +4,5 @@ add_subdirectory(spdlog)
 
 if (BUILD_SERVER_ENABLED)
     add_subdirectory(DaScript)
+    add_subdirectory(httplib)
 endif()

@@ -55,7 +55,7 @@ target_link_libraries(server_lib PRIVATE GameNetworkingSockets::GameNetworkingSo
 target_link_libraries(server_lib PRIVATE Spdlog)
 target_link_libraries(server_lib PRIVATE DaScript)
 target_link_libraries(server_lib PRIVATE SimpleIni)
-target_link_libraries(server_lib PRIVATE httplib::httplib)
+target_link_libraries(server_lib PRIVATE Httplib)
 target_link_libraries(server_lib PRIVATE Threads::Threads)
 
 add_executable(server main.cpp)
@@ -80,7 +80,7 @@ target_link_libraries(server PRIVATE server_lib)
 target_link_libraries(server PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
 target_link_libraries(server PRIVATE Spdlog)
 target_link_libraries(server PRIVATE DaScript)
-target_link_libraries(server PRIVATE httplib::httplib)
+target_link_libraries(server PRIVATE Httplib)
 target_link_libraries(server PRIVATE Threads::Threads)
 
 target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/source/server)

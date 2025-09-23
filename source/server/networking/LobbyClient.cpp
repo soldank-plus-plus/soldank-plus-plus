@@ -2,17 +2,17 @@ module;
 
 #include "core/data/FileReader.hpp"
 
-#include "httplib.h"
-
 #include <cstdint>
 #include <string>
 #include <vector>
 
 #include <utility>
 #include <cctype>
+#include <algorithm>
 
 export module Networking.LobbyClient;
 
+import Extern.Httplib;
 import Extern.Spdlog;
 
 export namespace Soldank
@@ -50,7 +50,7 @@ public:
                 }
 #endif
                 http_clients_.push_back(
-                  { httplib::Client(std::string{ protocol }.append(scheme_host_port)),
+                  { Httplib::Client(std::string{ protocol }.append(scheme_host_port)),
                     api_endpoint });
                 http_clients_.back().sender.set_follow_location(true);
                 http_clients_.back().sender.set_keep_alive(false);
@@ -75,25 +75,25 @@ public:
         // TODO: populate with proper settings
         std::string server_info = "{";
 
-        server_info += "\"advanced\": false,";
-        server_info += "\"anti_cheat_on\": false,";
-        server_info += "\"bonus_frequency\": 0,";
-        server_info += "\"country\": PL,";
-        server_info += "\"current_map\": \"ctf_Ash\",";
-        server_info += "\"game_style\": \"CTF\",";
-        server_info += "\"info\": \"Test info\",";
-        server_info += "\"max_players\": 12,";
-        server_info += "\"name\": \"server_name\",";
-        server_info += "\"num_bots\": 1,";
-        server_info += "\"os\": \"" + operating_system + "\",";
-        server_info += "\"players\": [],";
-        server_info += "\"port\": " + std::to_string(server_port) + ",";
-        server_info += "\"private\": false,";
-        server_info += "\"realistic\": false,";
-        server_info += "\"respawn\": 180,";
-        server_info += "\"survival\": false,";
-        server_info += "\"version\": \"1\",";
-        server_info += "\"wm\": false,";
+        server_info += R"("advanced": false,)";
+        server_info += R"("anti_cheat_on": false,)";
+        server_info += R"("bonus_frequency": 0,)";
+        server_info += R"("country": PL,)";
+        server_info += R"("current_map": "ctf_Ash",)";
+        server_info += R"("game_style": "CTF",)";
+        server_info += R"("info": "Test info",)";
+        server_info += R"("max_players": 12,)";
+        server_info += R"("name": "server_name",)";
+        server_info += R"("num_bots": 1,)";
+        server_info += R"("os": ")" + operating_system + R"(",)";
+        server_info += R"("players": [],)";
+        server_info += R"("port": ")" + std::to_string(server_port) + ",)";
+        server_info += R"("private": false,)";
+        server_info += R"("realistic": false,)";
+        server_info += R"("respawn": 180,)";
+        server_info += R"("survival": false,)";
+        server_info += R"("version": "1",)";
+        server_info += R"("wm": false")";
 
         server_info += "}";
 
@@ -111,7 +111,7 @@ public:
             } else {
                 Spdlog::error("Could not register the server in the lobby. Error ({}): {}",
                               std::to_underlying(response.error()),
-                              httplib::to_string(response.error()));
+                              Httplib::to_string(response.error()));
             }
         }
     }
@@ -119,7 +119,7 @@ public:
 private:
     struct HTTPClient
     {
-        httplib::Client sender;
+        Httplib::Client sender;
         std::string api_endpoint;
     };
 
