@@ -18,7 +18,7 @@ constexpr auto off = spdlog::level::off;
 constexpr auto n_levels = spdlog::level::n_levels;
 } // namespace level
 
-constexpr auto set_level = spdlog::set_level;
+const auto set_level = spdlog::set_level;
 
 template<typename... Args>
 constexpr void critical(spdlog::format_string_t<Args...> fmt, Args&&... args)
