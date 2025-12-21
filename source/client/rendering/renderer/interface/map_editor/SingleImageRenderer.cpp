@@ -1,13 +1,58 @@
-#include "rendering/renderer/interface/map_editor/SingleImageRenderer.hpp"
+module;
 
-#include "rendering/data/Texture.hpp"
-#include "rendering/renderer/Renderer.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
 
+#include "core/math/Glm.hpp"
+
 #include "spdlog/spdlog.h"
+
+#include <glad/glad.h>
+
 #include <filesystem>
 #include <utility>
 #include <vector>
+
+export module SingleImageRenderer;
+
+import Texture;
+import Renderer;
+import Shader;
+
+export namespace Soldank
+{
+class SingleImageRenderer
+{
+public:
+    SingleImageRenderer();
+    ~SingleImageRenderer();
+
+    // it's not safe to be able to copy/move this because we would also need to take care of the
+    // created OpenGL buffers and textures
+    SingleImageRenderer(const SingleImageRenderer&) = delete;
+    SingleImageRenderer& operator=(SingleImageRenderer other) = delete;
+    SingleImageRenderer(SingleImageRenderer&&) = delete;
+    SingleImageRenderer& operator=(SingleImageRenderer&& other) = delete;
+
+    void Render(const glm::mat4& transform,
+                const glm::vec2& position,
+                const glm::vec4& color,
+                const glm::vec2& scale,
+                float rotation);
+
+    void SetTexture(const std::string& file_name);
+    glm::ivec2 GetTextureDimensions() const { return { texture_width_, texture_height_ }; }
+
+private:
+    Shader shader_;
+
+    unsigned int vbo_;
+    unsigned int ebo_;
+    unsigned int texture_;
+
+    int texture_width_;
+    int texture_height_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

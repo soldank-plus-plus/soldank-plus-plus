@@ -1,47 +1,52 @@
-#include "map_editor/tools/VertexColorTool.hpp"
+module;
 
-namespace Soldank
+#include "core/state/StateManager.hpp"
+
+export module VertexColorTool;
+
+import Tool;
+import ClientState;
+
+export namespace Soldank
 {
-void VertexColorTool::OnSelect(ClientState& client_state, const StateManager& game_state_manager) {}
-
-void VertexColorTool::OnUnselect(ClientState& client_state) {}
-
-void VertexColorTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
-                                                  const StateManager& game_state_manager)
+class VertexColorTool final : public Tool
 {
-}
+public:
+    VertexColorTool() = default;
+    ~VertexColorTool() final = default;
 
-void VertexColorTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
-                                                    const StateManager& game_state_manager)
-{
-}
+    void OnSelect(ClientState& /* client_state */,
+                  const StateManager& /* game_state_manager */) final
+    {
+    }
+    void OnUnselect(ClientState& /* client_state */) final {}
 
-void VertexColorTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
-
-void VertexColorTool::OnSceneRightMouseButtonRelease() {}
-
-void VertexColorTool::OnMouseScreenPositionChange(ClientState& client_state,
-                                                  glm::vec2 last_mouse_position,
-                                                  glm::vec2 new_mouse_position)
-{
-}
-
-void VertexColorTool::OnMouseMapPositionChange(ClientState& client_state,
-                                               glm::vec2 last_mouse_position,
-                                               glm::vec2 new_mouse_position,
-                                               const StateManager& game_state_manager)
-{
-}
-
-void VertexColorTool::OnModifierKey1Pressed(ClientState& client_state) {}
-
-void VertexColorTool::OnModifierKey1Released(ClientState& client_state) {}
-
-void VertexColorTool::OnModifierKey2Pressed(ClientState& client_state) {}
-
-void VertexColorTool::OnModifierKey2Released(ClientState& client_state) {}
-
-void VertexColorTool::OnModifierKey3Pressed(ClientState& client_state) {}
-
-void VertexColorTool::OnModifierKey3Released(ClientState& client_state) {}
+    void OnSceneLeftMouseButtonClick(ClientState& /* client_state */,
+                                     const StateManager& /* game_state_manager */) final
+    {
+    }
+    void OnSceneLeftMouseButtonRelease(ClientState& /* client_state */,
+                                       const StateManager& /* game_state_manager */) final
+    {
+    }
+    void OnSceneRightMouseButtonClick(ClientState& /* client_state */) final {}
+    void OnSceneRightMouseButtonRelease() final {}
+    void OnMouseScreenPositionChange(ClientState& /* client_state */,
+                                     glm::vec2 /* last_mouse_position */,
+                                     glm::vec2 /* new_mouse_position */) final
+    {
+    }
+    void OnMouseMapPositionChange(ClientState& /* client_state */,
+                                  glm::vec2 /* last_mouse_position */,
+                                  glm::vec2 /* new_mouse_position */,
+                                  const StateManager& /* game_state_manager */) final
+    {
+    }
+    void OnModifierKey1Pressed(ClientState& /* client_state */) final {}
+    void OnModifierKey1Released(ClientState& /* client_state */) final {}
+    void OnModifierKey2Pressed(ClientState& /* client_state */) final {}
+    void OnModifierKey2Released(ClientState& /* client_state */) final {}
+    void OnModifierKey3Pressed(ClientState& /* client_state */) final {}
+    void OnModifierKey3Released(ClientState& /* client_state */) final {}
+};
 } // namespace Soldank

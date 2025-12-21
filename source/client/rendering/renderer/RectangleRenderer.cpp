@@ -1,13 +1,45 @@
-#include "RectangleRenderer.hpp"
+module;
 
-#include "rendering/data/Texture.hpp"
-#include "rendering/renderer/Renderer.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
 
 #include "core/math/Calc.hpp"
+#include "core/math/Glm.hpp"
+
+#include <glad/glad.h>
 
 #include <filesystem>
 #include <cmath>
+#include <vector>
+
+export module RectangleRenderer;
+
+import Texture;
+import Renderer;
+import Shader;
+
+export namespace Soldank
+{
+class RectangleRenderer
+{
+public:
+    RectangleRenderer();
+    ~RectangleRenderer();
+
+    // it's not safe to be able to copy/move this because we would also need to take care of the
+    // created OpenGL buffers and textures
+    RectangleRenderer(const RectangleRenderer&) = delete;
+    RectangleRenderer& operator=(RectangleRenderer other) = delete;
+    RectangleRenderer(RectangleRenderer&&) = delete;
+    RectangleRenderer& operator=(RectangleRenderer&& other) = delete;
+
+    void Render(const glm::mat4& transform, const glm::vec2& position, const glm::vec4& color);
+
+private:
+    Shader shader_;
+
+    unsigned int vbo_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

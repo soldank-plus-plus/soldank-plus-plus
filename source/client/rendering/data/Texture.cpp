@@ -1,6 +1,4 @@
-#include "Texture.hpp"
-
-#include "rendering/data/Texture.hpp"
+module;
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -12,27 +10,70 @@
 #include <expected>
 #include <fstream>
 #include <sstream>
+#include <utility>
+#include <vector>
+#include <memory>
 
-namespace Soldank::Texture
-{
-TextureGIFData::TextureGIFData(int width, int height)
-    : width_(width)
-    , height_(height)
-{
-}
+export module Texture;
 
-TextureGIFData::~TextureGIFData()
+export namespace Soldank::Texture
 {
-    for (unsigned int texture_id : opengl_ids_) {
-        glDeleteTextures(1, &texture_id);
+struct TextureData
+{
+    unsigned int opengl_id;
+    int width;
+    int height;
+};
+
+class TextureGIFData
+{
+public:
+    TextureGIFData(int width, int height)
+        : width_(width)
+        , height_(height)
+    {
     }
-}
 
-void TextureGIFData::AddFrame(unsigned int opengl_id, int delay)
+    ~TextureGIFData()
+    {
+        for (unsigned int texture_id : opengl_ids_) {
+            glDeleteTextures(1, &texture_id);
+        }
+    }
+
+    // it's not safe to be able to copy/move this because we would also need to take care of the
+    // created OpenGL buffers and textures
+    TextureGIFData(const TextureGIFData&) = delete;
+    TextureGIFData& operator=(TextureGIFData other) = delete;
+    TextureGIFData(TextureGIFData&&) = delete;
+    TextureGIFData& operator=(TextureGIFData&& other) = delete;
+
+    void AddFrame(unsigned int opengl_id, int delay)
+    {
+        opengl_ids_.push_back(opengl_id);
+        delays_.push_back(delay);
+    }
+    std::pair<unsigned int, int> GetFrame(unsigned int frame_id) const
+    {
+        return { opengl_ids_.at(frame_id), delays_.at(frame_id) };
+    }
+
+    unsigned int Size() const { return opengl_ids_.size(); }
+
+    int GetWidth() const { return width_; };
+    int GetHeight() const { return height_; };
+
+private:
+    std::vector<unsigned int> opengl_ids_;
+    std::vector<int> delays_;
+    int width_;
+    int height_;
+};
+
+enum class LoadError
 {
-    opengl_ids_.push_back(opengl_id);
-    delays_.push_back(delay);
-}
+    TextureNotFound = 0
+};
 
 std::expected<TextureData, LoadError> Load(const char* texture_path)
 {

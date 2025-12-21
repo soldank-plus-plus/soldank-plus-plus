@@ -1,9 +1,7 @@
-#ifndef __CLIENT_STATE_HPP__
-#define __CLIENT_STATE_HPP__
+module;
 
 #include "core/entities/Soldier.hpp"
 #include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
-#include "rendering/components/Camera.hpp"
 
 #include "core/math/Glm.hpp"
 
@@ -15,7 +13,11 @@
 #include <chrono>
 #include <cstdint>
 
-namespace Soldank
+export module ClientState;
+
+import Camera;
+
+export namespace Soldank
 {
 struct ClientState
 {
@@ -102,5 +104,3 @@ struct ClientState
     Observable<unsigned int> event_respawn_player_at_spawn_point_requested;
 };
 } // namespace Soldank
-
-#endif

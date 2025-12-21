@@ -1,22 +1,36 @@
-#include "networking/event_handlers/PlayerLeaveNetworkEventHandler.hpp"
+module;
+
+#include "communication/NetworkEventDispatcher.hpp"
+
+#include "core/IWorld.hpp"
 
 #include "spdlog/spdlog.h"
 
 #include <chrono>
 
-namespace Soldank
-{
-PlayerLeaveNetworkEventHandler::PlayerLeaveNetworkEventHandler(const std::shared_ptr<IWorld>& world)
-    : world_(world)
-{
-}
+export module PlayerLeaveNetworkEventHandler;
 
-NetworkEventHandlerResult PlayerLeaveNetworkEventHandler::HandleNetworkMessageImpl(
-  unsigned int /*sender_connection_id*/,
-  std::uint8_t soldier_id)
+export namespace Soldank
 {
-    world_->GetStateManager()->RemoveSoldier(soldier_id);
+class PlayerLeaveNetworkEventHandler : public NetworkEventHandlerBase<std::uint8_t>
+{
+public:
+    PlayerLeaveNetworkEventHandler(const std::shared_ptr<IWorld>& world)
+        : world_(world)
+    {
+    }
 
-    return NetworkEventHandlerResult::Success;
-}
+private:
+    NetworkEvent GetTargetNetworkEvent() const override { return NetworkEvent::PlayerLeave; }
+
+    NetworkEventHandlerResult HandleNetworkMessageImpl(unsigned int /*sender_connection_id*/,
+                                                       std::uint8_t soldier_id) override
+    {
+        world_->GetStateManager()->RemoveSoldier(soldier_id);
+
+        return NetworkEventHandlerResult::Success;
+    }
+
+    std::shared_ptr<IWorld> world_;
+};
 } // namespace Soldank

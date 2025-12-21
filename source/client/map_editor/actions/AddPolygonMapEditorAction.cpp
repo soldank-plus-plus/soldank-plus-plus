@@ -1,36 +1,50 @@
-#include "map_editor/actions/AddPolygonMapEditorAction.hpp"
+module;
 
-namespace Soldank
-{
-AddPolygonMapEditorAction::AddPolygonMapEditorAction(const PMSPolygon& new_polygon)
-    : added_polygon_(new_polygon)
-{
-}
+#include "core/map/PMSStructs.hpp"
+#include "core/state/StateManager.hpp"
 
-bool AddPolygonMapEditorAction::CanExecute(const ClientState& /*client_state*/,
-                                           const StateManager& game_state_manager)
-{
-    return game_state_manager.GetConstMap().GetPolygonsCount() + 1 <= MAX_POLYGONS_COUNT;
-}
+export module AddPolygonMapEditorAction;
 
-void AddPolygonMapEditorAction::Execute(ClientState& /*client_state*/,
-                                        StateManager& game_state_manager)
-{
-    added_polygon_ = game_state_manager.GetMap().AddNewPolygon(added_polygon_);
-}
+import MapEditorAction;
+import ClientState;
 
-void AddPolygonMapEditorAction::Undo(ClientState& client_state, StateManager& game_state_manager)
+export namespace Soldank
 {
-    game_state_manager.GetMap().RemovePolygonById(added_polygon_.id);
-    for (unsigned int i = 0; i < client_state.map_editor_state.selected_polygon_vertices.size();
-         ++i) {
-        if (client_state.map_editor_state.selected_polygon_vertices.at(i).first ==
-            added_polygon_.id) {
-            std::swap(client_state.map_editor_state.selected_polygon_vertices[i],
-                      client_state.map_editor_state.selected_polygon_vertices.back());
-            client_state.map_editor_state.selected_polygon_vertices.pop_back();
-            break;
+class AddPolygonMapEditorAction final : public MapEditorAction
+{
+public:
+    AddPolygonMapEditorAction(const PMSPolygon& new_polygon)
+        : added_polygon_(new_polygon)
+    {
+    }
+
+    bool CanExecute(const ClientState& /*client_state*/,
+                    const StateManager& game_state_manager) final
+    {
+        return game_state_manager.GetConstMap().GetPolygonsCount() + 1 <= MAX_POLYGONS_COUNT;
+    }
+
+    void Execute(ClientState& /*client_state*/, StateManager& game_state_manager) final
+    {
+        added_polygon_ = game_state_manager.GetMap().AddNewPolygon(added_polygon_);
+    }
+
+    void Undo(ClientState& client_state, StateManager& game_state_manager) final
+    {
+        game_state_manager.GetMap().RemovePolygonById(added_polygon_.id);
+        for (unsigned int i = 0; i < client_state.map_editor_state.selected_polygon_vertices.size();
+             ++i) {
+            if (client_state.map_editor_state.selected_polygon_vertices.at(i).first ==
+                added_polygon_.id) {
+                std::swap(client_state.map_editor_state.selected_polygon_vertices[i],
+                          client_state.map_editor_state.selected_polygon_vertices.back());
+                client_state.map_editor_state.selected_polygon_vertices.pop_back();
+                break;
+            }
         }
     }
-}
+
+private:
+    PMSPolygon added_polygon_;
+};
 } // namespace Soldank

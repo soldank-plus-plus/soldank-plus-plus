@@ -1,24 +1,38 @@
-#include "networking/event_handlers/SpawnSoldierNetworkEventHandler.hpp"
+module;
+
+#include "core/IWorld.hpp"
+
+#include "communication/NetworkEventDispatcher.hpp"
 
 #include "spdlog/spdlog.h"
 
-namespace Soldank
-{
-SpawnSoldierNetworkEventHandler::SpawnSoldierNetworkEventHandler(
-  const std::shared_ptr<IWorld>& world)
-    : world_(world)
-{
-}
+export module SpawnSoldierNetworkEventHandler;
 
-NetworkEventHandlerResult SpawnSoldierNetworkEventHandler::HandleNetworkMessageImpl(
-  unsigned int /*sender_connection_id*/,
-  std::uint8_t soldier_id,
-  float spawn_position_x,
-  float spawn_position_y)
+export namespace Soldank
 {
-    glm::vec2 spawn_position = { spawn_position_x, spawn_position_y };
-    spdlog::info("OnSpawnSoldier: {}, ({}, {})", soldier_id, spawn_position.x, spawn_position.y);
-    world_->SpawnSoldier(soldier_id, spawn_position);
-    return NetworkEventHandlerResult::Success;
-}
+class SpawnSoldierNetworkEventHandler : public NetworkEventHandlerBase<std::uint8_t, float, float>
+{
+public:
+    SpawnSoldierNetworkEventHandler(const std::shared_ptr<IWorld>& world)
+        : world_(world)
+    {
+    }
+
+private:
+    NetworkEvent GetTargetNetworkEvent() const override { return NetworkEvent::SpawnSoldier; }
+
+    NetworkEventHandlerResult HandleNetworkMessageImpl(unsigned int /*sender_connection_id*/,
+                                                       std::uint8_t soldier_id,
+                                                       float spawn_position_x,
+                                                       float spawn_position_y) override
+    {
+        glm::vec2 spawn_position = { spawn_position_x, spawn_position_y };
+        spdlog::info(
+          "OnSpawnSoldier: {}, ({}, {})", soldier_id, spawn_position.x, spawn_position.y);
+        world_->SpawnSoldier(soldier_id, spawn_position);
+        return NetworkEventHandlerResult::Success;
+    }
+
+    std::shared_ptr<IWorld> world_;
+};
 } // namespace Soldank

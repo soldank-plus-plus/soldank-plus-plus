@@ -2,10 +2,11 @@
 #include <windows.h>
 #endif
 
-#include "application/Application.hpp"
-
 #include <exception>
 #include <vector>
+
+// #include "application/Application.hpp"
+import Application;
 
 // TODO: odkomentować
 // #ifdef _WIN32

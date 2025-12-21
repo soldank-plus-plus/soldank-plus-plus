@@ -1,36 +1,51 @@
-#include "map_editor/actions/TransformSceneriesMapEditorAction.hpp"
+module;
+
 #include "core/map/PMSStructs.hpp"
+#include "core/state/StateManager.hpp"
 
-namespace Soldank
-{
-TransformSceneriesMapEditorAction::TransformSceneriesMapEditorAction(
-  const std::vector<std::pair<unsigned int, PMSScenery>>& old_sceneries,
-  const std::function<PMSScenery(const PMSScenery&)>& transform_function)
-    : old_sceneries_(old_sceneries)
-    , transform_function_(transform_function)
-{
-}
+#include <functional>
 
-bool TransformSceneriesMapEditorAction::CanExecute(const ClientState& /*client_state*/,
-                                                   const StateManager& /*game_state_manager*/)
-{
-    return true;
-}
+export module TransformSceneriesMapEditorAction;
 
-void TransformSceneriesMapEditorAction::Execute(ClientState& /*client_state*/,
-                                                StateManager& game_state_manager)
+import MapEditorAction;
+import ClientState;
+
+export namespace Soldank
 {
-    std::vector<std::pair<unsigned int, PMSScenery>> new_sceneries;
-    for (const auto& old_scenery : old_sceneries_) {
-        PMSScenery new_scenery = transform_function_(old_scenery.second);
-        new_sceneries.emplace_back(old_scenery.first, new_scenery);
+class TransformSceneriesMapEditorAction final : public MapEditorAction
+{
+public:
+    TransformSceneriesMapEditorAction(
+      const std::vector<std::pair<unsigned int, PMSScenery>>& old_sceneries,
+      const std::function<PMSScenery(const PMSScenery&)>& transform_function)
+        : old_sceneries_(old_sceneries)
+        , transform_function_(transform_function)
+    {
     }
-    game_state_manager.GetMap().SetSceneriesById(new_sceneries);
-}
 
-void TransformSceneriesMapEditorAction::Undo(ClientState& /*client_state*/,
-                                             StateManager& game_state_manager)
-{
-    game_state_manager.GetMap().SetSceneriesById(old_sceneries_);
-}
+    bool CanExecute(const ClientState& /*client_state*/,
+                    const StateManager& /*game_state_manager*/) final
+    {
+        return true;
+    }
+
+    void Execute(ClientState& /*client_state*/, StateManager& game_state_manager) final
+    {
+        std::vector<std::pair<unsigned int, PMSScenery>> new_sceneries;
+        for (const auto& old_scenery : old_sceneries_) {
+            PMSScenery new_scenery = transform_function_(old_scenery.second);
+            new_sceneries.emplace_back(old_scenery.first, new_scenery);
+        }
+        game_state_manager.GetMap().SetSceneriesById(new_sceneries);
+    }
+
+    void Undo(ClientState& /*client_state*/, StateManager& game_state_manager) final
+    {
+        game_state_manager.GetMap().SetSceneriesById(old_sceneries_);
+    }
+
+private:
+    std::vector<std::pair<unsigned int, PMSScenery>> old_sceneries_;
+    std::function<PMSScenery(const PMSScenery&)> transform_function_;
+};
 } // namespace Soldank

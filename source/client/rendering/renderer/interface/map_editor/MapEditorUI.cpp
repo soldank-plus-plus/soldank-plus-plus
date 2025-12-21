@@ -1,9 +1,10 @@
-#include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
+module;
 
-#include "rendering/renderer/interface/map_editor/MapEditorToolDetailsWindow.hpp"
+#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
 
 #include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
+#include "core/state/StateManager.hpp"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -12,6 +13,16 @@
 #include <algorithm>
 #include <filesystem>
 #include <string>
+
+export module MapEditorUI;
+
+import ClientState;
+import MapEditorToolDetailsWindow;
+
+export namespace Soldank::MapEditorUI
+{
+void Render(const StateManager& game_state_manager, ClientState& client_state);
+}
 
 namespace Soldank::MapEditorUI
 {

@@ -1,10 +1,12 @@
-#ifndef __MAP_EDITOR_ACTION_HPP__
-#define __MAP_EDITOR_ACTION_HPP__
+module;
 
-#include "rendering/ClientState.hpp"
 #include "core/state/StateManager.hpp"
 
-namespace Soldank
+export module MapEditorAction;
+
+import ClientState;
+
+export namespace Soldank
 {
 class MapEditorAction
 {
@@ -16,5 +18,3 @@ public:
     virtual void Undo(ClientState& client_state, StateManager& game_state_manager) = 0;
 };
 } // namespace Soldank
-
-#endif

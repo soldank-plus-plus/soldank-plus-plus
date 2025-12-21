@@ -1,47 +1,64 @@
-#include "map_editor/tools/TextureTool.hpp"
+module;
 
-namespace Soldank
+#include "core/state/StateManager.hpp"
+
+export module TextureTool;
+
+import Tool;
+import ClientState;
+
+export namespace Soldank
 {
-void TextureTool::OnSelect(ClientState& client_state, const StateManager& game_state_manager) {}
-
-void TextureTool::OnUnselect(ClientState& client_state) {}
-
-void TextureTool::OnSceneLeftMouseButtonClick(ClientState& client_state,
-                                              const StateManager& game_state_manager)
+class TextureTool final : public Tool
 {
-}
+public:
+    TextureTool() = default;
+    ~TextureTool() final = default;
 
-void TextureTool::OnSceneLeftMouseButtonRelease(ClientState& client_state,
-                                                const StateManager& game_state_manager)
-{
-}
+    void OnSelect(ClientState& /* client_state */,
+                  const StateManager& /* game_state_manager */) final
+    {
+    }
 
-void TextureTool::OnSceneRightMouseButtonClick(ClientState& client_state) {}
+    void OnUnselect(ClientState& /* client_state */) final {}
 
-void TextureTool::OnSceneRightMouseButtonRelease() {}
+    void OnSceneLeftMouseButtonClick(ClientState& /* client_state */,
+                                     const StateManager& /* game_state_manager */) final
+    {
+    }
 
-void TextureTool::OnMouseScreenPositionChange(ClientState& client_state,
-                                              glm::vec2 last_mouse_position,
-                                              glm::vec2 new_mouse_position)
-{
-}
+    void OnSceneLeftMouseButtonRelease(ClientState& /* client_state */,
+                                       const StateManager& /* game_state_manager */) final
+    {
+    }
 
-void TextureTool::OnMouseMapPositionChange(ClientState& client_state,
-                                           glm::vec2 last_mouse_position,
-                                           glm::vec2 new_mouse_position,
-                                           const StateManager& game_state_manager)
-{
-}
+    void OnSceneRightMouseButtonClick(ClientState& /* client_state */) final {}
 
-void TextureTool::OnModifierKey1Pressed(ClientState& client_state) {}
+    void OnSceneRightMouseButtonRelease() final {}
 
-void TextureTool::OnModifierKey1Released(ClientState& client_state) {}
+    void OnMouseScreenPositionChange(ClientState& /* client_state */,
+                                     glm::vec2 /* last_mouse_position */,
+                                     glm::vec2 /* new_mouse_position */) final
+    {
+    }
 
-void TextureTool::OnModifierKey2Pressed(ClientState& client_state) {}
+    void OnMouseMapPositionChange(ClientState& /* client_state */,
+                                  glm::vec2 /* last_mouse_position */,
+                                  glm::vec2 /* new_mouse_position */,
+                                  const StateManager& /* game_state_manager */) final
+    {
+    }
 
-void TextureTool::OnModifierKey2Released(ClientState& client_state) {}
+    void OnModifierKey1Pressed(ClientState& /* client_state */) final {}
 
-void TextureTool::OnModifierKey3Pressed(ClientState& client_state) {}
+    void OnModifierKey1Released(ClientState& /* client_state */) final {}
 
-void TextureTool::OnModifierKey3Released(ClientState& client_state) {}
+    void OnModifierKey2Pressed(ClientState& /* client_state */) final {}
+
+    void OnModifierKey2Released(ClientState& /* client_state */) final {}
+
+    void OnModifierKey3Pressed(ClientState& /* client_state */) final {}
+
+    void OnModifierKey3Released(ClientState& /* client_state */) final {}
+};
 } // namespace Soldank

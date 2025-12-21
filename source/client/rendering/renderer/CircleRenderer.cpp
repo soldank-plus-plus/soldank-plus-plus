@@ -1,7 +1,45 @@
-#include "rendering/renderer/CircleRenderer.hpp"
+module;
 
-#include "rendering/renderer/Renderer.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
+
+#include "core/math/Glm.hpp"
+
+#include <glad/glad.h>
+
+#include <optional>
+
+export module CircleRenderer;
+
+import Renderer;
+import Shader;
+
+export namespace Soldank
+{
+class CircleRenderer
+{
+public:
+    CircleRenderer();
+    ~CircleRenderer();
+
+    // it's not safe to be able to copy/move this because we would also need to take care of the
+    // created OpenGL buffers and textures
+    CircleRenderer(const CircleRenderer&) = delete;
+    CircleRenderer& operator=(CircleRenderer other) = delete;
+    CircleRenderer(CircleRenderer&&) = delete;
+    CircleRenderer& operator=(CircleRenderer&& other) = delete;
+
+    void Render(glm::mat4 transform,
+                glm::vec2 position,
+                glm::vec4 color,
+                float outer_radius,
+                float inner_radius = 0.0F);
+
+private:
+    Shader shader_;
+
+    unsigned int vbo_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

@@ -1,14 +1,55 @@
-#include "CursorRenderer.hpp"
+module;
 
-#include "rendering/data/Texture.hpp"
-#include "rendering/renderer/Renderer.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
 
 #include "core/math/Glm.hpp"
 
+#include <glad/glad.h>
+
 #include "spdlog/spdlog.h"
 
 #include <filesystem>
+
+export module CursorRenderer;
+
+import Texture;
+import Renderer;
+import Shader;
+import ClientState;
+
+export namespace Soldank
+{
+class CursorRenderer
+{
+public:
+    CursorRenderer(ClientState& client_state);
+    ~CursorRenderer();
+
+    // it's not safe to be able to copy/move this because we would also need to take care of the
+    // created OpenGL buffers and textures
+    CursorRenderer(const CursorRenderer&) = delete;
+    CursorRenderer& operator=(CursorRenderer other) = delete;
+    CursorRenderer(CursorRenderer&&) = delete;
+    CursorRenderer& operator=(CursorRenderer&& other) = delete;
+
+    void Render(const glm::vec2& mouse_position, glm::vec2 window_dimensions);
+
+private:
+    constexpr static const float SIZE_SCALE = 0.23;
+
+    void GenerateGLBufferVertices(glm::vec2 window_dimensions,
+                                  std::vector<float>& destination_vertices) const;
+    void OnWindowResized(glm::vec2 new_window_dimensions);
+
+    Shader shader_;
+
+    unsigned int texture_;
+    int texture_width_;
+    int texture_height_;
+    unsigned int vbo_;
+    unsigned int ebo_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

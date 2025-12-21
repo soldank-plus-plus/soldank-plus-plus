@@ -1,9 +1,24 @@
-#include "rendering/renderer/interface/debug/DebugUI.hpp"
+module;
 
 #include "core/state/Control.hpp"
+#include "core/state/StateManager.hpp"
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+
+export module DebugUI;
+
+import ClientState;
+
+export namespace Soldank::DebugUI
+{
+void Render(const StateManager& game_state_manager,
+            ClientState& client_state,
+            double frame_percent,
+            int fps);
+bool GetWantCaptureMouse();
+} // namespace Soldank::DebugUI
 
 namespace Soldank::DebugUI
 {

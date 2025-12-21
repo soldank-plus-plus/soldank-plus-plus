@@ -1,12 +1,16 @@
-#include "application/input/PlayerInput.hpp"
+module;
 
 #include "core/animations/AnimationData.hpp"
 #include "core/entities/Soldier.hpp"
 #include "core/state/Control.hpp"
 
-#include "rendering/ClientState.hpp"
+#include <memory>
 
-namespace Soldank::PlayerInput
+export module Application.Input.PlayerInput;
+
+import ClientState;
+
+export namespace Soldank::PlayerInput
 {
 void UpdatePlayerSoldierControlCollisions(const Soldier& soldier,
                                           Control& soldier_control,

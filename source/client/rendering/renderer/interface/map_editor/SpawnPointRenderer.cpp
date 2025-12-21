@@ -1,13 +1,53 @@
-#include "rendering/renderer/interface/map_editor/SpawnPointRenderer.hpp"
+module;
 
-#include "rendering/data/Texture.hpp"
-#include "rendering/renderer/Renderer.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
 
+#include "core/map/PMSStructs.hpp"
+#include "core/map/PMSEnums.hpp"
+#include "core/math/Glm.hpp"
+
 #include "spdlog/spdlog.h"
+
+#include <glad/glad.h>
+
 #include <filesystem>
 #include <utility>
 #include <vector>
+#include <array>
+
+export module SpawnPointRenderer;
+
+import Texture;
+import Renderer;
+import Shader;
+
+export namespace Soldank
+{
+class SpawnPointRenderer
+{
+public:
+    SpawnPointRenderer();
+    ~SpawnPointRenderer();
+
+    // it's not safe to be able to copy/move this because we would also need to take care of the
+    // created OpenGL buffers and textures
+    SpawnPointRenderer(const SpawnPointRenderer&) = delete;
+    SpawnPointRenderer& operator=(SpawnPointRenderer other) = delete;
+    SpawnPointRenderer(SpawnPointRenderer&&) = delete;
+    SpawnPointRenderer& operator=(SpawnPointRenderer&& other) = delete;
+
+    void Render(glm::mat4 transform, PMSSpawnPoint spawn_point, float scale = 1.0F);
+
+private:
+    void LoadTexture(PMSSpawnPointType spawn_point_type, const std::string& file_name);
+
+    Shader shader_;
+
+    unsigned int vbo_;
+    unsigned int ebo_;
+    std::array<unsigned int, 17> textures_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

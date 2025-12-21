@@ -1,6 +1,6 @@
-#include "application/cli/CommandLineParameters.hpp"
+module;
 
-#include "application/window/Window.hpp"
+#include "application/config/Config.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -8,8 +8,32 @@
 
 #include <iostream>
 
-namespace Soldank::CommandLineParameters
+export module Application.CLI.CommandLineParameters;
+
+import Application.Window;
+
+export namespace Soldank::CommandLineParameters
 {
+enum class ApplicationMode
+{
+    Default = 0,
+    Local,
+    Online,
+    MapEditor,
+};
+
+struct ParsedValues
+{
+    bool is_parsing_successful = false;
+    ApplicationMode application_mode = ApplicationMode::Default;
+    std::string join_server_ip;
+    std::uint16_t join_server_port;
+    std::optional<std::string> map;
+    WindowSizeMode window_size_mode;
+    int fps_limit = Config::FPS_LIMIT;
+    bool is_debug_ui_enabled = false;
+};
+
 ParsedValues Parse(const std::vector<const char*>& cli_parameters)
 {
     ParsedValues parsed_values;

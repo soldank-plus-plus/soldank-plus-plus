@@ -1,38 +1,16 @@
-#include "Application.hpp"
+module;
 
-#include "application/cli/CommandLineParameters.hpp"
-#include "application/config/Config.hpp"
-#include "application/input/Keyboard.hpp"
-#include "application/input/Mouse.hpp"
-#include "application/input/PlayerInput.hpp"
-#include "cli/CommandLineParameters.hpp"
-#include "application/window/Window.hpp"
+#include "networking/INetworkingClient.hpp"
 
-#include "communication/NetworkPackets.hpp"
 #include "core/state/Control.hpp"
-#include "map_editor/MapEditor.hpp"
-#include "networking/NetworkingClient.hpp"
-#include "networking/event_handlers/AssignPlayerIdNetworkEventHandler.hpp"
-#include "networking/event_handlers/PingCheckNetworkEventHandler.hpp"
-#include "networking/event_handlers/PlayerLeaveNetworkEventHandler.hpp"
-#include "networking/event_handlers/ProjectileSpawnNetworkEventHandler.hpp"
-#include "networking/event_handlers/SoldierInfoNetworkEventHandler.hpp"
-#include "networking/event_handlers/SoldierStateNetworkEventHandler.hpp"
-#include "networking/event_handlers/SpawnSoldierNetworkEventHandler.hpp"
-#include "networking/event_handlers/KillSoldierNetworkEventHandler.hpp"
-#include "networking/event_handlers/HitSoldierNetworkEventHandler.hpp"
-
 #include "core/World.hpp"
 #include "core/CoreEventHandler.hpp"
 
-#include "rendering/Scene.hpp"
-#include "rendering/ClientState.hpp"
-
+#include "communication/NetworkPackets.hpp"
 #include "communication/NetworkEventDispatcher.hpp"
 
 #include "spdlog/spdlog.h"
 
-#include <spdlog/common.h>
 #include <steam/steamnetworkingsockets.h>
 #include <steam/isteamnetworkingutils.h>
 
@@ -45,6 +23,63 @@
 #include <chrono>
 #include <thread>
 #include <span>
+#include <vector>
+
+export module Application;
+
+import Application.CLI.CommandLineParameters;
+import Application.Window;
+import Application.Input.Keyboard;
+import Application.Input.Mouse;
+import Application.Input.PlayerInput;
+import Scene;
+import MapEditor;
+import ClientState;
+
+import NetworkingClient;
+import AssignPlayerIdNetworkEventHandler;
+import PingCheckNetworkEventHandler;
+import PlayerLeaveNetworkEventHandler;
+import ProjectileSpawnNetworkEventHandler;
+import SoldierInfoNetworkEventHandler;
+import SoldierStateNetworkEventHandler;
+import SpawnSoldierNetworkEventHandler;
+import KillSoldierNetworkEventHandler;
+import HitSoldierNetworkEventHandler;
+
+export namespace Soldank
+{
+class Application
+{
+public:
+    Application(const std::vector<const char*>& cli_parameters);
+    ~Application();
+
+    Application(const Application&) = delete;
+    Application& operator=(Application other) = delete;
+    Application(Application&&) = delete;
+    Application& operator=(Application&& other) = delete;
+
+    void Run();
+
+private:
+    glm::vec2 GetCurrentMouseScreenPosition();
+    glm::vec2 GetCurrentMouseMapPosition();
+    void UpdateWindowSize();
+
+    std::unique_ptr<Window> window_;
+    std::shared_ptr<IWorld> world_;
+    std::unique_ptr<INetworkingClient> networking_client_;
+    std::shared_ptr<ClientState> client_state_;
+    std::shared_ptr<NetworkEventDispatcher> client_network_event_dispatcher_;
+    std::unique_ptr<MapEditor> map_editor_;
+
+    CommandLineParameters::ApplicationMode application_mode_;
+    WindowSizeMode window_size_mode_;
+
+    int fps_limit_ = 0;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

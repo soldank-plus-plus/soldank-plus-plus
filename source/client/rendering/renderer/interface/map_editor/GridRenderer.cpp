@@ -1,7 +1,41 @@
-#include "rendering/renderer/interface/map_editor/GridRenderer.hpp"
+module;
 
-#include "rendering/renderer/Renderer.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
+
+#include "core/math/Glm.hpp"
+
+#include <glad/glad.h>
+
+#include <optional>
+
+export module GridRenderer;
+
+import Renderer;
+import Shader;
+
+export namespace Soldank
+{
+class GridRenderer
+{
+public:
+    GridRenderer();
+    ~GridRenderer();
+
+    // it's not safe to be able to copy/move this because we would also need to take care of the
+    // created OpenGL buffers and textures
+    GridRenderer(const GridRenderer&) = delete;
+    GridRenderer& operator=(GridRenderer other) = delete;
+    GridRenderer(GridRenderer&&) = delete;
+    GridRenderer& operator=(GridRenderer&& other) = delete;
+
+    void Render(glm::vec2 window_dimensions, glm::vec2 view_position, float view_zoom);
+
+private:
+    Shader shader_;
+
+    unsigned int vbo_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

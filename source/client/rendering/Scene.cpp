@@ -1,22 +1,80 @@
-#include "Scene.hpp"
+module;
 
 #include "core/entities/Item.hpp"
 #include "core/types/ItemType.hpp"
-#include "rendering/renderer/ItemRenderer.hpp"
-#include "rendering/renderer/PolygonsRenderer.hpp"
-#include "rendering/renderer/interface/debug/DebugUI.hpp"
-#include "rendering/renderer/interface/ImGuiThemes.hpp"
-
-#include "application/input/Mouse.hpp"
-#include "application/config/Config.hpp"
-
+#include "core/state/StateManager.hpp"
+#include "core/entities/Soldier.hpp"
 #include "core/entities/Bullet.hpp"
 #include "core/math/Calc.hpp"
+
+#include "application/config/Config.hpp"
+
+#include <glad/glad.h>
 
 #include <string>
 #include <algorithm>
 #include <vector>
 #include <format>
+#include <memory>
+
+export module Scene;
+
+import Camera;
+import ItemRenderer;
+import PolygonsRenderer;
+import DebugUI;
+import ImGuiThemes;
+import ClientState;
+import SpritesManager;
+import BackgroundRenderer;
+import PolygonOutlinesRenderer;
+import SceneriesRenderer;
+import SoldierRenderer;
+import CursorRenderer;
+import TextRenderer;
+import RectangleRenderer;
+import BulletRenderer;
+import LineRenderer;
+import CircleRenderer;
+import MapEditorScene;
+
+export namespace Soldank
+{
+class Scene
+{
+public:
+    Scene(const std::shared_ptr<StateManager>& game_state, ClientState& client_state);
+
+    void Render(const StateManager& game_state_manager,
+                ClientState& client_state,
+                double frame_percent,
+                int fps);
+
+    void RenderSoldiers(const StateManager& game_state_manager,
+                        const ClientState& client_state,
+                        double frame_percent);
+
+    glm::vec2 GetTextureDimensions() const { return polygons_renderer_->GetTextureDimensions(); }
+
+    static glm::vec4 GetPixelColor(const glm::vec2& position);
+
+private:
+    Sprites::SpriteManager sprite_manager_;
+    BackgroundRenderer background_renderer_;
+    std::unique_ptr<PolygonsRenderer> polygons_renderer_;
+    PolygonOutlinesRenderer polygon_outlines_renderer_;
+    SceneriesRenderer sceneries_renderer_;
+    SoldierRenderer soldier_renderer_;
+    CursorRenderer cursor_renderer_;
+    TextRenderer text_renderer_;
+    RectangleRenderer rectangle_renderer_;
+    BulletRenderer bullet_renderer_;
+    LineRenderer line_renderer_;
+    CircleRenderer circle_renderer_;
+    ItemRenderer item_renderer_;
+    MapEditorScene map_editor_scene_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

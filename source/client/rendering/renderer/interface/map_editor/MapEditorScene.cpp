@@ -1,11 +1,54 @@
-#include "rendering/renderer/interface/map_editor/MapEditorScene.hpp"
+module;
 
+#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
+
+#include "core/state/StateManager.hpp"
 #include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
 #include "core/map/PMSStructs.hpp"
-#include "rendering/renderer/SceneryOutlinesRenderer.hpp"
-#include "rendering/renderer/interface/map_editor/MapEditorUI.hpp"
-#include "rendering/renderer/interface/map_editor/PolygonVertexOutlinesRenderer.hpp"
+
+export module MapEditorScene;
+
+import ClientState;
+import SceneryOutlinesRenderer;
+import MapEditorUI;
+import PolygonVertexOutlinesRenderer;
+import LineRenderer;
+import RectangleRenderer;
+import SceneryOutlinesRenderer;
+import GridRenderer;
+import SingleImageRenderer;
+import SpawnPointRenderer;
+import Camera;
+import PolygonsRenderer;
+
+export namespace Soldank
+{
+class MapEditorScene
+{
+public:
+    MapEditorScene(ClientState& client_state, StateManager& game_state_manager);
+
+    void Render(const StateManager& game_state_manager,
+                ClientState& client_state,
+                const PolygonsRenderer& polygons_renderer);
+
+private:
+    void RenderRectangle(const glm::mat4& transform,
+                         const glm::vec2& left_top_position,
+                         const glm::vec2& right_bottom_position,
+                         const glm::vec4& color,
+                         float thickness);
+
+    LineRenderer line_renderer_;
+    PolygonVertexOutlinesRenderer polygon_vertex_outlines_renderer_;
+    SceneryOutlinesRenderer scenery_outlines_renderer_;
+    SpawnPointRenderer spawn_point_renderer_;
+    SingleImageRenderer single_image_renderer_;
+    GridRenderer grid_renderer_;
+    RectangleRenderer rectangle_renderer_;
+};
+} // namespace Soldank
 
 namespace Soldank
 {

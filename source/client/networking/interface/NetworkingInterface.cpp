@@ -1,13 +1,21 @@
-#include "networking/interface/NetworkingInterface.hpp"
+module;
 
-#include "networking/Connection.hpp"
+#include "networking/IConnection.hpp"
 
 #include "spdlog/spdlog.h"
 
+#include <steam/steamnetworkingsockets.h>
 #include <steam/isteamnetworkingutils.h>
+
 #include <vector>
 #include <functional>
 #include <array>
+#include <memory>
+#include <cstdint>
+
+export module NetworkingInterface;
+
+import Connection;
 
 namespace Soldank::NetworkingInterface
 {
@@ -24,12 +32,13 @@ void SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCall
 }
 } // namespace
 
-void Init()
+export void Init()
 {
     interface = SteamNetworkingSockets();
 }
 
-std::shared_ptr<IConnection> CreateConnection(const char* server_ip, std::uint16_t server_port)
+export std::shared_ptr<IConnection> CreateConnection(const char* server_ip,
+                                                     std::uint16_t server_port)
 {
     SteamNetworkingIPAddr server_addr{};
     server_addr.Clear();
@@ -48,18 +57,18 @@ std::shared_ptr<IConnection> CreateConnection(const char* server_ip, std::uint16
     return std::make_shared<Connection>(interface, connection_handle);
 }
 
-void PollConnectionStateChanges()
+export void PollConnectionStateChanges()
 {
     interface->RunCallbacks();
 }
 
-void RegisterObserver(
+export void RegisterObserver(
   const std::function<void(SteamNetConnectionStatusChangedCallback_t*)>& observer)
 {
     observers.push_back(observer);
 }
 
-void Free()
+export void Free()
 {
     observers.clear();
 }

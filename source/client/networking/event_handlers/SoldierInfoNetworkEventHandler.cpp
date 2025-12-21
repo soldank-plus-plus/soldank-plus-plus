@@ -1,35 +1,51 @@
-#include "networking/event_handlers/SoldierInfoNetworkEventHandler.hpp"
+module;
 
 #include "communication/NetworkPackets.hpp"
+#include "communication/NetworkEventDispatcher.hpp"
+
+#include "core/IWorld.hpp"
+
 #include "spdlog/spdlog.h"
 
-namespace Soldank
-{
-SoldierInfoNetworkEventHandler::SoldierInfoNetworkEventHandler(
-  const std::shared_ptr<IWorld>& world,
-  const std::shared_ptr<ClientState>& client_state)
-    : world_(world)
-    , client_state_(client_state)
-{
-}
+export module SoldierInfoNetworkEventHandler;
 
-NetworkEventHandlerResult SoldierInfoNetworkEventHandler::HandleNetworkMessageImpl(
-  unsigned int /*sender_connection_id*/,
-  std::uint8_t soldier_id,
-  std::string player_nick)
+import ClientState;
+
+export namespace Soldank
 {
-    bool is_soldier_id_me = false;
-    if (client_state_->client_soldier_id.has_value()) {
-        is_soldier_id_me = *client_state_->client_soldier_id == soldier_id;
+class SoldierInfoNetworkEventHandler : public NetworkEventHandlerBase<std::uint8_t, std::string>
+{
+public:
+    SoldierInfoNetworkEventHandler(const std::shared_ptr<IWorld>& world,
+                                   const std::shared_ptr<ClientState>& client_state)
+        : world_(world)
+        , client_state_(client_state)
+    {
     }
 
-    if (!is_soldier_id_me) {
-        spdlog::info("({}) {} has joined the server", soldier_id, player_nick);
-        world_->CreateSoldier(soldier_id);
-        world_->GetStateManager()->TransformSoldier(soldier_id,
-                                                    [](auto& soldier) { soldier.active = true; });
+private:
+    NetworkEvent GetTargetNetworkEvent() const override { return NetworkEvent::SoldierInfo; }
+
+    NetworkEventHandlerResult HandleNetworkMessageImpl(unsigned int /*sender_connection_id*/,
+                                                       std::uint8_t soldier_id,
+                                                       std::string player_nick) override
+    {
+        bool is_soldier_id_me = false;
+        if (client_state_->client_soldier_id.has_value()) {
+            is_soldier_id_me = *client_state_->client_soldier_id == soldier_id;
+        }
+
+        if (!is_soldier_id_me) {
+            spdlog::info("({}) {} has joined the server", soldier_id, player_nick);
+            world_->CreateSoldier(soldier_id);
+            world_->GetStateManager()->TransformSoldier(
+              soldier_id, [](auto& soldier) { soldier.active = true; });
+        }
+
+        return NetworkEventHandlerResult::Success;
     }
 
-    return NetworkEventHandlerResult::Success;
-}
+    std::shared_ptr<IWorld> world_;
+    std::shared_ptr<ClientState> client_state_;
+};
 } // namespace Soldank

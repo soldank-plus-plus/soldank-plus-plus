@@ -1,5 +1,8 @@
-#include "rendering/renderer/interface/map_editor/MapEditorToolDetailsWindow.hpp"
+module;
 
+#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
+
+#include "core/state/StateManager.hpp"
 #include "core/map/PMSConstants.hpp"
 #include "core/map/PMSEnums.hpp"
 
@@ -8,6 +11,15 @@
 #include "imgui_impl_opengl3.h"
 
 #include <numbers>
+
+export module MapEditorToolDetailsWindow;
+
+import ClientState;
+
+export namespace Soldank::MapEditorToolDetailsWindow
+{
+void Render(const StateManager& game_state_manager, ClientState& client_state);
+}
 
 namespace Soldank::MapEditorToolDetailsWindow
 {
