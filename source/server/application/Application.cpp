@@ -7,9 +7,6 @@ module;
 
 #include "core/CoreEventHandler.hpp"
 
-#include <steam/isteamnetworkingutils.h>
-#include <steam/steamnetworkingsockets.h>
-
 #include <cstdlib>
 #include <memory>
 #include <chrono>
@@ -32,6 +29,7 @@ import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 
 import Extern.SimpleIni;
 import Extern.Spdlog;
+import Extern.GameNetworkingSockets;
 
 namespace Soldank
 {
@@ -72,15 +70,15 @@ public:
             server_state_->server_name = server_name_cstr;
         }
 
-        SteamDatagramErrMsg err_msg;
-        if (!GameNetworkingSockets_Init(nullptr, err_msg)) {
+        GNS::SteamDatagramErrMsg err_msg;
+        if (!GNS::GameNetworkingSocketsInit(nullptr, err_msg)) {
             Spdlog::error("GameNetworkingSockets_Init failed. {}", std::span(err_msg).data());
         }
 
-        log_time_zero_ = SteamNetworkingUtils()->GetLocalTimestamp();
+        log_time_zero_ = GNS::GameNetworkingUtils()->GetLocalTimestamp();
 
-        SteamNetworkingUtils()->SetDebugOutputFunction(k_ESteamNetworkingSocketsDebugOutputType_Msg,
-                                                       DebugOutput);
+        GNS::GameNetworkingUtils()->SetDebugOutputFunction(
+          GNS::ESteamNetworkingSocketsDebugOutputType_Enum::Msg, DebugOutput);
 
         for (unsigned int& last_processed_input_id : server_state_->last_processed_input_id) {
             last_processed_input_id = 0;
@@ -105,7 +103,7 @@ public:
     ~Application()
     {
         DaScriptScriptingEngine::Shutdown();
-        GameNetworkingSockets_Kill();
+        GNS::GameNetworkingSocketsKill();
     }
 
     Application(Application&& other) = delete;
@@ -216,18 +214,19 @@ public:
     }
 
 private:
-    static void DebugOutput(ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
+    static void DebugOutput(GNS::ESteamNetworkingSocketsDebugOutputType output_type,
+                            const char* message)
     {
-        SteamNetworkingMicroseconds time =
-          SteamNetworkingUtils()->GetLocalTimestamp() - log_time_zero_;
+        GNS::SteamNetworkingMicroseconds time =
+          GNS::GameNetworkingUtils()->GetLocalTimestamp() - log_time_zero_;
         Spdlog::info("{} {}", (double)time * 1e-6, message);
         fflush(stdout);
-        if (output_type == k_ESteamNetworkingSocketsDebugOutputType_Bug) {
+        if (output_type == GNS::ESteamNetworkingSocketsDebugOutputType_Enum::Bug) {
             exit(1);
         }
     }
 
-    static SteamNetworkingMicroseconds log_time_zero_;
+    static GNS::SteamNetworkingMicroseconds log_time_zero_;
 
     std::shared_ptr<IGameServer> game_server_;
     std::shared_ptr<IWorld> world_;
@@ -237,6 +236,6 @@ private:
     std::shared_ptr<LobbyClient> lobby_client_;
 };
 
-SteamNetworkingMicroseconds Application::log_time_zero_ = 0;
+GNS::SteamNetworkingMicroseconds Application::log_time_zero_ = 0;
 
 } // namespace Soldank

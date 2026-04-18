@@ -3,8 +3,6 @@ module;
 #include "core/IWorld.hpp"
 #include "communication/NetworkEventDispatcher.hpp"
 
-#include <steam/steamnetworkingsockets.h>
-
 #include <string>
 #include <memory>
 #include "communication/NetworkEvent.hpp"
@@ -20,13 +18,14 @@ export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
 
 import Extern.Spdlog;
+import Extern.GameNetworkingSockets;
 
 export namespace Soldank
 {
 class PlayerPollGroup : public PollGroupBase
 {
 public:
-    PlayerPollGroup(ISteamNetworkingSockets* interface)
+    PlayerPollGroup(GNS::ISteamNetworkingSockets* interface)
         : PollGroupBase(interface)
     {
     }
@@ -42,7 +41,7 @@ public:
     void PollIncomingMessages() override
     {
         while (true) {
-            ISteamNetworkingMessage* incoming_message = nullptr;
+            GNS::ISteamNetworkingMessage* incoming_message = nullptr;
             int messages_count = GetInterface()->ReceiveMessagesOnPollGroup(
               GetPollGroupHandle(), &incoming_message, 1);
             if (messages_count == 0) {
@@ -75,7 +74,7 @@ public:
     }
 
     void AcceptConnection(
-      SteamNetConnectionStatusChangedCallback_t* /*new_connection_info*/) override
+      GNS::SteamNetConnectionStatusChangedCallback_t* /*new_connection_info*/) override
     {
     }
 

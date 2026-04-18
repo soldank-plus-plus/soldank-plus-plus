@@ -5,9 +5,6 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include <steam/steamnetworkingsockets.h>
-#include <steam/isteamnetworkingutils.h>
-
 #include <memory>
 #include <cassert>
 #include <cstdint>
@@ -22,6 +19,7 @@ import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
 
 import Extern.Spdlog;
+import Extern.GameNetworkingSockets;
 
 export namespace Soldank
 {
@@ -38,7 +36,7 @@ public:
         // TODO: we shouldn't init NetworkingInterface here because it's global
         NetworkingInterface::Init(port);
         NetworkingInterface::RegisterObserver(
-          [this](SteamNetConnectionStatusChangedCallback_t* p_info) {
+          [this](GNS::SteamNetConnectionStatusChangedCallback_t* p_info) {
               OnSteamNetConnectionStatusChanged(p_info);
           });
 
@@ -86,16 +84,16 @@ private:
     std::unique_ptr<EntryPollGroup> entry_poll_group_;
     std::shared_ptr<PlayerPollGroup> player_poll_group_;
 
-    void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* p_info)
+    void OnSteamNetConnectionStatusChanged(GNS::SteamNetConnectionStatusChangedCallback_t* p_info)
     {
         switch (p_info->m_info.m_eState) {
-            case k_ESteamNetworkingConnectionState_None:
+            case GNS::ESteamNetworkingConnectionState::None:
                 // NOTE: We will get callbacks here when we destroy connections.  You can ignore
                 // these.
                 break;
 
-            case k_ESteamNetworkingConnectionState_ClosedByPeer:
-            case k_ESteamNetworkingConnectionState_ProblemDetectedLocally: {
+            case GNS::ESteamNetworkingConnectionState::ClosedByPeer:
+            case GNS::ESteamNetworkingConnectionState::ProblemDetectedLocally: {
                 if (entry_poll_group_->IsConnectionAssigned(p_info->m_hConn)) {
                     entry_poll_group_->CloseConnection(p_info);
                 }
@@ -121,13 +119,13 @@ private:
                 break;
             }
 
-            case k_ESteamNetworkingConnectionState_Connecting: {
+            case GNS::ESteamNetworkingConnectionState::Connecting: {
                 entry_poll_group_->AcceptConnection(p_info);
                 // player_poll_group_->AcceptConnection(p_info);
                 break;
             }
 
-            case k_ESteamNetworkingConnectionState_Connected:
+            case GNS::ESteamNetworkingConnectionState::Connected:
                 // We will get a callback immediately after accepting the connection.
                 // Since we are the server, we can ignore this, it's not news to us.
 

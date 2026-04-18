@@ -2,8 +2,6 @@ module;
 
 #include "communication/NetworkEvent.hpp"
 
-#include <steam/steamnetworkingsockets.h>
-
 #include <utility>
 #include <span>
 #include <cassert>
@@ -17,13 +15,14 @@ export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
 
 import Extern.Spdlog;
+import Extern.GameNetworkingSockets;
 
 export namespace Soldank
 {
 class EntryPollGroup : public PollGroupBase
 {
 public:
-    EntryPollGroup(ISteamNetworkingSockets* interface)
+    EntryPollGroup(GNS::ISteamNetworkingSockets* interface)
         : PollGroupBase(interface)
     {
     }
@@ -31,7 +30,7 @@ public:
     void PollIncomingMessages() override
     {
         while (true) {
-            ISteamNetworkingMessage* incoming_message = nullptr;
+            GNS::ISteamNetworkingMessage* incoming_message = nullptr;
             int messages_count = GetInterface()->ReceiveMessagesOnPollGroup(
               GetPollGroupHandle(), &incoming_message, 1);
             if (messages_count == 0) {
@@ -63,7 +62,8 @@ public:
         }
     }
 
-    void AcceptConnection(SteamNetConnectionStatusChangedCallback_t* new_connection_info) override
+    void AcceptConnection(
+      GNS::SteamNetConnectionStatusChangedCallback_t* new_connection_info) override
     {
         // This must be a new connection
         assert(!IsConnectionAssigned(new_connection_info->m_hConn));
@@ -71,7 +71,7 @@ public:
         Spdlog::info("[EntryPollGroup] Connection request from {}",
                      std::span{ new_connection_info->m_info.m_szConnectionDescription }.data());
 
-        if (GetInterface()->AcceptConnection(new_connection_info->m_hConn) != k_EResultOK) {
+        if (GetInterface()->AcceptConnection(new_connection_info->m_hConn) != GNS::EResult::OK) {
             GetInterface()->CloseConnection(new_connection_info->m_hConn, 0, nullptr, false);
             Spdlog::warn("[EntryPollGroup] Can't accept connection. (It was already closed?)");
             return;

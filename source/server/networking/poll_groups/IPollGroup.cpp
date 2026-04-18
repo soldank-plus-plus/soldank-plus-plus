@@ -2,13 +2,13 @@ module;
 
 #include "communication/NetworkMessage.hpp"
 
-#include <steam/steamnetworkingsockets.h>
-
 #include <optional>
 
 export module Networking.PollGroups.IPollGroup;
 
 import Networking.Types.Connection;
+
+import Extern.GameNetworkingSockets;
 
 export namespace Soldank
 {
@@ -24,14 +24,15 @@ public:
 
     virtual void PollIncomingMessages() = 0;
     virtual void AcceptConnection(
-      SteamNetConnectionStatusChangedCallback_t* new_connection_info) = 0;
-    virtual void CloseConnection(SteamNetConnectionStatusChangedCallback_t* connection_info) = 0;
+      GNS::SteamNetConnectionStatusChangedCallback_t* new_connection_info) = 0;
+    virtual void CloseConnection(
+      GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) = 0;
     virtual bool AssignConnection(const Connection& connection) = 0;
-    virtual bool IsConnectionAssigned(HSteamNetConnection steam_net_connection_handle) = 0;
+    virtual bool IsConnectionAssigned(GNS::HSteamNetConnection steam_net_connection_handle) = 0;
     virtual unsigned int GetConnectionSoldierId(
-      HSteamNetConnection steam_net_connection_handle) = 0;
+      GNS::HSteamNetConnection steam_net_connection_handle) = 0;
     virtual std::string GetConnectionSoldierNick(
-      HSteamNetConnection steam_net_connection_handle) = 0;
+      GNS::HSteamNetConnection steam_net_connection_handle) = 0;
 
     virtual void SendNetworkMessage(unsigned int connection_id,
                                     const NetworkMessage& network_message) = 0;
@@ -46,14 +47,14 @@ public:
       std::optional<unsigned int> except_connection_id = std::nullopt) = 0;
 
 protected:
-    IPollGroup(ISteamNetworkingSockets* interface)
+    IPollGroup(GNS::ISteamNetworkingSockets* interface)
         : interface_(interface)
     {
     }
 
-    ISteamNetworkingSockets* GetInterface() const { return interface_; }
+    GNS::ISteamNetworkingSockets* GetInterface() const { return interface_; }
 
 private:
-    ISteamNetworkingSockets* interface_;
+    GNS::ISteamNetworkingSockets* interface_;
 };
 } // namespace Soldank

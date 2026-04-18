@@ -1,5 +1,3 @@
-file(GLOB_RECURSE HEADER_SOURCES *.hpp)
-
 set(server_lib_modules
     ./application/Application.cpp
     ./application/ServerState.cpp
@@ -21,12 +19,6 @@ set(server_lib_modules
     ./networking/poll_groups/PlayerPollGroup.cpp
     ./networking/types/Connection.cpp
 )
-
-foreach(file_path IN LISTS server_lib_modules)
-    get_filename_component(absolute_path ${file_path} ABSOLUTE)
-    message(${file_path})
-    list(REMOVE_ITEM LIB_SOURCES ${absolute_path})
-endforeach()
 
 add_library(server_lib)
 target_sources(server_lib
@@ -51,7 +43,7 @@ endif()
 target_include_directories(server_lib PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
 
 target_link_libraries(server_lib PRIVATE shared_lib)
-target_link_libraries(server_lib PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
+target_link_libraries(server_lib PRIVATE GameNetworkingSockets2)
 target_link_libraries(server_lib PRIVATE Spdlog)
 target_link_libraries(server_lib PRIVATE DaScript)
 target_link_libraries(server_lib PRIVATE SimpleIni)
@@ -77,7 +69,7 @@ endif()
 
 target_link_libraries(server PRIVATE shared_lib)
 target_link_libraries(server PRIVATE server_lib)
-target_link_libraries(server PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
+target_link_libraries(server PRIVATE GameNetworkingSockets2)
 target_link_libraries(server PRIVATE Spdlog)
 target_link_libraries(server PRIVATE DaScript)
 target_link_libraries(server PRIVATE Httplib)
