@@ -9,8 +9,6 @@ module;
 
 #include <glad/glad.h>
 
-#include "spdlog/spdlog.h"
-
 #include <filesystem>
 #include <vector>
 
@@ -19,6 +17,8 @@ export module PolygonsRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -251,7 +251,7 @@ void PolygonsRenderer::LoadTexture(const std::string& texture_name)
     } else {
         texture_ = 0;
         texture_dimensions_ = { 0, 0 };
-        spdlog::critical("Texture file not found {}", texture_name);
+        Spdlog::critical("Texture file not found {}", texture_name);
     }
 }
 } // namespace Soldank

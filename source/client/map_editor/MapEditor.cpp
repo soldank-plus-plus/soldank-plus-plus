@@ -9,8 +9,6 @@ module;
 
 #include <GLFW/glfw3.h>
 
-#include <spdlog/spdlog.h>
-
 #include <memory>
 #include <utility>
 #include <deque>

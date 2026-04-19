@@ -5,8 +5,6 @@ module;
 #include "core/utility/Observable.hpp"
 #include "core/math/Glm.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -22,6 +20,8 @@ export module Application.Window;
 
 import Application.Input.Keyboard;
 import Application.Input.Mouse;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -53,7 +53,7 @@ public:
         , current_cursor_mode_(CursorMode::Locked)
     {
         if (glfwInit() == 0) {
-            spdlog::error("Error: Failed to initialize GLFW");
+            Spdlog::error("Error: Failed to initialize GLFW");
             throw "Error: Failed to initialize GLFW";
         }
 
@@ -131,13 +131,13 @@ public:
     {
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
         if (monitor == nullptr) {
-            spdlog::error("Error: Failed to get primary monitor");
+            Spdlog::error("Error: Failed to get primary monitor");
             throw "Error: Failed to get primary monitor";
         }
 
         const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
         if (video_mode == nullptr) {
-            spdlog::error("Error: Failed to get video mode");
+            Spdlog::error("Error: Failed to get video mode");
             throw "Error: Failed to get video mode";
         }
 
@@ -167,7 +167,7 @@ public:
         }
 
         if (nullptr == glfw_window_) {
-            spdlog::error("Error: Failed to create window.");
+            Spdlog::error("Error: Failed to create window.");
             throw "Error: Failed to create window.";
         }
 
@@ -177,7 +177,7 @@ public:
 
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) == 0) {
-            spdlog::error("Error: Failed to initialize GLAD.");
+            Spdlog::error("Error: Failed to initialize GLAD.");
             glfwTerminate();
             throw "Error: Failed to initialize GLAD.";
         }
@@ -242,7 +242,7 @@ public:
 
     static void GLFWErrorCallback(int error, const char* description)
     {
-        spdlog::error("Error({}): {}", error, description);
+        Spdlog::error("Error({}): {}", error, description);
     }
 
     void RegisterOnScreenResizedObserver(std::function<void(glm::vec2)> on_screen_resized_observer)

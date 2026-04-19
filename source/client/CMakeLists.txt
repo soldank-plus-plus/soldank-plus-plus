@@ -36,7 +36,9 @@ set(client_lib_modules
     ./map_editor/tools/WaypointTool.cpp
 
     ./networking/Connection.cpp
+    ./networking/IConnection.cpp
     ./networking/NetworkingClient.cpp
+    ./networking/INetworkingClient.cpp
     ./networking/event_handlers/AssignPlayerIdNetworkEventHandler.cpp
     ./networking/event_handlers/HitSoldierNetworkEventHandler.cpp
     ./networking/event_handlers/KillSoldierNetworkEventHandler.cpp
@@ -122,10 +124,10 @@ target_link_libraries(client_lib PRIVATE ZLIB::ZLIB)
 target_link_libraries(client_lib PRIVATE BZip2::BZip2)
 
 target_link_libraries(client_lib PUBLIC Freetype::Freetype)
-target_link_libraries(client_lib PRIVATE spdlog::spdlog)
+target_link_libraries(client_lib PRIVATE Spdlog)
 target_link_libraries(client_lib PRIVATE imgui::imgui)
 target_link_libraries(client_lib PUBLIC shared_lib)
-target_link_libraries(client_lib PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
+target_link_libraries(client_lib PRIVATE GameNetworkingSockets2)
 target_link_libraries(client_lib PRIVATE cxxopts::cxxopts)
 
 # TODO: uncomment this to stop the app from opening cmd on windows
@@ -150,8 +152,8 @@ else()
 endif()
 
 target_link_libraries(client PRIVATE client_lib)
-target_link_libraries(client PRIVATE GameNetworkingSockets::GameNetworkingSockets_s)
-target_link_libraries(client PRIVATE spdlog::spdlog)
+target_link_libraries(client PRIVATE GameNetworkingSockets2)
+target_link_libraries(client PRIVATE Spdlog)
 target_link_libraries(client PRIVATE cxxopts::cxxopts)
 target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR}/source/client)
 target_include_directories(client PUBLIC ${CMAKE_SOURCE_DIR}/build/bindings)

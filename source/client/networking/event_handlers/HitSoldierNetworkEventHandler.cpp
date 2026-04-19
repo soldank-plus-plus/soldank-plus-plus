@@ -4,11 +4,9 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <chrono>
 
-export module HitSoldierNetworkEventHandler;
+export module Networking.HitSoldierNetworkEventHandler;
 
 export namespace Soldank
 {

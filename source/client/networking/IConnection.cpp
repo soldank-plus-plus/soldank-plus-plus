@@ -1,11 +1,12 @@
-#ifndef __ICONNECTION_HPP__
-#define __ICONNECTION_HPP__
+module;
 
 #include "communication/NetworkEventDispatcher.hpp"
 
-#include <steam/isteamnetworkingutils.h>
+export module Networking.IConnection;
 
-namespace Soldank
+import Extern.GameNetworkingSockets;
+
+export namespace Soldank
 {
 class IConnection
 {
@@ -18,10 +19,8 @@ public:
     virtual void CloseConnection() = 0;
 
     virtual void AssertConnectionInfo(
-      SteamNetConnectionStatusChangedCallback_t* connection_info) const = 0;
+      GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) const = 0;
 
     virtual void SendNetworkMessage(const NetworkMessage& network_message) = 0;
 };
 } // namespace Soldank
-
-#endif

@@ -2,8 +2,6 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -16,10 +14,13 @@ module;
 #include <map>
 #include <array>
 #include <vector>
+#include <string>
 
 export module TextRenderer;
 
 import Shader;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -67,17 +68,17 @@ TextRenderer::TextRenderer(const std::string& file_path, unsigned int font_heigh
     FT_Library ft = nullptr;
     // All functions return a value different than 0 whenever an error occurred
     if (FT_Init_FreeType(&ft) != 0) {
-        spdlog::error("ERROR::FREETYPE: Could not init FreeType Library");
+        Spdlog::error("ERROR::FREETYPE: Could not init FreeType Library");
     }
 
     if (file_path.empty()) {
-        spdlog::error("ERROR::FREETYPE: Failed to load file_path");
+        Spdlog::error("ERROR::FREETYPE: Failed to load file_path");
     }
 
     // load font as face
     FT_Face face = nullptr;
     if (FT_New_Face(ft, file_path.c_str(), 0, &face) != 0) {
-        spdlog::error("ERROR::FREETYPE: Failed to load font");
+        Spdlog::error("ERROR::FREETYPE: Failed to load font");
     } else {
         // set size to load glyphs as
         FT_Set_Pixel_Sizes(face, 0, font_height);
@@ -89,7 +90,7 @@ TextRenderer::TextRenderer(const std::string& file_path, unsigned int font_heigh
         for (unsigned char c = 0; c < 128; c++) {
             // Load character glyph
             if (FT_Load_Char(face, c, FT_LOAD_RENDER) != 0) {
-                spdlog::error("ERROR::FREETYTPE: Failed to load Glyph");
+                Spdlog::error("ERROR::FREETYTPE: Failed to load Glyph");
                 continue;
             }
             // generate texture

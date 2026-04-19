@@ -6,8 +6,6 @@ module;
 #include "core/map/PMSStructs.hpp"
 #include "core/map/Map.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,6 +23,8 @@ export module SceneriesRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -211,7 +211,7 @@ void SceneriesRenderer::AddNewTexture(const std::filesystem::path& texture_file_
             GIFTexture gif_texture(texture_or_error.value());
             textures_.emplace_back(std::move(gif_texture));
         } else {
-            spdlog::critical("Texture file not found {}", texture_path.string());
+            Spdlog::critical("Texture file not found {}", texture_path.string());
             textures_.emplace_back(0U);
         }
     } else {
@@ -222,7 +222,7 @@ void SceneriesRenderer::AddNewTexture(const std::filesystem::path& texture_file_
         if (texture_or_error.has_value()) {
             textures_.emplace_back(texture_or_error.value().opengl_id);
         } else {
-            spdlog::critical("Texture file not found {}", texture_path.string());
+            Spdlog::critical("Texture file not found {}", texture_path.string());
             textures_.emplace_back(0U);
         }
     }
@@ -238,7 +238,7 @@ void SceneriesRenderer::OnAddScenery(const PMSScenery& new_scenery, unsigned int
 
 void SceneriesRenderer::OnAddSceneryType(const PMSSceneryType& new_scenery_type)
 {
-    spdlog::debug("new scenery type: {}", new_scenery_type.name);
+    Spdlog::debug("new scenery type: {}", new_scenery_type.name);
     AddNewTexture(new_scenery_type.name);
 }
 

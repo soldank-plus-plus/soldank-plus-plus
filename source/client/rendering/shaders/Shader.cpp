@@ -6,14 +6,14 @@ module;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "spdlog/spdlog.h"
-
 #include <array>
 #include <string>
 #include <fstream>
 #include <sstream>
 
 export module Shader;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -131,14 +131,14 @@ void Shader::CheckCompileErrors(unsigned int shader, const std::string& type)
         if (success == 0) {
             glGetShaderInfoLog(shader, 1024, nullptr, info_log.data());
             // TODO: We should log it better
-            spdlog::error("ERROR::SHADER_COMPILATION_ERROR of type: {}, {}", type, info_log.data());
+            Spdlog::error("ERROR::SHADER_COMPILATION_ERROR of type: {}, {}", type, info_log.data());
         }
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
         if (success == 0) {
             glGetProgramInfoLog(shader, 1024, nullptr, info_log.data());
             // TODO: We should log it better
-            spdlog::error("ERROR::PROGRAM_LINKING_ERROR of type: {}, {}", type, info_log.data());
+            Spdlog::error("ERROR::PROGRAM_LINKING_ERROR of type: {}, {}", type, info_log.data());
         }
     }
 }

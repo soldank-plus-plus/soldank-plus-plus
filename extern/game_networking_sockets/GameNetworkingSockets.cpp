@@ -2,6 +2,7 @@ module;
 
 #include <steam/steamnetworkingsockets.h>
 #include <steam/isteamnetworkingutils.h>
+#include <steam/steamnetworkingtypes.h>
 
 export module Extern.GameNetworkingSockets;
 
@@ -25,6 +26,11 @@ constexpr auto GameNetworkingSockets = SteamNetworkingSockets;
 constexpr auto GameNetworkingUtils = SteamNetworkingUtils;
 constexpr auto GameNetworkingSocketsInit = GameNetworkingSockets_Init;
 constexpr auto GameNetworkingSocketsKill = GameNetworkingSockets_Kill;
+
+namespace HSteamNetConnection_Enum
+{
+constexpr auto Invalid = k_HSteamNetConnection_Invalid;
+}
 
 namespace HSteamNetPollGroup_Enum
 {
@@ -83,6 +89,7 @@ constexpr auto EnableDiagnosticsUI = k_ESteamNetworkingConfig_EnableDiagnosticsU
 constexpr auto FakePacketLoss_Send = k_ESteamNetworkingConfig_FakePacketLoss_Send;
 constexpr auto FakePacketLoss_Recv = k_ESteamNetworkingConfig_FakePacketLoss_Recv;
 constexpr auto FakePacketLag_Send = k_ESteamNetworkingConfig_FakePacketLag_Send;
+constexpr auto FakePacketLag_Recv = k_ESteamNetworkingConfig_FakePacketLag_Recv;
 constexpr auto FakePacketReorder_Send = k_ESteamNetworkingConfig_FakePacketReorder_Send;
 constexpr auto FakePacketReorder_Recv = k_ESteamNetworkingConfig_FakePacketReorder_Recv;
 constexpr auto FakePacketReorder_Time = k_ESteamNetworkingConfig_FakePacketReorder_Time;

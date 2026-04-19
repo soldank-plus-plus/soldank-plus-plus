@@ -2,8 +2,6 @@ module;
 
 #include "core/state/StateManager.hpp"
 
-#include <spdlog/spdlog.h>
-
 export module VertexSelectionTool;
 
 import Tool;

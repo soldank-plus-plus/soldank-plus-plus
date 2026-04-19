@@ -4,11 +4,11 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include "spdlog/spdlog.h"
-
-export module AssignPlayerIdNetworkEventHandler;
+export module Networking.AssignPlayerIdNetworkEventHandler;
 
 import ClientState;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -30,7 +30,7 @@ private:
     {
         const auto& soldier = world_->CreateSoldier(assigned_player_id);
         client_state_->client_soldier_id = soldier.id;
-        spdlog::info(
+        Spdlog::info(
           "OnAssignPlayerId: {} {}", assigned_player_id, *client_state_->client_soldier_id);
         return NetworkEventHandlerResult::Success;
     }

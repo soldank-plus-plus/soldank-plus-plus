@@ -6,8 +6,6 @@ module;
 #include "core/map/PMSEnums.hpp"
 #include "core/math/Glm.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <glad/glad.h>
 
 #include <filesystem>
@@ -20,6 +18,8 @@ export module SpawnPointRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -128,7 +128,7 @@ void SpawnPointRenderer::LoadTexture(PMSSpawnPointType spawn_point_type,
     if (texture_or_error.has_value()) {
         textures_.at(std::to_underlying(spawn_point_type)) = texture_or_error.value().opengl_id;
     } else {
-        spdlog::critical("Texture file not found {}", file_path.string());
+        Spdlog::critical("Texture file not found {}", file_path.string());
         textures_.at(std::to_underlying(spawn_point_type)) = 0;
     }
 }

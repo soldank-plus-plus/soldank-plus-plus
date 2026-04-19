@@ -44,6 +44,12 @@ constexpr void info(spdlog::format_string_t<Args...> fmt, Args&&... args)
     spdlog::info(fmt, std::forward<Args>(args)...);
 }
 
+template<typename... Args>
+constexpr void debug(spdlog::format_string_t<Args...> fmt, Args&&... args)
+{
+    spdlog::debug(fmt, std::forward<Args>(args)...);
+}
+
 template<typename T>
 constexpr void critical(const T& msg)
 {
@@ -66,5 +72,11 @@ template<typename T>
 constexpr void info(const T& msg)
 {
     spdlog::info(msg);
+}
+
+template<typename T>
+constexpr void debug(const T& msg)
+{
+    spdlog::debug(msg);
 }
 } // namespace Spdlog

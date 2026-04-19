@@ -2,11 +2,9 @@ module;
 
 #include "communication/NetworkEventDispatcher.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <chrono>
 
-export module PingCheckNetworkEventHandler;
+export module Networking.PingCheckNetworkEventHandler;
 
 import ClientState;
 

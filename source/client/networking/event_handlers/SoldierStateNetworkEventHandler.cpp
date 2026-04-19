@@ -7,9 +7,7 @@ module;
 #include "core/entities/Soldier.hpp"
 #include "core/physics/SoldierSkeletonPhysics.hpp"
 
-#include "spdlog/spdlog.h"
-
-export module SoldierStateNetworkEventHandler;
+export module Networking.SoldierStateNetworkEventHandler;
 
 import ClientState;
 

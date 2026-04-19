@@ -5,9 +5,7 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include "spdlog/spdlog.h"
-
-export module ProjectileSpawnNetworkEventHandler;
+export module Networking.ProjectileSpawnNetworkEventHandler;
 
 export namespace Soldank
 {

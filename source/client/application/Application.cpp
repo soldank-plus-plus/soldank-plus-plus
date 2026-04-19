@@ -1,18 +1,11 @@
 module;
 
-#include "networking/INetworkingClient.hpp"
-
 #include "core/state/Control.hpp"
 #include "core/World.hpp"
 #include "core/CoreEventHandler.hpp"
 
 #include "communication/NetworkPackets.hpp"
 #include "communication/NetworkEventDispatcher.hpp"
-
-#include "spdlog/spdlog.h"
-
-#include <steam/steamnetworkingsockets.h>
-#include <steam/isteamnetworkingutils.h>
 
 #include <GLFW/glfw3.h>
 
@@ -36,16 +29,20 @@ import Scene;
 import MapEditor;
 import ClientState;
 
-import NetworkingClient;
-import AssignPlayerIdNetworkEventHandler;
-import PingCheckNetworkEventHandler;
-import PlayerLeaveNetworkEventHandler;
-import ProjectileSpawnNetworkEventHandler;
-import SoldierInfoNetworkEventHandler;
-import SoldierStateNetworkEventHandler;
-import SpawnSoldierNetworkEventHandler;
-import KillSoldierNetworkEventHandler;
-import HitSoldierNetworkEventHandler;
+import Networking.NetworkingClient;
+import Networking.INetworkingClient;
+import Networking.AssignPlayerIdNetworkEventHandler;
+import Networking.PingCheckNetworkEventHandler;
+import Networking.PlayerLeaveNetworkEventHandler;
+import Networking.ProjectileSpawnNetworkEventHandler;
+import Networking.SoldierInfoNetworkEventHandler;
+import Networking.SoldierStateNetworkEventHandler;
+import Networking.SpawnSoldierNetworkEventHandler;
+import Networking.KillSoldierNetworkEventHandler;
+import Networking.HitSoldierNetworkEventHandler;
+
+import Extern.GameNetworkingSockets;
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -83,47 +80,48 @@ private:
 
 namespace Soldank
 {
-SteamNetworkingMicroseconds log_time_zero;
+GNS::SteamNetworkingMicroseconds log_time_zero;
 
-void DebugOutput(ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
+void DebugOutput(GNS::ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
 {
-    SteamNetworkingMicroseconds time = SteamNetworkingUtils()->GetLocalTimestamp() - log_time_zero;
-    spdlog::info("{} {}", (double)time * 1e-6, message);
+    GNS::SteamNetworkingMicroseconds time =
+      GNS::GameNetworkingUtils()->GetLocalTimestamp() - log_time_zero;
+    Spdlog::info("{} {}", (double)time * 1e-6, message);
     fflush(stdout);
-    if (output_type == k_ESteamNetworkingSocketsDebugOutputType_Bug) {
+    if (output_type == GNS::ESteamNetworkingSocketsDebugOutputType_Enum::Bug) {
         exit(1);
     }
 }
 
 Application::Application(const std::vector<const char*>& cli_parameters)
 {
-    spdlog::set_level(spdlog::level::debug);
+    Spdlog::set_level(Spdlog::level::debug);
 
     CSimpleIniA ini_config;
     SI_Error rc = ini_config.LoadFile("debug_config.ini");
     std::string server_ip;
     int server_port = 0;
     if (rc < 0) {
-        spdlog::warn("INI File could not be loaded: debug_config.ini");
+        Spdlog::warn("INI File could not be loaded: debug_config.ini");
         application_mode_ = CommandLineParameters::ApplicationMode::Local;
     } else {
         application_mode_ = ini_config.GetBoolValue("Network", "Online")
                               ? CommandLineParameters::ApplicationMode::Online
                               : CommandLineParameters::ApplicationMode::Local;
         if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
-            spdlog::info("Online = true");
+            Spdlog::info("Online = true");
             const auto* ip = ini_config.GetValue("Network", "Server_IP");
             int port = ini_config.GetLongValue("Network", "Server_Port");
             if (ip == nullptr || port == 0) {
-                spdlog::warn("Server_IP or Server_Port not set, setting is_online to false");
+                Spdlog::warn("Server_IP or Server_Port not set, setting is_online to false");
                 application_mode_ = CommandLineParameters::ApplicationMode::Local;
             } else {
                 server_ip = ip;
                 server_port = port;
-                spdlog::debug("Server_ip = {} server_port = {}", server_ip, server_port);
+                Spdlog::debug("Server_ip = {} server_port = {}", server_ip, server_port);
             }
         } else {
-            spdlog::info("Online = false");
+            Spdlog::info("Online = false");
         }
     }
 
@@ -150,12 +148,12 @@ Application::Application(const std::vector<const char*>& cli_parameters)
 
     switch (application_mode_) {
         case CommandLineParameters::ApplicationMode::Default: {
-            spdlog::critical("Application mode = Default. That should have never happened.");
+            Spdlog::critical("Application mode = Default. That should have never happened.");
             std::unreachable();
             break;
         }
         case CommandLineParameters::ApplicationMode::Local: {
-            spdlog::info("Application mode = Local");
+            Spdlog::info("Application mode = Local");
             map_path = "maps/ctf_Ash.pms";
             client_state_->draw_game_debug_interface = true;
             client_state_->draw_game_interface = true;
@@ -171,14 +169,14 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             client_state_->draw_game_debug_interface = true;
             client_state_->draw_server_pov_client_pos = true;
             client_state_->draw_game_interface = true;
-            spdlog::info("Application mode = Online");
+            Spdlog::info("Application mode = Online");
             break;
         }
         case CommandLineParameters::ApplicationMode::MapEditor: {
             client_state_->draw_map_editor_interface = true;
             client_state_->draw_game_interface = false;
             map_editor_ = std::make_unique<MapEditor>(*client_state_, *world_->GetStateManager());
-            spdlog::info("Application mode = MapEditor");
+            Spdlog::info("Application mode = MapEditor");
             break;
         }
     }
@@ -186,7 +184,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     if (parsed_cli_parameters.map) {
         map_path = "maps/" + *parsed_cli_parameters.map + ".pms";
     }
-    spdlog::debug("{} Map: {}", map_path.empty(), map_path);
+    Spdlog::debug("{} Map: {}", map_path.empty(), map_path);
 
     if (map_path.empty()) {
         world_->GetStateManager()->GetMap().CreateEmptyMap();
@@ -195,7 +193,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     }
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
-        spdlog::info("Connecting to {}:{}", server_ip, server_port);
+        Spdlog::info("Connecting to {}:{}", server_ip, server_port);
         std::vector<std::shared_ptr<INetworkEventHandler>> network_event_handlers{
             std::make_shared<AssignPlayerIdNetworkEventHandler>(world_, client_state_),
             std::make_shared<PingCheckNetworkEventHandler>(client_state_),
@@ -210,15 +208,15 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         client_network_event_dispatcher_ =
           std::make_shared<NetworkEventDispatcher>(network_event_handlers);
 
-        SteamDatagramErrMsg err_msg;
-        if (!GameNetworkingSockets_Init(nullptr, err_msg)) {
-            spdlog::error("GameNetworkingSockets_Init failed. {}", std::span(err_msg).data());
+        GNS::SteamDatagramErrMsg err_msg;
+        if (!GNS::GameNetworkingSocketsInit(nullptr, err_msg)) {
+            Spdlog::error("GameNetworkingSocketsInit failed. {}", std::span(err_msg).data());
         }
 
-        log_time_zero = SteamNetworkingUtils()->GetLocalTimestamp();
+        log_time_zero = GNS::GameNetworkingUtils()->GetLocalTimestamp();
 
-        SteamNetworkingUtils()->SetDebugOutputFunction(k_ESteamNetworkingSocketsDebugOutputType_Msg,
-                                                       DebugOutput);
+        GNS::GameNetworkingUtils()->SetDebugOutputFunction(
+          GNS::ESteamNetworkingSocketsDebugOutputType_Enum::Msg, DebugOutput);
 
         networking_client_ = std::make_unique<NetworkingClient>(server_ip.c_str(), server_port);
     } else {
@@ -239,7 +237,7 @@ Application::~Application()
         // you can pool the connection to see if any reliable data is pending.
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        GameNetworkingSockets_Kill();
+        GNS::GameNetworkingSocketsKill();
     }
 }
 

@@ -4,9 +4,9 @@ module;
 
 #include "communication/NetworkEventDispatcher.hpp"
 
-#include "spdlog/spdlog.h"
+export module Networking.SpawnSoldierNetworkEventHandler;
 
-export module SpawnSoldierNetworkEventHandler;
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -27,7 +27,7 @@ private:
                                                        float spawn_position_y) override
     {
         glm::vec2 spawn_position = { spawn_position_x, spawn_position_y };
-        spdlog::info(
+        Spdlog::info(
           "OnSpawnSoldier: {}, ({}, {})", soldier_id, spawn_position.x, spawn_position.y);
         world_->SpawnSoldier(soldier_id, spawn_position);
         return NetworkEventHandlerResult::Success;

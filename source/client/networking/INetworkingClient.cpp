@@ -1,11 +1,12 @@
-#ifndef __INETWORKING_CLIENT_HPP__
-#define __INETWORKING_CLIENT_HPP__
+module;
 
 #include "communication/NetworkEventDispatcher.hpp"
 
 #include <memory>
 
-namespace Soldank
+export module Networking.INetworkingClient;
+
+export namespace Soldank
 {
 class INetworkingClient
 {
@@ -20,5 +21,3 @@ public:
     virtual void SetLag(int lag_to_add_milliseconds) = 0;
 };
 } // namespace Soldank
-
-#endif

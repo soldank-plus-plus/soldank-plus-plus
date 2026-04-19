@@ -4,8 +4,6 @@ module;
 
 #include "core/math/Glm.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <glad/glad.h>
 
 #include <filesystem>
@@ -17,6 +15,8 @@ export module SingleImageRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -146,7 +146,7 @@ void SingleImageRenderer::SetTexture(const std::string& file_name)
 
         Renderer::ModifyVBOVertices(vbo_, vertices);
     } else {
-        spdlog::critical("Texture file not found {}", file_path.string());
+        Spdlog::critical("Texture file not found {}", file_path.string());
         texture_ = 0;
         texture_width_ = 0;
         texture_height_ = 0;

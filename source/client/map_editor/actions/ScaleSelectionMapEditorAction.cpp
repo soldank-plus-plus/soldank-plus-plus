@@ -6,8 +6,6 @@ module;
 #include "core/physics/SoldierSkeletonPhysics.hpp"
 #include "core/entities/Soldier.hpp"
 
-#include <spdlog/spdlog.h>
-
 #include <cmath>
 #include <bitset>
 

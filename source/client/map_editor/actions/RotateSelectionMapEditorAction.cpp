@@ -6,7 +6,6 @@ module;
 #include "core/physics/SoldierSkeletonPhysics.hpp"
 
 #include <cmath>
-#include <spdlog/spdlog.h>
 #include <bitset>
 
 export module RotateSelectionMapEditorAction;

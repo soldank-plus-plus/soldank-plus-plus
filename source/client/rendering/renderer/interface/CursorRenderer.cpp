@@ -6,8 +6,6 @@ module;
 
 #include <glad/glad.h>
 
-#include "spdlog/spdlog.h"
-
 #include <filesystem>
 
 export module CursorRenderer;
@@ -16,6 +14,8 @@ import Texture;
 import Renderer;
 import Shader;
 import ClientState;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -64,7 +64,7 @@ CursorRenderer::CursorRenderer(ClientState& client_state)
         texture_width_ = texture_or_error.value().width;
         texture_height_ = texture_or_error.value().height;
     } else {
-        spdlog::critical("Texture file not found {}", texture_path.string());
+        Spdlog::critical("Texture file not found {}", texture_path.string());
         texture_ = 0;
         texture_width_ = 0;
         texture_height_ = 0;

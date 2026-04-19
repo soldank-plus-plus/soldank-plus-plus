@@ -6,8 +6,6 @@ module;
 #include "core/types/ItemType.hpp"
 #include "core/math/Glm.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <memory>
 #include <utility>
 #include <variant>
@@ -24,6 +22,8 @@ export module SpritesManager;
 
 import Texture;
 import SoldierPartData;
+
+import Extern.Spdlog;
 
 export namespace Soldank::Sprites
 {
@@ -43,7 +43,7 @@ private:
 public:
     SpriteManager()
     {
-        spdlog::info("Init Sprites");
+        Spdlog::info("Init Sprites");
         std::vector<std::pair<TSpriteKey, std::string>> all_sprite_file_paths{
             { SoldierPartSpriteType::Stopa, "gostek-gfx/stopa.png" },
             { SoldierPartSpriteType::Stopa2, "gostek-gfx/stopa2.png" },
@@ -298,7 +298,7 @@ public:
                    .or_else([&type_and_file_path](Texture::LoadError error) {
                        switch (error) {
                            case Texture::LoadError::TextureNotFound: {
-                               spdlog::critical("Sprite file not found: {}",
+                               Spdlog::critical("Sprite file not found: {}",
                                                 type_and_file_path.second);
                            }
                        }
@@ -442,7 +442,7 @@ public:
     AddSprite(SoldierPartSpriteType::RannyReka, SoldierPartSpriteType::Reka, SoldierPartSpriteType::Reka2, {13, 16}, {0.000, 0.600}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Dlon, SoldierPartSpriteType::Dlon, SoldierPartSpriteType::Dlon2, {16, 20}, {0.000, 0.500}, true, true, 0.0, SoldierSpriteColor::Skin, SoldierSpriteAlpha::Base);
         // clang-format on
-        spdlog::info("Loaded {} soldier part sprites", soldier_part_type_to_data_.size());
+        Spdlog::info("Loaded {} soldier part sprites", soldier_part_type_to_data_.size());
     }
 
     ~SpriteManager()

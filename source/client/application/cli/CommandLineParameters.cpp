@@ -2,8 +2,6 @@ module;
 
 #include "application/config/Config.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <cxxopts.hpp>
 
 #include <iostream>
@@ -11,6 +9,8 @@ module;
 export module Application.CLI.CommandLineParameters;
 
 import Application.Window;
+
+import Extern.Spdlog;
 
 export namespace Soldank::CommandLineParameters
 {
@@ -131,7 +131,7 @@ ParsedValues Parse(const std::vector<const char*>& cli_parameters)
         parsed_values.is_parsing_successful = true;
         return parsed_values;
     } catch (const cxxopts::exceptions::exception& e) {
-        spdlog::critical("error parsing options {}", e.what());
+        Spdlog::critical("error parsing options {}", e.what());
         return parsed_values;
     }
     return parsed_values;

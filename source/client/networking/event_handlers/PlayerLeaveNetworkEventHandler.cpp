@@ -4,11 +4,9 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include "spdlog/spdlog.h"
-
 #include <chrono>
 
-export module PlayerLeaveNetworkEventHandler;
+export module Networking.PlayerLeaveNetworkEventHandler;
 
 export namespace Soldank
 {

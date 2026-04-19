@@ -5,11 +5,11 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include "spdlog/spdlog.h"
-
-export module SoldierInfoNetworkEventHandler;
+export module Networking.SoldierInfoNetworkEventHandler;
 
 import ClientState;
+
+import Extern.Spdlog;
 
 export namespace Soldank
 {
@@ -36,7 +36,7 @@ private:
         }
 
         if (!is_soldier_id_me) {
-            spdlog::info("({}) {} has joined the server", soldier_id, player_nick);
+            Spdlog::info("({}) {} has joined the server", soldier_id, player_nick);
             world_->CreateSoldier(soldier_id);
             world_->GetStateManager()->TransformSoldier(
               soldier_id, [](auto& soldier) { soldier.active = true; });

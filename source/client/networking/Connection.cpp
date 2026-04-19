@@ -1,36 +1,34 @@
 module;
 
-#include "networking/IConnection.hpp"
-
 #include "communication/NetworkEventDispatcher.hpp"
 #include "communication/NetworkMessage.hpp"
-
-#include <steam/steamnetworkingsockets.h>
-#include <steam/isteamnetworkingutils.h>
-
-#include "spdlog/spdlog.h"
 
 #include <string>
 #include <cassert>
 #include <span>
 #include <memory>
 
-export module Connection;
+export module Networking.Connection;
+
+import Networking.IConnection;
+
+import Extern.GameNetworkingSockets;
+import Extern.Spdlog;
 
 export namespace Soldank
 {
 class Connection : public IConnection
 {
 public:
-    Connection(ISteamNetworkingSockets* interface, HSteamNetConnection connection_handle)
+    Connection(GNS::ISteamNetworkingSockets* interface, GNS::HSteamNetConnection connection_handle)
         : interface_(interface)
         , connection_handle_(connection_handle)
     {
         std::string message = "test name";
         interface_->SendMessageToConnection(connection_handle_,
                                             message.c_str(),
-                                            (uint32)message.length(),
-                                            k_nSteamNetworkingSend_Reliable,
+                                            (std::uint32_t)message.length(),
+                                            GNS::nSteamNetworkingSend::Reliable,
                                             nullptr);
     }
 
@@ -38,14 +36,14 @@ public:
       const std::shared_ptr<NetworkEventDispatcher>& network_event_dispatcher) final
     {
         while (true) {
-            ISteamNetworkingMessage* p_incoming_msg = nullptr;
+            GNS::ISteamNetworkingMessage* p_incoming_msg = nullptr;
             int num_msgs =
               interface_->ReceiveMessagesOnConnection(connection_handle_, &p_incoming_msg, 1);
             if (num_msgs == 0) {
                 return;
             }
             if (num_msgs < 0) {
-                spdlog::error("Error checking for messages");
+                Spdlog::error("Error checking for messages");
                 return;
             }
 
@@ -69,10 +67,10 @@ public:
     }
 
     void AssertConnectionInfo(
-      SteamNetConnectionStatusChangedCallback_t* connection_info) const final
+      GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) const final
     {
         assert(connection_info->m_hConn == connection_handle_ ||
-               connection_handle_ == k_HSteamNetConnection_Invalid);
+               connection_handle_ == GNS::HSteamNetConnection_Enum::Invalid);
     }
 
     void SendNetworkMessage(const NetworkMessage& network_message) final
@@ -80,12 +78,12 @@ public:
         interface_->SendMessageToConnection(connection_handle_,
                                             network_message.GetData().data(),
                                             network_message.GetData().size(),
-                                            k_nSteamNetworkingSend_Unreliable,
+                                            GNS::nSteamNetworkingSend::Unreliable,
                                             nullptr);
     }
 
 private:
-    ISteamNetworkingSockets* interface_;
-    HSteamNetConnection connection_handle_;
+    GNS::ISteamNetworkingSockets* interface_;
+    GNS::HSteamNetConnection connection_handle_;
 };
 } // namespace Soldank
