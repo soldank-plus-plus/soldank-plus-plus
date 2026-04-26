@@ -109,7 +109,6 @@ else()
   endif()
 endif()
 
-target_include_directories(client_lib PUBLIC ${SIMPLEINI_INCLUDE_DIRS})
 target_include_directories(client_lib PUBLIC ${CMAKE_SOURCE_DIR}/source/client)
 target_include_directories(client_lib PUBLIC ${CMAKE_SOURCE_DIR}/build/bindings)
 target_include_directories(client_lib PRIVATE ${Stb_INCLUDE_DIR})
@@ -117,6 +116,7 @@ target_include_directories(client_lib PRIVATE ${Stb_INCLUDE_DIR})
 target_link_libraries(client_lib PUBLIC glfw)
 target_link_libraries(client_lib PUBLIC glad)
 target_link_libraries(client_lib PUBLIC glm::glm)
+target_link_libraries(client_lib PRIVATE SimpleIni)
 
 # TODO: check if PNG, ZLIB and BZip2 are needed for linking here
 target_link_libraries(client_lib PRIVATE PNG::PNG)

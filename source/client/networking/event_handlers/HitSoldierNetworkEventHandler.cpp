@@ -1,10 +1,11 @@
 module;
 
-#include "core/IWorld.hpp"
-
-#include <chrono>
+#include <cstdint>
+#include <memory>
 
 export module Networking.HitSoldierNetworkEventHandler;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

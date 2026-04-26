@@ -1,18 +1,16 @@
 module;
 
+#include "core/entities/Soldier.hpp"
+#include "core/math/Glm.hpp"
 #include "core/state/Control.hpp"
-#include "core/World.hpp"
-#include "core/CoreEventHandler.hpp"
+#include "core/state/StateManager.hpp"
 
 #include <GLFW/glfw3.h>
 
-#include <SimpleIni.h>
-
 #include <cmath>
 #include <memory>
-#include <chrono>
 #include <thread>
-#include <span>
+#include <utility>
 #include <vector>
 
 export module Application;
@@ -38,12 +36,17 @@ import Networking.SpawnSoldierNetworkEventHandler;
 import Networking.KillSoldierNetworkEventHandler;
 import Networking.HitSoldierNetworkEventHandler;
 
+import Shared.IWorld;
+import Shared.World;
+import Shared.CoreEventHandler;
+
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
 
 import Extern.GameNetworkingSockets;
 import Extern.Spdlog;
+import Extern.SimpleIni;
 
 export namespace Soldank
 {
@@ -98,8 +101,8 @@ Application::Application(const std::vector<const char*>& cli_parameters)
 {
     Spdlog::set_level(Spdlog::level::debug);
 
-    CSimpleIniA ini_config;
-    SI_Error rc = ini_config.LoadFile("debug_config.ini");
+    SimpleIni::CSimpleIniA ini_config;
+    SimpleIni::SI_Error rc = ini_config.LoadFile("debug_config.ini");
     std::string server_ip;
     int server_port = 0;
     if (rc < 0) {

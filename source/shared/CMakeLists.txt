@@ -7,7 +7,6 @@ set(shared_lib_sources
     core/entities/Soldier.cpp
     core/data/FileReader.cpp
     core/data/FileWriter.cpp
-    core/World.cpp
     core/map/Map.cpp
     core/types/ItemType.cpp
     core/physics/SoldierSkeletonPhysics.cpp
@@ -17,7 +16,6 @@ set(shared_lib_sources
     core/physics/BulletPhysics.cpp
     core/utility/Getline.cpp
     core/math/Calc.cpp
-    core/CoreEventHandler.cpp
     core/animations/states/LegsRunBackAnimationState.cpp
     core/animations/states/BodyThrowWeaponAnimationState.cpp
     core/animations/states/BodyAimAnimationState.cpp
@@ -54,6 +52,10 @@ set(shared_lib_modules
     communication/NetworkMessage.cpp
     communication/NetworkPackets.cpp
     communication/PingTimer.cpp
+
+    core/IWorld.cpp
+    core/World.cpp
+    core/CoreEventHandler.cpp
 )
 
 add_library(shared_lib)

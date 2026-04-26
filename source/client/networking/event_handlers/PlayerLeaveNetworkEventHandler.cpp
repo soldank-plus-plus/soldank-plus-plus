@@ -1,10 +1,10 @@
 module;
 
-#include "core/IWorld.hpp"
-
 #include <chrono>
 
 export module Networking.PlayerLeaveNetworkEventHandler;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

@@ -1,12 +1,13 @@
 module;
 
-#include "core/IWorld.hpp"
 #include "core/entities/Soldier.hpp"
 #include "core/physics/SoldierSkeletonPhysics.hpp"
 
 export module Networking.SoldierStateNetworkEventHandler;
 
 import ClientState;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkPackets;

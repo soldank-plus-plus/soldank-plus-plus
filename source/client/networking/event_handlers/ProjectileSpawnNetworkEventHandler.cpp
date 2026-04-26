@@ -1,8 +1,15 @@
 module;
 
-#include "core/IWorld.hpp"
+#include "core/entities/Bullet.hpp"
+#include "core/types/BulletType.hpp"
+#include "core/types/TeamType.hpp"
+#include "core/types/WeaponType.hpp"
+
+#include <memory>
 
 export module Networking.ProjectileSpawnNetworkEventHandler;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkPackets;

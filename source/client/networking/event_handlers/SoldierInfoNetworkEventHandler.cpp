@@ -1,10 +1,14 @@
 module;
 
-#include "core/IWorld.hpp"
+#include <cstdint>
+#include <string>
+#include <memory>
 
 export module Networking.SoldierInfoNetworkEventHandler;
 
 import ClientState;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkPackets;

@@ -1,8 +1,13 @@
 module;
 
-#include "core/IWorld.hpp"
+#include <core/math/Glm.hpp>
+
+#include <cstdint>
+#include <memory>
 
 export module Networking.SpawnSoldierNetworkEventHandler;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkPackets;

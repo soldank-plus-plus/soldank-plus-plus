@@ -1,10 +1,6 @@
 module;
 
-#include "core/IWorld.hpp"
-
-#include <string>
 #include <memory>
-
 #include <cassert>
 #include <span>
 
@@ -12,6 +8,8 @@ export module Networking.PollGroups.PlayerPollGroup;
 
 export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

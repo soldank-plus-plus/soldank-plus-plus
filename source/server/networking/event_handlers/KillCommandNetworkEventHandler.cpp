@@ -1,12 +1,12 @@
 module;
 
-#include "core/IWorld.hpp"
-
 #include <memory>
 
 export module Networking.EventHandlers.KillCommandNetworkEventHandler;
 
 import Networking.IGameServer;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

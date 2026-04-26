@@ -1,8 +1,8 @@
 module;
 
-#include "core/World.hpp"
-
-#include "core/CoreEventHandler.hpp"
+#include "core/entities/Bullet.hpp"
+#include "core/state/StateManager.hpp"
+#include <core/math/Glm.hpp>
 
 #include <cstdlib>
 #include <memory>
@@ -23,6 +23,10 @@ import Networking.LobbyClient;
 import Networking.EventHandlers.KillCommandNetworkEventHandler;
 import Networking.EventHandlers.PingCheckNetworkEventHandler;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
+
+import Shared.IWorld;
+import Shared.World;
+import Shared.CoreEventHandler;
 
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEventDispatcher;

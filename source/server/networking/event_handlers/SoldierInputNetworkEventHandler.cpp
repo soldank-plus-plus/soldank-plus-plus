@@ -1,6 +1,7 @@
 module;
 
-#include "core/IWorld.hpp"
+#include "core/state/Control.hpp"
+#include <core/math/Glm.hpp>
 
 #include <memory>
 
@@ -9,6 +10,8 @@ export module Networking.EventHandlers.SoldierInputNetworkEventHandler;
 import Networking.IGameServer;
 
 import Application.ServerState;
+
+import Shared.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

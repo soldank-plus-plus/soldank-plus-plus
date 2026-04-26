@@ -1,5 +1,4 @@
-#ifndef __IWORLD_HPP__
-#define __IWORLD_HPP__
+module;
 
 #include "core/animations/AnimationData.hpp"
 #include "core/math/Glm.hpp"
@@ -11,7 +10,9 @@
 #include <functional>
 #include <optional>
 
-namespace Soldank
+export module Shared.IWorld;
+
+export namespace Soldank
 {
 class IWorld
 {
@@ -64,5 +65,3 @@ public:
     virtual void SetFPSLimit(int new_fps_limit) = 0;
 };
 } // namespace Soldank
-
-#endif
