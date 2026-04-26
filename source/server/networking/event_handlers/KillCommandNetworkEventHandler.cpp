@@ -1,8 +1,5 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
-#include "communication/NetworkEvent.hpp"
-
 #include "core/IWorld.hpp"
 
 #include <memory>
@@ -10,6 +7,9 @@ module;
 export module Networking.EventHandlers.KillCommandNetworkEventHandler;
 
 import Networking.IGameServer;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 export namespace Soldank
 {

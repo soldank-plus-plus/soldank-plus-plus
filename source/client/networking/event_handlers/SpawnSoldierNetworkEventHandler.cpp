@@ -2,9 +2,11 @@ module;
 
 #include "core/IWorld.hpp"
 
-#include "communication/NetworkEventDispatcher.hpp"
-
 export module Networking.SpawnSoldierNetworkEventHandler;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkPackets;
+import Shared.Networking.NetworkEvent;
 
 import Extern.Spdlog;
 

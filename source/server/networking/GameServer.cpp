@@ -1,8 +1,5 @@
 module;
 
-#include "communication/NetworkMessage.hpp"
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include "core/IWorld.hpp"
 
 #include <memory>
@@ -17,6 +14,10 @@ import Networking.IGameServer;
 import Networking.Interface.NetworkingInterface;
 import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
+
+import Shared.Networking.NetworkMessage;
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 import Extern.Spdlog;
 import Extern.GameNetworkingSockets;

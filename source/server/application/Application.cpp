@@ -2,9 +2,6 @@ module;
 
 #include "core/World.hpp"
 
-#include "communication/NetworkPackets.hpp"
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include "core/CoreEventHandler.hpp"
 
 #include <cstdlib>
@@ -26,6 +23,10 @@ import Networking.LobbyClient;
 import Networking.EventHandlers.KillCommandNetworkEventHandler;
 import Networking.EventHandlers.PingCheckNetworkEventHandler;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
+
+import Shared.Networking.NetworkPackets;
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 import Extern.SimpleIni;
 import Extern.Spdlog;

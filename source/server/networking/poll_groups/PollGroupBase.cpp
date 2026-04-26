@@ -1,7 +1,5 @@
 module;
 
-#include "communication/NetworkMessage.hpp"
-
 #include <cassert>
 #include <optional>
 #include <unordered_map>
@@ -11,6 +9,8 @@ export module Networking.PollGroups.PollGroupBase;
 
 export import Networking.PollGroups.IPollGroup;
 import Networking.Types.Connection;
+
+import Shared.Networking.NetworkMessage;
 
 import Extern.Spdlog;
 import Extern.GameNetworkingSockets;

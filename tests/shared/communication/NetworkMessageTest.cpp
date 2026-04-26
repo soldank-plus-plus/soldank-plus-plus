@@ -1,12 +1,13 @@
-#include "communication/NetworkMessage.hpp"
-#include "communication/NetworkEvent.hpp"
-
 #include <gtest/gtest.h>
 
 #include <cstddef>
 #include <array>
 #include <optional>
 #include <utility>
+
+import Shared.Networking.NetworkMessage;
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 using namespace Soldank;
 

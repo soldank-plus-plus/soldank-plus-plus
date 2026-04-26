@@ -1,12 +1,13 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include "core/IWorld.hpp"
 
 #include <chrono>
 
 export module Networking.HitSoldierNetworkEventHandler;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 export namespace Soldank
 {

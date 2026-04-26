@@ -1,7 +1,5 @@
 module;
 
-#include "communication/NetworkEvent.hpp"
-
 #include <utility>
 #include <span>
 #include <cassert>
@@ -13,6 +11,8 @@ export module Networking.PollGroups.EntryPollGroup;
 
 export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
+
+import Shared.Networking.NetworkEvent;
 
 import Extern.Spdlog;
 import Extern.GameNetworkingSockets;

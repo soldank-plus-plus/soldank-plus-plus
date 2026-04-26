@@ -1,12 +1,13 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include <memory>
 
 export module Networking.EventHandlers.PingCheckNetworkEventHandler;
 
 import Networking.IGameServer;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 export namespace Soldank
 {

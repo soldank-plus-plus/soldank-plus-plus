@@ -1,7 +1,6 @@
-#ifndef __NETWORK_EVENTS_HPP__
-#define __NETWORK_EVENTS_HPP__
+export module Shared.Networking.NetworkEvent;
 
-namespace Soldank
+export namespace Soldank
 {
 enum class NetworkEvent : unsigned int
 {
@@ -19,5 +18,3 @@ enum class NetworkEvent : unsigned int
     HitSoldier
 };
 }
-
-#endif

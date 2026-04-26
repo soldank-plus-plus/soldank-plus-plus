@@ -4,9 +4,6 @@ module;
 #include "core/World.hpp"
 #include "core/CoreEventHandler.hpp"
 
-#include "communication/NetworkPackets.hpp"
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include <GLFW/glfw3.h>
 
 #include <SimpleIni.h>
@@ -40,6 +37,10 @@ import Networking.SoldierStateNetworkEventHandler;
 import Networking.SpawnSoldierNetworkEventHandler;
 import Networking.KillSoldierNetworkEventHandler;
 import Networking.HitSoldierNetworkEventHandler;
+
+import Shared.Networking.NetworkPackets;
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 import Extern.GameNetworkingSockets;
 import Extern.Spdlog;

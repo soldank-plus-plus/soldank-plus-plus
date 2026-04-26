@@ -1,23 +1,23 @@
 set(server_lib_modules
-    ./application/Application.cpp
-    ./application/ServerState.cpp
+    application/Application.cpp
+    application/ServerState.cpp
 
-    ./scripting/IScriptingEngine.cpp
-    ./scripting/dascript/DaScriptScriptingEngine.cpp
+    scripting/IScriptingEngine.cpp
+    scripting/dascript/DaScriptScriptingEngine.cpp
 
-    ./networking/IGameServer.cpp
-    ./networking/GameServer.cpp
-    ./networking/CoreEventsConnectionNotifier.cpp
-    ./networking/LobbyClient.cpp
-    ./networking/event_handlers/KillCommandNetworkEventHandler.cpp
-    ./networking/event_handlers/PingCheckNetworkEventHandler.cpp
-    ./networking/event_handlers/SoldierInputNetworkEventHandler.cpp
-    ./networking/interface/NetworkingInterface.cpp
-    ./networking/poll_groups/IPollGroup.cpp
-    ./networking/poll_groups/PollGroupBase.cpp
-    ./networking/poll_groups/EntryPollGroup.cpp
-    ./networking/poll_groups/PlayerPollGroup.cpp
-    ./networking/types/Connection.cpp
+    networking/IGameServer.cpp
+    networking/GameServer.cpp
+    networking/CoreEventsConnectionNotifier.cpp
+    networking/LobbyClient.cpp
+    networking/event_handlers/KillCommandNetworkEventHandler.cpp
+    networking/event_handlers/PingCheckNetworkEventHandler.cpp
+    networking/event_handlers/SoldierInputNetworkEventHandler.cpp
+    networking/interface/NetworkingInterface.cpp
+    networking/poll_groups/IPollGroup.cpp
+    networking/poll_groups/PollGroupBase.cpp
+    networking/poll_groups/EntryPollGroup.cpp
+    networking/poll_groups/PlayerPollGroup.cpp
+    networking/types/Connection.cpp
 )
 
 add_library(server_lib)

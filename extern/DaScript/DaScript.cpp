@@ -19,7 +19,7 @@ using Module = das::Module;
 template<class T, class... Args>
 constexpr auto make_smart = das::make_smart<T, Args...>;
 
-constexpr auto compileDaScript(const das::string& fileName,
+auto compileDaScript(const das::string& fileName,
                                const das::FileAccessPtr& access,
                                das::TextWriter& logs,
                                das::ModuleGroup& libGroup,

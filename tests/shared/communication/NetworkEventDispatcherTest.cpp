@@ -1,11 +1,11 @@
-#include "communication/NetworkEventDispatcher.hpp"
-#include "communication/NetworkMessage.hpp"
-#include "communication/NetworkEvent.hpp"
-
 #include <gtest/gtest.h>
 
 #include <memory>
 #include <vector>
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkMessage;
+import Shared.Networking.NetworkEvent;
 
 using namespace Soldank;
 

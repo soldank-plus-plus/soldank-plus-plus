@@ -1,7 +1,4 @@
-#ifndef __NETWORK_MESSAGE_HPP__
-#define __NETWORK_MESSAGE_HPP__
-
-#include "communication/NetworkEvent.hpp"
+module;
 
 #include <span>
 #include <vector>
@@ -11,10 +8,13 @@
 #include <cmath>
 #include <utility>
 
+export module Shared.Networking.NetworkMessage;
+
+import Shared.Networking.NetworkEvent;
+
 namespace Soldank
 {
-enum class ParseError : unsigned short
-{
+export enum class ParseError : unsigned short {
     InvalidStringSize = 0,
     BufferTooSmall,
     BufferTooBig,
@@ -153,7 +153,7 @@ struct NetworkMessageData
 };
 } // namespace
 
-class NetworkMessage
+export class NetworkMessage
 {
 public:
     NetworkMessage(std::span<const char> data)
@@ -261,5 +261,3 @@ private:
     std::vector<char> data_;
 };
 }; // namespace Soldank
-
-#endif

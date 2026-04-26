@@ -1,8 +1,5 @@
 module;
 
-#include "communication/NetworkPackets.hpp"
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include "core/IWorld.hpp"
 #include "core/entities/Soldier.hpp"
 #include "core/physics/SoldierSkeletonPhysics.hpp"
@@ -10,6 +7,10 @@ module;
 export module Networking.SoldierStateNetworkEventHandler;
 
 import ClientState;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkPackets;
+import Shared.Networking.NetworkEvent;
 
 export namespace Soldank
 {

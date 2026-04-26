@@ -5,9 +5,6 @@ module;
 
 #include "core/math/Glm.hpp"
 
-#include "communication/NetworkPackets.hpp"
-#include "communication/PingTimer.hpp"
-
 #include <optional>
 #include <list>
 #include <chrono>
@@ -16,6 +13,9 @@ module;
 export module ClientState;
 
 import Camera;
+
+import Shared.Networking.PingTimer;
+import Shared.Networking.NetworkPackets;
 
 export namespace Soldank
 {

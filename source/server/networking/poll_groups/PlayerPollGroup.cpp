@@ -1,13 +1,9 @@
 module;
 
 #include "core/IWorld.hpp"
-#include "communication/NetworkEventDispatcher.hpp"
 
 #include <string>
 #include <memory>
-#include "communication/NetworkEvent.hpp"
-
-#include "communication/NetworkMessage.hpp"
 
 #include <cassert>
 #include <span>
@@ -16,6 +12,10 @@ export module Networking.PollGroups.PlayerPollGroup;
 
 export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
+import Shared.Networking.NetworkMessage;
 
 import Extern.Spdlog;
 import Extern.GameNetworkingSockets;

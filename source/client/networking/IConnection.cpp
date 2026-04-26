@@ -1,8 +1,11 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
+#include <memory>
 
 export module Networking.IConnection;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkMessage;
 
 import Extern.GameNetworkingSockets;
 

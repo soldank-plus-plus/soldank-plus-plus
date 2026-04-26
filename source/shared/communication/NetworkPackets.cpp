@@ -1,5 +1,4 @@
-#ifndef __NETWORK_PACKETS_HPP__
-#define __NETWORK_PACKETS_HPP__
+module;
 
 #include "core/state/Control.hpp"
 #include "core/animations/AnimationData.hpp"
@@ -9,7 +8,9 @@
 
 #include <cstdint>
 
-namespace Soldank
+export module Shared.Networking.NetworkPackets;
+
+export namespace Soldank
 {
 #pragma pack(push, 1)
 struct SoldierInputPacket
@@ -83,5 +84,3 @@ struct ProjectileSpawnPacket
 };
 #pragma pack(pop)
 } // namespace Soldank
-
-#endif

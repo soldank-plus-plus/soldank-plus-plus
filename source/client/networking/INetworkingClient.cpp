@@ -1,10 +1,11 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include <memory>
 
 export module Networking.INetworkingClient;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkMessage;
 
 export namespace Soldank
 {

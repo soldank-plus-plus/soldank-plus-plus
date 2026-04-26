@@ -1,12 +1,13 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include <chrono>
 
 export module Networking.PingCheckNetworkEventHandler;
 
 import ClientState;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 export namespace Soldank
 {

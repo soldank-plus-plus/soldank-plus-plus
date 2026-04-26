@@ -1,8 +1,5 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
-#include "communication/NetworkPackets.hpp"
-
 #include "core/IWorld.hpp"
 
 #include <memory>
@@ -12,6 +9,10 @@ export module Networking.EventHandlers.SoldierInputNetworkEventHandler;
 import Networking.IGameServer;
 
 import Application.ServerState;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
+import Shared.Networking.NetworkPackets;
 
 import Extern.Spdlog;
 

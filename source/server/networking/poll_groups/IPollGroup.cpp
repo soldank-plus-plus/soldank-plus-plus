@@ -1,12 +1,13 @@
 module;
 
-#include "communication/NetworkMessage.hpp"
-
 #include <optional>
+#include <string>
 
 export module Networking.PollGroups.IPollGroup;
 
 import Networking.Types.Connection;
+
+import Shared.Networking.NetworkMessage;
 
 import Extern.GameNetworkingSockets;
 

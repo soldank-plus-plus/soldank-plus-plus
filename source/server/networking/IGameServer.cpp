@@ -1,8 +1,6 @@
-module;
-
-#include "communication/NetworkMessage.hpp"
-
 export module Networking.IGameServer;
+
+import Shared.Networking.NetworkMessage;
 
 export namespace Soldank
 {

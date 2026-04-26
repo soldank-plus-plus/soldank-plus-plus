@@ -1,12 +1,13 @@
 module;
 
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include "core/IWorld.hpp"
 
 export module Networking.AssignPlayerIdNetworkEventHandler;
 
 import ClientState;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkEvent;
 
 import Extern.Spdlog;
 

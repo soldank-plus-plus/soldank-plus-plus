@@ -1,13 +1,14 @@
 module;
 
-#include "communication/NetworkPackets.hpp"
-#include "communication/NetworkEventDispatcher.hpp"
-
 #include "core/IWorld.hpp"
 
 export module Networking.SoldierInfoNetworkEventHandler;
 
 import ClientState;
+
+import Shared.Networking.NetworkEventDispatcher;
+import Shared.Networking.NetworkPackets;
+import Shared.Networking.NetworkEvent;
 
 import Extern.Spdlog;
 
