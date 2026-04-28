@@ -1,69 +1,79 @@
-#include "core/animations/states/LegsProneMoveAnimationState.hpp"
+module;
 
-#include "core/animations/states/LegsGetUpAnimationState.hpp"
-#include "core/animations/states/LegsProneAnimationState.hpp"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <vector>
 
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
+export module Shared.Core.Animations.States:LegsProneMoveAnimationState;
 
-#include "core/entities/Soldier.hpp"
-#include "core/physics/Constants.hpp"
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class LegsProneMoveAnimationState final : public Soldank::AnimationState
+{
+public:
+    LegsProneMoveAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::ProneMove))
+    {
+    }
+
+    ~LegsProneMoveAnimationState() override = default;
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+    void Update(UpdateParams& params) final
+    {
+        params.stance = PhysicsConstants::STANCE_PRONE;
+
+        if (GetSpeed() > 2) {
+            params.velocity.x /= (float)GetSpeed();
+            params.velocity.y /= (float)GetSpeed();
+        }
+
+        if ((GetFrame() < 4) || (GetFrame() > 14)) {
+            if (params.on_ground) {
+                if (params.control.left) {
+                    params.force.x = -PhysicsConstants::PRONESPEED;
+                } else {
+                    params.force.x = PhysicsConstants::PRONESPEED;
+                }
+            }
+        }
+    }
+
+private:
+};
+} // namespace Soldank
 
 namespace Soldank
 {
-LegsProneMoveAnimationState::LegsProneMoveAnimationState(
-  const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::ProneMove))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> LegsProneMoveAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-std::optional<std::shared_ptr<AnimationState>> LegsProneMoveAnimationState::HandleInput(
-  Soldier& soldier)
-{
-    if (!soldier.control.left && !soldier.control.right) {
-        auto new_state = std::make_shared<LegsProneAnimationState>(animation_data_manager_);
-        new_state->SetFrame(26);
-        return new_state;
+    if (!params.control.left && !params.control.right) {
+        return AnimationState::Transition{ AnimationType::Prone, 26 };
     }
 
-    if (soldier.on_ground) {
+    if (params.on_ground) {
         auto maybe_rolling_animation_state =
-          CommonAnimationStateTransitions::TryTransitionToRolling(soldier, animation_data_manager_);
+          CommonAnimationStateTransitions::TryTransitionToRolling(params);
         if (maybe_rolling_animation_state.has_value()) {
             return *maybe_rolling_animation_state;
         }
     }
 
-    if (soldier.control.prone || soldier.direction != soldier.old_direction) {
-        auto new_state = std::make_shared<LegsGetUpAnimationState>(animation_data_manager_);
-        new_state->SetFrame(9);
-        return new_state;
+    if (params.control.prone || params.direction != params.old_direction) {
+        return AnimationState::Transition{ AnimationType::GetUp, 9 };
     }
 
     return std::nullopt;
-}
-
-void LegsProneMoveAnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events)
-{
-    soldier.stance = PhysicsConstants::STANCE_PRONE;
-
-    if (GetSpeed() > 2) {
-        soldier.particle.velocity_.x /= (float)GetSpeed();
-        soldier.particle.velocity_.y /= (float)GetSpeed();
-    }
-
-    if ((GetFrame() < 4) || (GetFrame() > 14)) {
-        if (soldier.on_ground) {
-            if (soldier.control.left) {
-                glm::vec2 particle_force = soldier.particle.GetForce();
-                particle_force.x = -PhysicsConstants::PRONESPEED;
-                soldier.particle.SetForce(particle_force);
-            } else {
-                glm::vec2 particle_force = soldier.particle.GetForce();
-                particle_force.x = PhysicsConstants::PRONESPEED;
-                soldier.particle.SetForce(particle_force);
-            }
-        }
-    }
 }
 } // namespace Soldank

@@ -1,14 +1,15 @@
 module;
 
-#include "core/map/PMSStructs.hpp"
-#include "core/state/StateManager.hpp"
-
+#include <utility>
 #include <vector>
 
 export module ColorObjectsMapEditorAction;
 
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

@@ -73,6 +73,7 @@ set(client_lib_modules
     rendering/renderer/interface/debug/DebugUI.cpp
     rendering/renderer/interface/map_editor/GridRenderer.cpp
     rendering/renderer/interface/map_editor/MapEditorScene.cpp
+    rendering/renderer/interface/map_editor/MapEditorState.cpp
     rendering/renderer/interface/map_editor/MapEditorToolDetailsWindow.cpp
     rendering/renderer/interface/map_editor/MapEditorUI.cpp
     rendering/renderer/interface/map_editor/PolygonVertexOutlinesRenderer.cpp

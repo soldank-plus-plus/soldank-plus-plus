@@ -1,14 +1,9 @@
 module;
 
+#include "core/math/Glm.hpp"
+
 #include "rendering/shaders/ShaderSources.hpp"
 #include "rendering/data/sprites/SpriteTypes.hpp"
-
-#include "core/types/WeaponType.hpp"
-#include "core/math/Calc.hpp"
-#include "core/utility/VisitHelper.hpp"
-#include "core/map/Map.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/math/Glm.hpp"
 
 #include <glad/glad.h>
 
@@ -26,6 +21,14 @@ import Renderer;
 import SpritesManager;
 import SoldierPartData;
 import Shader;
+
+import Shared.Core.Types.WeaponType;
+import Shared.Core.Math.Calc;
+import Shared.Core.Utility.VisitHelper;
+import Shared.Core.Map.Map;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Animations;
 
 export namespace Soldank
 {

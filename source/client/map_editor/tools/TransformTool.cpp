@@ -1,12 +1,17 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/map/PMSStructs.hpp"
-#include "core/math/Calc.hpp"
+#include "core/math/Glm.hpp"
 
+#include <algorithm>
+#include <array>
+#include <bitset>
+#include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <utility>
+#include <vector>
 
 export module TransformTool;
 
@@ -18,6 +23,11 @@ import RotateSelectionMapEditorAction;
 import MoveSelectionMapEditorAction;
 import RotateSelectionMapEditorAction;
 import ScaleSelectionMapEditorAction;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Math.Calc;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

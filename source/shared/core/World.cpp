@@ -1,46 +1,6 @@
 module;
 
-#include "core/state/State.hpp"
-#include "core/state/StateManager.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/physics/PhysicsEvents.hpp"
-#include "core/WorldEvents.hpp"
-
-#include "core/animations/AnimationData.hpp"
-#include "core/animations/states/BodyAimAnimationState.hpp"
-#include "core/animations/states/BodyChangeAnimationState.hpp"
-#include "core/animations/states/BodyGetUpAnimationState.hpp"
-#include "core/animations/states/BodyProneAnimationState.hpp"
-#include "core/animations/states/BodyProneMoveAnimationState.hpp"
-#include "core/animations/states/BodyPunchAnimationState.hpp"
-#include "core/animations/states/BodyRollAnimationState.hpp"
-#include "core/animations/states/BodyRollBackAnimationState.hpp"
-#include "core/animations/states/BodyStandAnimationState.hpp"
-#include "core/animations/states/BodyThrowAnimationState.hpp"
-#include "core/animations/states/BodyThrowWeaponAnimationState.hpp"
-#include "core/animations/states/LegsCrouchAnimationState.hpp"
-#include "core/animations/states/LegsCrouchRunAnimationState.hpp"
-#include "core/animations/states/LegsCrouchRunBackAnimationState.hpp"
-#include "core/animations/states/LegsFallAnimationState.hpp"
-#include "core/animations/states/LegsGetUpAnimationState.hpp"
-#include "core/animations/states/LegsJumpAnimationState.hpp"
-#include "core/animations/states/LegsJumpSideAnimationState.hpp"
-#include "core/animations/states/LegsProneAnimationState.hpp"
-#include "core/animations/states/LegsProneMoveAnimationState.hpp"
-#include "core/animations/states/LegsRollAnimationState.hpp"
-#include "core/animations/states/LegsRollBackAnimationState.hpp"
-#include "core/animations/states/LegsRunAnimationState.hpp"
-#include "core/animations/states/LegsRunBackAnimationState.hpp"
-#include "core/animations/states/LegsStandAnimationState.hpp"
-
-#include "core/map/PMSEnums.hpp"
-#include "core/physics/Particles.hpp"
-#include "core/physics/SoldierSkeletonPhysics.hpp"
-#include "core/state/Control.hpp"
-#include "core/physics/BulletPhysics.hpp"
-#include "core/physics/SoldierPhysics.hpp"
-#include "core/physics/ItemPhysics.hpp"
-#include "core/entities/WeaponParametersFactory.hpp"
+#include "core/math/Glm.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -56,9 +16,28 @@ module;
 #include <utility>
 #include <optional>
 
-export module Shared.World;
+export module Shared.Core.World;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
+import Shared.Core.WorldEvents;
+import Shared.Core.Physics.BulletPhysics;
+import Shared.Core.Physics.ItemPhysics;
+import Shared.Core.Physics.SoldierPhysics;
+import Shared.Core.Physics.SoldierSkeletonPhysics;
+import Shared.Core.State.StateManager;
+import Shared.Core.State.State;
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Physics.PhysicsEvents;
+
+import Shared.Core.Animations;
+import Shared.Core.Animations.States;
+
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Physics.Particles;
+import Shared.Core.State.Control;
+import Shared.Core.Entities.WeaponParametersFactory;
+import Shared.Core.Types.WeaponType;
 
 export namespace Soldank
 {

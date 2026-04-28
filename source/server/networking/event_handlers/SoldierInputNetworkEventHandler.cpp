@@ -1,7 +1,6 @@
 module;
 
-#include "core/state/Control.hpp"
-#include <core/math/Glm.hpp>
+#include "core/math/Glm.hpp"
 
 #include <memory>
 
@@ -11,11 +10,12 @@ import Networking.IGameServer;
 
 import Application.ServerState;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkPackets;
+import Shared.Core.State.Control;
 
 import Extern.Spdlog;
 

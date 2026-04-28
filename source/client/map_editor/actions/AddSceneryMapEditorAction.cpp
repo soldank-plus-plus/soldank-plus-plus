@@ -1,15 +1,16 @@
 module;
 
-#include "core/map/PMSConstants.hpp"
-#include "core/map/PMSStructs.hpp"
-#include "core/state/StateManager.hpp"
-
 #include <string>
+#include <utility>
 
 export module AddSceneryMapEditorAction;
 
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

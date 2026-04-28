@@ -1,51 +1,3 @@
-set(shared_lib_sources
-    core/state/State.cpp
-    core/state/StateManager.cpp
-    core/entities/Weapon.cpp
-    core/entities/WeaponParametersFactory.cpp
-    core/entities/Bullet.cpp
-    core/entities/Soldier.cpp
-    core/data/FileReader.cpp
-    core/data/FileWriter.cpp
-    core/map/Map.cpp
-    core/types/ItemType.cpp
-    core/physics/SoldierSkeletonPhysics.cpp
-    core/physics/SoldierPhysics.cpp
-    core/physics/ItemPhysics.cpp
-    core/physics/Particles.cpp
-    core/physics/BulletPhysics.cpp
-    core/utility/Getline.cpp
-    core/math/Calc.cpp
-    core/animations/states/LegsRunBackAnimationState.cpp
-    core/animations/states/BodyThrowWeaponAnimationState.cpp
-    core/animations/states/BodyAimAnimationState.cpp
-    core/animations/states/CommonAnimationStateTransitions.cpp
-    core/animations/states/LegsStandAnimationState.cpp
-    core/animations/states/LegsRunAnimationState.cpp
-    core/animations/states/BodyPunchAnimationState.cpp
-    core/animations/states/BodyRollAnimationState.cpp
-    core/animations/states/LegsCrouchRunBackAnimationState.cpp
-    core/animations/states/LegsJumpSideAnimationState.cpp
-    core/animations/states/BodyProneMoveAnimationState.cpp
-    core/animations/states/LegsProneMoveAnimationState.cpp
-    core/animations/states/LegsCrouchAnimationState.cpp
-    core/animations/states/LegsCrouchRunAnimationState.cpp
-    core/animations/states/BodyProneAnimationState.cpp
-    core/animations/states/LegsFallAnimationState.cpp
-    core/animations/states/LegsGetUpAnimationState.cpp
-    core/animations/states/BodyRollBackAnimationState.cpp
-    core/animations/states/BodyGetUpAnimationState.cpp
-    core/animations/states/LegsProneAnimationState.cpp
-    core/animations/states/LegsRollAnimationState.cpp
-    core/animations/states/BodyStandAnimationState.cpp
-    core/animations/states/LegsRollBackAnimationState.cpp
-    core/animations/states/BodyChangeAnimationState.cpp
-    core/animations/states/BodyThrowAnimationState.cpp
-    core/animations/states/LegsJumpAnimationState.cpp
-    core/animations/AnimationData.cpp
-    core/animations/AnimationState.cpp
-)
-
 set(shared_lib_modules
     communication/NetworkEvent.cpp
     communication/NetworkEventDispatcher.cpp
@@ -55,14 +7,86 @@ set(shared_lib_modules
 
     core/IWorld.cpp
     core/World.cpp
+    core/WorldEvents.cpp
     core/CoreEventHandler.cpp
+
+    core/animations/AnimationData.cpp
+    core/animations/AnimationState.cpp
+    core/animations/Animations.cpp
+    core/animations/AnimationsStates.cpp
+    core/animations/states/BodyAimAnimationState.cpp
+    core/animations/states/BodyChangeAnimationState.cpp
+    core/animations/states/BodyGetUpAnimationState.cpp
+    core/animations/states/BodyProneAnimationState.cpp
+    core/animations/states/BodyProneMoveAnimationState.cpp
+    core/animations/states/BodyPunchAnimationState.cpp
+    core/animations/states/BodyRollAnimationState.cpp
+    core/animations/states/BodyRollBackAnimationState.cpp
+    core/animations/states/BodyStandAnimationState.cpp
+    core/animations/states/BodyThrowAnimationState.cpp
+    core/animations/states/BodyThrowWeaponAnimationState.cpp
+    core/animations/states/CommonAnimationStateTransitions.cpp
+    core/animations/states/LegsCrouchAnimationState.cpp
+    core/animations/states/LegsCrouchRunAnimationState.cpp
+    core/animations/states/LegsCrouchRunBackAnimationState.cpp
+    core/animations/states/LegsFallAnimationState.cpp
+    core/animations/states/LegsGetUpAnimationState.cpp
+    core/animations/states/LegsJumpAnimationState.cpp
+    core/animations/states/LegsJumpSideAnimationState.cpp
+    core/animations/states/LegsProneAnimationState.cpp
+    core/animations/states/LegsProneMoveAnimationState.cpp
+    core/animations/states/LegsRollAnimationState.cpp
+    core/animations/states/LegsRollBackAnimationState.cpp
+    core/animations/states/LegsRunAnimationState.cpp
+    core/animations/states/LegsRunBackAnimationState.cpp
+    core/animations/states/LegsStandAnimationState.cpp
+
+    core/config/Config.cpp
+
+    core/data/FileReader.cpp
+    core/data/IFileReader.cpp
+    core/data/FileWriter.cpp
+    core/data/IFileWriter.cpp
+
+    core/entities/Bullet.cpp
+    core/entities/Item.cpp
+    core/entities/Soldier.cpp
+    core/entities/Weapon.cpp
+    core/entities/WeaponParameters.cpp
+    core/entities/WeaponParametersFactory.cpp
+
+    core/map/Map.cpp
+    core/map/PMSEnums.cpp
+    core/map/PMSStructs.cpp
+    core/map/PMSConstants.cpp
+
+    core/math/Glm.cpp
+    core/math/Calc.cpp
+
+    core/physics/BulletPhysics.cpp
+    core/physics/Constants.cpp
+    core/physics/ItemPhysics.cpp
+    core/physics/SoldierPhysics.cpp
+    core/physics/SoldierSkeletonPhysics.cpp
+    core/physics/Particles.cpp
+    core/physics/PhysicsEvents.cpp
+
+    core/state/Control.cpp
+    core/state/State.cpp
+    core/state/StateManager.cpp
+
+    core/types/BulletType.cpp
+    core/types/ItemType.cpp
+    core/types/TeamType.cpp
+    core/types/WeaponGroupType.cpp
+    core/types/WeaponType.cpp
+
+    core/utility/Getline.cpp
+    core/utility/Observable.cpp
+    core/utility/VisitHelper.cpp
 )
 
 add_library(shared_lib)
-target_sources(shared_lib
-    PUBLIC
-    ${shared_lib_sources}
-)
 target_sources(shared_lib
     PUBLIC
         FILE_SET all_shared_lib_modules TYPE CXX_MODULES FILES 

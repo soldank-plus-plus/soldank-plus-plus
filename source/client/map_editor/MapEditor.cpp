@@ -1,10 +1,5 @@
 module;
 
-#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
-
-#include "core/map/PMSEnums.hpp"
-#include "core/map/PMSStructs.hpp"
-#include "core/state/StateManager.hpp"
 #include "core/math/Glm.hpp"
 
 #include <GLFW/glfw3.h>
@@ -20,6 +15,7 @@ export module MapEditor;
 import Tool;
 import MapEditorAction;
 import ClientState;
+import MapEditorState;
 import AddObjectsMapEditorAction;
 import RemoveSelectionMapEditorAction;
 import TransformPolygonsMapEditorAction;
@@ -36,6 +32,10 @@ import TransformTool;
 import VertexColorTool;
 import VertexSelectionTool;
 import WaypointTool;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

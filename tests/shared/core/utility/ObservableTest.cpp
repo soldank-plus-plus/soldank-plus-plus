@@ -1,6 +1,6 @@
-#include "core/utility/Observable.hpp"
-
 #include <gtest/gtest.h>
+
+import Shared.Core.Utility.Observable;
 
 TEST(UtilityTests, TestObservable)
 {

@@ -1,10 +1,10 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/map/PMSEnums.hpp"
-#include "core/map/PMSStructs.hpp"
+#include "core/math/Glm.hpp"
 
+#include <functional>
 #include <memory>
+#include <utility>
 
 export module SpawnpointTool;
 
@@ -12,6 +12,11 @@ import Tool;
 import AddSpawnPointMapEditorAction;
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

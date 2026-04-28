@@ -1,10 +1,9 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/utility/Observable.hpp"
-#include "core/math/Calc.hpp"
 #include "core/math/Glm.hpp"
 
+#include <algorithm>
+#include <cstdint>
 #include <memory>
 
 export module SelectionTool;
@@ -12,6 +11,11 @@ export module SelectionTool;
 import Tool;
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Utility.Observable;
+import Shared.Core.Math.Calc;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

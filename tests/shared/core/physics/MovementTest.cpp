@@ -1,26 +1,24 @@
-#include "core/animations/AnimationData.hpp"
-#include "shared_lib_testing/MapBuilder.hpp"
-#include "core/map/PMSEnums.hpp"
-#include "core/map/PMSStructs.hpp"
-
-#include "core/physics/SoldierPhysics.hpp"
-
-#include "core/animations/AnimationState.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/entities/WeaponParametersFactory.hpp"
-#include "core/state/StateManager.hpp"
-#include "core/data/IFileReader.hpp"
-
-#include "SoldierMovementSimulation.hpp"
-
 #include <gtest/gtest.h>
 
 #include <vector>
 #include <algorithm>
+#include <expected>
 #include <unordered_map>
 #include <filesystem>
 #include <fstream>
 #include <span>
+
+import Tests.Shared.Core.Physics.SoldierMovementSimulation;
+import Testing.Framework.Shared.MapBuilder;
+
+import Shared.Core.Physics.SoldierPhysics;
+import Shared.Core.State.StateManager;
+import Shared.Core.Animations;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.WeaponParametersFactory;
+import Shared.Core.Data.IFileReader;
 
 std::filesystem::path test_file_path;
 

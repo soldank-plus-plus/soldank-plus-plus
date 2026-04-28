@@ -1,6 +1,7 @@
 module;
 
 #include <cassert>
+#include <string>
 #include <optional>
 #include <unordered_map>
 #include <format>

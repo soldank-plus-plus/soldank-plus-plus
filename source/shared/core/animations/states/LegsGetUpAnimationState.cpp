@@ -1,86 +1,99 @@
-#include "core/animations/states/LegsGetUpAnimationState.hpp"
+module;
 
-#include "core/animations/states/LegsJumpSideAnimationState.hpp"
-#include "core/animations/states/LegsJumpAnimationState.hpp"
-#include "core/animations/states/LegsStandAnimationState.hpp"
-#include "core/animations/states/LegsFallAnimationState.hpp"
-#include "core/animations/states/LegsRunAnimationState.hpp"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <vector>
 
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
+export module Shared.Core.Animations.States:LegsGetUpAnimationState;
 
-#include "core/physics/Constants.hpp"
-#include "core/entities/Soldier.hpp"
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class LegsGetUpAnimationState final : public Soldank::AnimationState
+{
+public:
+    LegsGetUpAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::GetUp))
+    {
+    }
+
+    ~LegsGetUpAnimationState() override = default;
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+    void Update(UpdateParams& params) final { params.stance = PhysicsConstants::STANCE_STAND; }
+
+private:
+    /*
+    This method is used for the so called "prone cancelling".
+    It's a trick in Soldank++ to skip GetUp animation.
+    The main benefit is not to break momentum when running around
+    */
+    static bool ShouldCancelAnimation(const HandleInputParams& params)
+    {
+        if (params.control.throw_grenade) {
+            return true;
+        }
+
+        if (params.control.fire &&
+            (params.weapons[params.active_weapon].GetWeaponParameters().kind ==
+               WeaponType::NoWeapon ||
+             params.weapons[params.active_weapon].GetWeaponParameters().kind ==
+               WeaponType::Knife)) {
+            return true;
+        }
+
+        return false;
+    }
+};
+} // namespace Soldank
 
 namespace Soldank
 {
-LegsGetUpAnimationState::LegsGetUpAnimationState(const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::GetUp))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> LegsGetUpAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-std::optional<std::shared_ptr<AnimationState>> LegsGetUpAnimationState::HandleInput(
-  Soldier& soldier)
-{
-    if (ShouldCancelAnimation(soldier) || GetFrame() == GetFramesCount()) {
-        if (soldier.on_ground) {
-            return std::make_shared<LegsStandAnimationState>(animation_data_manager_);
+    if (ShouldCancelAnimation(params) || GetFrame() == GetFramesCount()) {
+        if (params.on_ground) {
+            return AnimationState::Transition{ AnimationType::Stand, std::nullopt };
         }
 
-        return std::make_shared<LegsFallAnimationState>(animation_data_manager_);
+        return AnimationState::Transition{ AnimationType::Fall, std::nullopt };
     }
 
     // Immediately switch from unprone to jump/sidejump, because the end of the
     // unprone animation can be seen as the "wind up" for the jump
-    if (ShouldCancelAnimation(soldier) || (GetFrame() > 20 && soldier.on_ground)) {
-        if (soldier.control.up) {
-            if (soldier.control.left || soldier.control.right) {
+    if (ShouldCancelAnimation(params) || (GetFrame() > 20 && params.on_ground)) {
+        if (params.control.up) {
+            if (params.control.left || params.control.right) {
                 // Set sidejump frame 1 to 4 depending on which unprone frame we're in
                 auto id = GetFrame() - 20;
-                auto new_state =
-                  std::make_shared<LegsJumpSideAnimationState>(animation_data_manager_);
-                new_state->SetFrame(id);
-                return new_state;
+                return AnimationState::Transition{ AnimationType::JumpSide, id };
             }
 
             // Set jump frame 6 to 9 depending on which unprone frame we're in
             auto id = GetFrame() - (23 - (9 - 1));
-            auto new_state = std::make_shared<LegsJumpAnimationState>(animation_data_manager_);
-            new_state->SetFrame(id);
-            return new_state;
+            return AnimationState::Transition{ AnimationType::Jump, id };
         }
-    } else if (ShouldCancelAnimation(soldier) || GetFrame() > 23) {
+    } else if (ShouldCancelAnimation(params) || GetFrame() > 23) {
         auto maybe_running_animation_state =
-          CommonAnimationStateTransitions::TryTransitionToRunning(soldier, animation_data_manager_);
+          CommonAnimationStateTransitions::TryTransitionToRunning(params);
         if (maybe_running_animation_state.has_value()) {
             return *maybe_running_animation_state;
         }
 
-        if (!soldier.on_ground && soldier.control.up) {
-            return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
+        if (!params.on_ground && params.control.up) {
+            return AnimationState::Transition{ AnimationType::Run, std::nullopt };
         }
     }
     return std::nullopt;
-}
-
-void LegsGetUpAnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events)
-{
-    soldier.stance = PhysicsConstants::STANCE_STAND;
-}
-
-bool LegsGetUpAnimationState::ShouldCancelAnimation(const Soldier& soldier)
-{
-    if (soldier.control.throw_grenade) {
-        return true;
-    }
-
-    if (soldier.control.fire &&
-        (soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind ==
-           WeaponType::NoWeapon ||
-         soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind == WeaponType::Knife)) {
-        return true;
-    }
-
-    return false;
 }
 } // namespace Soldank

@@ -1,11 +1,18 @@
 module;
 
-#include "core/state/StateManager.hpp"
+#include "core/math/Glm.hpp"
+
+#include <algorithm>
+#include <bitset>
+#include <optional>
 
 export module VertexSelectionTool;
 
 import Tool;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

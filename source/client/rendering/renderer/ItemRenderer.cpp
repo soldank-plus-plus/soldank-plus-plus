@@ -1,12 +1,9 @@
 module;
 
-#include "core/types/ItemType.hpp"
+#include "core/math/Glm.hpp"
+
 #include "rendering/data/sprites/SpriteTypes.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/math/Calc.hpp"
-#include "core/math/Glm.hpp"
-#include "core/entities/Item.hpp"
 
 #include <glm/ext/quaternion_transform.hpp>
 
@@ -23,6 +20,10 @@ import Texture;
 import Renderer;
 import Shader;
 import SpritesManager;
+
+import Shared.Core.Types.ItemType;
+import Shared.Core.Math.Calc;
+import Shared.Core.Entities.Item;
 
 export namespace Soldank
 {

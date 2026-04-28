@@ -1,7 +1,12 @@
 file(GLOB_RECURSE LIB_SOURCES *.cpp)
 file(GLOB_RECURSE HEADER_SOURCES *.hpp)
 
-add_library(shared_lib_testing_framework ${LIB_SOURCES} ${HEADER_SOURCES})
+add_library(shared_lib_testing_framework ${HEADER_SOURCES})
+target_sources(shared_lib_testing_framework
+    PUBLIC
+        FILE_SET all_shared_lib_testing_framework_modules TYPE CXX_MODULES FILES
+        ${LIB_SOURCES}
+)
 
 target_compile_definitions(shared_lib_testing_framework PUBLIC ${CLIENT_COMPILE_DEFINITIONS} -DNOMINMAX)
 

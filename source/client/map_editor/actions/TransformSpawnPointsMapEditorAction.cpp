@@ -1,14 +1,16 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/map/PMSStructs.hpp"
-
 #include <functional>
+#include <utility>
+#include <vector>
 
 export module TransformSpawnPointsMapEditorAction;
 
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

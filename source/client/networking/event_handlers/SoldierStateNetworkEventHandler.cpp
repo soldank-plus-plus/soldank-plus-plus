@@ -1,17 +1,24 @@
 module;
 
-#include "core/entities/Soldier.hpp"
-#include "core/physics/SoldierSkeletonPhysics.hpp"
+#include "core/math/Glm.hpp"
+
+#include <cstdint>
+#include <memory>
 
 export module Networking.SoldierStateNetworkEventHandler;
 
 import ClientState;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEvent;
+
+import Shared.Core.Physics.SoldierSkeletonPhysics;
+import Shared.Core.Animations;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.State.Control;
 
 export namespace Soldank
 {
@@ -71,16 +78,40 @@ private:
         world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
             soldier.particle.old_position = soldier_old_position;
             soldier.particle.position = soldier_position;
-            soldier.body_animation->Exit(soldier, world_->GetPhysicsEvents());
+            AnimationState::ExitParams body_exit_params{ false };
+            soldier.body_animation->Exit(body_exit_params);
+            if (body_exit_params.should_throw_active_weapon) {
+                world_->GetPhysicsEvents().soldier_throws_active_weapon.Notify(soldier);
+            }
             soldier.body_animation = world_->GetBodyAnimationState(body_animation_type);
-            soldier.body_animation->Enter(soldier);
+            AnimationState::EnterParams body_enter_params{ soldier.on_ground,
+                                                           soldier.direction,
+                                                           soldier.particle.GetForce(),
+                                                           soldier.grenade_can_throw,
+                                                           soldier.weapons,
+                                                           soldier.active_weapon };
+            soldier.body_animation->Enter(body_enter_params);
+            soldier.particle.SetForce(body_enter_params.force);
+            soldier.grenade_can_throw = body_enter_params.grenade_can_throw;
             soldier.body_animation->SetFrame(body_animation_frame);
             soldier.body_animation->SetSpeed(body_animation_speed);
             soldier.body_animation->SetCount(body_animation_count);
 
-            soldier.legs_animation->Exit(soldier, world_->GetPhysicsEvents());
+            AnimationState::ExitParams legs_exit_params{ false };
+            soldier.legs_animation->Exit(legs_exit_params);
+            if (legs_exit_params.should_throw_active_weapon) {
+                world_->GetPhysicsEvents().soldier_throws_active_weapon.Notify(soldier);
+            }
             soldier.legs_animation = world_->GetLegsAnimationState(legs_animation_type);
-            soldier.legs_animation->Enter(soldier);
+            AnimationState::EnterParams legs_enter_params{ soldier.on_ground,
+                                                           soldier.direction,
+                                                           soldier.particle.GetForce(),
+                                                           soldier.grenade_can_throw,
+                                                           soldier.weapons,
+                                                           soldier.active_weapon };
+            soldier.legs_animation->Enter(legs_enter_params);
+            soldier.particle.SetForce(legs_enter_params.force);
+            soldier.grenade_can_throw = legs_enter_params.grenade_can_throw;
             soldier.legs_animation->SetFrame(legs_animation_frame);
             soldier.legs_animation->SetSpeed(legs_animation_speed);
             soldier.legs_animation->SetCount(legs_animation_count);

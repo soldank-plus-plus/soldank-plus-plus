@@ -1,13 +1,9 @@
 module;
 
+#include "core/math/Glm.hpp"
+
 #include "rendering/data/sprites/SpriteTypes.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/entities/Bullet.hpp"
-#include "core/math/Calc.hpp"
-#include "core/types/BulletType.hpp"
-#include "core/types/WeaponType.hpp"
-#include "core/math/Glm.hpp"
 
 #include <glad/glad.h>
 
@@ -22,6 +18,11 @@ import Renderer;
 import Shader;
 import Texture;
 import SpritesManager;
+
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Math.Calc;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Types.WeaponType;
 
 export namespace Soldank
 {

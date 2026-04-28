@@ -1,69 +1,84 @@
-#include "core/animations/states/BodyStandAnimationState.hpp"
+module;
 
-#include "core/animations/states/BodyAimAnimationState.hpp"
-#include "core/animations/states/BodyChangeAnimationState.hpp"
-#include "core/animations/states/BodyProneAnimationState.hpp"
-#include "core/animations/states/BodyPunchAnimationState.hpp"
-#include "core/animations/states/BodyRollAnimationState.hpp"
-#include "core/animations/states/BodyRollBackAnimationState.hpp"
-#include "core/animations/states/BodyThrowAnimationState.hpp"
-#include "core/animations/states/BodyThrowWeaponAnimationState.hpp"
-
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
-
-#include "core/animations/AnimationData.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/physics/Constants.hpp"
+#include <cstdint>
 #include <memory>
+#include <optional>
+#include <vector>
+
+#include <memory>
+
+export module Shared.Core.Animations.States:BodyStandAnimationState;
+
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class BodyStandAnimationState final : public Soldank::AnimationState
+{
+public:
+    BodyStandAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::Stand))
+    {
+    }
+    ~BodyStandAnimationState() override = default;
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+private:
+    bool IsSoldierShootingPossible(const std::vector<Weapon>&, std::uint8_t) const final
+    {
+        return true;
+    }
+    bool IsSoldierFlagThrowingPossible() const final { return true; }
+};
+} // namespace Soldank
 
 namespace Soldank
 {
-BodyStandAnimationState::BodyStandAnimationState(const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::Stand))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> BodyStandAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-std::optional<std::shared_ptr<AnimationState>> BodyStandAnimationState::HandleInput(
-  Soldier& soldier)
-{
-    if (soldier.legs_animation->GetType() == AnimationType::Roll) {
-        return std::make_shared<BodyRollAnimationState>(animation_data_manager_);
+    if (params.legs_animation_type == AnimationType::Roll) {
+        return AnimationState::Transition{ AnimationType::Roll, std::nullopt };
     }
 
-    if (soldier.legs_animation->GetType() == AnimationType::RollBack) {
-        return std::make_shared<BodyRollBackAnimationState>(animation_data_manager_);
+    if (params.legs_animation_type == AnimationType::RollBack) {
+        return AnimationState::Transition{ AnimationType::RollBack, std::nullopt };
     }
 
-    if (soldier.control.change) {
-        return std::make_shared<BodyChangeAnimationState>(animation_data_manager_);
+    if (params.control.change) {
+        return AnimationState::Transition{ AnimationType::Change, std::nullopt };
     }
 
-    if (soldier.control.drop &&
-        soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind != WeaponType::NoWeapon) {
-        return std::make_shared<BodyThrowWeaponAnimationState>(animation_data_manager_);
+    if (params.control.drop &&
+        params.weapons[params.active_weapon].GetWeaponParameters().kind != WeaponType::NoWeapon) {
+        return AnimationState::Transition{ AnimationType::ThrowWeapon, std::nullopt };
     }
 
     auto maybe_throw_grenade_animation_state =
-      CommonAnimationStateTransitions::TryTransitionToThrowingGrenade(soldier,
-                                                                      animation_data_manager_);
+      CommonAnimationStateTransitions::TryTransitionToThrowingGrenade(params);
     if (maybe_throw_grenade_animation_state.has_value()) {
         return *maybe_throw_grenade_animation_state;
     }
 
-    if (soldier.control.fire &&
-        (soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind ==
-           WeaponType::NoWeapon ||
-         soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind == WeaponType::Knife)) {
-        return std::make_shared<BodyPunchAnimationState>(animation_data_manager_);
+    if (params.control.fire &&
+        (params.weapons[params.active_weapon].GetWeaponParameters().kind == WeaponType::NoWeapon ||
+         params.weapons[params.active_weapon].GetWeaponParameters().kind == WeaponType::Knife)) {
+        return AnimationState::Transition{ AnimationType::Punch, std::nullopt };
     }
 
-    if (soldier.stance == PhysicsConstants::STANCE_CROUCH) {
-        return std::make_shared<BodyAimAnimationState>(animation_data_manager_);
+    if (params.stance == PhysicsConstants::STANCE_CROUCH) {
+        return AnimationState::Transition{ AnimationType::Aim, std::nullopt };
     }
 
-    if (soldier.stance == PhysicsConstants::STANCE_PRONE) {
-        return std::make_shared<BodyProneAnimationState>(animation_data_manager_);
+    if (params.stance == PhysicsConstants::STANCE_PRONE) {
+        return AnimationState::Transition{ AnimationType::Prone, std::nullopt };
     }
 
     return std::nullopt;

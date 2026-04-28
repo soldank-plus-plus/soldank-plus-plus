@@ -7,7 +7,7 @@ module;
 
 export module Networking.SpawnSoldierNetworkEventHandler;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkPackets;

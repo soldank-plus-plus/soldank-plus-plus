@@ -1,10 +1,17 @@
-#include "core/physics/SoldierSkeletonPhysics.hpp"
+module;
 
-#include "core/physics/Constants.hpp"
+#include "core/math/Glm.hpp"
 
-#include "core/math/Calc.hpp"
+#include <cmath>
 
-namespace Soldank
+export module Shared.Core.Physics.SoldierSkeletonPhysics;
+
+import Shared.Core.Physics.Constants;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Math.Calc;
+import Shared.Core.Animations;
+
+export namespace Soldank
 {
 void RepositionSoldierSkeletonParts(Soldier& soldier)
 {

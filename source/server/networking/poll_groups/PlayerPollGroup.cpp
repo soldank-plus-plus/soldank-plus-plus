@@ -1,7 +1,8 @@
 module;
 
-#include <memory>
 #include <cassert>
+#include <cstdint>
+#include <memory>
 #include <span>
 
 export module Networking.PollGroups.PlayerPollGroup;
@@ -9,7 +10,7 @@ export module Networking.PollGroups.PlayerPollGroup;
 export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

@@ -7,7 +7,7 @@ export module Networking.AssignPlayerIdNetworkEventHandler;
 
 import ClientState;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

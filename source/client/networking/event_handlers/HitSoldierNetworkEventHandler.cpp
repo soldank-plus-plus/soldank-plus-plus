@@ -5,7 +5,7 @@ module;
 
 export module Networking.HitSoldierNetworkEventHandler;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

@@ -1,5 +1,8 @@
-#include "core/math/Calc.hpp"
+#include "core/math/Glm.hpp"
+
 #include <gtest/gtest.h>
+
+import Shared.Core.Math.Calc;
 
 TEST(CalcTests, TestDistance)
 {

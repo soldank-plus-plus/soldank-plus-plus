@@ -1,12 +1,15 @@
 module;
 
-#include "core/map/PMSStructs.hpp"
-#include "core/state/StateManager.hpp"
+#include <utility>
 
 export module AddPolygonMapEditorAction;
 
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

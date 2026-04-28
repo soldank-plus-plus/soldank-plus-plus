@@ -1,9 +1,6 @@
 module;
 
-#include "core/entities/Soldier.hpp"
 #include "core/math/Glm.hpp"
-#include "core/state/Control.hpp"
-#include "core/state/StateManager.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -36,9 +33,16 @@ import Networking.SpawnSoldierNetworkEventHandler;
 import Networking.KillSoldierNetworkEventHandler;
 import Networking.HitSoldierNetworkEventHandler;
 
-import Shared.IWorld;
-import Shared.World;
+import Shared.Core.IWorld;
+import Shared.Core.World;
 import Shared.CoreEventHandler;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.State.Control;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Entities.Item;
 
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEventDispatcher;

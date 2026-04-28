@@ -1,14 +1,14 @@
 module;
 
-#include "core/WorldEvents.hpp"
-#include "core/physics/PhysicsEvents.hpp"
-
 export module Networking.CoreEventsConnectionNotifier;
 
 import Networking.IGameServer;
 
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.NetworkEvent;
+import Shared.Core.WorldEvents;
+import Shared.Core.Physics.PhysicsEvents;
+import Shared.Core.Entities.Soldier;
 
 export namespace Soldank
 {

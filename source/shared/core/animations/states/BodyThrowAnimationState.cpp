@@ -1,75 +1,85 @@
-#include "core/animations/states/BodyThrowAnimationState.hpp"
+module;
 
-#include "core/animations/states/BodyAimAnimationState.hpp"
-#include "core/animations/states/BodyChangeAnimationState.hpp"
-#include "core/animations/states/BodyGetUpAnimationState.hpp"
-#include "core/animations/states/BodyProneAnimationState.hpp"
-#include "core/animations/states/BodyRollAnimationState.hpp"
-#include "core/animations/states/BodyRollBackAnimationState.hpp"
-#include "core/animations/states/BodyStandAnimationState.hpp"
-#include "core/animations/states/BodyThrowWeaponAnimationState.hpp"
-
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
-
-#include "core/animations/AnimationData.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/physics/Constants.hpp"
+#include <cstdint>
 #include <memory>
+#include <optional>
+#include <vector>
+
+#include <memory>
+
+export module Shared.Core.Animations.States:BodyThrowAnimationState;
+
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class BodyThrowAnimationState final : public Soldank::AnimationState
+{
+public:
+    BodyThrowAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::Throw))
+    {
+    }
+    ~BodyThrowAnimationState() override = default;
+
+    void Enter(EnterParams& params) final { params.grenade_can_throw = false; }
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+    void Update(UpdateParams& params) final {}
+
+private:
+    bool IsSoldierShootingPossible(const std::vector<Weapon>&, std::uint8_t) const final
+    {
+        return true;
+    }
+    bool IsSoldierFlagThrowingPossible() const final { return true; }
+
+}; // namespace Soldank
+} // namespace Soldank
 
 namespace Soldank
 {
-BodyThrowAnimationState::BodyThrowAnimationState(const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::Throw))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> BodyThrowAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-void BodyThrowAnimationState::Enter(Soldier& soldier)
-{
-    soldier.grenade_can_throw = false;
-}
-
-std::optional<std::shared_ptr<AnimationState>> BodyThrowAnimationState::HandleInput(
-  Soldier& soldier)
-{
-    if (soldier.legs_animation->GetType() == AnimationType::Roll) {
-        return std::make_shared<BodyRollAnimationState>(animation_data_manager_);
+    if (params.legs_animation_type == AnimationType::Roll) {
+        return AnimationState::Transition{ AnimationType::Roll, std::nullopt };
     }
 
-    if (soldier.legs_animation->GetType() == AnimationType::RollBack) {
-        return std::make_shared<BodyRollBackAnimationState>(animation_data_manager_);
+    if (params.legs_animation_type == AnimationType::RollBack) {
+        return AnimationState::Transition{ AnimationType::RollBack, std::nullopt };
     }
 
     // Prone cancelling
-    if (soldier.legs_animation->GetType() == AnimationType::GetUp) {
-        auto new_state = std::make_shared<BodyGetUpAnimationState>(animation_data_manager_);
-        new_state->SetFrame(9);
-        return new_state;
+    if (params.legs_animation_type == AnimationType::GetUp) {
+        return AnimationState::Transition{ AnimationType::GetUp, 9 };
     }
 
-    if (soldier.control.change) {
-        return std::make_shared<BodyChangeAnimationState>(animation_data_manager_);
+    if (params.control.change) {
+        return AnimationState::Transition{ AnimationType::Change, std::nullopt };
     }
 
-    if (GetFrame() == GetFramesCount() || !soldier.control.throw_grenade) {
-        if (soldier.stance == PhysicsConstants::STANCE_CROUCH) {
-            return std::make_shared<BodyAimAnimationState>(animation_data_manager_);
+    if (GetFrame() == GetFramesCount() || !params.control.throw_grenade) {
+        if (params.stance == PhysicsConstants::STANCE_CROUCH) {
+            return AnimationState::Transition{ AnimationType::Aim, std::nullopt };
         }
 
-        if (soldier.stance == PhysicsConstants::STANCE_PRONE) {
-            auto prone_animation_state =
-              std::make_shared<BodyProneAnimationState>(animation_data_manager_);
-            prone_animation_state->SetFrame(26);
-            return prone_animation_state;
+        if (params.stance == PhysicsConstants::STANCE_PRONE) {
+            return AnimationState::Transition{ AnimationType::Prone, 26 };
         }
 
-        if (soldier.stance == PhysicsConstants::STANCE_STAND) {
-            return std::make_shared<BodyStandAnimationState>(animation_data_manager_);
+        if (params.stance == PhysicsConstants::STANCE_STAND) {
+            return AnimationState::Transition{ AnimationType::Stand, std::nullopt };
         }
     }
 
     return std::nullopt;
 }
-
-void BodyThrowAnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events) {}
 } // namespace Soldank

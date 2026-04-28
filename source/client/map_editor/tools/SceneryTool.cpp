@@ -1,6 +1,9 @@
 module;
 
-#include "core/state/StateManager.hpp"
+#include "core/math/Glm.hpp"
+
+#include <functional>
+#include <memory>
 
 export module SceneryTool;
 
@@ -8,6 +11,9 @@ import Tool;
 import MapEditorAction;
 import AddSceneryMapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

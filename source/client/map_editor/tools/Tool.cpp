@@ -1,11 +1,12 @@
 module;
 
-#include "core/state/StateManager.hpp"
 #include "core/math/Glm.hpp"
 
 export module Tool;
 
 import ClientState;
+
+import Shared.Core.State.StateManager;
 
 export namespace Soldank
 {

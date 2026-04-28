@@ -1,98 +1,189 @@
-#include "core/animations/AnimationState.hpp"
+module;
 
-#include "core/entities/Soldier.hpp"
-
-#include "core/physics/PhysicsEvents.hpp"
+#include "core/math/Glm.hpp"
 
 #include <utility>
 #include <algorithm>
+#include <vector>
+#include <memory>
+#include <optional>
 
-namespace Soldank
+export module Shared.Core.Animations:AnimationState;
+
+import :AnimationData;
+
+import Shared.Core.State.Control;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+export namespace Soldank
 {
-AnimationState::AnimationState(std::shared_ptr<const AnimationData> animation_data)
-    : animation_data_(std::move(animation_data))
-    , speed_(animation_data_->GetSpeed())
-    , count_(0)
-    , frame_(1)
+class AnimationState
 {
-}
+public:
+    AnimationState(std::shared_ptr<const AnimationData> animation_data)
+        : animation_data_(std::move(animation_data))
+        , speed_(animation_data_->GetSpeed())
+        , count_(0)
+        , frame_(1)
+    {
+    }
 
-void AnimationState::DoAnimation()
-{
-    count_ += 1;
+    AnimationState(const AnimationState& other) = default;
 
-    if (count_ == speed_) {
-        count_ = 0;
-        frame_ += 1;
+    virtual ~AnimationState() = default;
 
-        if (frame_ > GetFramesCount()) {
-            if (animation_data_->GetLooped()) {
-                frame_ = 1;
-            } else {
-                frame_ = GetFramesCount();
+    void DoAnimation()
+    {
+        count_ += 1;
+
+        if (count_ == speed_) {
+            count_ = 0;
+            frame_ += 1;
+
+            if (frame_ > GetFramesCount()) {
+                if (animation_data_->GetLooped()) {
+                    frame_ = 1;
+                } else {
+                    frame_ = GetFramesCount();
+                }
             }
         }
     }
-}
 
-const glm::vec2& AnimationState::GetPosition(unsigned int index) const
-{
-    return animation_data_->GetFrames().at(frame_ - 1).positions.at(index - 1);
-}
-
-unsigned int AnimationState::GetFramesCount() const
-{
-    return animation_data_->GetFrames().size();
-}
-
-bool AnimationState::IsAny(const std::vector<AnimationType>& animations) const
-{
-    return std::ranges::any_of(animations, [this](AnimationType animation_type) {
-        return animation_type == animation_data_->GetAnimationType();
-    });
-}
-
-void AnimationState::TryToShoot(Soldier& soldier, const PhysicsEvents& physics_events) const
-{
-    if (soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind == WeaponType::NoWeapon ||
-        soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind == WeaponType::Knife) {
-
-        // We don't spawn projectiles for punching or stabbing... These have to be handled by the
-        // animation
-        return;
+    const glm::vec2& GetPosition(unsigned int index) const
+    {
+        return animation_data_->GetFrames().at(frame_ - 1).positions.at(index - 1);
     }
 
-    if (soldier.control.fire && IsSoldierShootingPossible(soldier)) {
-        physics_events.soldier_fires_primary_weapon.Notify(soldier);
-    }
-}
+    unsigned int GetFramesCount() const { return animation_data_->GetFrames().size(); }
 
-void AnimationState::TryToThrowFlags(Soldier& soldier, const PhysicsEvents& physics_events) const
-{
-    if (IsSoldierFlagThrowingPossible(soldier)) {
-        if (soldier.control.flag_throw && soldier.is_holding_flags) {
-            physics_events.soldier_throws_flags.Notify(soldier);
+    bool IsAny(const std::vector<AnimationType>& animations) const
+    {
+        return std::ranges::any_of(animations, [this](AnimationType animation_type) {
+            return animation_type == animation_data_->GetAnimationType();
+        });
+    }
+
+    AnimationType GetType() const { return animation_data_->GetAnimationType(); };
+
+    int GetSpeed() const { return speed_; }
+    void SetSpeed(int new_speed) { speed_ = new_speed; }
+
+    unsigned int GetFrame() const { return frame_; }
+    void SetFrame(unsigned int new_frame) { frame_ = new_frame; }
+    void SetNextFrame() { frame_++; }
+
+    int GetCount() const { return count_; }
+    void SetCount(int new_count) { count_ = new_count; }
+
+    struct TryToShootParams
+    {
+        std::vector<Weapon> weapons;
+        std::uint8_t active_weapon;
+        bool fire;
+        bool should_fire_primary_weapon;
+    };
+
+    // This method sets should_fire_primary_weapon if the player can and wants to shoot.
+    // It has a separate method for that because it's a shared functionality between many animation
+    // types and players are allowed to shoot during animations.
+    void TryToShoot(TryToShootParams& params) const
+    {
+        if (params.weapons[params.active_weapon].GetWeaponParameters().kind ==
+              WeaponType::NoWeapon ||
+            params.weapons[params.active_weapon].GetWeaponParameters().kind == WeaponType::Knife) {
+            return;
+        }
+
+        if (params.fire && IsSoldierShootingPossible(params.weapons, params.active_weapon)) {
+            params.should_fire_primary_weapon = true;
         }
     }
-}
 
-void AnimationState::Enter(Soldier& soldier) {}
+    struct TryToThrowFlagsParams
+    {
+        bool flag_throw;
+        bool is_holding_flags;
+        bool should_throw_flags;
+    };
 
-void AnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events) {}
+    // This method sets should_throw_flags if the player can and wants to throw flags.
+    // It has a separate method for that because it's a shared functionality between many animation
+    // types and players are allowed to throw during animations.
+    void TryToThrowFlags(TryToThrowFlagsParams& params) const
+    {
+        if (IsSoldierFlagThrowingPossible()) {
+            if (params.flag_throw && params.is_holding_flags) {
+                params.should_throw_flags = true;
+            }
+        }
+    }
 
-void AnimationState::Exit(Soldier& soldier, const PhysicsEvents& physics_events) {}
+    struct HandleInputParams
+    {
+        Control control;
+        std::vector<Weapon> weapons;
+        std::uint8_t stance;
+        std::uint8_t active_weapon;
+        bool on_ground;
+        std::int8_t direction;
+        std::int8_t old_direction;
+        std::int32_t jets_count;
+        AnimationType legs_animation_type;
+        bool grenade_can_throw;
+    };
 
-bool AnimationState::IsSoldierShootingPossible(const Soldier& /*soldier*/) const
-{
-    // By default we return false. Child classes should determine whether the player is able to
-    // shoot or not in the current state
-    return false;
-}
+    struct Transition
+    {
+        AnimationType animation_type;
+        std::optional<unsigned int> initial_frame;
+    };
 
-bool AnimationState::IsSoldierFlagThrowingPossible(const Soldier& /*soldier*/) const
-{
-    // By default we return false. Child classes should determine whether the player is able to
-    // throw flags or not in the current state
-    return false;
-}
+    struct UpdateParams
+    {
+        Control control;
+        std::int8_t direction;
+        bool on_ground;
+        std::uint8_t stance;
+        glm::vec2 velocity;
+        glm::vec2 force;
+        bool should_switch_weapon;
+    };
+
+    struct EnterParams
+    {
+        bool on_ground;
+        std::int8_t direction;
+        glm::vec2 force;
+        bool grenade_can_throw;
+        std::vector<Weapon> weapons;
+        std::uint8_t active_weapon;
+    };
+
+    virtual void Enter(EnterParams& params) {}
+    virtual std::optional<Transition> HandleInput(HandleInputParams& params) = 0;
+    struct ExitParams
+    {
+        bool should_throw_active_weapon;
+    };
+
+    virtual void Update(UpdateParams& params) {}
+    virtual void Exit(ExitParams& params) {}
+
+protected:
+    virtual bool IsSoldierShootingPossible(const std::vector<Weapon>& weapons,
+                                           std::uint8_t active_weapon) const
+    {
+        return false;
+    }
+
+    virtual bool IsSoldierFlagThrowingPossible() const { return false; }
+
+    std::shared_ptr<const AnimationData> animation_data_;
+
+    int speed_;
+    int count_;
+    unsigned int frame_;
+};
 } // namespace Soldank

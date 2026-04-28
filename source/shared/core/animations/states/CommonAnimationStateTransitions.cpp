@@ -1,97 +1,104 @@
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
+module;
 
-#include "core/animations/states/BodyThrowAnimationState.hpp"
-#include "core/animations/states/LegsCrouchRunAnimationState.hpp"
-#include "core/animations/states/LegsCrouchRunBackAnimationState.hpp"
-#include "core/animations/states/LegsRollBackAnimationState.hpp"
-#include "core/animations/states/LegsRunBackAnimationState.hpp"
-#include "core/animations/states/LegsRunAnimationState.hpp"
-#include "core/animations/states/LegsRollAnimationState.hpp"
-
-#include "core/entities/Soldier.hpp"
 #include <optional>
+#include <memory>
+
+export module Shared.Core.Animations.States:CommonAnimationStateTransitions;
+
+import Shared.Core.Animations;
+
+export namespace Soldank::CommonAnimationStateTransitions
+{
+std::optional<AnimationState::Transition> TryTransitionToRunning(
+  const AnimationState::HandleInputParams& params);
+
+std::optional<AnimationState::Transition> TryTransitionToCrouchRunning(
+  const AnimationState::HandleInputParams& params);
+
+std::optional<AnimationState::Transition> TryTransitionToRolling(
+  const AnimationState::HandleInputParams& params);
+
+std::optional<AnimationState::Transition> TryTransitionToThrowingGrenade(
+  AnimationState::HandleInputParams& params);
+} // namespace Soldank::CommonAnimationStateTransitions
 
 namespace Soldank::CommonAnimationStateTransitions
 {
-std::optional<std::shared_ptr<AnimationState>> TryTransitionToRunning(
-  const Soldier& soldier,
-  const AnimationDataManager& animation_data_manager)
+std::optional<AnimationState::Transition> TryTransitionToRunning(
+  const AnimationState::HandleInputParams& params)
 {
-    if (soldier.control.left) {
-        if (soldier.direction == 1) {
-            return std::make_shared<LegsRunBackAnimationState>(animation_data_manager);
+    if (params.control.left) {
+        if (params.direction == 1) {
+            return AnimationState::Transition{ AnimationType::RunBack, std::nullopt };
         }
 
-        return std::make_shared<LegsRunAnimationState>(animation_data_manager);
+        return AnimationState::Transition{ AnimationType::Run, std::nullopt };
     }
 
-    if (soldier.control.right) {
-        if (soldier.direction == -1) {
-            return std::make_shared<LegsRunBackAnimationState>(animation_data_manager);
+    if (params.control.right) {
+        if (params.direction == -1) {
+            return AnimationState::Transition{ AnimationType::RunBack, std::nullopt };
         }
 
-        return std::make_shared<LegsRunAnimationState>(animation_data_manager);
+        return AnimationState::Transition{ AnimationType::Run, std::nullopt };
     }
 
     return std::nullopt;
 }
 
-std::optional<std::shared_ptr<AnimationState>> TryTransitionToCrouchRunning(
-  const Soldier& soldier,
-  const AnimationDataManager& animation_data_manager)
+std::optional<AnimationState::Transition> TryTransitionToCrouchRunning(
+  const AnimationState::HandleInputParams& params)
 {
-    if (soldier.control.right) {
-        if (soldier.direction == 1) {
-            return std::make_shared<LegsCrouchRunAnimationState>(animation_data_manager);
+    if (params.control.right) {
+        if (params.direction == 1) {
+            return AnimationState::Transition{ AnimationType::CrouchRun, std::nullopt };
         }
 
-        return std::make_shared<LegsCrouchRunBackAnimationState>(animation_data_manager);
+        return AnimationState::Transition{ AnimationType::CrouchRunBack, std::nullopt };
     }
 
-    if (soldier.control.left) {
-        if (soldier.direction == -1) {
-            return std::make_shared<LegsCrouchRunAnimationState>(animation_data_manager);
+    if (params.control.left) {
+        if (params.direction == -1) {
+            return AnimationState::Transition{ AnimationType::CrouchRun, std::nullopt };
         }
 
-        return std::make_shared<LegsCrouchRunBackAnimationState>(animation_data_manager);
+        return AnimationState::Transition{ AnimationType::CrouchRunBack, std::nullopt };
     }
 
     return std::nullopt;
 }
 
-std::optional<std::shared_ptr<AnimationState>> TryTransitionToRolling(
-  const Soldier& soldier,
-  const AnimationDataManager& animation_data_manager)
+std::optional<AnimationState::Transition> TryTransitionToRolling(
+  const AnimationState::HandleInputParams& params)
 {
-    if (soldier.control.down && soldier.control.left && soldier.direction == -1) {
-        return std::make_shared<LegsRollAnimationState>(animation_data_manager);
+    if (params.control.down && params.control.left && params.direction == -1) {
+        return AnimationState::Transition{ AnimationType::Roll, std::nullopt };
     }
 
-    if (soldier.control.down && soldier.control.right && soldier.direction == 1) {
-        return std::make_shared<LegsRollAnimationState>(animation_data_manager);
+    if (params.control.down && params.control.right && params.direction == 1) {
+        return AnimationState::Transition{ AnimationType::Roll, std::nullopt };
     }
 
-    if (soldier.control.down && soldier.control.left && soldier.direction == 1) {
-        return std::make_shared<LegsRollBackAnimationState>(animation_data_manager);
+    if (params.control.down && params.control.left && params.direction == 1) {
+        return AnimationState::Transition{ AnimationType::RollBack, std::nullopt };
     }
 
-    if (soldier.control.down && soldier.control.right && soldier.direction == -1) {
-        return std::make_shared<LegsRollBackAnimationState>(animation_data_manager);
+    if (params.control.down && params.control.right && params.direction == -1) {
+        return AnimationState::Transition{ AnimationType::RollBack, std::nullopt };
     }
 
     return std::nullopt;
 }
 
-std::optional<std::shared_ptr<AnimationState>> TryTransitionToThrowingGrenade(
-  Soldier& soldier,
-  const AnimationDataManager& animation_data_manager)
+std::optional<AnimationState::Transition> TryTransitionToThrowingGrenade(
+  AnimationState::HandleInputParams& params)
 {
-    if (!soldier.control.throw_grenade) {
-        soldier.grenade_can_throw = true;
+    if (!params.control.throw_grenade) {
+        params.grenade_can_throw = true;
     }
 
-    if (soldier.grenade_can_throw && soldier.control.throw_grenade) {
-        return std::make_shared<BodyThrowAnimationState>(animation_data_manager);
+    if (params.grenade_can_throw && params.control.throw_grenade) {
+        return AnimationState::Transition{ AnimationType::Throw, std::nullopt };
     }
 
     return std::nullopt;

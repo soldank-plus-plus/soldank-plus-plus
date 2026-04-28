@@ -1,10 +1,8 @@
-module;
-
-#include "core/state/StateManager.hpp"
-
 export module MapEditorAction;
 
 import ClientState;
+
+import Shared.Core.State.StateManager;
 
 export namespace Soldank
 {

@@ -1,10 +1,12 @@
 module;
 
 #include <chrono>
+#include <cstdint>
+#include <memory>
 
 export module Networking.PlayerLeaveNetworkEventHandler;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

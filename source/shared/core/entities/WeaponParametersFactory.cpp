@@ -1,11 +1,21 @@
-#include "WeaponParametersFactory.hpp"
-
-#include "core/config/Config.hpp"
-#include "core/entities/WeaponParametersFactory.hpp"
+module;
 
 #include "spdlog/spdlog.h"
+#include <SimpleIni.h>
 
+#include <string>
 #include <unordered_map>
+
+export module Shared.Core.Entities.WeaponParametersFactory;
+
+import Shared.Core.Data.IFileReader;
+import Shared.Core.Data.FileReader;
+
+import Shared.Core.Config.Config;
+import Shared.Core.Entities.WeaponParameters;
+
+import Shared.Core.Types.WeaponType;
+import Shared.Core.Types.BulletType;
 
 namespace Soldank::WeaponParametersFactory
 {
@@ -52,6 +62,13 @@ BulletType ConvertToBulletStyleEnum(uint8_t bullet_type_id)
             std::unreachable();
     }
 }
+} // namespace Soldank::WeaponParametersFactory
+
+export namespace Soldank::WeaponParametersFactory
+{
+std::string GetNameForWeaponType(WeaponType weapon_type);
+std::string GetININameForWeaponType(WeaponType weapon_type);
+bool GetClipReload(WeaponType weapon_type);
 
 WeaponParameters LoadFromINI(const CSimpleIniA& ini_config, WeaponType weapon_type)
 {
@@ -125,7 +142,7 @@ WeaponParameters LoadFromINI(const CSimpleIniA& ini_config, WeaponType weapon_ty
 
 WeaponParameters LoadFromINIFile(const std::string& ini_file_path,
                                  WeaponType weapon_type,
-                                 const IFileReader& file_reader)
+                                 const IFileReader& file_reader = FileReader())
 {
     spdlog::debug("ini_file_path: {}", ini_file_path);
     auto file_data = file_reader.Read(ini_file_path);
@@ -145,7 +162,7 @@ WeaponParameters LoadFromINIFile(const std::string& ini_file_path,
 
 const WeaponParameters& GetParameters(WeaponType weapon_type,
                                       bool realistic,
-                                      const IFileReader& file_reader)
+                                      const IFileReader& file_reader = FileReader())
 {
     // clang-format off
     static std::unordered_map<WeaponType, const WeaponParameters> weapon_parameters_map{
@@ -337,5 +354,4 @@ bool GetClipReload(WeaponType weapon_type)
             return false;
     }
 }
-
 } // namespace Soldank::WeaponParametersFactory

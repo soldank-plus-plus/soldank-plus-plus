@@ -2,10 +2,6 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include "core/map/PMSConstants.hpp"
-#include "core/map/PMSStructs.hpp"
-#include "core/map/Map.hpp"
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -23,6 +19,10 @@ export module SceneriesRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Map;
 
 import Extern.Spdlog;
 

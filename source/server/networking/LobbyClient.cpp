@@ -1,8 +1,7 @@
 module;
 
-#include "core/data/FileReader.hpp"
-
 #include <cstdint>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -14,6 +13,7 @@ export module Networking.LobbyClient;
 
 import Extern.Httplib;
 import Extern.Spdlog;
+import Shared.Core.Data.FileReader;
 
 export namespace Soldank
 {

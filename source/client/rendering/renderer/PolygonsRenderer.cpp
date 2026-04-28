@@ -1,11 +1,8 @@
 module;
 
-#include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/map/Map.hpp"
-#include "core/map/PMSStructs.hpp"
-
 #include "core/math/Glm.hpp"
+
+#include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
@@ -17,6 +14,10 @@ export module PolygonsRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Shared.Core.Map.Map;
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSStructs;
 
 import Extern.Spdlog;
 

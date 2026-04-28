@@ -1,7 +1,7 @@
-#include "core/entities/Weapon.hpp"
-#include "core/entities/WeaponParameters.hpp"
-
 #include <gtest/gtest.h>
+
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.WeaponParameters;
 
 TEST(WeaponTests, TestWeaponsLoadedCorrectly)
 {

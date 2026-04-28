@@ -1,11 +1,14 @@
-#include "shared_lib_testing/MapBuilder.hpp"
-#include "core/map/PMSEnums.hpp"
-#include "core/map/PMSStructs.hpp"
+#include "core/math/Glm.hpp"
 
 #include <gtest/gtest.h>
 
 #include <vector>
 #include <algorithm>
+
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Map;
+import Testing.Framework.Shared.MapBuilder;
 
 void CheckIfPolygonInSectors(const Soldank::Map& map,
                              unsigned short polygon_id,
@@ -80,4 +83,3 @@ int main(int argc, char** argv)
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
-

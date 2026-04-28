@@ -197,11 +197,11 @@ public:
           std::span{ static_cast<const char*>(static_cast<void*>(&text_length)),
                      sizeof(text_length) };
         data_.insert(
-          data_.end(), text_length_bytes_to_append.cbegin(), text_length_bytes_to_append.cend());
+          data_.end(), text_length_bytes_to_append.begin(), text_length_bytes_to_append.end());
         auto text_bytes_to_append =
           std::span{ static_cast<const char*>(static_cast<const void*>(text.c_str())),
                      text_length };
-        data_.insert(data_.end(), text_bytes_to_append.cbegin(), text_bytes_to_append.cend());
+        data_.insert(data_.end(), text_bytes_to_append.begin(), text_bytes_to_append.end());
     }
 
     void AppendBytes(const char* head)
@@ -212,11 +212,11 @@ public:
           std::span{ static_cast<const char*>(static_cast<void*>(&text_length)),
                      sizeof(text_length) };
         data_.insert(
-          data_.end(), text_length_bytes_to_append.cbegin(), text_length_bytes_to_append.cend());
+          data_.end(), text_length_bytes_to_append.begin(), text_length_bytes_to_append.end());
         auto text_bytes_to_append =
           std::span{ static_cast<const char*>(static_cast<const void*>(text.c_str())),
                      text_length };
-        data_.insert(data_.end(), text_bytes_to_append.cbegin(), text_bytes_to_append.cend());
+        data_.insert(data_.end(), text_bytes_to_append.begin(), text_bytes_to_append.end());
     }
 
     template<typename Head>
@@ -224,7 +224,7 @@ public:
     {
         auto head_bytes_to_append =
           std::span{ static_cast<const char*>(static_cast<void*>(&head)), sizeof(Head) };
-        data_.insert(data_.end(), head_bytes_to_append.cbegin(), head_bytes_to_append.cend());
+        data_.insert(data_.end(), head_bytes_to_append.begin(), head_bytes_to_append.end());
     }
 
     std::span<const char> GetData() const { return { data_ }; }

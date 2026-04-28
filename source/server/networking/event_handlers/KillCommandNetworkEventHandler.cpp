@@ -6,7 +6,7 @@ export module Networking.EventHandlers.KillCommandNetworkEventHandler;
 
 import Networking.IGameServer;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;

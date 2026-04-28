@@ -1,12 +1,4 @@
-#include "core/map/Map.hpp"
-
-#include "core/map/PMSConstants.hpp"
-#include "core/map/PMSEnums.hpp"
-#include "core/map/PMSStructs.hpp"
-
-#include "core/math/Calc.hpp"
-
-#include "core/data/IFileReader.hpp"
+#include "core/math/Glm.hpp"
 
 #include <gtest/gtest.h>
 
@@ -15,6 +7,13 @@
 #include <optional>
 #include <array>
 #include <span>
+
+import Shared.Core.Map.Map;
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Math.Calc;
+import Shared.Core.Data.IFileReader;
 
 constexpr const int VERSION = 1234;
 constexpr const std::string_view DESCRIPTION = "test_description";

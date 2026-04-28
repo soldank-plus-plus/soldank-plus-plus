@@ -1,57 +1,71 @@
-#include "core/animations/states/LegsFallAnimationState.hpp"
+module;
 
-#include "core/animations/states/LegsCrouchRunAnimationState.hpp"
-#include "core/animations/states/LegsJumpAnimationState.hpp"
-#include "core/animations/states/LegsStandAnimationState.hpp"
-#include "core/animations/states/LegsRunBackAnimationState.hpp"
-#include "core/animations/states/LegsRunAnimationState.hpp"
-#include "core/animations/states/LegsProneAnimationState.hpp"
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <vector>
 
-#include "core/physics/Constants.hpp"
-#include "core/entities/Soldier.hpp"
+export module Shared.Core.Animations.States:LegsFallAnimationState;
+
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class LegsFallAnimationState final : public Soldank::AnimationState
+{
+public:
+    LegsFallAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::Fall))
+    {
+    }
+
+    ~LegsFallAnimationState() override = default;
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+    void Update(UpdateParams& params) final { params.stance = PhysicsConstants::STANCE_STAND; }
+
+private:
+};
+} // namespace Soldank
 
 namespace Soldank
 {
-LegsFallAnimationState::LegsFallAnimationState(const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::Fall))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> LegsFallAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-std::optional<std::shared_ptr<AnimationState>> LegsFallAnimationState::HandleInput(Soldier& soldier)
-{
-    if (soldier.control.prone) {
-        return std::make_shared<LegsProneAnimationState>(animation_data_manager_);
+    if (params.control.prone) {
+        return AnimationState::Transition{ AnimationType::Prone, std::nullopt };
     }
 
-    if (soldier.control.up && !soldier.on_ground) {
+    if (params.control.up && !params.on_ground) {
         return std::nullopt;
     }
 
     auto maybe_running_animation_state =
-      CommonAnimationStateTransitions::TryTransitionToRunning(soldier, animation_data_manager_);
+      CommonAnimationStateTransitions::TryTransitionToRunning(params);
     if (maybe_running_animation_state.has_value()) {
         return *maybe_running_animation_state;
     }
 
-    if (soldier.on_ground) {
-        if (soldier.control.up) {
-            return std::make_shared<LegsJumpAnimationState>(animation_data_manager_);
+    if (params.on_ground) {
+        if (params.control.up) {
+            return AnimationState::Transition{ AnimationType::Jump, std::nullopt };
         }
 
-        if (soldier.control.down) {
-            return std::make_shared<LegsCrouchRunAnimationState>(animation_data_manager_);
+        if (params.control.down) {
+            return AnimationState::Transition{ AnimationType::CrouchRun, std::nullopt };
         }
 
-        return std::make_shared<LegsStandAnimationState>(animation_data_manager_);
+        return AnimationState::Transition{ AnimationType::Stand, std::nullopt };
     }
 
     return std::nullopt;
-}
-
-void LegsFallAnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events)
-{
-    soldier.stance = PhysicsConstants::STANCE_STAND;
 }
 } // namespace Soldank

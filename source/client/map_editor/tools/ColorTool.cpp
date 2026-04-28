@@ -1,10 +1,11 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/map/PMSStructs.hpp"
 #include "core/math/Glm.hpp"
 
+#include <functional>
 #include <memory>
+#include <utility>
+#include <vector>
 
 export module ColorTool;
 
@@ -12,6 +13,10 @@ import Tool;
 import MapEditorAction;
 import ColorObjectsMapEditorAction;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

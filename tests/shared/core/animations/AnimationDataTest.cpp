@@ -1,8 +1,12 @@
-#include "core/animations/AnimationData.hpp"
-
 #include <gtest/gtest.h>
 
+#include <expected>
+#include <ios>
+#include <string>
 #include <string_view>
+
+import Shared.Core.Animations;
+import Shared.Core.Data.IFileReader;
 
 constexpr const std::string_view ANIMATION_DATA_EXAMPLE = R"(
 1
@@ -53,7 +57,7 @@ TEST(AnimationDataTest, TestAnimationDataLoadedCorrectly)
     AnimationDataReaderExample animation_data_reader;
     Soldank::AnimationDataManager animation_data_manager;
     animation_data_manager.LoadAnimationData(
-      Soldank::AnimationType::Aim, "test_animation.poa", true, 500);
+      Soldank::AnimationType::Aim, "test_animation.poa", true, 500, animation_data_reader);
     auto animation_data = animation_data_manager.Get(Soldank::AnimationType::Aim);
     ASSERT_TRUE(animation_data->GetLooped());
     ASSERT_EQ(animation_data->GetSpeed(), 500);

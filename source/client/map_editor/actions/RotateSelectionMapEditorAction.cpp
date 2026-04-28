@@ -1,17 +1,22 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/map/PMSStructs.hpp"
-#include "core/math/Calc.hpp"
-#include "core/physics/SoldierSkeletonPhysics.hpp"
+#include "core/math/Glm.hpp"
 
 #include <cmath>
 #include <bitset>
+#include <utility>
+#include <vector>
 
 export module RotateSelectionMapEditorAction;
 
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.Physics.SoldierSkeletonPhysics;
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Math.Calc;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

@@ -2,7 +2,6 @@ module;
 
 #include "application/config/Config.hpp"
 
-#include "core/utility/Observable.hpp"
 #include "core/math/Glm.hpp"
 
 #include "imgui.h"
@@ -20,6 +19,8 @@ export module Application.Window;
 
 import Application.Input.Keyboard;
 import Application.Input.Mouse;
+
+import Shared.Core.Utility.Observable;
 
 import Extern.Spdlog;
 

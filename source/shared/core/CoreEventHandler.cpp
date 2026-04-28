@@ -1,24 +1,29 @@
 module;
 
-#include "core/WorldEvents.hpp"
-
-#include "core/math/Calc.hpp"
-
-#include "core/entities/Bullet.hpp"
-#include "core/entities/WeaponParametersFactory.hpp"
-
-#include "core/physics/SoldierPhysics.hpp"
-#include "core/physics/PhysicsEvents.hpp"
-
-#include "core/types/ItemType.hpp"
+#include "core/math/Glm.hpp"
 
 #include "spdlog/spdlog.h"
 
+#include <cstdint>
 #include <utility>
+#include <vector>
 
 export module Shared.CoreEventHandler;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
+import Shared.Core.WorldEvents;
+import Shared.Core.Physics.SoldierPhysics;
+import Shared.Core.Physics.PhysicsEvents;
+import Shared.Core.Math.Calc;
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Entities.Item;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.WeaponParametersFactory;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Types.ItemType;
+import Shared.Core.Types.TeamType;
+import Shared.Core.Types.WeaponType;
 
 namespace Soldank
 {

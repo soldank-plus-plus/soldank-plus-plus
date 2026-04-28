@@ -1,11 +1,10 @@
 module;
 
-#include "rendering/data/sprites/SpriteTypes.hpp"
-
-#include "core/entities/Bullet.hpp"
-#include "core/types/ItemType.hpp"
 #include "core/math/Glm.hpp"
 
+#include "rendering/data/sprites/SpriteTypes.hpp"
+
+#include <expected>
 #include <memory>
 #include <utility>
 #include <variant>
@@ -22,6 +21,11 @@ export module SpritesManager;
 
 import Texture;
 import SoldierPartData;
+
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Types.ItemType;
+import Shared.Core.Types.WeaponType;
 
 import Extern.Spdlog;
 

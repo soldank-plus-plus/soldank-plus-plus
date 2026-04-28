@@ -1,6 +1,7 @@
 module;
 
 #include <chrono>
+#include <memory>
 
 export module Networking.PingCheckNetworkEventHandler;
 

@@ -1,19 +1,20 @@
 module;
 
-#include "core/entities/Bullet.hpp"
-#include "core/types/BulletType.hpp"
-#include "core/types/TeamType.hpp"
-#include "core/types/WeaponType.hpp"
-
+#include <cstdint>
 #include <memory>
 
 export module Networking.ProjectileSpawnNetworkEventHandler;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEvent;
+
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Types.TeamType;
+import Shared.Core.Types.WeaponType;
 
 export namespace Soldank
 {

@@ -1,11 +1,8 @@
 module;
 
-#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
+#include "core/math/Glm.hpp"
 
-#include "core/state/StateManager.hpp"
-#include "core/map/PMSConstants.hpp"
-#include "core/map/PMSEnums.hpp"
-#include "core/map/PMSStructs.hpp"
+#include <string>
 
 export module MapEditorScene;
 
@@ -21,6 +18,12 @@ import SingleImageRenderer;
 import SpawnPointRenderer;
 import Camera;
 import PolygonsRenderer;
+import MapEditorState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

@@ -1,10 +1,8 @@
 module;
 
-#include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/map/PMSStructs.hpp"
-#include "core/map/PMSEnums.hpp"
 #include "core/math/Glm.hpp"
+
+#include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
@@ -18,6 +16,9 @@ export module SpawnPointRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.PMSEnums;
 
 import Extern.Spdlog;
 

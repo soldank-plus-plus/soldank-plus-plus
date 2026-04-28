@@ -1,14 +1,14 @@
 module;
 
-#include "core/animations/AnimationData.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/state/Control.hpp"
-
 #include <memory>
 
 export module Application.Input.PlayerInput;
 
 import ClientState;
+
+import Shared.Core.Animations;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.State.Control;
 
 export namespace Soldank::PlayerInput
 {

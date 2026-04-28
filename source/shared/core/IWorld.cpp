@@ -1,16 +1,20 @@
 module;
 
-#include "core/animations/AnimationData.hpp"
 #include "core/math/Glm.hpp"
-#include "core/state/StateManager.hpp"
-#include "core/physics/PhysicsEvents.hpp"
-#include "core/WorldEvents.hpp"
 
 #include <memory>
 #include <functional>
 #include <optional>
 
-export module Shared.IWorld;
+export module Shared.Core.IWorld;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Physics.PhysicsEvents;
+import Shared.Core.WorldEvents;
+import Shared.Core.Animations;
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Types.WeaponType;
 
 export namespace Soldank
 {

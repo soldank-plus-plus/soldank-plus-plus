@@ -1,29 +1,58 @@
-#include "SoldierPhysics.hpp"
+module;
 
-#include <math.h>
+#include "core/math/Glm.hpp"
 
-#include "core/animations/AnimationData.hpp"
-#include "core/animations/AnimationState.hpp"
-#include "core/physics/SoldierPhysics.hpp"
-#include "core/physics/SoldierSkeletonPhysics.hpp"
-
-#include "core/math/Calc.hpp"
-#include "core/entities/Bullet.hpp"
-#include "core/types/TeamType.hpp"
-#include "core/types/WeaponType.hpp"
-#include "core/entities/WeaponParametersFactory.hpp"
-
-#include "core/physics/Constants.hpp"
-
-#include "spdlog/spdlog.h"
-
-#include <cmath>
-#include <utility>
+#include <cstdint>
 #include <vector>
-#include <algorithm>
+#include <cmath>
+#include <memory>
+#include <stdexcept>
 
-namespace Soldank::SoldierPhysics
+export module Shared.Core.Physics.SoldierPhysics;
+
+import Shared.Core.Animations;
+import Shared.Core.Animations.States;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Math.Calc;
+import Shared.Core.Map.Map;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Types.TeamType;
+import Shared.Core.Types.WeaponType;
+import Shared.Core.Types.ItemType;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Physics.Constants;
+import Shared.Core.Physics.Particles;
+import Shared.Core.Physics.PhysicsEvents;
+import Shared.Core.Physics.SoldierSkeletonPhysics;
+import Shared.Core.State.StateManager;
+import Shared.Core.State.Control;
+
+export namespace Soldank::SoldierPhysics
 {
+bool CheckMapCollision(Soldier& soldier,
+                       const Map& map,
+                       float x,
+                       float y,
+                       int area,
+                       const PhysicsEvents& physics_events);
+bool CheckMapVerticesCollision(Soldier& soldier,
+                               const Map& map,
+                               float x,
+                               float y,
+                               float r,
+                               bool has_collided,
+                               const PhysicsEvents& physics_events);
+bool CheckRadiusMapCollision(Soldier& soldier,
+                             const Map& map,
+                             float x,
+                             float y,
+                             bool has_collided,
+                             const PhysicsEvents& physics_events);
+bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i, float x, float y);
+
+void Fire(Soldier& soldier, std::vector<BulletParams>& bullet_emitter);
 const Weapon& GetPrimaryWeapon(Soldier& soldier)
 {
     return soldier.weapons[soldier.active_weapon];
@@ -61,6 +90,84 @@ void HandleSpecialPolytypes(const Map& map, PMSPolygonType polytype, Soldier& so
     if (polytype == PMSPolygonType::Deadly || polytype == PMSPolygonType::BloodyDeadly ||
         polytype == PMSPolygonType::Explosive) {
         soldier.particle.position = glm::vec2(map.GetSpawnPoints()[0].x, map.GetSpawnPoints()[0].y);
+    }
+}
+
+std::shared_ptr<AnimationState> CreateBodyAnimationState(
+  AnimationType animation_type,
+  const AnimationDataManager& animation_data_manager)
+{
+    switch (animation_type) {
+        case AnimationType::Stand:
+            return std::make_shared<BodyStandAnimationState>(animation_data_manager);
+        case AnimationType::Throw:
+            return std::make_shared<BodyThrowAnimationState>(animation_data_manager);
+        case AnimationType::Change:
+            return std::make_shared<BodyChangeAnimationState>(animation_data_manager);
+        case AnimationType::ThrowWeapon:
+            return std::make_shared<BodyThrowWeaponAnimationState>(animation_data_manager);
+        case AnimationType::Punch:
+            return std::make_shared<BodyPunchAnimationState>(animation_data_manager);
+        case AnimationType::Roll:
+            return std::make_shared<BodyRollAnimationState>(animation_data_manager);
+        case AnimationType::RollBack:
+            return std::make_shared<BodyRollBackAnimationState>(animation_data_manager);
+        case AnimationType::Prone:
+            return std::make_shared<BodyProneAnimationState>(animation_data_manager);
+        case AnimationType::Aim:
+            return std::make_shared<BodyAimAnimationState>(animation_data_manager);
+        case AnimationType::ProneMove:
+            return std::make_shared<BodyProneMoveAnimationState>(animation_data_manager);
+        case AnimationType::GetUp:
+            return std::make_shared<BodyGetUpAnimationState>(animation_data_manager);
+        default:
+            throw std::runtime_error("Body animation not implemented!");
+    }
+}
+
+std::shared_ptr<AnimationState> CreateLegsAnimationState(
+  AnimationType animation_type,
+  const AnimationDataManager& animation_data_manager)
+{
+    switch (animation_type) {
+        case AnimationType::Stand:
+            return std::make_shared<LegsStandAnimationState>(animation_data_manager);
+        case AnimationType::Run:
+            return std::make_shared<LegsRunAnimationState>(animation_data_manager);
+        case AnimationType::RunBack:
+            return std::make_shared<LegsRunBackAnimationState>(animation_data_manager);
+        case AnimationType::Jump:
+            return std::make_shared<LegsJumpAnimationState>(animation_data_manager);
+        case AnimationType::JumpSide:
+            return std::make_shared<LegsJumpSideAnimationState>(animation_data_manager);
+        case AnimationType::Fall:
+            return std::make_shared<LegsFallAnimationState>(animation_data_manager);
+        case AnimationType::Crouch:
+            return std::make_shared<LegsCrouchAnimationState>(animation_data_manager);
+        case AnimationType::CrouchRun:
+            return std::make_shared<LegsCrouchRunAnimationState>(animation_data_manager);
+        case AnimationType::Roll:
+            return std::make_shared<LegsRollAnimationState>(animation_data_manager);
+        case AnimationType::RollBack:
+            return std::make_shared<LegsRollBackAnimationState>(animation_data_manager);
+        case AnimationType::CrouchRunBack:
+            return std::make_shared<LegsCrouchRunBackAnimationState>(animation_data_manager);
+        case AnimationType::Prone:
+            return std::make_shared<LegsProneAnimationState>(animation_data_manager);
+        case AnimationType::ProneMove:
+            return std::make_shared<LegsProneMoveAnimationState>(animation_data_manager);
+        case AnimationType::GetUp:
+            return std::make_shared<LegsGetUpAnimationState>(animation_data_manager);
+        default:
+            throw std::runtime_error("Legs animation not implemented!");
+    }
+}
+
+void ApplyTransitionInitialFrame(AnimationState& animation_state,
+                                 const AnimationState::Transition& transition)
+{
+    if (transition.initial_frame.has_value()) {
+        animation_state.SetFrame(*transition.initial_frame);
     }
 }
 
@@ -136,24 +243,105 @@ void Update(StateManager& state_manager,
     soldier.control.mouse_aim_y =
       (int)((float)soldier.control.mouse_aim_y + soldier.particle.GetVelocity().y);
 
-    auto maybe_new_legs_animation_state_machine = soldier.legs_animation->HandleInput(soldier);
-    if (maybe_new_legs_animation_state_machine.has_value()) {
-        soldier.legs_animation->Exit(soldier, physics_events);
-        soldier.legs_animation = *maybe_new_legs_animation_state_machine;
-        soldier.legs_animation->Enter(soldier);
+    AnimationState::HandleInputParams legs_handle_input_params{
+        soldier.control,          soldier.weapons,    soldier.stance,
+        soldier.active_weapon,    soldier.on_ground,  soldier.direction,
+        soldier.old_direction,    soldier.jets_count, soldier.legs_animation->GetType(),
+        soldier.grenade_can_throw
+    };
+    auto maybe_legs_animation_transition =
+      soldier.legs_animation->HandleInput(legs_handle_input_params);
+    soldier.control = legs_handle_input_params.control;
+    soldier.grenade_can_throw = legs_handle_input_params.grenade_can_throw;
+    if (maybe_legs_animation_transition.has_value()) {
+        AnimationState::ExitParams exit_params{ false };
+        soldier.legs_animation->Exit(exit_params);
+        if (exit_params.should_throw_active_weapon) {
+            physics_events.soldier_throws_active_weapon.Notify(soldier);
+        }
+        soldier.legs_animation = CreateLegsAnimationState(
+          maybe_legs_animation_transition->animation_type, animation_data_manager);
+        ApplyTransitionInitialFrame(*soldier.legs_animation, *maybe_legs_animation_transition);
+        AnimationState::EnterParams enter_params{
+            soldier.on_ground,         soldier.direction, soldier.particle.GetForce(),
+            soldier.grenade_can_throw, soldier.weapons,   soldier.active_weapon
+        };
+        soldier.legs_animation->Enter(enter_params);
+        soldier.particle.SetForce(enter_params.force);
+        soldier.grenade_can_throw = enter_params.grenade_can_throw;
     }
 
-    soldier.body_animation->TryToShoot(soldier, physics_events);
-    soldier.body_animation->TryToThrowFlags(soldier, physics_events);
-    auto maybe_new_body_animation_state_machine = soldier.body_animation->HandleInput(soldier);
-    if (maybe_new_body_animation_state_machine.has_value()) {
-        soldier.body_animation->Exit(soldier, physics_events);
-        soldier.body_animation = *maybe_new_body_animation_state_machine;
-        soldier.body_animation->Enter(soldier);
+    AnimationState::TryToShootParams try_to_shoot_params{
+        soldier.weapons, soldier.active_weapon, soldier.control.fire, false
+    };
+    soldier.body_animation->TryToShoot(try_to_shoot_params);
+    if (try_to_shoot_params.should_fire_primary_weapon) {
+        physics_events.soldier_fires_primary_weapon.Notify(soldier);
     }
 
-    soldier.legs_animation->Update(soldier, physics_events);
-    soldier.body_animation->Update(soldier, physics_events);
+    AnimationState::TryToThrowFlagsParams try_to_throw_flags_params{ soldier.control.flag_throw,
+                                                                     soldier.is_holding_flags,
+                                                                     false };
+    soldier.body_animation->TryToThrowFlags(try_to_throw_flags_params);
+    if (try_to_throw_flags_params.should_throw_flags) {
+        physics_events.soldier_throws_flags.Notify(soldier);
+    }
+
+    AnimationState::HandleInputParams body_handle_input_params{
+        soldier.control,          soldier.weapons,    soldier.stance,
+        soldier.active_weapon,    soldier.on_ground,  soldier.direction,
+        soldier.old_direction,    soldier.jets_count, soldier.legs_animation->GetType(),
+        soldier.grenade_can_throw
+    };
+    auto maybe_body_animation_transition =
+      soldier.body_animation->HandleInput(body_handle_input_params);
+    soldier.control = body_handle_input_params.control;
+    soldier.grenade_can_throw = body_handle_input_params.grenade_can_throw;
+    if (maybe_body_animation_transition.has_value()) {
+        AnimationState::ExitParams exit_params{ false };
+        soldier.body_animation->Exit(exit_params);
+        if (exit_params.should_throw_active_weapon) {
+            physics_events.soldier_throws_active_weapon.Notify(soldier);
+        }
+        soldier.body_animation = CreateBodyAnimationState(
+          maybe_body_animation_transition->animation_type, animation_data_manager);
+        ApplyTransitionInitialFrame(*soldier.body_animation, *maybe_body_animation_transition);
+        AnimationState::EnterParams enter_params{
+            soldier.on_ground,         soldier.direction, soldier.particle.GetForce(),
+            soldier.grenade_can_throw, soldier.weapons,   soldier.active_weapon
+        };
+        soldier.body_animation->Enter(enter_params);
+        soldier.particle.SetForce(enter_params.force);
+        soldier.grenade_can_throw = enter_params.grenade_can_throw;
+    }
+
+    AnimationState::UpdateParams legs_update_params{ soldier.control,
+                                                     soldier.direction,
+                                                     soldier.on_ground,
+                                                     soldier.stance,
+                                                     soldier.particle.GetVelocity(),
+                                                     soldier.particle.GetForce(),
+                                                     false };
+    soldier.legs_animation->Update(legs_update_params);
+    soldier.stance = legs_update_params.stance;
+    soldier.particle.SetForce(legs_update_params.force);
+    if (legs_update_params.should_switch_weapon) {
+        physics_events.soldier_switches_weapon.Notify(soldier);
+    }
+
+    AnimationState::UpdateParams body_update_params{ soldier.control,
+                                                     soldier.direction,
+                                                     soldier.on_ground,
+                                                     soldier.stance,
+                                                     soldier.particle.GetVelocity(),
+                                                     soldier.particle.GetForce(),
+                                                     false };
+    soldier.body_animation->Update(body_update_params);
+    soldier.stance = body_update_params.stance;
+    soldier.particle.SetForce(body_update_params.force);
+    if (body_update_params.should_switch_weapon) {
+        physics_events.soldier_switches_weapon.Notify(soldier);
+    }
 
     bool jets_can_be_applied = true;
     if (soldier.legs_animation->GetType() == AnimationType::RollBack && soldier.control.up) {

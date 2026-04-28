@@ -1,19 +1,22 @@
-#include "core/physics/ItemPhysics.hpp"
+module;
 
-#include "core/entities/Item.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/map/Map.hpp"
-#include "core/map/PMSEnums.hpp"
-#include "core/math/Calc.hpp"
-#include "core/state/StateManager.hpp"
-#include "core/physics/PhysicsEvents.hpp"
-#include "core/physics/Constants.hpp"
-#include "core/types/BulletType.hpp"
-#include "core/types/ItemType.hpp"
+#include "core/math/Glm.hpp"
 
 #include <cmath>
+#include <vector>
 
-namespace Soldank::ItemPhysics
+export module Shared.Core.Physics.ItemPhysics;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Entities.Item;
+import Shared.Core.Map.Map;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Math.Calc;
+import Shared.Core.Physics.PhysicsEvents;
+import Shared.Core.Physics.Constants;
+import Shared.Core.Types.ItemType;
+
+export namespace Soldank::ItemPhysics
 {
 // TODO: move somewhere
 const int SECOND = 60;
@@ -21,6 +24,14 @@ const int FLAG_TIMEOUT = SECOND * 25;
 const int FLAG_HOLDING_FORCEUP = -14;
 const float GRAV = 0.06;
 const int BASE_RADIUS = 75;
+
+bool CheckMapCollision(Item& item,
+                       const Map& map,
+                       float x,
+                       float y,
+                       int i,
+                       const PhysicsEvents& physics_events);
+int CheckSoldierCollision(Item& item, const StateManager& state_manager);
 
 void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physics_events)
 {

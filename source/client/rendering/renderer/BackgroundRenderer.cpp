@@ -1,9 +1,8 @@
 module;
 
-#include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/map/Map.hpp"
 #include "core/math/Glm.hpp"
+
+#include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
@@ -15,6 +14,9 @@ export module BackgroundRenderer;
 
 import Renderer;
 import Shader;
+
+import Shared.Core.Map.Map;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

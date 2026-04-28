@@ -1,8 +1,5 @@
 module;
 
-#include "core/entities/Soldier.hpp"
-#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
-
 #include "core/math/Glm.hpp"
 
 #include <optional>
@@ -13,9 +10,13 @@ module;
 export module ClientState;
 
 import Camera;
+import MapEditorState;
 
 import Shared.Networking.PingTimer;
 import Shared.Networking.NetworkPackets;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Types.WeaponType;
+import Shared.Core.Utility.Observable;
 
 export namespace Soldank
 {

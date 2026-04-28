@@ -1,0 +1,13 @@
+# .claudeignore
+build/
+bin/
+.cmake/
+CMakeCache.txt
+vcpkg_installed/
+vcpkg/
+*.o
+*.a
+*.so
+*.dylib
+*.pdb
+

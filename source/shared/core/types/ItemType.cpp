@@ -1,7 +1,42 @@
-#include "core/types/ItemType.hpp"
+module;
 
-namespace Soldank
+#include <cstdint>
+
+export module Shared.Core.Types.ItemType;
+
+export namespace Soldank
 {
+enum class ItemType : std::uint8_t
+{
+    AlphaFlag = 1,
+    BravoFlag,
+    PointmatchFlag,
+    USSOCOM,
+    DesertEagles,
+    MP5,
+    Ak74,
+    SteyrAUG,
+    Spas12,
+    Ruger77,
+    M79,
+    Barrett,
+    Minimi,
+    Minigun,
+    Bow,
+    MedicalKit,
+    GrenadeKit,
+    FlamerKit,
+    PredatorKit,
+    VestKit,
+    BerserkKit,
+    ClusterKit,
+    Parachute,
+    Knife,
+    Chainsaw,
+    LAW,
+    M2,
+};
+
 bool IsItemTypeFlag(ItemType item_type)
 {
     switch (item_type) {
@@ -36,6 +71,7 @@ bool IsItemTypeFlag(ItemType item_type)
             return false;
     }
 }
+
 bool IsItemTypeWeapon(ItemType item_type)
 {
     switch (item_type) {
@@ -71,6 +107,7 @@ bool IsItemTypeWeapon(ItemType item_type)
             return false;
     }
 }
+
 bool IsItemTypeKit(ItemType item_type)
 {
     switch (item_type) {

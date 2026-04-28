@@ -1,6 +1,12 @@
-#include "Getline.hpp"
+module;
 
-namespace Soldank
+#include <string>
+#include <fstream>
+#include <cstdlib>
+
+export module Shared.Core.Utility.Getline;
+
+export namespace Soldank
 {
 // Implementation copied from https://gist.github.com/josephwb/df09e3a71679461fc104
 std::istream& GetlineSafe(std::istream& is, std::string& t)

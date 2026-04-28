@@ -1,7 +1,5 @@
 module;
 
-#include "core/entities/Bullet.hpp"
-#include "core/state/StateManager.hpp"
 #include <core/math/Glm.hpp>
 
 #include <cstdlib>
@@ -24,9 +22,12 @@ import Networking.EventHandlers.KillCommandNetworkEventHandler;
 import Networking.EventHandlers.PingCheckNetworkEventHandler;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 
-import Shared.IWorld;
-import Shared.World;
+import Shared.Core.IWorld;
+import Shared.Core.World;
 import Shared.CoreEventHandler;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Entities.Bullet;
 
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEventDispatcher;

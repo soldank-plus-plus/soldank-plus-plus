@@ -27,7 +27,13 @@ add_executable(CalcTest core/math/CalcTest.cpp)
 AddTestOptionsAndLibraries(CalcTest)
 target_link_libraries(CalcTest PRIVATE shared_lib)
 
-add_executable(MovementTest core/physics/MovementTest.cpp core/physics/SoldierMovementSimulation.cpp)
+add_executable(MovementTest core/physics/MovementTest.cpp)
+target_sources(MovementTest
+    PUBLIC
+        FILE_SET all_movement_test_modules TYPE CXX_MODULES FILES 
+        core/physics/SoldierMovementSimulation.cpp
+)
+
 AddTestOptionsAndLibraries(MovementTest)
 target_link_libraries(MovementTest PRIVATE shared_lib)
 target_link_libraries(MovementTest PRIVATE shared_lib_testing_framework)

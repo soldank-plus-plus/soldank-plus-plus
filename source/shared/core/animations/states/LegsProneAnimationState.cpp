@@ -1,57 +1,70 @@
-#include "core/animations/states/LegsProneAnimationState.hpp"
+module;
 
-#include "core/animations/states/LegsGetUpAnimationState.hpp"
-#include "core/animations/states/LegsProneMoveAnimationState.hpp"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <vector>
 
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
+export module Shared.Core.Animations.States:LegsProneAnimationState;
 
-#include "core/entities/Soldier.hpp"
-#include "core/physics/Constants.hpp"
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class LegsProneAnimationState final : public Soldank::AnimationState
+{
+public:
+    LegsProneAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::Prone))
+    {
+    }
+
+    ~LegsProneAnimationState() override = default;
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+    void Update(UpdateParams& params) final { params.stance = PhysicsConstants::STANCE_PRONE; }
+
+private:
+};
+} // namespace Soldank
 
 namespace Soldank
 {
-LegsProneAnimationState::LegsProneAnimationState(const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::Prone))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> LegsProneAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-std::optional<std::shared_ptr<AnimationState>> LegsProneAnimationState::HandleInput(
-  Soldier& soldier)
-{
     // Set old direction when entering state
     if (GetFrame() == 2) {
-        soldier.old_direction = soldier.direction;
+        params.old_direction = params.direction;
     }
 
     if (GetFrame() > 23) {
-        if (soldier.control.prone || soldier.direction != soldier.old_direction) {
-            auto new_state = std::make_shared<LegsGetUpAnimationState>(animation_data_manager_);
-            new_state->SetFrame(9);
-            return new_state;
+        if (params.control.prone || params.direction != params.old_direction) {
+            return AnimationState::Transition{ AnimationType::GetUp, 9 };
         }
 
-        if (soldier.on_ground) {
+        if (params.on_ground) {
             auto maybe_rolling_animation_state =
-              CommonAnimationStateTransitions::TryTransitionToRolling(soldier,
-                                                                      animation_data_manager_);
+              CommonAnimationStateTransitions::TryTransitionToRolling(params);
             if (maybe_rolling_animation_state.has_value()) {
                 return *maybe_rolling_animation_state;
             }
         }
     }
 
-    if (GetFrame() > 25 && soldier.on_ground) {
-        if (soldier.control.left || soldier.control.right) {
-            return std::make_shared<LegsProneMoveAnimationState>(animation_data_manager_);
+    if (GetFrame() > 25 && params.on_ground) {
+        if (params.control.left || params.control.right) {
+            return AnimationState::Transition{ AnimationType::ProneMove, std::nullopt };
         }
     }
 
     return std::nullopt;
-}
-
-void LegsProneAnimationState::Update(Soldier& soldier, const PhysicsEvents& physics_events)
-{
-    soldier.stance = PhysicsConstants::STANCE_PRONE;
 }
 } // namespace Soldank

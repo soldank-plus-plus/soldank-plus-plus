@@ -1,12 +1,17 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/math/Calc.hpp"
+#include "core/math/Glm.hpp"
+
+#include <cstdint>
 
 export module ColorPickerTool;
 
 import Tool;
 import ClientState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Math.Calc;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

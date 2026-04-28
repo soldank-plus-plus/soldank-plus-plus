@@ -1,13 +1,19 @@
 module;
 
-#include "core/state/StateManager.hpp"
-#include "core/physics/SoldierSkeletonPhysics.hpp"
-#include "core/map/PMSStructs.hpp"
+#include "core/math/Glm.hpp"
+
+#include <utility>
+#include <vector>
 
 export module MoveSelectionMapEditorAction;
 
 import MapEditorAction;
 import ClientState;
+
+import Shared.Core.Physics.SoldierSkeletonPhysics;
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

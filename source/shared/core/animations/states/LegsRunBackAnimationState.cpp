@@ -1,105 +1,113 @@
-#include "core/animations/states/LegsRunBackAnimationState.hpp"
+module;
 
-#include "core/animations/states/LegsStandAnimationState.hpp"
-#include "core/animations/states/LegsRunAnimationState.hpp"
-#include "core/animations/states/LegsFallAnimationState.hpp"
-#include "core/animations/states/LegsJumpSideAnimationState.hpp"
-#include "core/animations/states/LegsJumpAnimationState.hpp"
-#include "core/animations/states/LegsProneAnimationState.hpp"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <vector>
 
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
+export module Shared.Core.Animations.States:LegsRunBackAnimationState;
 
-#include "core/physics/Constants.hpp"
-#include "core/entities/Soldier.hpp"
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class LegsRunBackAnimationState final : public Soldank::AnimationState
+{
+public:
+    LegsRunBackAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::RunBack))
+    {
+    }
+
+    ~LegsRunBackAnimationState() override = default;
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+    void Update(UpdateParams& params) final
+    {
+        params.stance = PhysicsConstants::STANCE_STAND;
+
+        if (params.control.left && !params.control.up && params.direction == 1) {
+            if (params.on_ground) {
+                params.force.x = -PhysicsConstants::RUNSPEED;
+                params.force.y = -PhysicsConstants::RUNSPEEDUP;
+            } else {
+                params.force.x = -PhysicsConstants::FLYSPEED;
+            }
+        } else if (params.control.right && !params.control.up && params.direction == -1) {
+            if (params.on_ground) {
+                params.force.x = PhysicsConstants::RUNSPEED;
+                params.force.y = -PhysicsConstants::RUNSPEEDUP;
+            } else {
+                params.force.x = PhysicsConstants::FLYSPEED;
+            }
+        }
+    }
+
+private:
+};
+} // namespace Soldank
 
 namespace Soldank
 {
-LegsRunBackAnimationState::LegsRunBackAnimationState(
-  const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::RunBack))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> LegsRunBackAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-std::optional<std::shared_ptr<AnimationState>> LegsRunBackAnimationState::HandleInput(
-  Soldier& soldier)
-{
-    if (soldier.control.prone) {
-        return std::make_shared<LegsProneAnimationState>(animation_data_manager_);
+    if (params.control.prone) {
+        return AnimationState::Transition{ AnimationType::Prone, std::nullopt };
     }
 
-    if (soldier.on_ground) {
+    if (params.on_ground) {
         auto maybe_rolling_animation_state =
-          CommonAnimationStateTransitions::TryTransitionToRolling(soldier, animation_data_manager_);
+          CommonAnimationStateTransitions::TryTransitionToRolling(params);
         if (maybe_rolling_animation_state.has_value()) {
             return *maybe_rolling_animation_state;
         }
     }
 
-    if (!soldier.control.left && !soldier.control.right) {
-        if (soldier.on_ground) {
-            if (soldier.control.up) {
-                return std::make_shared<LegsJumpAnimationState>(animation_data_manager_);
+    if (!params.control.left && !params.control.right) {
+        if (params.on_ground) {
+            if (params.control.up) {
+                return AnimationState::Transition{ AnimationType::Jump, std::nullopt };
             }
-            return std::make_shared<LegsStandAnimationState>(animation_data_manager_);
+            return AnimationState::Transition{ AnimationType::Stand, std::nullopt };
         }
 
-        if (soldier.control.up) {
+        if (params.control.up) {
             return std::nullopt;
         }
 
-        return std::make_shared<LegsFallAnimationState>(animation_data_manager_);
+        return AnimationState::Transition{ AnimationType::Fall, std::nullopt };
     }
 
-    if (soldier.control.up && soldier.on_ground) {
-        soldier.control.was_running_left = soldier.control.left;
-        return std::make_shared<LegsJumpSideAnimationState>(animation_data_manager_);
+    if (params.control.up && params.on_ground) {
+        params.control.was_running_left = params.control.left;
+        return AnimationState::Transition{ AnimationType::JumpSide, std::nullopt };
     }
 
-    if (soldier.control.left && soldier.direction == -1) {
-        return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
+    if (params.control.left && params.direction == -1) {
+        return AnimationState::Transition{ AnimationType::Run, std::nullopt };
     }
 
-    if (soldier.control.right && soldier.direction == 1) {
-        return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
+    if (params.control.right && params.direction == 1) {
+        return AnimationState::Transition{ AnimationType::Run, std::nullopt };
     }
 
     // if using jets, reset animation because first frame looks like "directional" jetting
-    if (soldier.control.jets && soldier.jets_count > 0) {
-        if (soldier.control.up) {
-            return std::make_shared<LegsFallAnimationState>(animation_data_manager_);
+    if (params.control.jets && params.jets_count > 0) {
+        if (params.control.up) {
+            return AnimationState::Transition{ AnimationType::Fall, std::nullopt };
         }
 
-        return std::make_shared<LegsRunBackAnimationState>(animation_data_manager_);
+        return AnimationState::Transition{ AnimationType::RunBack, std::nullopt };
     }
 
     return std::nullopt;
-}
-
-void LegsRunBackAnimationState::Update(Soldier& soldier, const PhysicsEvents& /*physics_events*/)
-{
-    soldier.stance = PhysicsConstants::STANCE_STAND;
-
-    if (soldier.control.left && !soldier.control.up && soldier.direction == 1) {
-        glm::vec2 particle_force = soldier.particle.GetForce();
-        if (soldier.on_ground) {
-            particle_force.x = -PhysicsConstants::RUNSPEED;
-            particle_force.y = -PhysicsConstants::RUNSPEEDUP;
-        } else {
-            particle_force.x = -PhysicsConstants::FLYSPEED;
-        }
-        soldier.particle.SetForce(particle_force);
-    } else if (soldier.control.right && !soldier.control.up && soldier.direction == -1) {
-        if (soldier.on_ground) {
-            glm::vec2 particle_force = soldier.particle.GetForce();
-            particle_force.x = PhysicsConstants::RUNSPEED;
-            particle_force.y = -PhysicsConstants::RUNSPEEDUP;
-            soldier.particle.SetForce(particle_force);
-        } else {
-            glm::vec2 particle_force = soldier.particle.GetForce();
-            particle_force.x = PhysicsConstants::FLYSPEED;
-            soldier.particle.SetForce(particle_force);
-        }
-    }
 }
 } // namespace Soldank

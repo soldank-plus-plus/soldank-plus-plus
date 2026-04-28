@@ -1,9 +1,8 @@
 module;
 
-#include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/math/Calc.hpp"
 #include "core/math/Glm.hpp"
+
+#include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
@@ -16,6 +15,8 @@ export module RectangleRenderer;
 import Texture;
 import Renderer;
 import Shader;
+
+import Shared.Core.Math.Calc;
 
 export namespace Soldank
 {

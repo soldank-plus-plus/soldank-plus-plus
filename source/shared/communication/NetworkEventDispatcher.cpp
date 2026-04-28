@@ -1,14 +1,10 @@
 module;
 
 #include "core/math/Glm.hpp"
-#include "core/state/Control.hpp"
-#include "core/animations/AnimationData.hpp"
-#include "core/types/BulletType.hpp"
-#include "core/types/TeamType.hpp"
-#include "core/types/WeaponType.hpp"
 
 #include <memory>
 #include <optional>
+#include <expected>
 #include <variant>
 #include <utility>
 #include <functional>
@@ -19,6 +15,11 @@ export module Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.NetworkPackets;
+import Shared.Core.State.Control;
+import Shared.Core.Animations;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Types.TeamType;
+import Shared.Core.Types.WeaponType;
 
 export namespace Soldank
 {

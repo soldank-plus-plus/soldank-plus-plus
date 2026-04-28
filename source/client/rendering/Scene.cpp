@@ -1,13 +1,7 @@
 module;
 
-#include "core/entities/Item.hpp"
-#include "core/types/ItemType.hpp"
-#include "core/state/StateManager.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/entities/Bullet.hpp"
-#include "core/math/Calc.hpp"
-
 #include "application/config/Config.hpp"
+#include "core/math/Glm.hpp"
 
 #include <glad/glad.h>
 
@@ -37,6 +31,13 @@ import BulletRenderer;
 import LineRenderer;
 import CircleRenderer;
 import MapEditorScene;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Entities.Item;
+import Shared.Core.Types.ItemType;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Math.Calc;
 
 export namespace Soldank
 {

@@ -1,14 +1,14 @@
 module;
 
-#include "core/state/Control.hpp"
-#include "core/animations/AnimationData.hpp"
-#include "core/types/BulletType.hpp"
-#include "core/types/TeamType.hpp"
-#include "core/types/WeaponType.hpp"
-
 #include <cstdint>
 
 export module Shared.Networking.NetworkPackets;
+
+import Shared.Core.State.Control;
+import Shared.Core.Animations;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Types.TeamType;
+import Shared.Core.Types.WeaponType;
 
 export namespace Soldank
 {

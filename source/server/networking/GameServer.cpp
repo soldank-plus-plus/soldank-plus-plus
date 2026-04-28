@@ -13,7 +13,7 @@ import Networking.Interface.NetworkingInterface;
 import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
 
-import Shared.IWorld;
+import Shared.Core.IWorld;
 
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.NetworkEventDispatcher;

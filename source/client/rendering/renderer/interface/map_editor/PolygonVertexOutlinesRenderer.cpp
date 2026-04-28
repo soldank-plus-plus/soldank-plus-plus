@@ -1,15 +1,14 @@
 module;
 
-#include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/map/PMSConstants.hpp"
-#include "core/map/Map.hpp"
 #include "core/math/Glm.hpp"
+
+#include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
 #include <array>
 #include <bitset>
+#include <optional>
 #include <vector>
 
 export module PolygonVertexOutlinesRenderer;
@@ -17,6 +16,10 @@ export module PolygonVertexOutlinesRenderer;
 import Renderer;
 import Shader;
 import ClientState;
+
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Map;
 
 export namespace Soldank
 {

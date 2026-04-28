@@ -1,49 +1,65 @@
-#include "core/animations/states/BodyRollAnimationState.hpp"
+module;
 
-#include "core/animations/states/BodyProneAnimationState.hpp"
-#include "core/animations/states/BodyAimAnimationState.hpp"
-#include "core/animations/states/BodyStandAnimationState.hpp"
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <vector>
 
-#include "core/animations/states/CommonAnimationStateTransitions.hpp"
+export module Shared.Core.Animations.States:BodyRollAnimationState;
 
-#include "core/animations/AnimationData.hpp"
-#include "core/entities/Soldier.hpp"
-#include "core/physics/Constants.hpp"
+import Shared.Core.Animations;
+import :CommonAnimationStateTransitions;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Types.WeaponType;
+
+import Shared.Core.Physics.Constants;
+
+export namespace Soldank
+{
+class BodyRollAnimationState final : public Soldank::AnimationState
+{
+public:
+    BodyRollAnimationState(const AnimationDataManager& animation_data_manager)
+        : AnimationState(animation_data_manager.Get(AnimationType::Roll))
+    {
+    }
+    ~BodyRollAnimationState() override = default;
+
+    std::optional<AnimationState::Transition> HandleInput(HandleInputParams& params) final;
+
+private:
+    bool IsSoldierShootingPossible(const std::vector<Weapon>& weapons,
+                                   std::uint8_t active_weapon) const final
+    {
+        return weapons[active_weapon].GetWeaponParameters().kind == WeaponType::Chainsaw;
+    }
+};
+} // namespace Soldank
 
 namespace Soldank
 {
-BodyRollAnimationState::BodyRollAnimationState(const AnimationDataManager& animation_data_manager)
-    : AnimationState(animation_data_manager.Get(AnimationType::Roll))
-    , animation_data_manager_(animation_data_manager)
+std::optional<AnimationState::Transition> BodyRollAnimationState::HandleInput(
+  HandleInputParams& params)
 {
-}
 
-std::optional<std::shared_ptr<AnimationState>> BodyRollAnimationState::HandleInput(Soldier& soldier)
-{
-    if (soldier.control.prone) {
-        return std::make_shared<BodyProneAnimationState>(animation_data_manager_);
+    if (params.control.prone) {
+        return AnimationState::Transition{ AnimationType::Prone, std::nullopt };
     }
 
     if (GetFrame() == GetFramesCount()) {
-        if (soldier.stance == PhysicsConstants::STANCE_STAND) {
-            return std::make_shared<BodyStandAnimationState>(animation_data_manager_);
+        if (params.stance == PhysicsConstants::STANCE_STAND) {
+            return AnimationState::Transition{ AnimationType::Stand, std::nullopt };
         }
 
-        if (soldier.stance == PhysicsConstants::STANCE_CROUCH) {
-            return std::make_shared<BodyAimAnimationState>(animation_data_manager_);
+        if (params.stance == PhysicsConstants::STANCE_CROUCH) {
+            return AnimationState::Transition{ AnimationType::Aim, std::nullopt };
         }
 
-        if (soldier.stance == PhysicsConstants::STANCE_PRONE) {
-            return std::make_shared<BodyProneAnimationState>(animation_data_manager_);
+        if (params.stance == PhysicsConstants::STANCE_PRONE) {
+            return AnimationState::Transition{ AnimationType::Prone, std::nullopt };
         }
     }
 
     return std::nullopt;
-}
-
-bool BodyRollAnimationState::IsSoldierShootingPossible(const Soldier& soldier) const
-{
-    return soldier.weapons[soldier.active_weapon].GetWeaponParameters().kind ==
-           WeaponType::Chainsaw;
 }
 } // namespace Soldank

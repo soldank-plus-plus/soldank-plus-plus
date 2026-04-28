@@ -1,14 +1,11 @@
 module;
 
-#include "rendering/renderer/interface/map_editor/MapEditorState.hpp"
-
-#include "core/state/StateManager.hpp"
-#include "core/map/PMSEnums.hpp"
-#include "core/map/PMSStructs.hpp"
-#include "core/math/Calc.hpp"
 #include "core/math/Glm.hpp"
 
+#include <functional>
 #include <memory>
+#include <optional>
+#include <utility>
 
 export module PolygonTool;
 
@@ -16,6 +13,12 @@ import Tool;
 import MapEditorAction;
 import AddPolygonMapEditorAction;
 import ClientState;
+import MapEditorState;
+
+import Shared.Core.State.StateManager;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
+import Shared.Core.Math.Calc;
 
 export namespace Soldank
 {

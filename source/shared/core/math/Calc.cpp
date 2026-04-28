@@ -1,10 +1,16 @@
-#include "Calc.hpp"
+module;
 
-#include <math.h>
+#include "core/math/Glm.hpp"
 
 #include <cmath>
+#include <algorithm>
+#include <optional>
+#include <vector>
 
-namespace Soldank::Calc
+export module Shared.Core.Math.Calc;
+
+
+export namespace Soldank::Calc
 {
 float Distance(const glm::vec2& p1, const glm::vec2& p2)
 {
@@ -36,6 +42,7 @@ float Vec2Angle(const glm::vec2& v)
 {
     return (float)(-atan2(0.0, 1.0) - atan2(v.y, v.x));
 }
+
 glm::vec2 Vec2Scale(const glm::vec2& v, float scale)
 {
     return v * scale;

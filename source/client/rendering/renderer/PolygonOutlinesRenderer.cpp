@@ -1,18 +1,22 @@
 module;
 
-#include "rendering/shaders/ShaderSources.hpp"
-
-#include "core/map/Map.hpp"
 #include "core/math/Glm.hpp"
+
+#include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
+#include <optional>
 #include <vector>
 
 export module PolygonOutlinesRenderer;
 
 import Renderer;
 import Shader;
+
+import Shared.Core.Map.Map;
+import Shared.Core.Map.PMSConstants;
+import Shared.Core.Map.PMSStructs;
 
 export namespace Soldank
 {

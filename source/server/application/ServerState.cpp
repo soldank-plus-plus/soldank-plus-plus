@@ -1,11 +1,12 @@
 module;
 
-#include "core/config/Config.hpp"
-
 #include <array>
+#include <cstdint>
 #include <string>
 
 export module Application.ServerState;
+
+import Shared.Core.Config.Config;
 
 export namespace Soldank
 {
