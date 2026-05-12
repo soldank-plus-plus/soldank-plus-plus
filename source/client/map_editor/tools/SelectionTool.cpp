@@ -228,7 +228,7 @@ void SelectionTool::SelectNextObject(ClientState& client_state,
                 break;
             }
             case NextObjectTypeToSelect::Soldier: {
-                game_state_manager.ForSoldier(current_index + 1, [&](const auto& soldier) {
+                game_state_manager.ForSoldier(current_index, [&](const auto& soldier) {
                     if (IsMouseInSoldier(soldier.particle.position)) {
                         client_state.map_editor_state.selected_soldier_ids.push_back(soldier.id);
                     }
