@@ -1,0 +1,7 @@
+.git
+.agents
+.codex
+build
+build-*
+cmake-build-*
+vcpkg
