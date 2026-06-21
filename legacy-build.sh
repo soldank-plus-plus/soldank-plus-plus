@@ -55,4 +55,13 @@ docker run \
     -v "${SCRIPT_DIR}:/work" \
     -w /work \
     "${image}" \
-    bash -lc "cmake --preset ${PRESET} && cmake --build --preset ${PRESET}"
+    bash -lc "cmake --preset ${PRESET} \
+                -DVCPKG_OVERLAY_TRIPLETS=/work/cmake/vcpkg-triplets \
+                -DVCPKG_TARGET_TRIPLET=x64-linux-libcxx \
+                -DVCPKG_HOST_TRIPLET=x64-linux-libcxx \
+                -DCMAKE_CXX_FLAGS='-stdlib=libc++ -pthread' \
+                -DCMAKE_EXE_LINKER_FLAGS='-stdlib=libc++ -lc++abi -pthread' \
+                -DCMAKE_SHARED_LINKER_FLAGS='-stdlib=libc++ -lc++abi -pthread' && \
+              cmake --build --preset ${PRESET} && \
+              cmake -E copy_if_different /lib/x86_64-linux-gnu/libc++.so.1 /work/build/${PRESET}/bin/Release && \
+              cmake -E copy_if_different /lib/x86_64-linux-gnu/libc++abi.so.1 /work/build/${PRESET}/bin/Release"

@@ -2,6 +2,7 @@ FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG LLVM_VERSION=22
+ARG NINJA_VERSION=1.13.1
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -29,6 +30,9 @@ RUN apt-get update \
         build-essential \
         clang-${LLVM_VERSION} \
         clang-format-${LLVM_VERSION} \
+        clang-tools-${LLVM_VERSION} \
+        libc++-${LLVM_VERSION}-dev \
+        libc++abi-${LLVM_VERSION}-dev \
         cmake \
         gcc-13 \
         g++-13 \
@@ -36,7 +40,6 @@ RUN apt-get update \
         libglu1-mesa-dev \
         libtool \
         lld-${LLVM_VERSION} \
-        ninja-build \
         pkg-config \
         python3 \
         tar \
@@ -48,7 +51,15 @@ RUN apt-get update \
     && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VERSION} 130 \
     && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${LLVM_VERSION} 130 \
     && update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-${LLVM_VERSION} 130 \
+    && update-alternatives --install /usr/bin/clang-scan-deps clang-scan-deps /usr/bin/clang-scan-deps-${LLVM_VERSION} 130 \
     && update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-${LLVM_VERSION} 130 \
+    && curl -L -o /tmp/ninja.zip \
+        https://github.com/ninja-build/ninja/releases/download/v${NINJA_VERSION}/ninja-linux.zip \
+    && unzip /tmp/ninja.zip -d /usr/local/bin \
+    && chmod +x /usr/local/bin/ninja \
+    && ln -sf /usr/local/bin/ninja /usr/bin/ninja \
+    && ninja --version \
+    && /usr/bin/ninja --version \
     && git clone https://github.com/microsoft/vcpkg /opt/vcpkg \
     && /opt/vcpkg/bootstrap-vcpkg.sh \
     && chmod -R a+rwX /opt/vcpkg \
