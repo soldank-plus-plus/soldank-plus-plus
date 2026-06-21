@@ -13,4 +13,5 @@ else()
 endif()
 
 target_include_directories(SimpleIni PRIVATE ${SIMPLEINI_INCLUDE_DIRS})
+target_link_libraries(SimpleIni PRIVATE Threads::Threads)
 

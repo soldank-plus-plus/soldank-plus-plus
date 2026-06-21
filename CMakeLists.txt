@@ -30,6 +30,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(cxxopts CONFIG REQUIRED)
 find_package(Protobuf REQUIRED)
+find_package(Threads REQUIRED)
 
 if (BUILD_CLIENT_ENABLED)
     find_package(glfw3 CONFIG REQUIRED)
@@ -88,4 +89,3 @@ if (BUILD_TESTS_ENABLED)
     enable_testing()
     add_subdirectory(tests)
 endif()
-

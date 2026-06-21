@@ -3,7 +3,6 @@
 
 void InitNeedModuleBuiltIn();
 void InitNeedModuleMath();
-void InitNeedModuleRaster();
 void InitNeedModuleStrings();
 void InitNeedModuleRtti();
 void InitNeedModuleAst();

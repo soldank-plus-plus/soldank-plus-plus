@@ -30,7 +30,6 @@ auto compileDaScript(const das::string& fileName,
 
 constexpr auto NeedModuleBuiltIn = InitNeedModuleBuiltIn;
 constexpr auto NeedModuleMath = InitNeedModuleMath;
-constexpr auto NeedModuleRaster = InitNeedModuleRaster;
 constexpr auto NeedModuleStrings = InitNeedModuleStrings;
 constexpr auto NeedModuleRtti = InitNeedModuleRtti;
 constexpr auto NeedModuleAst = InitNeedModuleAst;

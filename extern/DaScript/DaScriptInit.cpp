@@ -11,10 +11,6 @@ void InitNeedModuleMath()
 {
     NEED_MODULE(Module_Math);
 }
-void InitNeedModuleRaster()
-{
-    NEED_MODULE(Module_Raster);
-}
 void InitNeedModuleStrings()
 {
     NEED_MODULE(Module_Strings);

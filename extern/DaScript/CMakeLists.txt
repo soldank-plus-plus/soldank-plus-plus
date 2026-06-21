@@ -22,5 +22,6 @@ endif()
 
 target_include_directories(DaScript PUBLIC ${dascript_SOURCE_DIR}/include)
 target_link_libraries(DaScript PUBLIC libDaScript)
+target_link_libraries(DaScript PRIVATE Threads::Threads)
 add_dependencies(DaScript libDaScript)
 
