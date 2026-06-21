@@ -9,6 +9,7 @@ module;
 #include <thread>
 #include <utility>
 #include <vector>
+#include <span>
 
 export module Application;
 

@@ -10,6 +10,7 @@ module;
 #include <utility>
 #include <vector>
 #include <array>
+#include <optional>
 
 export module SpawnPointRenderer;
 

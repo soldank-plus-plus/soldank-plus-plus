@@ -9,6 +9,7 @@ module;
 #include <filesystem>
 #include <cmath>
 #include <vector>
+#include <optional>
 
 export module RectangleRenderer;
 

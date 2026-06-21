@@ -9,6 +9,7 @@ module;
 #include <filesystem>
 #include <utility>
 #include <vector>
+#include <optional>
 
 export module SingleImageRenderer;
 

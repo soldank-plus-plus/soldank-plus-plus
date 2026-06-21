@@ -9,6 +9,7 @@ module;
 #include <filesystem>
 #include <vector>
 #include <span>
+#include <optional>
 
 export module BackgroundRenderer;
 

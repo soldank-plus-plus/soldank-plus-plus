@@ -8,6 +8,7 @@ module;
 
 #include <glad/glad.h>
 
+#include <algorithm>
 #include <variant>
 #include <vector>
 #include <memory>

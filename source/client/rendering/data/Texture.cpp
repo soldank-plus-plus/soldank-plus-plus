@@ -9,7 +9,7 @@ module;
 #include <span>
 #include <expected>
 #include <fstream>
-#include <sstream>
+#include <limits>
 #include <utility>
 #include <vector>
 #include <memory>
@@ -124,22 +124,31 @@ std::expected<TextureData, LoadError> Load(const char* texture_path)
 
 std::expected<std::shared_ptr<TextureGIFData>, LoadError> LoadGIF(const char* texture_path)
 {
-    std::basic_ifstream<unsigned char> file(texture_path,
-                                            std::ios_base::in | std::ios_base::binary);
+    std::ifstream file(texture_path,
+                       std::ios_base::in | std::ios_base::binary | std::ios_base::ate);
     if (!file.is_open()) {
         return std::unexpected(LoadError::TextureNotFound);
     }
 
-    std::basic_stringstream<unsigned char> buffer;
-    buffer << file.rdbuf();
+    const std::streamoff file_size = file.tellg();
+    if (file_size < 0 || file_size > std::numeric_limits<int>::max()) {
+        return std::unexpected(LoadError::TextureNotFound);
+    }
+
+    std::vector<unsigned char> buffer(static_cast<std::size_t>(file_size));
+    file.seekg(0, std::ios_base::beg);
+    file.read(reinterpret_cast<char*>(buffer.data()), file_size);
+    if (!file) {
+        return std::unexpected(LoadError::TextureNotFound);
+    }
 
     int* delays_data = nullptr;
     int texture_width = 0;
     int texture_height = 0;
     int frame_count = 0;
     int channels = 0;
-    unsigned char* data = stbi_load_gif_from_memory(buffer.str().c_str(),
-                                                    (int)buffer.str().size(),
+    unsigned char* data = stbi_load_gif_from_memory(buffer.data(),
+                                                    static_cast<int>(buffer.size()),
                                                     &delays_data,
                                                     &texture_width,
                                                     &texture_height,
