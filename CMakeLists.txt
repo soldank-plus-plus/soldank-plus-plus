@@ -59,6 +59,10 @@ CPMAddPackage(
 
 if (BUILD_SERVER_ENABLED)
     # Daslang is still in development and is not released in vcpkg so we have to use CPM
+    # Using version v0.6.3-RC2 commit
+    set(DAS_AOT_EXAMPLES_DISABLED ON CACHE BOOL "Disable daScript AOT examples" FORCE)
+    set(DAS_GLFW_DISABLED ON CACHE BOOL "Disable daScript GLFW module" FORCE)
+
     CPMAddPackage(
         NAME dascript
         OPTIONS 
@@ -66,9 +70,15 @@ if (BUILD_SERVER_ENABLED)
             "DAS_TESTS_DISABLED ON"
             "DAS_PROFILE_DISABLED ON"
             "DAS_TUTORIAL_DISABLED ON"
-        URL https://github.com/GaijinEntertainment/daScript/archive/9ae1c4cd73d7da06084aedb5741bb1da68b63b88.tar.gz
+            "DAS_AOT_EXAMPLES_DISABLED ON"
+            "DAS_GLFW_DISABLED ON"
+        URL https://github.com/GaijinEntertainment/daScript/archive/8b59954b1acfa88e3ddec96146330a36f12a3b7a.tar.gz
         EXCLUDE_FROM_ALL ON
     )
+
+    if(dascript_ADDED)
+        target_link_libraries(libDaScript Threads::Threads)
+    endif()
 endif()
 
 add_subdirectory(extern)
