@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install vcpkg
         run: |
@@ -24,12 +24,10 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
 
       - name: Configure
-        run: cmake -Bbuild
+        run: cmake --preset clang-cl-vs-debug
 
       - name: Build
-        run: cmake --build build --config Debug -j4
+        run: cmake --build --preset clang-cl-vs-debug --parallel 4
 
       - name: Run tests
-        run: |
-          cd build
-          ctest --build-config Debug
+        run: ctest --preset clang-cl-vs-debug

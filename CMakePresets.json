@@ -29,6 +29,28 @@
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
+    },
+    {
+      "name": "clang-cl-vs-debug",
+      "displayName": "ClangCL Visual Studio Debug",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "toolset": "ClangCL",
+      "binaryDir": "${sourceDir}/build/clang-cl-vs-debug",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "clang-cl-vs-release",
+      "displayName": "ClangCL Visual Studio Release",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "toolset": "ClangCL",
+      "binaryDir": "${sourceDir}/build/clang-cl-vs-release",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -41,6 +63,54 @@
       "name": "clang-ninja-release",
       "displayName": "Build Clang Ninja Release",
       "configurePreset": "clang-ninja-release"
+    },
+    {
+      "name": "clang-cl-vs-debug",
+      "displayName": "Build ClangCL Visual Studio Debug",
+      "configurePreset": "clang-cl-vs-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "clang-cl-vs-release",
+      "displayName": "Build ClangCL Visual Studio Release",
+      "configurePreset": "clang-cl-vs-release",
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "clang-ninja-debug",
+      "displayName": "Test Clang Ninja Debug",
+      "configurePreset": "clang-ninja-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-ninja-release",
+      "displayName": "Test Clang Ninja Release",
+      "configurePreset": "clang-ninja-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-cl-vs-debug",
+      "displayName": "Test ClangCL Visual Studio Debug",
+      "configurePreset": "clang-cl-vs-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-cl-vs-release",
+      "displayName": "Test ClangCL Visual Studio Release",
+      "configurePreset": "clang-cl-vs-release",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

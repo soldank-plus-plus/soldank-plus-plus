@@ -26,18 +26,13 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake g++-13 xorg-dev libglu1-mesa-dev
-          
-      - name: Set g++-13 as default
-        run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 60 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+          sudo apt-get -y install cmake clang ninja-build xorg-dev libglu1-mesa-dev
 
       - name: Configure
-        run: cmake -Bbuild
+        run: cmake --preset clang-ninja-debug
 
       - name: Build
-        run: cmake --build build --config Debug -j4
+        run: cmake --build --preset clang-ninja-debug --parallel 4
 
       - name: Run tests
-        run: |
-          cd build
-          ctest --build-config Debug
+        run: ctest --preset clang-ninja-debug

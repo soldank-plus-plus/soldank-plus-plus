@@ -23,30 +23,26 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake g++-13 xorg-dev libglu1-mesa-dev
-          
-      - name: Set g++-13 as default
-        run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 60 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+          sudo apt-get -y install cmake clang ninja-build xorg-dev libglu1-mesa-dev
 
       - name: Configure
-        run: cmake -Bbuild
+        run: cmake --preset clang-ninja-release
 
       - name: Build
-        run: cmake --build build --config Release -j4
+        run: cmake --build --preset clang-ninja-release --parallel 4
 
       - name: Run tests
-        run: ctest --build-config Release --test-dir build
+        run: ctest --preset clang-ninja-release
 
       - name: Install
-        run: |
-          cmake --build build --target install --config Release
+        run: cmake --build --preset clang-ninja-release --target install
 
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
           cp bin/* Soldank++
           tar -czvf Soldank++-latest-linux-x64.tar.gz Soldank++
-      
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux-release
@@ -64,20 +60,20 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
 
       - name: Configure
-        run: cmake -Bbuild
+        run: cmake --preset clang-cl-vs-release
 
       - name: Build
-        run: cmake --build build --config Release -j4
+        run: cmake --build --preset clang-cl-vs-release --parallel 4
 
       - name: Run tests
-        run: ctest --build-config Release --test-dir build
+        run: ctest --preset clang-cl-vs-release
 
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp build/bin/Release/* Soldank++
+          cp build/clang-cl-vs-release/bin/Release/* Soldank++
           Compress-Archive -Path Soldank++ -Destination Soldank++-latest-win32-x64.zip
-      
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows-release

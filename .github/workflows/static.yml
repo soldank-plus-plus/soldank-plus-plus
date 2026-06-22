@@ -43,32 +43,33 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake g++-13 xorg-dev libglu1-mesa-dev lcov
-          
-      - name: Set g++-13 as default
-        run: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 60 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+          sudo apt-get -y install cmake clang llvm ninja-build xorg-dev libglu1-mesa-dev lcov
 
       - name: Configure
-        run: cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug
+        run: cmake --preset clang-ninja-debug
 
       - name: Build
-        run: cmake --build build --config Debug -j4
+        run: cmake --build --preset clang-ninja-debug --parallel 4
 
       - name: Run tests and generate coverage
-        working-directory: ./build
         run: |
-          ctest -T Test -T Coverage
-          lcov --directory . --capture --output-file coverage.info --keep-going
-          lcov --extract ./coverage.info '*/source/*' --output-file ./coverage-src.info
-          genhtml -o coverage coverage-src.info
-  
+          cat > /tmp/llvm-gcov.sh <<'EOF'
+          #!/usr/bin/env bash
+          exec llvm-cov gcov "$@"
+          EOF
+          chmod +x /tmp/llvm-gcov.sh
+          ctest --preset clang-ninja-debug
+          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-debug --capture --output-file build/clang-ninja-debug/coverage.info --keep-going
+          lcov --extract build/clang-ninja-debug/coverage.info '*/source/*' --output-file build/clang-ninja-debug/coverage-src.info
+          genhtml -o build/clang-ninja-debug/coverage build/clang-ninja-debug/coverage-src.info
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: './build/coverage'
+          path: './build/clang-ninja-debug/coverage'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
