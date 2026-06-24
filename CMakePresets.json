@@ -31,6 +31,38 @@
       }
     },
     {
+      "name": "clang-libcxx-ninja-debug",
+      "displayName": "Clang libc++ Ninja Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clang-libcxx-ninja-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_MODULE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "clang-libcxx-ninja-release",
+      "displayName": "Clang libc++ Ninja Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clang-libcxx-ninja-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_MODULE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
       "name": "clang-cl-vs-debug",
       "displayName": "ClangCL Visual Studio Debug",
       "generator": "Visual Studio 17 2022",
@@ -65,6 +97,16 @@
       "configurePreset": "clang-ninja-release"
     },
     {
+      "name": "clang-libcxx-ninja-debug",
+      "displayName": "Build Clang libc++ Ninja Debug",
+      "configurePreset": "clang-libcxx-ninja-debug"
+    },
+    {
+      "name": "clang-libcxx-ninja-release",
+      "displayName": "Build Clang libc++ Ninja Release",
+      "configurePreset": "clang-libcxx-ninja-release"
+    },
+    {
       "name": "clang-cl-vs-debug",
       "displayName": "Build ClangCL Visual Studio Debug",
       "configurePreset": "clang-cl-vs-debug",
@@ -90,6 +132,22 @@
       "name": "clang-ninja-release",
       "displayName": "Test Clang Ninja Release",
       "configurePreset": "clang-ninja-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ninja-debug",
+      "displayName": "Test Clang libc++ Ninja Debug",
+      "configurePreset": "clang-libcxx-ninja-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-libcxx-ninja-release",
+      "displayName": "Test Clang libc++ Ninja Release",
+      "configurePreset": "clang-libcxx-ninja-release",
       "output": {
         "outputOnFailure": true
       }

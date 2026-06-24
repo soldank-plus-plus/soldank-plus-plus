@@ -30,7 +30,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,13 +43,13 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake clang llvm ninja-build xorg-dev libglu1-mesa-dev lcov
+          sudo apt-get -y install cmake clang llvm ninja-build libc++-dev libc++abi-dev xorg-dev libglu1-mesa-dev lcov
 
       - name: Configure
-        run: cmake --preset clang-ninja-debug
+        run: cmake --preset clang-libcxx-ninja-debug
 
       - name: Build
-        run: cmake --build --preset clang-ninja-debug --parallel 4
+        run: cmake --build --preset clang-libcxx-ninja-debug --parallel 4
 
       - name: Run tests and generate coverage
         run: |
@@ -58,10 +58,10 @@ jobs:
           exec llvm-cov gcov "$@"
           EOF
           chmod +x /tmp/llvm-gcov.sh
-          ctest --preset clang-ninja-debug
-          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-debug --capture --output-file build/clang-ninja-debug/coverage.info --keep-going
-          lcov --extract build/clang-ninja-debug/coverage.info '*/source/*' --output-file build/clang-ninja-debug/coverage-src.info
-          genhtml -o build/clang-ninja-debug/coverage build/clang-ninja-debug/coverage-src.info
+          ctest --preset clang-libcxx-ninja-debug
+          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-libcxx-ninja-debug --capture --output-file build/clang-libcxx-ninja-debug/coverage.info --keep-going
+          lcov --extract build/clang-libcxx-ninja-debug/coverage.info '*/source/*' --output-file build/clang-libcxx-ninja-debug/coverage-src.info
+          genhtml -o build/clang-libcxx-ninja-debug/coverage build/clang-libcxx-ninja-debug/coverage-src.info
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -69,7 +69,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: './build/clang-ninja-debug/coverage'
+          path: './build/clang-libcxx-ninja-debug/coverage'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

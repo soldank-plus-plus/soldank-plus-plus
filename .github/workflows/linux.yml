@@ -26,13 +26,13 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake clang ninja-build xorg-dev libglu1-mesa-dev
+          sudo apt-get -y install cmake clang ninja-build libc++-dev libc++abi-dev xorg-dev libglu1-mesa-dev
 
       - name: Configure
-        run: cmake --preset clang-ninja-debug
+        run: cmake --preset clang-libcxx-ninja-debug
 
       - name: Build
-        run: cmake --build --preset clang-ninja-debug --parallel 4
+        run: cmake --build --preset clang-libcxx-ninja-debug --parallel 4
 
       - name: Run tests
-        run: ctest --preset clang-ninja-debug
+        run: ctest --preset clang-libcxx-ninja-debug

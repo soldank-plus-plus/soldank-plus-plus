@@ -23,19 +23,19 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake clang ninja-build xorg-dev libglu1-mesa-dev
+          sudo apt-get -y install cmake clang ninja-build libc++-dev libc++abi-dev xorg-dev libglu1-mesa-dev
 
       - name: Configure
-        run: cmake --preset clang-ninja-release
+        run: cmake --preset clang-libcxx-ninja-release
 
       - name: Build
-        run: cmake --build --preset clang-ninja-release --parallel 4
+        run: cmake --build --preset clang-libcxx-ninja-release --parallel 4
 
       - name: Run tests
-        run: ctest --preset clang-ninja-release
+        run: ctest --preset clang-libcxx-ninja-release
 
       - name: Install
-        run: cmake --build --preset clang-ninja-release --target install
+        run: cmake --build --preset clang-libcxx-ninja-release --target install
 
       - name: Prepare Artifact
         run: |
@@ -49,10 +49,16 @@ jobs:
           path: Soldank++-latest-linux-x64.tar.gz
 
   windows-release:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Show Visual Studio installations
+        run: |
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -all -products *
+          cmake --version
+          cmake --list-presets
 
       - name: Install vcpkg
         run: |

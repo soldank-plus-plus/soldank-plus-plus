@@ -13,10 +13,16 @@ env:
 
 jobs:
   windows-debug:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Show Visual Studio installations
+        run: |
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -all -products *
+          cmake --version
+          cmake --list-presets
 
       - name: Install vcpkg
         run: |
