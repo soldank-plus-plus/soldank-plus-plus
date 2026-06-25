@@ -13,6 +13,7 @@ option(BUILD_CLIENT_ENABLED "Build client" ON)
 option(BUILD_TESTS_ENABLED "Build all available tests" ON)
 
 if (WIN32)
+    add_compile_definitions(WIN32_LEAN_AND_MEAN)
     add_compile_definitions(NOMINMAX)
 endif()
 
