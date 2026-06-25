@@ -10,6 +10,7 @@ module;
 #include <utility>
 #include <vector>
 #include <optional>
+#include <string>
 
 export module SingleImageRenderer;
 

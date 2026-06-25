@@ -11,6 +11,7 @@ module;
 #include <vector>
 #include <array>
 #include <optional>
+#include <string>
 
 export module SpawnPointRenderer;
 

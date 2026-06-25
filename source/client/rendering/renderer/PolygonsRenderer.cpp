@@ -9,6 +9,7 @@ module;
 #include <filesystem>
 #include <vector>
 #include <optional>
+#include <string>
 
 export module PolygonsRenderer;
 

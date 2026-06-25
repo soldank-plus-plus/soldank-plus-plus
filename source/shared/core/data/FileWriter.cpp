@@ -4,6 +4,7 @@ module;
 #include <fstream>
 #include <ios>
 #include <sstream>
+#include <string>
 
 export module Shared.Core.Data.FileWriter;
 

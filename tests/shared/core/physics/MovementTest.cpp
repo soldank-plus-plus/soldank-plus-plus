@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <span>
+#include <string>
 
 #include "core/utility/Expected.hpp"
 

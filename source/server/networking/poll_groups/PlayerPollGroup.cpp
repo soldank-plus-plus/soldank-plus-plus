@@ -4,6 +4,7 @@ module;
 #include <cstdint>
 #include <memory>
 #include <span>
+#include <string>
 
 export module Networking.PollGroups.PlayerPollGroup;
 

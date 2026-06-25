@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <array>
 #include <optional>
+#include <string>
 #include <utility>
 
 import Shared.Networking.NetworkMessage;

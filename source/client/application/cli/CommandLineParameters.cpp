@@ -5,6 +5,7 @@ module;
 #include <cxxopts.hpp>
 
 #include <iostream>
+#include <string>
 
 export module Application.CLI.CommandLineParameters;
 

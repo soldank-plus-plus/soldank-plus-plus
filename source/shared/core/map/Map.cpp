@@ -19,6 +19,7 @@ module;
 #include <array>
 #include <memory>
 #include <filesystem>
+#include <string>
 
 export module Shared.Core.Map.Map;
 
