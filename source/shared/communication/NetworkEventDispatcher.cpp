@@ -4,7 +4,6 @@ module;
 
 #include <memory>
 #include <optional>
-#include <expected>
 #include <variant>
 #include <utility>
 #include <functional>

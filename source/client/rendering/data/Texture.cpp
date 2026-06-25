@@ -7,7 +7,6 @@ module;
 
 #include <cstddef>
 #include <span>
-#include <expected>
 #include <fstream>
 #include <limits>
 #include <utility>

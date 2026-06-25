@@ -4,7 +4,6 @@ module;
 
 #include "rendering/data/sprites/SpriteTypes.hpp"
 
-#include <expected>
 #include <memory>
 #include <utility>
 #include <variant>

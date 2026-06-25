@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include <string>
-#include <expected>
 #include <optional>
 #include <array>
 #include <span>
