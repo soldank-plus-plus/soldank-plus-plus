@@ -16,6 +16,10 @@ if (WIN32)
     add_compile_definitions(NOMINMAX)
 endif()
 
+if (MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 if (BUILD_TESTS_ENABLED AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(BUILD_COMPILE_WITH_COVERAGE ON)
     message("COMPILE WITH COVERAGE ON")

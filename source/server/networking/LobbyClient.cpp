@@ -8,6 +8,8 @@ module;
 #include <utility>
 #include <cctype>
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
 export module Networking.LobbyClient;
 

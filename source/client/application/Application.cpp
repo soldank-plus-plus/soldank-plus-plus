@@ -2,14 +2,30 @@ module;
 
 #include "core/math/Glm.hpp"
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #include <GLFW/glfw3.h>
 
 #include <cmath>
 #include <memory>
-#include <thread>
+#include <string>
 #include <utility>
 #include <vector>
 #include <span>
+
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <chrono>
+#include <thread>
+#endif
 
 export module Application;
 
@@ -244,7 +260,11 @@ Application::~Application()
         // more sure about cleanup, you won't be able to do this.  You will need to send
         // a message and then either wait for the peer to close the connection, or
         // you can pool the connection to see if any reliable data is pending.
+#ifdef _WIN32
+        Sleep(500);
+#else
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
+#endif
 
         GNS::GameNetworkingSocketsKill();
     }
