@@ -298,18 +298,18 @@ public:
 
         std::ranges::for_each(
           std::as_const(all_sprite_file_paths), [&](const auto& type_and_file_path) {
+              auto texture_data_or_error = Texture::Load(type_and_file_path.second.c_str());
               auto texture_data =
-                *Texture::Load(type_and_file_path.second.c_str())
-                   .or_else([&type_and_file_path](Texture::LoadError error) {
-                       switch (error) {
-                           case Texture::LoadError::TextureNotFound: {
-                               Spdlog::critical("Sprite file not found: {}",
-                                                type_and_file_path.second);
-                           }
-                       }
-                       return std::expected<Texture::TextureData, Texture::LoadError>(
-                         Texture::TextureData{ .opengl_id = 0, .width = 0, .height = 0 });
-                   });
+                Texture::TextureData{ .opengl_id = 0, .width = 0, .height = 0 };
+              if (texture_data_or_error.has_value()) {
+                  texture_data = *texture_data_or_error;
+              } else {
+                  switch (texture_data_or_error.error()) {
+                      case Texture::LoadError::TextureNotFound: {
+                          Spdlog::critical("Sprite file not found: {}", type_and_file_path.second);
+                      }
+                  }
+              }
 
               all_sprites_.insert({ type_and_file_path.first, texture_data });
           });
