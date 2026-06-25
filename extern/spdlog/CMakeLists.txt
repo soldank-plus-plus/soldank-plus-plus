@@ -7,7 +7,7 @@ target_sources(Spdlog
 )
 
 if(MSVC)
-    target_compile_options(Spdlog PRIVATE /Wall)
+    target_compile_options(Spdlog PRIVATE /W4)
 else()
     target_compile_options(Spdlog PRIVATE -Wall -Wextra -Wpedantic)
 endif()

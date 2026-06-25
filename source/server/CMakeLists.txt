@@ -30,7 +30,7 @@ target_sources(server_lib
 target_compile_definitions(server_lib PRIVATE ${SERVER_COMPILE_DEFINITIONS})
 
 if(MSVC)
-  target_compile_options(server_lib PRIVATE /Wall)
+  target_compile_options(server_lib PRIVATE /W4)
 else()
   if (BUILD_COMPILE_WITH_COVERAGE)
     target_compile_options(server_lib PRIVATE -Wall -Wextra -Wpedantic -coverage -fprofile-arcs -ftest-coverage)
@@ -55,7 +55,7 @@ add_executable(server main.cpp)
 target_compile_definitions(server PRIVATE ${SERVER_COMPILE_DEFINITIONS})
 
 if(MSVC)
-  target_compile_options(server PRIVATE /Wall)
+  target_compile_options(server PRIVATE /W4)
   set_target_properties(server PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 else()
   if (BUILD_COMPILE_WITH_COVERAGE)

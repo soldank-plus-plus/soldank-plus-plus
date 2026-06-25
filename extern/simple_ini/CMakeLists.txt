@@ -7,7 +7,7 @@ target_sources(SimpleIni
 )
 
 if(MSVC)
-    target_compile_options(SimpleIni PRIVATE /Wall)
+    target_compile_options(SimpleIni PRIVATE /W4)
 else()
     target_compile_options(SimpleIni PRIVATE -Wall -Wextra -Wpedantic)
 endif()

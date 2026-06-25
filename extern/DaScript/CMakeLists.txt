@@ -15,7 +15,7 @@ target_sources(DaScript
 )
 
 if(MSVC)
-    target_compile_options(DaScript PRIVATE /Wall)
+    target_compile_options(DaScript PRIVATE /W4)
 else()
     target_compile_options(DaScript PRIVATE -Wall -Wextra -Wpedantic)
 endif()

@@ -7,7 +7,7 @@ target_sources(Httplib
 )
 
 if(MSVC)
-    target_compile_options(Httplib PRIVATE /Wall)
+    target_compile_options(Httplib PRIVATE /W4)
 else()
     target_compile_options(Httplib PRIVATE -Wall -Wextra -Wpedantic)
 endif()

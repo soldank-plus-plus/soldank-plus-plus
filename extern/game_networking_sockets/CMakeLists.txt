@@ -7,7 +7,7 @@ target_sources(GameNetworkingSockets2
 )
 
 if(MSVC)
-    target_compile_options(GameNetworkingSockets2 PRIVATE /Wall)
+    target_compile_options(GameNetworkingSockets2 PRIVATE /W4)
 else()
     target_compile_options(GameNetworkingSockets2 PRIVATE -Wall -Wextra -Wpedantic)
 endif()

@@ -100,7 +100,7 @@ target_sources(client_lib
 target_compile_definitions(client_lib PUBLIC ${CLIENT_COMPILE_DEFINITIONS})
 
 if(MSVC)
-  target_compile_options(client_lib PRIVATE /Wall)
+  target_compile_options(client_lib PRIVATE /W4)
 else()
   if (BUILD_COMPILE_WITH_COVERAGE)
     target_compile_options(client_lib PRIVATE -Wall -Wextra -Wpedantic -coverage -fprofile-arcs -ftest-coverage)
@@ -140,7 +140,7 @@ target_link_libraries(client_lib PRIVATE cxxopts::cxxopts)
 target_compile_definitions(client PUBLIC ${CLIENT_COMPILE_DEFINITIONS})
 
 if(MSVC)
-  target_compile_options(client PRIVATE /Wall)
+  target_compile_options(client PRIVATE /W4)
   set_target_properties(client PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 else()
   if (BUILD_COMPILE_WITH_COVERAGE)

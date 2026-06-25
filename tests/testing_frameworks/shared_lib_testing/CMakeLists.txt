@@ -11,7 +11,7 @@ target_sources(shared_lib_testing_framework
 target_compile_definitions(shared_lib_testing_framework PUBLIC ${CLIENT_COMPILE_DEFINITIONS} -DNOMINMAX)
 
 if(MSVC)
-  target_compile_options(shared_lib_testing_framework PRIVATE /Wall)
+  target_compile_options(shared_lib_testing_framework PRIVATE /W4)
 else()
   if (BUILD_COMPILE_WITH_COVERAGE)
     target_compile_options(shared_lib_testing_framework PRIVATE -Wall -Wextra -Wpedantic -coverage -fprofile-arcs -ftest-coverage)
