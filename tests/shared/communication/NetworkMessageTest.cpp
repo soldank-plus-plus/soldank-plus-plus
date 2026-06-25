@@ -139,7 +139,9 @@ TEST(NetworkMessageTests, TestNetworkMessageConstructFromBytes)
     auto [network_event, player_id] = *parsed;
     ASSERT_EQ(network_event, NetworkEvent::AssignPlayerId);
     ASSERT_EQ(player_id, 3);
-    ASSERT_EQ(network_message.GetNetworkEvent(), NetworkEvent::AssignPlayerId);
+    auto network_event_or_error = network_message.GetNetworkEvent();
+    ASSERT_TRUE(network_event_or_error.has_value());
+    ASSERT_EQ(*network_event_or_error, NetworkEvent::AssignPlayerId);
 }
 
 TEST(NetworkMessageTests, TestNetworkMessageGetNetworkEventEmptyData)

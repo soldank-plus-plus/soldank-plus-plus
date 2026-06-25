@@ -9,7 +9,6 @@ module;
 #include <glad/glad.h>
 
 #include <algorithm>
-#include <variant>
 #include <vector>
 #include <memory>
 #include <chrono>
@@ -61,6 +60,12 @@ private:
         std::chrono::time_point<std::chrono::system_clock> last_switch_time_;
     };
 
+    struct TextureEntry
+    {
+        unsigned int texture_id = 0;
+        std::shared_ptr<GIFTexture> gif_texture;
+    };
+
     void AddNewTexture(const std::filesystem::path& texture_file_name);
 
     void OnAddScenery(const PMSScenery& new_scenery, unsigned int new_scenery_id);
@@ -84,7 +89,7 @@ private:
 
     Shader shader_;
 
-    std::vector<std::variant<unsigned int, GIFTexture>> textures_;
+    std::vector<TextureEntry> textures_;
     unsigned int vbo_;
     unsigned int ebo_;
 };
@@ -157,8 +162,8 @@ SceneriesRenderer::~SceneriesRenderer()
     Renderer::FreeVBO(vbo_);
     Renderer::FreeVBO(ebo_);
     for (const auto& texture : textures_) {
-        if (std::holds_alternative<unsigned int>(texture)) {
-            Texture::Delete(std::get<unsigned int>(texture));
+        if (texture.gif_texture == nullptr && texture.texture_id != 0) {
+            Texture::Delete(texture.texture_id);
         }
     }
 }
@@ -188,12 +193,12 @@ void SceneriesRenderer::Render(glm::mat4 transform,
 
         shader_.SetMatrix4("transform", current_scenery_transform);
 
-        if (std::holds_alternative<unsigned int>(textures_[scenery_instances[i].style - 1])) {
-            Renderer::BindTexture(std::get<0>(textures_[scenery_instances[i].style - 1]));
+        auto& texture = textures_[scenery_instances[i].style - 1];
+        if (texture.gif_texture == nullptr) {
+            Renderer::BindTexture(texture.texture_id);
         } else {
-            auto& gif_texture = std::get<1>(textures_[scenery_instances[i].style - 1]);
-            gif_texture.Update();
-            Renderer::BindTexture(gif_texture.GetTextureId());
+            texture.gif_texture->Update();
+            Renderer::BindTexture(texture.gif_texture->GetTextureId());
         }
 
         Renderer::DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (i * 6ULL * sizeof(GLuint)));
@@ -209,11 +214,11 @@ void SceneriesRenderer::AddNewTexture(const std::filesystem::path& texture_file_
         auto texture_or_error = Texture::LoadGIF(texture_path.string().c_str());
 
         if (texture_or_error.has_value()) {
-            GIFTexture gif_texture(texture_or_error.value());
-            textures_.emplace_back(std::move(gif_texture));
+            textures_.push_back(
+              TextureEntry{ .gif_texture = std::make_shared<GIFTexture>(texture_or_error.value()) });
         } else {
             Spdlog::critical("Texture file not found {}", texture_path.string());
-            textures_.emplace_back(0U);
+            textures_.push_back(TextureEntry{ .texture_id = 0U });
         }
     } else {
         if (!std::filesystem::exists(texture_path)) {
@@ -221,10 +226,10 @@ void SceneriesRenderer::AddNewTexture(const std::filesystem::path& texture_file_
         }
         auto texture_or_error = Texture::Load(texture_path.string().c_str());
         if (texture_or_error.has_value()) {
-            textures_.emplace_back(texture_or_error.value().opengl_id);
+            textures_.push_back(TextureEntry{ .texture_id = texture_or_error.value().opengl_id });
         } else {
             Spdlog::critical("Texture file not found {}", texture_path.string());
-            textures_.emplace_back(0U);
+            textures_.push_back(TextureEntry{ .texture_id = 0U });
         }
     }
 }
@@ -261,8 +266,9 @@ void SceneriesRenderer::OnRemoveSceneryType(
   const std::vector<PMSSceneryType>& /*scenery_types_after_removal*/)
 {
     --removed_scenery_type_id;
-    if (std::holds_alternative<unsigned int>(textures_.at(removed_scenery_type_id))) {
-        Texture::Delete(std::get<unsigned int>(textures_.at(removed_scenery_type_id)));
+    auto& texture = textures_.at(removed_scenery_type_id);
+    if (texture.gif_texture == nullptr && texture.texture_id != 0) {
+        Texture::Delete(texture.texture_id);
     }
     textures_.erase(textures_.begin() + removed_scenery_type_id);
 }
@@ -273,13 +279,14 @@ void SceneriesRenderer::OnRemoveSceneryTypes(
     std::vector<unsigned int> indexes_to_remove;
     for (const auto& removed_scenery_type : removed_scenery_types) {
         indexes_to_remove.push_back(removed_scenery_type.first - 1);
-        if (std::holds_alternative<unsigned int>(textures_.at(removed_scenery_type.first - 1))) {
-            Texture::Delete(std::get<unsigned int>(textures_.at(removed_scenery_type.first - 1)));
+        auto& texture = textures_.at(removed_scenery_type.first - 1);
+        if (texture.gif_texture == nullptr && texture.texture_id != 0) {
+            Texture::Delete(texture.texture_id);
         }
     }
 
     std::sort(indexes_to_remove.begin(), indexes_to_remove.end());
-    std::vector<std::variant<unsigned int, GIFTexture>> new_textures;
+    std::vector<TextureEntry> new_textures;
 
     unsigned int removal_id = 0;
     for (unsigned int i = 0; i < textures_.size(); ++i) {
