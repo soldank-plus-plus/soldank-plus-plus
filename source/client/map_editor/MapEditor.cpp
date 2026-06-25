@@ -5,6 +5,7 @@ module;
 #include <GLFW/glfw3.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 #include <deque>
 #include <vector>

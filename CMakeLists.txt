@@ -12,6 +12,10 @@ option(BUILD_SERVER_ENABLED "Build server" ON)
 option(BUILD_CLIENT_ENABLED "Build client" ON)
 option(BUILD_TESTS_ENABLED "Build all available tests" ON)
 
+if (WIN32)
+    add_compile_definitions(NOMINMAX)
+endif()
+
 if (BUILD_TESTS_ENABLED AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(BUILD_COMPILE_WITH_COVERAGE ON)
     message("COMPILE WITH COVERAGE ON")
@@ -19,7 +23,9 @@ else()
     message("COMPILE WITH COVERAGE OFF")
 endif()
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
+if (NOT MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
+endif()
 
 find_package(GameNetworkingSockets CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
