@@ -4,6 +4,8 @@ module;
 #include <string>
 #include <ios>
 
+#include "core/utility/Expected.hpp"
+
 export module Shared.Core.Data.IFileReader;
 
 export namespace Soldank

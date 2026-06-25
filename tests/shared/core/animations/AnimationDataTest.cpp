@@ -5,6 +5,8 @@
 #include <string>
 #include <string_view>
 
+#include "core/utility/Expected.hpp"
+
 import Shared.Core.Animations;
 import Shared.Core.Data.IFileReader;
 

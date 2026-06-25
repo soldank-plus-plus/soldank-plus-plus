@@ -31,55 +31,21 @@
       }
     },
     {
-      "name": "clang-libcxx-ninja-debug",
-      "displayName": "Clang libc++ Ninja Debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/clang-libcxx-ninja-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
-        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
-        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
-        "CMAKE_MODULE_LINKER_FLAGS": "-stdlib=libc++",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      }
-    },
-    {
-      "name": "clang-libcxx-ninja-release",
-      "displayName": "Clang libc++ Ninja Release",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/clang-libcxx-ninja-release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
-        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
-        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
-        "CMAKE_MODULE_LINKER_FLAGS": "-stdlib=libc++",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      }
-    },
-    {
-      "name": "clang-cl-vs-debug",
-      "displayName": "ClangCL Visual Studio Debug",
+      "name": "msvc-vs-debug",
+      "displayName": "MSVC Visual Studio Debug",
       "generator": "Visual Studio 17 2022",
       "architecture": "x64",
-      "toolset": "ClangCL",
-      "binaryDir": "${sourceDir}/build/clang-cl-vs-debug",
+      "binaryDir": "${sourceDir}/build/msvc-vs-debug",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
-      "name": "clang-cl-vs-release",
-      "displayName": "ClangCL Visual Studio Release",
+      "name": "msvc-vs-release",
+      "displayName": "MSVC Visual Studio Release",
       "generator": "Visual Studio 17 2022",
       "architecture": "x64",
-      "toolset": "ClangCL",
-      "binaryDir": "${sourceDir}/build/clang-cl-vs-release",
+      "binaryDir": "${sourceDir}/build/msvc-vs-release",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
@@ -97,25 +63,15 @@
       "configurePreset": "clang-ninja-release"
     },
     {
-      "name": "clang-libcxx-ninja-debug",
-      "displayName": "Build Clang libc++ Ninja Debug",
-      "configurePreset": "clang-libcxx-ninja-debug"
-    },
-    {
-      "name": "clang-libcxx-ninja-release",
-      "displayName": "Build Clang libc++ Ninja Release",
-      "configurePreset": "clang-libcxx-ninja-release"
-    },
-    {
-      "name": "clang-cl-vs-debug",
-      "displayName": "Build ClangCL Visual Studio Debug",
-      "configurePreset": "clang-cl-vs-debug",
+      "name": "msvc-vs-debug",
+      "displayName": "Build MSVC Visual Studio Debug",
+      "configurePreset": "msvc-vs-debug",
       "configuration": "Debug"
     },
     {
-      "name": "clang-cl-vs-release",
-      "displayName": "Build ClangCL Visual Studio Release",
-      "configurePreset": "clang-cl-vs-release",
+      "name": "msvc-vs-release",
+      "displayName": "Build MSVC Visual Studio Release",
+      "configurePreset": "msvc-vs-release",
       "configuration": "Release"
     }
   ],
@@ -137,34 +93,18 @@
       }
     },
     {
-      "name": "clang-libcxx-ninja-debug",
-      "displayName": "Test Clang libc++ Ninja Debug",
-      "configurePreset": "clang-libcxx-ninja-debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "clang-libcxx-ninja-release",
-      "displayName": "Test Clang libc++ Ninja Release",
-      "configurePreset": "clang-libcxx-ninja-release",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "clang-cl-vs-debug",
-      "displayName": "Test ClangCL Visual Studio Debug",
-      "configurePreset": "clang-cl-vs-debug",
+      "name": "msvc-vs-debug",
+      "displayName": "Test MSVC Visual Studio Debug",
+      "configurePreset": "msvc-vs-debug",
       "configuration": "Debug",
       "output": {
         "outputOnFailure": true
       }
     },
     {
-      "name": "clang-cl-vs-release",
-      "displayName": "Test ClangCL Visual Studio Release",
-      "configurePreset": "clang-cl-vs-release",
+      "name": "msvc-vs-release",
+      "displayName": "Test MSVC Visual Studio Release",
+      "configurePreset": "msvc-vs-release",
       "configuration": "Release",
       "output": {
         "outputOnFailure": true

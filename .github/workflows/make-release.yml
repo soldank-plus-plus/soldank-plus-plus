@@ -23,19 +23,19 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake clang ninja-build libc++-dev libc++abi-dev xorg-dev libglu1-mesa-dev
+          sudo apt-get -y install cmake clang ninja-build xorg-dev libglu1-mesa-dev
 
       - name: Configure
-        run: cmake --preset clang-libcxx-ninja-release
+        run: cmake --preset clang-ninja-release
 
       - name: Build
-        run: cmake --build --preset clang-libcxx-ninja-release --parallel 4
+        run: cmake --build --preset clang-ninja-release --parallel 4
 
       - name: Run tests
-        run: ctest --preset clang-libcxx-ninja-release
+        run: ctest --preset clang-ninja-release
 
       - name: Install
-        run: cmake --build --preset clang-libcxx-ninja-release --target install
+        run: cmake --build --preset clang-ninja-release --target install
 
       - name: Prepare Artifact
         run: |
@@ -66,18 +66,18 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
 
       - name: Configure
-        run: cmake --preset clang-cl-vs-release
+        run: cmake --preset msvc-vs-release
 
       - name: Build
-        run: cmake --build --preset clang-cl-vs-release --parallel 4
+        run: cmake --build --preset msvc-vs-release --parallel 4
 
       - name: Run tests
-        run: ctest --preset clang-cl-vs-release
+        run: ctest --preset msvc-vs-release
 
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp build/clang-cl-vs-release/bin/Release/* Soldank++
+          cp build/msvc-vs-release/bin/Release/* Soldank++
           Compress-Archive -Path Soldank++ -Destination Soldank++-latest-win32-x64.zip
 
       - uses: actions/upload-artifact@v4

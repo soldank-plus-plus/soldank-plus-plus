@@ -6,6 +6,8 @@ module;
 #include <sstream>
 #include <string>
 
+#include "core/utility/Expected.hpp"
+
 export module Shared.Core.Data.FileReader;
 
 import Shared.Core.Data.IFileReader;

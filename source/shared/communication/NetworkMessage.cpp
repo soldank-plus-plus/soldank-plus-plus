@@ -8,6 +8,8 @@ module;
 #include <cmath>
 #include <utility>
 
+#include "core/utility/Expected.hpp"
+
 export module Shared.Networking.NetworkMessage;
 
 import Shared.Networking.NetworkEvent;

@@ -14,6 +14,8 @@ module;
 #include <vector>
 #include <memory>
 
+#include "core/utility/Expected.hpp"
+
 export module Texture;
 
 export namespace Soldank::Texture

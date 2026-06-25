@@ -8,6 +8,8 @@
 #include <array>
 #include <span>
 
+#include "core/utility/Expected.hpp"
+
 import Shared.Core.Map.Map;
 import Shared.Core.Map.PMSConstants;
 import Shared.Core.Map.PMSEnums;

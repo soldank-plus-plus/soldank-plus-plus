@@ -8,6 +8,8 @@
 #include <fstream>
 #include <span>
 
+#include "core/utility/Expected.hpp"
+
 import Tests.Shared.Core.Physics.SoldierMovementSimulation;
 import Testing.Framework.Shared.MapBuilder;
 

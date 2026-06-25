@@ -10,6 +10,8 @@ module;
 #include <functional>
 #include <vector>
 
+#include "core/utility/Expected.hpp"
+
 export module Shared.Networking.NetworkEventDispatcher;
 
 import Shared.Networking.NetworkEvent;

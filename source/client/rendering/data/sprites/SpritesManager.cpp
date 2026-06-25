@@ -17,6 +17,8 @@ module;
 #include <variant>
 #include <unordered_map>
 
+#include "core/utility/Expected.hpp"
+
 export module SpritesManager;
 
 import Texture;
