@@ -248,8 +248,9 @@ void PolygonsRenderer::LoadTexture(const std::string& texture_name)
     auto texture_or_error = Texture::Load(texture_path.string().c_str());
 
     if (texture_or_error.has_value()) {
-        texture_ = texture_or_error.value().opengl_id;
-        texture_dimensions_ = { texture_or_error->width, texture_or_error->height };
+        const auto& texture_data = texture_or_error.value();
+        texture_ = texture_data.opengl_id;
+        texture_dimensions_ = { texture_data.width, texture_data.height };
     } else {
         texture_ = 0;
         texture_dimensions_ = { 0, 0 };
