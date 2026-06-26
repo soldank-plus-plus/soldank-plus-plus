@@ -57,17 +57,17 @@ which unfortunately can't be prepared using [CPM.cmake](https://github.com/cpm-c
 ### Linux
 In project root directory run:
 ```
-> git clone https://github.com/microsoft/vcpkg
-> ./vcpkg/bootstrap-vcpkg.sh
+git clone https://github.com/microsoft/vcpkg
+./vcpkg/bootstrap-vcpkg.sh
 ```
 
 Make sure you have CMake installed. The project uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to download required packages.
 To install all the required package using:
 ```
-> mkdir build
-> cd build
-> cmake ..
-> make
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 Generate compile_commands for LSP completion by adding this variable to cmake command:
@@ -78,15 +78,15 @@ Generate compile_commands for LSP completion by adding this variable to cmake co
 ### Windows
 In project root directory run:
 ```
-> git clone https://github.com/microsoft/vcpkg
-> .\vcpkg\bootstrap-vcpkg.bat
+git clone https://github.com/microsoft/vcpkg
+.\vcpkg\bootstrap-vcpkg.bat
 ```
 
 Make sure you have CMake installed. The project uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to download required packages.
 To install all the required package using:
 ```
-> mkdir build
-> cd build
-> cmake ..
+mkdir build
+cd build
+cmake ..
 ```
 You should now be able to to open generated solution in visual studio on windows and compile the project from there.
