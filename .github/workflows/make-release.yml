@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create vcpkg cache directories
+        run: mkdir -p .vcpkg-bincache .vcpkg-downloads
+
       - name: Install vcpkg
         run: |
           git clone https://github.com/microsoft/vcpkg
@@ -82,6 +85,9 @@ jobs:
           & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -all -products *
           cmake --version
           cmake --list-presets
+
+      - name: Create vcpkg cache directories
+        run: New-Item -ItemType Directory -Force .vcpkg-bincache, .vcpkg-downloads
 
       - name: Install vcpkg
         run: |

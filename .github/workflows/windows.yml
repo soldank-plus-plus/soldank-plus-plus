@@ -26,6 +26,9 @@ jobs:
           cmake --version
           cmake --list-presets
 
+      - name: Create vcpkg cache directories
+        run: New-Item -ItemType Directory -Force .vcpkg-bincache, .vcpkg-downloads
+
       - name: Install vcpkg
         run: |
           git clone https://github.com/microsoft/vcpkg
