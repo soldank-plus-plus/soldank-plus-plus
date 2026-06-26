@@ -4,6 +4,8 @@ target_sources(Httplib
     PUBLIC
         FILE_SET all_my_modules TYPE CXX_MODULES FILES 
         Httplib.cpp
+    PRIVATE
+        HttplibImpl.cpp
 )
 
 if(MSVC)
