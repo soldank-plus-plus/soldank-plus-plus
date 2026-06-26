@@ -59,9 +59,9 @@ jobs:
           EOF
           chmod +x /tmp/llvm-gcov.sh
           ctest --preset clang-ninja-debug
-          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-debug --capture --output-file build/clang-ninja-debug/coverage.info --keep-going --ignore-errors inconsistent
-          lcov --extract build/clang-ninja-debug/coverage.info '*/source/*' --output-file build/clang-ninja-debug/coverage-src.info --ignore-errors inconsistent
-          genhtml -o build/clang-ninja-debug/coverage build/clang-ninja-debug/coverage-src.info
+          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-debug --capture --output-file build/clang-ninja-debug/coverage.info --keep-going --ignore-errors gcov,inconsistent
+          lcov --extract build/clang-ninja-debug/coverage.info '*/source/*' --output-file build/clang-ninja-debug/coverage-src.info --ignore-errors gcov,inconsistent
+          genhtml -o build/clang-ninja-debug/coverage build/clang-ninja-debug/coverage-src.info --ignore-errors inconsistent,unsupported,category
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
