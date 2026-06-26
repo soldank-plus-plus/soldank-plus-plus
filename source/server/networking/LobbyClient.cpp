@@ -112,8 +112,8 @@ public:
                 }
             } else {
                 Spdlog::error("Could not register the server in the lobby. Error ({}): {}",
-                              std::to_underlying(response.error()),
-                              Httplib::to_string(response.error()));
+                              response.error_code(),
+                              response.error_message());
             }
         }
     }

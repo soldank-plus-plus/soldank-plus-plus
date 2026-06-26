@@ -12,7 +12,7 @@ else()
     target_compile_options(Httplib PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-target_link_libraries(Httplib PUBLIC httplib::httplib)
+target_link_libraries(Httplib PRIVATE httplib::httplib)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(Httplib PUBLIC anl)
