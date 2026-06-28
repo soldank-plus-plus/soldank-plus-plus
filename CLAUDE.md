@@ -18,9 +18,9 @@ cmake -Bbuild [-DCMAKE_EXPORT_COMPILE_COMMANDS=On]
 cmake --build build -j
 ```
 
-CMake options (all default `ON`):
+CMake options:
 - `BUILD_CLIENT_ENABLED`, `BUILD_SERVER_ENABLED`, `BUILD_TESTS_ENABLED`.
-- Coverage flags (`-coverage -fprofile-arcs -ftest-coverage`) are auto-enabled when `BUILD_TESTS_ENABLED=ON` **and** `CMAKE_BUILD_TYPE=Debug` (variable `BUILD_COMPILE_WITH_COVERAGE`).
+- `BUILD_COMPILE_WITH_COVERAGE` defaults `OFF`; use the `clang-ninja-coverage` preset to enable gcov-compatible coverage flags (`-coverage -fprofile-arcs -ftest-coverage`).
 
 Artifacts land in `build/bin/<Config>/` (POSIX) or `build/bin/` (MSVC); `install` copies them to `./bin/`.
 

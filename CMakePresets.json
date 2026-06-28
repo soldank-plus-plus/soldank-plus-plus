@@ -19,6 +19,19 @@
       }
     },
     {
+      "name": "clang-ninja-coverage",
+      "displayName": "Clang Ninja Coverage",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clang-ninja-coverage",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_COMPILE_WITH_COVERAGE": "ON"
+      }
+    },
+    {
       "name": "clang-ninja-release",
       "displayName": "Clang Ninja Release",
       "generator": "Ninja",
@@ -58,6 +71,11 @@
       "configurePreset": "clang-ninja-debug"
     },
     {
+      "name": "clang-ninja-coverage",
+      "displayName": "Build Clang Ninja Coverage",
+      "configurePreset": "clang-ninja-coverage"
+    },
+    {
       "name": "clang-ninja-release",
       "displayName": "Build Clang Ninja Release",
       "configurePreset": "clang-ninja-release"
@@ -80,6 +98,14 @@
       "name": "clang-ninja-debug",
       "displayName": "Test Clang Ninja Debug",
       "configurePreset": "clang-ninja-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-ninja-coverage",
+      "displayName": "Test Clang Ninja Coverage",
+      "configurePreset": "clang-ninja-coverage",
       "output": {
         "outputOnFailure": true
       }

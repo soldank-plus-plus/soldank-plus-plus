@@ -62,7 +62,7 @@ jobs:
           sudo apt-get -y install cmake clang llvm ninja-build xorg-dev libglu1-mesa-dev lcov
 
       - name: Configure
-        run: cmake --preset clang-ninja-debug
+        run: cmake --preset clang-ninja-coverage
 
       - name: Save vcpkg cache
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
@@ -75,7 +75,7 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: Build
-        run: cmake --build --preset clang-ninja-debug --parallel
+        run: cmake --build --preset clang-ninja-coverage --parallel
 
       - name: Run tests and generate coverage
         run: |
@@ -84,10 +84,10 @@ jobs:
           exec llvm-cov gcov "$@"
           EOF
           chmod +x /tmp/llvm-gcov.sh
-          ctest --preset clang-ninja-debug
-          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-debug --capture --output-file build/clang-ninja-debug/coverage.info --keep-going --ignore-errors gcov,inconsistent
-          lcov --extract build/clang-ninja-debug/coverage.info '*/source/*' --output-file build/clang-ninja-debug/coverage-src.info --ignore-errors gcov,inconsistent
-          genhtml -o build/clang-ninja-debug/coverage build/clang-ninja-debug/coverage-src.info --ignore-errors inconsistent,unsupported,category
+          ctest --preset clang-ninja-coverage
+          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-coverage --capture --output-file build/clang-ninja-coverage/coverage.info --keep-going --ignore-errors gcov,inconsistent
+          lcov --extract build/clang-ninja-coverage/coverage.info '*/source/*' --output-file build/clang-ninja-coverage/coverage-src.info --ignore-errors gcov,inconsistent
+          genhtml -o build/clang-ninja-coverage/coverage build/clang-ninja-coverage/coverage-src.info --ignore-errors inconsistent,unsupported,category
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -95,7 +95,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: './build/clang-ninja-debug/coverage'
+          path: './build/clang-ninja-coverage/coverage'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

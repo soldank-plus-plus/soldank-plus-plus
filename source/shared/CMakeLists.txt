@@ -96,7 +96,6 @@ target_sources(shared_lib
 target_compile_definitions(shared_lib PUBLIC ${CLIENT_COMPILE_DEFINITIONS} -DNOMINMAX)
 
 if(MSVC)
-  set(BUILD_COMPILE_WITH_COVERAGE ON)
   target_compile_options(shared_lib PRIVATE /W4)
 else()
   if (BUILD_COMPILE_WITH_COVERAGE)
