@@ -45,6 +45,19 @@
       }
     },
     {
+      "name": "clang-ninja-ubsan",
+      "displayName": "Clang Ninja UndefinedBehaviorSanitizer",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clang-ninja-ubsan",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER": "ON"
+      }
+    },
+    {
       "name": "clang-ninja-release",
       "displayName": "Clang Ninja Release",
       "generator": "Ninja",
@@ -94,6 +107,11 @@
       "configurePreset": "clang-ninja-asan"
     },
     {
+      "name": "clang-ninja-ubsan",
+      "displayName": "Build Clang Ninja UndefinedBehaviorSanitizer",
+      "configurePreset": "clang-ninja-ubsan"
+    },
+    {
       "name": "clang-ninja-release",
       "displayName": "Build Clang Ninja Release",
       "configurePreset": "clang-ninja-release"
@@ -132,6 +150,14 @@
       "name": "clang-ninja-asan",
       "displayName": "Test Clang Ninja AddressSanitizer",
       "configurePreset": "clang-ninja-asan",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-ninja-ubsan",
+      "displayName": "Test Clang Ninja UndefinedBehaviorSanitizer",
+      "configurePreset": "clang-ninja-ubsan",
       "output": {
         "outputOnFailure": true
       }
