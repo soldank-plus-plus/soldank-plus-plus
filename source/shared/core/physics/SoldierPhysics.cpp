@@ -252,6 +252,7 @@ void Update(StateManager& state_manager,
     auto maybe_legs_animation_transition =
       soldier.legs_animation->HandleInput(legs_handle_input_params);
     soldier.control = legs_handle_input_params.control;
+    soldier.old_direction = legs_handle_input_params.old_direction;
     soldier.grenade_can_throw = legs_handle_input_params.grenade_can_throw;
     if (maybe_legs_animation_transition.has_value()) {
         AnimationState::ExitParams exit_params{ false };
@@ -296,6 +297,7 @@ void Update(StateManager& state_manager,
     auto maybe_body_animation_transition =
       soldier.body_animation->HandleInput(body_handle_input_params);
     soldier.control = body_handle_input_params.control;
+    soldier.old_direction = body_handle_input_params.old_direction;
     soldier.grenade_can_throw = body_handle_input_params.grenade_can_throw;
     if (maybe_body_animation_transition.has_value()) {
         AnimationState::ExitParams exit_params{ false };
