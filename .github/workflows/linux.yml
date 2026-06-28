@@ -58,7 +58,7 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: Build
-        run: cmake --build --preset clang-ninja-debug --parallel 4
+        run: cmake --build --preset clang-ninja-debug --parallel
 
       - name: Run tests
         run: ctest --preset clang-ninja-debug

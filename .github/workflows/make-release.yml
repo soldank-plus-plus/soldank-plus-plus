@@ -55,13 +55,13 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: Build
-        run: cmake --build --preset clang-ninja-release --parallel 4
+        run: cmake --build --preset clang-ninja-release --parallel
 
       - name: Run tests
         run: ctest --preset clang-ninja-release
 
       - name: Install
-        run: cmake --build --preset clang-ninja-release --target install
+        run: cmake --build --preset clang-ninja-release --target install --parallel
 
       - name: Prepare Artifact
         run: |
@@ -119,7 +119,7 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: Build
-        run: cmake --build --preset msvc-vs-release --parallel 4
+        run: cmake --build --preset msvc-vs-release --parallel
 
       - name: Run tests
         run: ctest --preset msvc-vs-release

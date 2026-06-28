@@ -59,7 +59,7 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: Build
-        run: cmake --build --preset msvc-vs-debug --parallel 4
+        run: cmake --build --preset msvc-vs-debug --parallel
 
       - name: Run tests
         run: ctest --preset msvc-vs-debug
