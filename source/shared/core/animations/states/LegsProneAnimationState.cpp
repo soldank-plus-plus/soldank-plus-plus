@@ -40,8 +40,8 @@ std::optional<AnimationState::Transition> LegsProneAnimationState::HandleInput(
   HandleInputParams& params)
 {
 
-    // Set old direction when entering state
-    if (GetFrame() == 2) {
+    // Keep the prone direction in sync until turning around is allowed to cancel prone.
+    if (GetFrame() <= 23) {
         params.old_direction = params.direction;
     }
 

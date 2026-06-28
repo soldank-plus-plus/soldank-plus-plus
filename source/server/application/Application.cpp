@@ -149,6 +149,7 @@ public:
                     .on_ground_for_law = soldier.on_ground_for_law,
                     .on_ground_last_frame = soldier.on_ground_last_frame,
                     .on_ground_permanent = soldier.on_ground_permanent,
+                    .old_direction = soldier.old_direction,
                     .stance = soldier.stance,
                     .mouse_map_position_x = (float)soldier.control.mouse_aim_x,
                     .mouse_map_position_y = (float)soldier.control.mouse_aim_y,

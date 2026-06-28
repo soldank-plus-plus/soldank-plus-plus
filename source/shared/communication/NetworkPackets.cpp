@@ -50,6 +50,7 @@ struct SoldierStatePacket
     bool on_ground_for_law;
     bool on_ground_last_frame;
     bool on_ground_permanent;
+    std::int8_t old_direction;
     std::uint8_t stance;
     float mouse_map_position_x;
     float mouse_map_position_y;

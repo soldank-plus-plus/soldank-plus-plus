@@ -59,6 +59,7 @@ private:
         bool on_ground_for_law = soldier_state_packet.on_ground_for_law;
         bool on_ground_last_frame = soldier_state_packet.on_ground_last_frame;
         bool on_ground_permanent = soldier_state_packet.on_ground_permanent;
+        std::int8_t old_direction = soldier_state_packet.old_direction;
         std::uint8_t stance = soldier_state_packet.stance;
         float mouse_map_position_x = soldier_state_packet.mouse_map_position_x;
         float mouse_map_position_y = soldier_state_packet.mouse_map_position_y;
@@ -123,6 +124,7 @@ private:
             soldier.on_ground_for_law = on_ground_for_law;
             soldier.on_ground_last_frame = on_ground_last_frame;
             soldier.on_ground_permanent = on_ground_permanent;
+            soldier.old_direction = old_direction;
 
             soldier.stance = stance;
 
