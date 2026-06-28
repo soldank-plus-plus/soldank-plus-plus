@@ -324,6 +324,7 @@ void Update(StateManager& state_manager,
                                                      false };
     soldier.legs_animation->Update(legs_update_params);
     soldier.stance = legs_update_params.stance;
+    soldier.particle.SetVelocity(legs_update_params.velocity);
     soldier.particle.SetForce(legs_update_params.force);
     if (legs_update_params.should_switch_weapon) {
         physics_events.soldier_switches_weapon.Notify(soldier);
@@ -338,6 +339,7 @@ void Update(StateManager& state_manager,
                                                      false };
     soldier.body_animation->Update(body_update_params);
     soldier.stance = body_update_params.stance;
+    soldier.particle.SetVelocity(body_update_params.velocity);
     soldier.particle.SetForce(body_update_params.force);
     if (body_update_params.should_switch_weapon) {
         physics_events.soldier_switches_weapon.Notify(soldier);
