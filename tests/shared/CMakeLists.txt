@@ -10,6 +10,57 @@ add_executable(AnimationDataTest core/animations/AnimationDataTest.cpp)
 AddTestOptionsAndLibraries(AnimationDataTest)
 target_link_libraries(AnimationDataTest PRIVATE shared_lib)
 
+add_executable(BodyAimAnimationStateTest core/animations/BodyAimAnimationStateTest.cpp)
+target_sources(BodyAimAnimationStateTest
+    PRIVATE
+        FILE_SET body_aim_animation_state_test_modules TYPE CXX_MODULES FILES
+        core/animations/AnimationStateTestHelpers.cpp
+)
+AddTestOptionsAndLibraries(BodyAimAnimationStateTest)
+target_link_libraries(BodyAimAnimationStateTest PRIVATE shared_lib)
+
+add_executable(BodyGetUpAnimationStateTest core/animations/BodyGetUpAnimationStateTest.cpp)
+target_sources(BodyGetUpAnimationStateTest
+    PRIVATE
+        FILE_SET body_get_up_animation_state_test_modules TYPE CXX_MODULES FILES
+        core/animations/AnimationStateTestHelpers.cpp
+)
+AddTestOptionsAndLibraries(BodyGetUpAnimationStateTest)
+target_link_libraries(BodyGetUpAnimationStateTest PRIVATE shared_lib)
+
+add_executable(AnimationStatesTest
+    core/animations/BodyChangeAnimationStateTest.cpp
+    core/animations/BodyProneAnimationStateTest.cpp
+    core/animations/BodyProneMoveAnimationStateTest.cpp
+    core/animations/BodyPunchAnimationStateTest.cpp
+    core/animations/BodyRollAnimationStateTest.cpp
+    core/animations/BodyRollBackAnimationStateTest.cpp
+    core/animations/BodyStandAnimationStateTest.cpp
+    core/animations/BodyThrowAnimationStateTest.cpp
+    core/animations/BodyThrowWeaponAnimationStateTest.cpp
+    core/animations/LegsCrouchAnimationStateTest.cpp
+    core/animations/LegsCrouchRunAnimationStateTest.cpp
+    core/animations/LegsCrouchRunBackAnimationStateTest.cpp
+    core/animations/LegsFallAnimationStateTest.cpp
+    core/animations/LegsGetUpAnimationStateTest.cpp
+    core/animations/LegsJumpAnimationStateTest.cpp
+    core/animations/LegsJumpSideAnimationStateTest.cpp
+    core/animations/LegsProneAnimationStateTest.cpp
+    core/animations/LegsProneMoveAnimationStateTest.cpp
+    core/animations/LegsRollAnimationStateTest.cpp
+    core/animations/LegsRollBackAnimationStateTest.cpp
+    core/animations/LegsRunAnimationStateTest.cpp
+    core/animations/LegsRunBackAnimationStateTest.cpp
+    core/animations/LegsStandAnimationStateTest.cpp
+)
+target_sources(AnimationStatesTest
+    PRIVATE
+        FILE_SET animation_states_test_modules TYPE CXX_MODULES FILES
+        core/animations/AnimationStateTestHelpers.cpp
+)
+AddTestOptionsAndLibraries(AnimationStatesTest)
+target_link_libraries(AnimationStatesTest PRIVATE shared_lib)
+
 add_executable(WeaponTest core/entities/WeaponTest.cpp)
 AddTestOptionsAndLibraries(WeaponTest)
 target_link_libraries(WeaponTest PRIVATE shared_lib)
@@ -44,7 +95,10 @@ target_link_libraries(ObservableTest PRIVATE shared_lib)
 
 add_test(NetworkEventDispatcherTest NetworkEventDispatcherTest)
 add_test(NetworkMessageTest NetworkMessageTest)
-add_test(AnimationDataTest WeaponTest)
+add_test(AnimationDataTest AnimationDataTest)
+add_test(BodyAimAnimationStateTest BodyAimAnimationStateTest)
+add_test(BodyGetUpAnimationStateTest BodyGetUpAnimationStateTest)
+add_test(AnimationStatesTest AnimationStatesTest)
 add_test(WeaponTest WeaponTest)
 add_test(MapBuilderTest MapBuilderTest)
 add_test(MapTest MapTest)

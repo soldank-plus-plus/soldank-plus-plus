@@ -9,8 +9,7 @@
 import Shared.Core.Animations;
 import Shared.Core.Data.IFileReader;
 
-constexpr const std::string_view ANIMATION_DATA_EXAMPLE = R"(
-1
+constexpr const std::string_view ANIMATION_DATA_EXAMPLE = R"(1
 1.51562917232513
 0
 -0.0263193659484386
@@ -26,6 +25,7 @@ NEXTFRAME
 2
 -0.799700200557709
 0
+-0.027507184073329
 NEXTFRAME
 1
 1.48992252349854
@@ -73,19 +73,29 @@ TEST(AnimationDataTest, TestAnimationDataLoadedCorrectly)
                     transform_x(1.51562917232513));
     ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(0).y,
                     transform_y(-0.0263193659484386));
-    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(0).x,
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(1).x,
                     transform_x(-0.799581050872803));
-    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(0).y,
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(1).y,
                     transform_y(-0.0296643078327179));
 
     ASSERT_EQ(animation_data->GetFrames().at(1).positions.size(), 2);
-    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(0).x,
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(1).positions.at(0).x,
+                    transform_x(1.51488900184631));
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(1).positions.at(0).y,
+                    transform_y(-0.0241622421890497));
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(1).positions.at(1).x,
+                    transform_x(-0.799700200557709));
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(1).positions.at(1).y,
+                    transform_y(-0.027507184073329));
+
+    ASSERT_EQ(animation_data->GetFrames().at(2).positions.size(), 2);
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(2).positions.at(0).x,
                     transform_x(1.48992252349854));
-    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(0).y,
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(2).positions.at(0).y,
                     transform_y(0.0523839481174946));
-    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(0).x,
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(2).positions.at(1).x,
                     transform_x(-0.804390072822571));
-    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(0).positions.at(0).y,
+    ASSERT_FLOAT_EQ(animation_data->GetFrames().at(2).positions.at(1).y,
                     transform_y(-0.00805510021746159));
 }
 
