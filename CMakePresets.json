@@ -42,9 +42,23 @@
       "inherits": "clang-ninja-debug",
       "binaryDir": "${sourceDir}/build/clang-ninja-debug-mold",
       "cacheVariables": {
-        "BUILD_USE_MOLD_LINKER": "ON",
+        "BUILD_USE_MOLD_LINKER": "ON"
+      }
+    },
+    {
+      "name": "clang-ninja-debug-mold-pch",
+      "displayName": "Clang Ninja Debug (mold, PCH)",
+      "inherits": "clang-ninja-debug-mold",
+      "binaryDir": "${sourceDir}/build/clang-ninja-debug-mold-pch",
+      "cacheVariables": {
         "BUILD_USE_PCH": "ON"
       }
+    },
+    {
+      "name": "clang-ninja-debug-all",
+      "displayName": "Clang Ninja Debug (All Optimizations)",
+      "inherits": "clang-ninja-debug-mold-pch",
+      "binaryDir": "${sourceDir}/build/clang-ninja-debug-all"
     },
     {
       "name": "clang-ninja-client-debug",
@@ -139,6 +153,12 @@
       }
     },
     {
+      "name": "clang-ninja-release-all",
+      "displayName": "Clang Ninja Release (All Optimizations)",
+      "inherits": "clang-ninja-release-mold-pch",
+      "binaryDir": "${sourceDir}/build/clang-ninja-release-all"
+    },
+    {
       "name": "msvc-vs-debug",
       "displayName": "MSVC Visual Studio Debug",
       "generator": "Visual Studio 17 2022",
@@ -205,6 +225,16 @@
       "configurePreset": "clang-ninja-debug-mold"
     },
     {
+      "name": "clang-ninja-debug-mold-pch",
+      "displayName": "Build Clang Ninja Debug (mold, PCH)",
+      "configurePreset": "clang-ninja-debug-mold-pch"
+    },
+    {
+      "name": "clang-ninja-debug-all",
+      "displayName": "Build Clang Ninja Debug (All Optimizations)",
+      "configurePreset": "clang-ninja-debug-all"
+    },
+    {
       "name": "clang-ninja-client-debug",
       "displayName": "Build Clang Ninja Client Debug",
       "configurePreset": "clang-ninja-client-debug",
@@ -252,6 +282,11 @@
       "name": "clang-ninja-release-mold-pch",
       "displayName": "Build Clang Ninja Release (mold, PCH)",
       "configurePreset": "clang-ninja-release-mold-pch"
+    },
+    {
+      "name": "clang-ninja-release-all",
+      "displayName": "Build Clang Ninja Release (All Optimizations)",
+      "configurePreset": "clang-ninja-release-all"
     },
     {
       "name": "msvc-vs-debug",
