@@ -187,6 +187,39 @@
       }
     },
     {
+      "name": "msvc-vs-debug-pch",
+      "displayName": "MSVC Visual Studio Debug (PCH)",
+      "inherits": "msvc-vs-debug",
+      "binaryDir": "${sourceDir}/build/msvc-vs-debug-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-vs-debug-lld",
+      "displayName": "MSVC Visual Studio Debug (LLD)",
+      "inherits": "msvc-vs-debug",
+      "binaryDir": "${sourceDir}/build/msvc-vs-debug-lld",
+      "cacheVariables": {
+        "BUILD_USE_LLD_LINKER": "ON"
+      }
+    },
+    {
+      "name": "msvc-vs-debug-lld-pch",
+      "displayName": "MSVC Visual Studio Debug (LLD, PCH)",
+      "inherits": "msvc-vs-debug-lld",
+      "binaryDir": "${sourceDir}/build/msvc-vs-debug-lld-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-vs-debug-all",
+      "displayName": "MSVC Visual Studio Debug (All Optimizations)",
+      "inherits": "msvc-vs-debug-lld-pch",
+      "binaryDir": "${sourceDir}/build/msvc-vs-debug-all"
+    },
+    {
       "name": "msvc-vs-release",
       "displayName": "MSVC Visual Studio Release",
       "generator": "Visual Studio 17 2022",
@@ -195,6 +228,39 @@
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
+    },
+    {
+      "name": "msvc-vs-release-pch",
+      "displayName": "MSVC Visual Studio Release (PCH)",
+      "inherits": "msvc-vs-release",
+      "binaryDir": "${sourceDir}/build/msvc-vs-release-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-vs-release-lld",
+      "displayName": "MSVC Visual Studio Release (LLD)",
+      "inherits": "msvc-vs-release",
+      "binaryDir": "${sourceDir}/build/msvc-vs-release-lld",
+      "cacheVariables": {
+        "BUILD_USE_LLD_LINKER": "ON"
+      }
+    },
+    {
+      "name": "msvc-vs-release-lld-pch",
+      "displayName": "MSVC Visual Studio Release (LLD, PCH)",
+      "inherits": "msvc-vs-release-lld",
+      "binaryDir": "${sourceDir}/build/msvc-vs-release-lld-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-vs-release-all",
+      "displayName": "MSVC Visual Studio Release (All Optimizations)",
+      "inherits": "msvc-vs-release-lld-pch",
+      "binaryDir": "${sourceDir}/build/msvc-vs-release-all"
     }
   ],
   "buildPresets": [
@@ -323,9 +389,57 @@
       "configuration": "Debug"
     },
     {
+      "name": "msvc-vs-debug-pch",
+      "displayName": "Build MSVC Visual Studio Debug (PCH)",
+      "configurePreset": "msvc-vs-debug-pch",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc-vs-debug-lld",
+      "displayName": "Build MSVC Visual Studio Debug (LLD)",
+      "configurePreset": "msvc-vs-debug-lld",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc-vs-debug-lld-pch",
+      "displayName": "Build MSVC Visual Studio Debug (LLD, PCH)",
+      "configurePreset": "msvc-vs-debug-lld-pch",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc-vs-debug-all",
+      "displayName": "Build MSVC Visual Studio Debug (All Optimizations)",
+      "configurePreset": "msvc-vs-debug-all",
+      "configuration": "Debug"
+    },
+    {
       "name": "msvc-vs-release",
       "displayName": "Build MSVC Visual Studio Release",
       "configurePreset": "msvc-vs-release",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc-vs-release-pch",
+      "displayName": "Build MSVC Visual Studio Release (PCH)",
+      "configurePreset": "msvc-vs-release-pch",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc-vs-release-lld",
+      "displayName": "Build MSVC Visual Studio Release (LLD)",
+      "configurePreset": "msvc-vs-release-lld",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc-vs-release-lld-pch",
+      "displayName": "Build MSVC Visual Studio Release (LLD, PCH)",
+      "configurePreset": "msvc-vs-release-lld-pch",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc-vs-release-all",
+      "displayName": "Build MSVC Visual Studio Release (All Optimizations)",
+      "configurePreset": "msvc-vs-release-all",
       "configuration": "Release"
     }
   ],
@@ -380,9 +494,27 @@
       }
     },
     {
+      "name": "msvc-vs-debug-all",
+      "displayName": "Test MSVC Visual Studio Debug (All Optimizations)",
+      "configurePreset": "msvc-vs-debug-all",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
       "name": "msvc-vs-release",
       "displayName": "Test MSVC Visual Studio Release",
       "configurePreset": "msvc-vs-release",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "msvc-vs-release-all",
+      "displayName": "Test MSVC Visual Studio Release (All Optimizations)",
+      "configurePreset": "msvc-vs-release-all",
       "configuration": "Release",
       "output": {
         "outputOnFailure": true

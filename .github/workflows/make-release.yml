@@ -174,8 +174,17 @@ jobs:
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      - name: Add LLVM to PATH
+        run: |
+          $llvmBin = "${env:ProgramFiles}\LLVM\bin"
+          if (-not (Test-Path "$llvmBin\lld-link.exe")) {
+            choco install llvm -y --no-progress
+          }
+          Add-Content $env:GITHUB_PATH $llvmBin
+          & "$llvmBin\lld-link.exe" --version
+
       - name: Configure
-        run: cmake --preset msvc-vs-release
+        run: cmake --preset msvc-vs-release-all
 
       - name: Save vcpkg cache
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
@@ -196,7 +205,7 @@ jobs:
           key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/CPM.cmake') }}
 
       - name: Build
-        run: cmake --build --preset msvc-vs-release --parallel
+        run: cmake --build --preset msvc-vs-release-all --parallel
 
       - name: Show compiler cache stats
         if: always()
@@ -211,12 +220,12 @@ jobs:
           key: sccache-${{ runner.os }}-msvc-release-${{ github.sha }}
 
       - name: Run tests
-        run: ctest --preset msvc-vs-release
+        run: ctest --preset msvc-vs-release-all
 
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp build/msvc-vs-release/bin/Release/* Soldank++
+          cp build/msvc-vs-release-all/bin/Release/* Soldank++
           Compress-Archive -Path Soldank++ -Destination Soldank++-latest-win32-x64.zip
 
       - uses: actions/upload-artifact@v4
