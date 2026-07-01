@@ -69,7 +69,7 @@ jobs:
           sudo apt-get -y install cmake clang ninja-build ccache xorg-dev libglu1-mesa-dev
 
       - name: Configure
-        run: cmake --preset clang-ninja-debug
+        run: cmake --preset clang-ninja-debug-all
 
       - name: Save vcpkg cache
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
@@ -90,7 +90,7 @@ jobs:
           key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/CPM.cmake') }}
 
       - name: Build
-        run: cmake --build --preset clang-ninja-debug --parallel
+        run: cmake --build --preset clang-ninja-debug-all --parallel
 
       - name: Show compiler cache stats
         if: always()
@@ -105,4 +105,4 @@ jobs:
           key: ccache-${{ runner.os }}-clang-debug-${{ github.sha }}
 
       - name: Run tests
-        run: ctest --preset clang-ninja-debug
+        run: ctest --test-dir build/clang-ninja-debug-all --output-on-failure
