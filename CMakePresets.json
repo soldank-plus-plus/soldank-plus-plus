@@ -19,6 +19,15 @@
       }
     },
     {
+      "name": "clang-ninja-debug-mold",
+      "displayName": "Clang Ninja Debug (mold)",
+      "inherits": "clang-ninja-debug",
+      "binaryDir": "${sourceDir}/build/clang-ninja-debug-mold",
+      "cacheVariables": {
+        "BUILD_USE_MOLD_LINKER": "ON"
+      }
+    },
+    {
       "name": "clang-ninja-coverage",
       "displayName": "Clang Ninja Coverage",
       "generator": "Ninja",
@@ -95,6 +104,11 @@
       "name": "clang-ninja-debug",
       "displayName": "Build Clang Ninja Debug",
       "configurePreset": "clang-ninja-debug"
+    },
+    {
+      "name": "clang-ninja-debug-mold",
+      "displayName": "Build Clang Ninja Debug (mold)",
+      "configurePreset": "clang-ninja-debug-mold"
     },
     {
       "name": "clang-ninja-coverage",
