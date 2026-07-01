@@ -49,6 +49,7 @@ target_link_libraries(server_lib PRIVATE DaScript)
 target_link_libraries(server_lib PRIVATE SimpleIni)
 target_link_libraries(server_lib PRIVATE Httplib)
 target_link_libraries(server_lib PRIVATE Threads::Threads)
+soldank_target_precompile_headers(server_lib)
 
 add_executable(server main.cpp)
 
@@ -76,5 +77,6 @@ target_link_libraries(server PRIVATE Httplib)
 target_link_libraries(server PRIVATE Threads::Threads)
 
 target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
+soldank_target_precompile_headers(server)
 
 install(TARGETS server DESTINATION ${CMAKE_SOURCE_DIR}/bin)

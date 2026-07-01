@@ -24,3 +24,5 @@ endif()
 target_include_directories(shared_lib_testing_framework PUBLIC ${CMAKE_SOURCE_DIR}/tests/testing_frameworks)
 
 target_link_libraries(shared_lib_testing_framework PRIVATE shared_lib)
+
+soldank_target_precompile_headers(shared_lib_testing_framework)

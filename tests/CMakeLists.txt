@@ -4,6 +4,16 @@ MACRO(AddTestOptionsAndLibraries TestName)
     target_link_options(${TestName} PRIVATE -coverage -fprofile-arcs)
   endif()
   target_link_libraries(${TestName} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
+  if (BUILD_USE_PCH)
+    target_precompile_headers(${TestName} PRIVATE
+      <gmock/gmock.h>
+      <gtest/gtest.h>
+      <memory>
+      <optional>
+      <string>
+      <vector>
+    )
+  endif()
 ENDMACRO()
 
 add_subdirectory(testing_frameworks/shared_lib_testing)

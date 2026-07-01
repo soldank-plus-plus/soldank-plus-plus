@@ -28,12 +28,22 @@
       }
     },
     {
+      "name": "clang-ninja-debug-pch",
+      "displayName": "Clang Ninja Debug (PCH)",
+      "inherits": "clang-ninja-debug",
+      "binaryDir": "${sourceDir}/build/clang-ninja-debug-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
       "name": "clang-ninja-debug-mold",
       "displayName": "Clang Ninja Debug (mold)",
       "inherits": "clang-ninja-debug",
       "binaryDir": "${sourceDir}/build/clang-ninja-debug-mold",
       "cacheVariables": {
-        "BUILD_USE_MOLD_LINKER": "ON"
+        "BUILD_USE_MOLD_LINKER": "ON",
+        "BUILD_USE_PCH": "ON"
       }
     },
     {
@@ -119,6 +129,16 @@
       }
     },
     {
+      "name": "clang-ninja-release-mold-pch",
+      "displayName": "Clang Ninja Release (mold, PCH)",
+      "inherits": "clang-ninja-release",
+      "binaryDir": "${sourceDir}/build/clang-ninja-release-mold-pch",
+      "cacheVariables": {
+        "BUILD_USE_MOLD_LINKER": "ON",
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
       "name": "msvc-vs-debug",
       "displayName": "MSVC Visual Studio Debug",
       "generator": "Visual Studio 17 2022",
@@ -175,6 +195,11 @@
       "configurePreset": "clang-ninja-debug-no-tests"
     },
     {
+      "name": "clang-ninja-debug-pch",
+      "displayName": "Build Clang Ninja Debug (PCH)",
+      "configurePreset": "clang-ninja-debug-pch"
+    },
+    {
       "name": "clang-ninja-debug-mold",
       "displayName": "Build Clang Ninja Debug (mold)",
       "configurePreset": "clang-ninja-debug-mold"
@@ -222,6 +247,11 @@
       "name": "clang-ninja-release",
       "displayName": "Build Clang Ninja Release",
       "configurePreset": "clang-ninja-release"
+    },
+    {
+      "name": "clang-ninja-release-mold-pch",
+      "displayName": "Build Clang Ninja Release (mold, PCH)",
+      "configurePreset": "clang-ninja-release-mold-pch"
     },
     {
       "name": "msvc-vs-debug",

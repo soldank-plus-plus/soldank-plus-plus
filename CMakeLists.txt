@@ -16,6 +16,7 @@ option(BUILD_TESTS_ENABLED "Build all available tests" ON)
 option(BUILD_COMPILE_WITH_COVERAGE "Build with gcov-compatible coverage instrumentation" OFF)
 option(BUILD_USE_COMPILER_CACHE "Use compiler cache when available" ON)
 option(BUILD_USE_MOLD_LINKER "Use mold as the linker when supported" OFF)
+option(BUILD_USE_PCH "Use precompiled headers for project targets" OFF)
 option(BUILD_USE_ADDRESS_SANITIZER "Build with AddressSanitizer instrumentation" OFF)
 option(BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER "Build with UndefinedBehaviorSanitizer instrumentation" OFF)
 
@@ -100,6 +101,25 @@ endif()
 if (NOT MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 endif()
+
+function(soldank_target_precompile_headers target_name)
+    if (BUILD_USE_PCH)
+        target_precompile_headers(${target_name} PRIVATE
+            <algorithm>
+            <array>
+            <cmath>
+            <cstdint>
+            <memory>
+            <optional>
+            <string>
+            <string_view>
+            <utility>
+            <variant>
+            <vector>
+            <glm/glm.hpp>
+        )
+    endif()
+endfunction()
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_package(spdlog CONFIG REQUIRED)

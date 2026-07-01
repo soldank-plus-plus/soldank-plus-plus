@@ -124,6 +124,7 @@ target_link_libraries(client_lib PRIVATE imgui::imgui)
 target_link_libraries(client_lib PUBLIC shared_lib)
 target_link_libraries(client_lib PRIVATE GameNetworkingSockets2)
 target_link_libraries(client_lib PRIVATE cxxopts::cxxopts)
+soldank_target_precompile_headers(client_lib)
 
 # TODO: uncomment this to stop the app from opening cmd on windows
 # IF (WIN32)
@@ -152,4 +153,5 @@ target_link_libraries(client PRIVATE Spdlog)
 target_link_libraries(client PRIVATE cxxopts::cxxopts)
 target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR}/source/client)
 target_include_directories(client PUBLIC ${CMAKE_SOURCE_DIR}/build/bindings)
+soldank_target_precompile_headers(client)
 install(TARGETS client DESTINATION ${CMAKE_SOURCE_DIR}/bin)
