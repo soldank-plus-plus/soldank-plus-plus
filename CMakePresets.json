@@ -61,6 +61,15 @@
       "binaryDir": "${sourceDir}/build/clang-ninja-debug-all"
     },
     {
+      "name": "clang-ninja-debug-all-time-report",
+      "displayName": "Clang Ninja Debug (All Optimizations, Time Report)",
+      "inherits": "clang-ninja-debug-all",
+      "binaryDir": "${sourceDir}/build/clang-ninja-debug-all-time-report",
+      "cacheVariables": {
+        "BUILD_ENABLE_TIME_REPORT": "ON"
+      }
+    },
+    {
       "name": "clang-ninja-client-debug",
       "displayName": "Clang Ninja Client Debug",
       "inherits": "clang-ninja-debug",
@@ -159,6 +168,15 @@
       "binaryDir": "${sourceDir}/build/clang-ninja-release-all"
     },
     {
+      "name": "clang-ninja-release-all-time-report",
+      "displayName": "Clang Ninja Release (All Optimizations, Time Report)",
+      "inherits": "clang-ninja-release-all",
+      "binaryDir": "${sourceDir}/build/clang-ninja-release-all-time-report",
+      "cacheVariables": {
+        "BUILD_ENABLE_TIME_REPORT": "ON"
+      }
+    },
+    {
       "name": "msvc-vs-debug",
       "displayName": "MSVC Visual Studio Debug",
       "generator": "Visual Studio 17 2022",
@@ -235,6 +253,11 @@
       "configurePreset": "clang-ninja-debug-all"
     },
     {
+      "name": "clang-ninja-debug-all-time-report",
+      "displayName": "Build Clang Ninja Debug (All Optimizations, Time Report)",
+      "configurePreset": "clang-ninja-debug-all-time-report"
+    },
+    {
       "name": "clang-ninja-client-debug",
       "displayName": "Build Clang Ninja Client Debug",
       "configurePreset": "clang-ninja-client-debug",
@@ -287,6 +310,11 @@
       "name": "clang-ninja-release-all",
       "displayName": "Build Clang Ninja Release (All Optimizations)",
       "configurePreset": "clang-ninja-release-all"
+    },
+    {
+      "name": "clang-ninja-release-all-time-report",
+      "displayName": "Build Clang Ninja Release (All Optimizations, Time Report)",
+      "configurePreset": "clang-ninja-release-all-time-report"
     },
     {
       "name": "msvc-vs-debug",
