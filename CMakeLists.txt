@@ -101,18 +101,21 @@ if (NOT MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 endif()
 
-find_package(GameNetworkingSockets CONFIG REQUIRED)
-find_package(ZLIB REQUIRED)
-find_package(BZip2 REQUIRED)
-find_package(PNG REQUIRED)
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_package(spdlog CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
-find_package(cxxopts CONFIG REQUIRED)
-find_package(Protobuf REQUIRED)
 find_package(Threads REQUIRED)
 
+if (BUILD_CLIENT_ENABLED OR BUILD_SERVER_ENABLED)
+    find_package(GameNetworkingSockets CONFIG REQUIRED)
+    find_package(Protobuf REQUIRED)
+endif()
+
 if (BUILD_CLIENT_ENABLED)
+    find_package(ZLIB REQUIRED)
+    find_package(BZip2 REQUIRED)
+    find_package(PNG REQUIRED)
+    find_package(cxxopts CONFIG REQUIRED)
     find_package(glfw3 CONFIG REQUIRED)
     find_package(Stb REQUIRED)
     find_package(Freetype REQUIRED)
@@ -133,16 +136,29 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_CXX_EXTENSIONS Off)
 
-CPMAddPackage(
-    NAME soldatbase
-    URL https://github.com/nedik/soldat-base/archive/55c6867a943a6ffc62a57b46eb7742c2e39766aa.tar.gz
-)
+if (BUILD_TESTS_ENABLED)
+    CPMAddPackage(
+        NAME soldatbase
+        URL https://github.com/nedik/soldat-base/archive/55c6867a943a6ffc62a57b46eb7742c2e39766aa.tar.gz
+    )
+endif()
 
 if (BUILD_SERVER_ENABLED)
     # Daslang is still in development and is not released in vcpkg so we have to use CPM
     # Using version v0.6.3-RC2 commit
     set(DAS_AOT_EXAMPLES_DISABLED ON CACHE BOOL "Disable daScript AOT examples" FORCE)
+    set(DAS_AUDIO_DISABLED ON CACHE BOOL "Disable daScript audio module" FORCE)
     set(DAS_GLFW_DISABLED ON CACHE BOOL "Disable daScript GLFW module" FORCE)
+    set(DAS_HV_DISABLED ON CACHE BOOL "Disable daScript HV module" FORCE)
+    set(DAS_LIVE_HOST_DISABLED ON CACHE BOOL "Disable daScript live host module" FORCE)
+    set(DAS_MINFFT_DISABLED ON CACHE BOOL "Disable daScript minfft module" FORCE)
+    set(DAS_PUGIXML_DISABLED ON CACHE BOOL "Disable daScript pugixml module" FORCE)
+    set(DAS_STBIMAGE_DISABLED ON CACHE BOOL "Disable daScript stbimage module" FORCE)
+    set(DAS_STDDLG_DISABLED ON CACHE BOOL "Disable daScript standard dialog module" FORCE)
+    set(DAS_TESTS_DISABLED ON CACHE BOOL "Disable daScript tests" FORCE)
+    set(DAS_TOOLS_DISABLED ON CACHE BOOL "Disable daScript tools" FORCE)
+    set(DAS_TREE_SITTER_DISABLED ON CACHE BOOL "Disable daScript tree-sitter grammar" FORCE)
+    set(DAS_TUTORIAL_DISABLED ON CACHE BOOL "Disable daScript tutorial targets" FORCE)
 
     CPMAddPackage(
         NAME dascript

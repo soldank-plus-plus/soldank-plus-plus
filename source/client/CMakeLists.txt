@@ -83,12 +83,6 @@ set(client_lib_modules
     rendering/shaders/Shader.cpp
 )
 
-foreach(file_path IN LISTS client_lib_modules)
-    get_filename_component(absolute_path ${file_path} ABSOLUTE)
-    message(${file_path})
-    list(REMOVE_ITEM LIB_SOURCES ${absolute_path})
-endforeach()
-
 add_library(client_lib)
 
 target_sources(client_lib

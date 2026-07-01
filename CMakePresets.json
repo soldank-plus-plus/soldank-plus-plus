@@ -19,12 +19,52 @@
       }
     },
     {
+      "name": "clang-ninja-debug-no-tests",
+      "displayName": "Clang Ninja Debug (No Tests)",
+      "inherits": "clang-ninja-debug",
+      "binaryDir": "${sourceDir}/build/clang-ninja-debug-no-tests",
+      "cacheVariables": {
+        "BUILD_TESTS_ENABLED": "OFF"
+      }
+    },
+    {
       "name": "clang-ninja-debug-mold",
       "displayName": "Clang Ninja Debug (mold)",
       "inherits": "clang-ninja-debug",
       "binaryDir": "${sourceDir}/build/clang-ninja-debug-mold",
       "cacheVariables": {
         "BUILD_USE_MOLD_LINKER": "ON"
+      }
+    },
+    {
+      "name": "clang-ninja-client-debug",
+      "displayName": "Clang Ninja Client Debug",
+      "inherits": "clang-ninja-debug",
+      "binaryDir": "${sourceDir}/build/clang-ninja-client-debug",
+      "cacheVariables": {
+        "BUILD_SERVER_ENABLED": "OFF",
+        "BUILD_TESTS_ENABLED": "OFF"
+      }
+    },
+    {
+      "name": "clang-ninja-server-debug",
+      "displayName": "Clang Ninja Server Debug",
+      "inherits": "clang-ninja-debug",
+      "binaryDir": "${sourceDir}/build/clang-ninja-server-debug",
+      "cacheVariables": {
+        "BUILD_CLIENT_ENABLED": "OFF",
+        "BUILD_TESTS_ENABLED": "OFF"
+      }
+    },
+    {
+      "name": "clang-ninja-shared-debug",
+      "displayName": "Clang Ninja Shared Debug",
+      "inherits": "clang-ninja-debug",
+      "binaryDir": "${sourceDir}/build/clang-ninja-shared-debug",
+      "cacheVariables": {
+        "BUILD_CLIENT_ENABLED": "OFF",
+        "BUILD_SERVER_ENABLED": "OFF",
+        "BUILD_TESTS_ENABLED": "OFF"
       }
     },
     {
@@ -106,9 +146,62 @@
       "configurePreset": "clang-ninja-debug"
     },
     {
+      "name": "clang-ninja-debug-client",
+      "displayName": "Build Clang Ninja Debug Client Target",
+      "configurePreset": "clang-ninja-debug",
+      "targets": [
+        "client"
+      ]
+    },
+    {
+      "name": "clang-ninja-debug-server",
+      "displayName": "Build Clang Ninja Debug Server Target",
+      "configurePreset": "clang-ninja-debug",
+      "targets": [
+        "server"
+      ]
+    },
+    {
+      "name": "clang-ninja-debug-shared",
+      "displayName": "Build Clang Ninja Debug Shared Target",
+      "configurePreset": "clang-ninja-debug",
+      "targets": [
+        "shared_lib"
+      ]
+    },
+    {
+      "name": "clang-ninja-debug-no-tests",
+      "displayName": "Build Clang Ninja Debug (No Tests)",
+      "configurePreset": "clang-ninja-debug-no-tests"
+    },
+    {
       "name": "clang-ninja-debug-mold",
       "displayName": "Build Clang Ninja Debug (mold)",
       "configurePreset": "clang-ninja-debug-mold"
+    },
+    {
+      "name": "clang-ninja-client-debug",
+      "displayName": "Build Clang Ninja Client Debug",
+      "configurePreset": "clang-ninja-client-debug",
+      "targets": [
+        "client"
+      ]
+    },
+    {
+      "name": "clang-ninja-server-debug",
+      "displayName": "Build Clang Ninja Server Debug",
+      "configurePreset": "clang-ninja-server-debug",
+      "targets": [
+        "server"
+      ]
+    },
+    {
+      "name": "clang-ninja-shared-debug",
+      "displayName": "Build Clang Ninja Shared Debug",
+      "configurePreset": "clang-ninja-shared-debug",
+      "targets": [
+        "shared_lib"
+      ]
     },
     {
       "name": "clang-ninja-coverage",
