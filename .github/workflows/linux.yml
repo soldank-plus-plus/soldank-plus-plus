@@ -66,7 +66,7 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake clang ninja-build ccache xorg-dev libglu1-mesa-dev
+          sudo apt-get -y install cmake clang ninja-build ccache mold xorg-dev libglu1-mesa-dev
 
       - name: Configure
         run: cmake --preset clang-ninja-debug-all
