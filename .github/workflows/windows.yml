@@ -12,6 +12,8 @@ env:
   CTEST_OUTPUT_ON_FAILURE: 1
   VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-bincache
   VCPKG_DOWNLOADS: ${{ github.workspace }}/.vcpkg-downloads
+  SCCACHE_DIR: ${{ github.workspace }}\.sccache
+  SCCACHE_CACHE_SIZE: 1G
 
 jobs:
   windows-debug:
@@ -26,8 +28,8 @@ jobs:
           cmake --version
           cmake --list-presets
 
-      - name: Create vcpkg cache directories
-        run: New-Item -ItemType Directory -Force .vcpkg-bincache, .vcpkg-downloads
+      - name: Create cache directories
+        run: New-Item -ItemType Directory -Force .vcpkg-bincache, .vcpkg-downloads, .sccache
 
       - name: Install vcpkg
         run: |
@@ -45,6 +47,19 @@ jobs:
           restore-keys: |
             vcpkg-${{ runner.os }}-
 
+      - name: Restore compiler cache
+        id: sccache-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .sccache
+          key: sccache-${{ runner.os }}-msvc-debug-${{ github.sha }}
+          restore-keys: |
+            sccache-${{ runner.os }}-msvc-debug-
+            sccache-${{ runner.os }}-msvc-
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Configure
         run: cmake --preset msvc-vs-debug
 
@@ -60,6 +75,18 @@ jobs:
 
       - name: Build
         run: cmake --build --preset msvc-vs-debug --parallel
+
+      - name: Show compiler cache stats
+        if: always()
+        run: sccache --show-stats
+
+      - name: Save compiler cache
+        if: always() && steps.sccache-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .sccache
+          key: sccache-${{ runner.os }}-msvc-debug-${{ github.sha }}
 
       - name: Run tests
         run: ctest --preset msvc-vs-debug

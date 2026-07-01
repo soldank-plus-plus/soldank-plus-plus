@@ -12,6 +12,11 @@ env:
   CTEST_OUTPUT_ON_FAILURE: 1
   VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-bincache
   VCPKG_DOWNLOADS: ${{ github.workspace }}/.vcpkg-downloads
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_COMPILERCHECK: content
+  CCACHE_MAXSIZE: 1G
 
 jobs:
   linux-debug:
@@ -20,8 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create vcpkg cache directories
-        run: mkdir -p .vcpkg-bincache .vcpkg-downloads
+      - name: Create cache directories
+        run: mkdir -p .vcpkg-bincache .vcpkg-downloads .cpm-cache .ccache
 
       - name: Install vcpkg
         run: |
@@ -39,10 +44,29 @@ jobs:
           restore-keys: |
             vcpkg-${{ runner.os }}-
 
+      - name: Restore compiler cache
+        id: ccache-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-clang-debug-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-clang-debug-
+            ccache-${{ runner.os }}-clang-
+
+      - name: Restore CPM source cache
+        id: cpm-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/CPM.cmake') }}
+          restore-keys: |
+            cpm-${{ runner.os }}-
+
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake clang ninja-build xorg-dev libglu1-mesa-dev
+          sudo apt-get -y install cmake clang ninja-build ccache xorg-dev libglu1-mesa-dev
 
       - name: Configure
         run: cmake --preset clang-ninja-debug
@@ -57,8 +81,28 @@ jobs:
             .vcpkg-downloads
           key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
+      - name: Save CPM source cache
+        if: steps.cpm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/CPM.cmake') }}
+
       - name: Build
         run: cmake --build --preset clang-ninja-debug --parallel
+
+      - name: Show compiler cache stats
+        if: always()
+        run: ccache --show-stats
+
+      - name: Save compiler cache
+        if: always() && steps.ccache-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-clang-debug-${{ github.sha }}
 
       - name: Run tests
         run: ctest --preset clang-ninja-debug
