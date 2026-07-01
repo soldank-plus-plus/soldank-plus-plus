@@ -261,6 +261,96 @@
       "displayName": "MSVC Visual Studio Release (All Optimizations)",
       "inherits": "msvc-vs-release-lld-pch",
       "binaryDir": "${sourceDir}/build/msvc-vs-release-all"
+    },
+    {
+      "name": "msvc-ninja-debug",
+      "displayName": "MSVC Ninja Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-debug-pch",
+      "displayName": "MSVC Ninja Debug (PCH)",
+      "inherits": "msvc-ninja-debug",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-debug-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-debug-lld",
+      "displayName": "MSVC Ninja Debug (LLD)",
+      "inherits": "msvc-ninja-debug",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-debug-lld",
+      "cacheVariables": {
+        "BUILD_USE_LLD_LINKER": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-debug-lld-pch",
+      "displayName": "MSVC Ninja Debug (LLD, PCH)",
+      "inherits": "msvc-ninja-debug-lld",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-debug-lld-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-debug-all",
+      "displayName": "MSVC Ninja Debug (All Optimizations)",
+      "inherits": "msvc-ninja-debug-lld-pch",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-debug-all"
+    },
+    {
+      "name": "msvc-ninja-release",
+      "displayName": "MSVC Ninja Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-release-pch",
+      "displayName": "MSVC Ninja Release (PCH)",
+      "inherits": "msvc-ninja-release",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-release-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-release-lld",
+      "displayName": "MSVC Ninja Release (LLD)",
+      "inherits": "msvc-ninja-release",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-release-lld",
+      "cacheVariables": {
+        "BUILD_USE_LLD_LINKER": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-release-lld-pch",
+      "displayName": "MSVC Ninja Release (LLD, PCH)",
+      "inherits": "msvc-ninja-release-lld",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-release-lld-pch",
+      "cacheVariables": {
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
+      "name": "msvc-ninja-release-all",
+      "displayName": "MSVC Ninja Release (All Optimizations)",
+      "inherits": "msvc-ninja-release-lld-pch",
+      "binaryDir": "${sourceDir}/build/msvc-ninja-release-all"
     }
   ],
   "buildPresets": [
@@ -441,6 +531,56 @@
       "displayName": "Build MSVC Visual Studio Release (All Optimizations)",
       "configurePreset": "msvc-vs-release-all",
       "configuration": "Release"
+    },
+    {
+      "name": "msvc-ninja-debug",
+      "displayName": "Build MSVC Ninja Debug",
+      "configurePreset": "msvc-ninja-debug"
+    },
+    {
+      "name": "msvc-ninja-debug-pch",
+      "displayName": "Build MSVC Ninja Debug (PCH)",
+      "configurePreset": "msvc-ninja-debug-pch"
+    },
+    {
+      "name": "msvc-ninja-debug-lld",
+      "displayName": "Build MSVC Ninja Debug (LLD)",
+      "configurePreset": "msvc-ninja-debug-lld"
+    },
+    {
+      "name": "msvc-ninja-debug-lld-pch",
+      "displayName": "Build MSVC Ninja Debug (LLD, PCH)",
+      "configurePreset": "msvc-ninja-debug-lld-pch"
+    },
+    {
+      "name": "msvc-ninja-debug-all",
+      "displayName": "Build MSVC Ninja Debug (All Optimizations)",
+      "configurePreset": "msvc-ninja-debug-all"
+    },
+    {
+      "name": "msvc-ninja-release",
+      "displayName": "Build MSVC Ninja Release",
+      "configurePreset": "msvc-ninja-release"
+    },
+    {
+      "name": "msvc-ninja-release-pch",
+      "displayName": "Build MSVC Ninja Release (PCH)",
+      "configurePreset": "msvc-ninja-release-pch"
+    },
+    {
+      "name": "msvc-ninja-release-lld",
+      "displayName": "Build MSVC Ninja Release (LLD)",
+      "configurePreset": "msvc-ninja-release-lld"
+    },
+    {
+      "name": "msvc-ninja-release-lld-pch",
+      "displayName": "Build MSVC Ninja Release (LLD, PCH)",
+      "configurePreset": "msvc-ninja-release-lld-pch"
+    },
+    {
+      "name": "msvc-ninja-release-all",
+      "displayName": "Build MSVC Ninja Release (All Optimizations)",
+      "configurePreset": "msvc-ninja-release-all"
     }
   ],
   "testPresets": [
@@ -516,6 +656,22 @@
       "displayName": "Test MSVC Visual Studio Release (All Optimizations)",
       "configurePreset": "msvc-vs-release-all",
       "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "msvc-ninja-debug-all",
+      "displayName": "Test MSVC Ninja Debug (All Optimizations)",
+      "configurePreset": "msvc-ninja-debug-all",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "msvc-ninja-release-all",
+      "displayName": "Test MSVC Ninja Release (All Optimizations)",
+      "configurePreset": "msvc-ninja-release-all",
       "output": {
         "outputOnFailure": true
       }

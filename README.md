@@ -77,9 +77,9 @@ git clone https://github.com/microsoft/vcpkg
 .\vcpkg\bootstrap-vcpkg.bat
 ```
 
-Make sure you have CMake and LLVM lld installed. The project uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to download required packages.
+Make sure you have CMake, Ninja and LLVM lld installed. The project uses [CPM.cmake](https://github.com/cpm-cmake/CPM.cmake) to download required packages.
 To build the project, it's recommended to build it using presets:
 ```
-cmake --preset msvc-vs-release-all
-cmake --build --preset msvc-vs-release-all
+cmake --preset msvc-ninja-release-all
+cmake --build --preset msvc-ninja-release-all
 ```
