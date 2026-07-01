@@ -83,10 +83,10 @@ jobs:
       - name: Install packages
         run: |
           sudo apt-get update
-          sudo apt-get -y install cmake clang llvm ninja-build ccache xorg-dev libglu1-mesa-dev lcov
+          sudo apt-get -y install cmake clang llvm ninja-build ccache mold xorg-dev libglu1-mesa-dev lcov
 
       - name: Configure
-        run: cmake --preset clang-ninja-coverage
+        run: cmake --preset clang-ninja-coverage-all
 
       - name: Save vcpkg cache
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
@@ -107,7 +107,7 @@ jobs:
           key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/CPM.cmake') }}
 
       - name: Build
-        run: cmake --build --preset clang-ninja-coverage --parallel
+        run: cmake --build --preset clang-ninja-coverage-all --parallel
 
       - name: Show compiler cache stats
         if: always()
@@ -128,10 +128,10 @@ jobs:
           exec llvm-cov gcov "$@"
           EOF
           chmod +x /tmp/llvm-gcov.sh
-          ctest --preset clang-ninja-coverage
-          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-coverage --capture --output-file build/clang-ninja-coverage/coverage.info --keep-going --ignore-errors gcov,inconsistent
-          lcov --extract build/clang-ninja-coverage/coverage.info '*/source/*' --output-file build/clang-ninja-coverage/coverage-src.info --ignore-errors gcov,inconsistent
-          genhtml -o build/clang-ninja-coverage/coverage build/clang-ninja-coverage/coverage-src.info --ignore-errors inconsistent,unsupported,category
+          ctest --preset clang-ninja-coverage-all
+          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-coverage-all --capture --output-file build/clang-ninja-coverage-all/coverage.info --keep-going --ignore-errors gcov,inconsistent
+          lcov --extract build/clang-ninja-coverage-all/coverage.info '*/source/*' --output-file build/clang-ninja-coverage-all/coverage-src.info --ignore-errors gcov,inconsistent
+          genhtml -o build/clang-ninja-coverage-all/coverage build/clang-ninja-coverage-all/coverage-src.info --ignore-errors inconsistent,unsupported,category
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -139,7 +139,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: './build/clang-ninja-coverage/coverage'
+          path: './build/clang-ninja-coverage-all/coverage'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

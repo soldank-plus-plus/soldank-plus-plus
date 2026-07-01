@@ -114,6 +114,16 @@
       }
     },
     {
+      "name": "clang-ninja-coverage-all",
+      "displayName": "Clang Ninja Coverage (All Optimizations)",
+      "inherits": "clang-ninja-coverage",
+      "binaryDir": "${sourceDir}/build/clang-ninja-coverage-all",
+      "cacheVariables": {
+        "BUILD_USE_MOLD_LINKER": "ON",
+        "BUILD_USE_PCH": "ON"
+      }
+    },
+    {
       "name": "clang-ninja-asan",
       "displayName": "Clang Ninja AddressSanitizer",
       "generator": "Ninja",
@@ -443,6 +453,11 @@
       "configurePreset": "clang-ninja-coverage"
     },
     {
+      "name": "clang-ninja-coverage-all",
+      "displayName": "Build Clang Ninja Coverage (All Optimizations)",
+      "configurePreset": "clang-ninja-coverage-all"
+    },
+    {
       "name": "clang-ninja-asan",
       "displayName": "Build Clang Ninja AddressSanitizer",
       "configurePreset": "clang-ninja-asan"
@@ -596,6 +611,14 @@
       "name": "clang-ninja-coverage",
       "displayName": "Test Clang Ninja Coverage",
       "configurePreset": "clang-ninja-coverage",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-ninja-coverage-all",
+      "displayName": "Test Clang Ninja Coverage (All Optimizations)",
+      "configurePreset": "clang-ninja-coverage-all",
       "output": {
         "outputOnFailure": true
       }
