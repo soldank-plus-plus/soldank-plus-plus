@@ -1,8 +1,11 @@
 module;
 
 #include <memory>
+#include <functional>
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 #include <utility>
 
 export module Extern.Httplib;
@@ -12,6 +15,25 @@ export namespace Httplib
 struct Response
 {
     int status;
+};
+
+struct Header
+{
+    std::string name;
+    std::string value;
+};
+
+struct ServerRequest
+{
+    std::string body;
+};
+
+struct ServerResponse
+{
+    int status;
+    std::string body;
+    std::string content_type;
+    std::vector<Header> headers;
 };
 
 class Result
@@ -62,6 +84,32 @@ public:
     std::string host() const;
 
     Result Post(const std::string& path, const std::string& body, const std::string& content_type);
+
+private:
+    struct Implementation;
+    std::unique_ptr<Implementation> implementation_;
+};
+
+class Server
+{
+public:
+    using Handler = std::function<ServerResponse(const ServerRequest&)>;
+
+    Server();
+
+    Server(Server&&) noexcept;
+    Server& operator=(Server&&) noexcept;
+
+    Server(const Server&) = delete;
+    Server& operator=(const Server&) = delete;
+
+    ~Server();
+
+    void Post(const std::string& path, Handler handler);
+
+    bool Listen(const std::string& host, int port);
+
+    void Stop();
 
 private:
     struct Implementation;

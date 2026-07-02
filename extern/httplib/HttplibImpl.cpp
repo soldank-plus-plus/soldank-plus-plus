@@ -2,6 +2,7 @@ module;
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -62,5 +63,45 @@ Result Client::Post(const std::string& path, const std::string& body, const std:
     }
 
     return Result{ static_cast<int>(response.error()), httplib::to_string(response.error()) };
+}
+
+struct Server::Implementation
+{
+    httplib::Server server;
+};
+
+Server::Server()
+    : implementation_(std::make_unique<Implementation>())
+{
+}
+
+Server::Server(Server&&) noexcept = default;
+
+Server& Server::operator=(Server&&) noexcept = default;
+
+Server::~Server() = default;
+
+void Server::Post(const std::string& path, Handler handler)
+{
+    implementation_->server.Post(
+      path, [handler = std::move(handler)](const httplib::Request& request,
+                                           httplib::Response& response) {
+          const auto server_response = handler(ServerRequest{ .body = request.body });
+          response.status = server_response.status;
+          for (const auto& header : server_response.headers) {
+              response.set_header(header.name, header.value);
+          }
+          response.set_content(server_response.body, server_response.content_type);
+      });
+}
+
+bool Server::Listen(const std::string& host, int port)
+{
+    return implementation_->server.listen(host, port);
+}
+
+void Server::Stop()
+{
+    implementation_->server.stop();
 }
 } // namespace Httplib
