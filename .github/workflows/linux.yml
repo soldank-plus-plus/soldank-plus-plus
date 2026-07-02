@@ -33,16 +33,23 @@ jobs:
           git clone https://github.com/microsoft/vcpkg
           ./vcpkg/bootstrap-vcpkg.sh
 
-      - name: Restore vcpkg cache
-        id: vcpkg-cache
+      - name: Restore vcpkg downloads cache
+        id: vcpkg-downloads-cache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            .vcpkg-bincache
-            .vcpkg-downloads
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          path: .vcpkg-downloads
+          key: vcpkg-downloads-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-
+            vcpkg-downloads-${{ runner.os }}-
+
+      - name: Restore vcpkg binary cache
+        id: vcpkg-binary-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .vcpkg-bincache
+          key: vcpkg-bincache-${{ runner.os }}-ubuntu26-clang-v1-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            vcpkg-bincache-${{ runner.os }}-ubuntu26-clang-v1-
 
       - name: Restore compiler cache
         id: ccache-cache
@@ -73,15 +80,21 @@ jobs:
       - name: Configure
         run: cmake --preset clang-ninja-debug-all
 
-      - name: Save vcpkg cache
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+      - name: Save vcpkg downloads cache
+        if: steps.vcpkg-downloads-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
-          path: |
-            .vcpkg-bincache
-            .vcpkg-downloads
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          path: .vcpkg-downloads
+          key: vcpkg-downloads-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+
+      - name: Save vcpkg binary cache
+        if: steps.vcpkg-binary-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: .vcpkg-bincache
+          key: vcpkg-bincache-${{ runner.os }}-ubuntu26-clang-v1-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
 
       - name: Save CPM source cache
         if: steps.cpm-cache.outputs.cache-hit != 'true'
