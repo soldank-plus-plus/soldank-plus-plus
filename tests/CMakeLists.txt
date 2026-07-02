@@ -4,7 +4,7 @@ MACRO(AddTestOptionsAndLibraries TestName)
     target_link_options(${TestName} PRIVATE -coverage -fprofile-arcs)
   endif()
   target_link_libraries(${TestName} PRIVATE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
-  if (BUILD_USE_PCH)
+  if (BUILD_USE_PCH AND NOT (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 21))
     target_precompile_headers(${TestName} PRIVATE
       <gmock/gmock.h>
       <gtest/gtest.h>

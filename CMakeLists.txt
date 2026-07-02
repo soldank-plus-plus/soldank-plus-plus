@@ -140,6 +140,11 @@ endif()
 
 function(soldank_target_precompile_headers target_name)
     if (BUILD_USE_PCH)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 21)
+            message(STATUS "Skipping PCH for ${target_name}: Clang ${CMAKE_CXX_COMPILER_VERSION} crashes when this project combines PCH with C++ module PCMs")
+            return()
+        endif()
+
         target_precompile_headers(${target_name} PRIVATE
             <algorithm>
             <array>

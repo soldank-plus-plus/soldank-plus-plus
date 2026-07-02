@@ -17,7 +17,7 @@ env:
 
 jobs:
   linux-release:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +64,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install cmake clang ninja-build ccache mold xorg-dev libglu1-mesa-dev
+          clang --version
+          clang++ --version
 
       - name: Configure
         run: cmake --preset clang-ninja-release-all
@@ -230,7 +232,7 @@ jobs:
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp build/msvc-ninja-release-all/bin/Release/* Soldank++
+          cp build/msvc-ninja-release-all/bin/* Soldank++
           Compress-Archive -Path Soldank++ -Destination Soldank++-latest-win32-x64.zip
 
       - uses: actions/upload-artifact@v4

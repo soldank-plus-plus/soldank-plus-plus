@@ -20,7 +20,7 @@ env:
 
 jobs:
   linux-debug:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +67,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install cmake clang ninja-build ccache mold xorg-dev libglu1-mesa-dev
+          clang --version
+          clang++ --version
 
       - name: Configure
         run: cmake --preset clang-ninja-debug-all
