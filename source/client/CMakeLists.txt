@@ -35,7 +35,6 @@ set(client_lib_modules
     map_editor/tools/VertexSelectionTool.cpp
     map_editor/tools/WaypointTool.cpp
 
-    networking/Connection.cpp
     networking/IConnection.cpp
     networking/NetworkingClient.cpp
     networking/INetworkingClient.cpp
@@ -48,7 +47,6 @@ set(client_lib_modules
     networking/event_handlers/SoldierInfoNetworkEventHandler.cpp
     networking/event_handlers/SoldierStateNetworkEventHandler.cpp
     networking/event_handlers/SpawnSoldierNetworkEventHandler.cpp
-    networking/interface/NetworkingInterface.cpp
 
     rendering/Scene.cpp
     rendering/ClientState.cpp
@@ -83,6 +81,17 @@ set(client_lib_modules
     rendering/shaders/Shader.cpp
 )
 
+if (BUILD_WEBASM_CLIENT_TRANSPORT)
+    list(APPEND client_lib_modules
+        networking/browser/WebRtcBrowserConnection.cpp
+    )
+else()
+    list(APPEND client_lib_modules
+        networking/Connection.cpp
+        networking/interface/NetworkingInterface.cpp
+    )
+endif()
+
 add_library(client_lib)
 
 target_sources(client_lib
@@ -92,6 +101,9 @@ target_sources(client_lib
 )
 
 target_compile_definitions(client_lib PUBLIC ${CLIENT_COMPILE_DEFINITIONS})
+if (BUILD_WEBASM_CLIENT_TRANSPORT)
+    target_compile_definitions(client_lib PUBLIC SOLDANK_WEBASM_CLIENT_TRANSPORT)
+endif()
 
 if(MSVC)
   target_compile_options(client_lib PRIVATE /W4)
@@ -122,7 +134,9 @@ target_link_libraries(client_lib PUBLIC Freetype::Freetype)
 target_link_libraries(client_lib PRIVATE Spdlog)
 target_link_libraries(client_lib PRIVATE imgui::imgui)
 target_link_libraries(client_lib PUBLIC shared_lib)
-target_link_libraries(client_lib PRIVATE GameNetworkingSockets2)
+if (NOT BUILD_WEBASM_CLIENT_TRANSPORT)
+    target_link_libraries(client_lib PRIVATE GameNetworkingSockets2)
+endif()
 target_link_libraries(client_lib PRIVATE cxxopts::cxxopts)
 soldank_target_precompile_headers(client_lib)
 
@@ -133,6 +147,9 @@ soldank_target_precompile_headers(client_lib)
    add_executable(client main.cpp)
 # ENDIF()
 target_compile_definitions(client PUBLIC ${CLIENT_COMPILE_DEFINITIONS})
+if (BUILD_WEBASM_CLIENT_TRANSPORT)
+    target_compile_definitions(client PUBLIC SOLDANK_WEBASM_CLIENT_TRANSPORT)
+endif()
 
 if(MSVC)
   target_compile_options(client PRIVATE /W4)
@@ -148,10 +165,17 @@ else()
 endif()
 
 target_link_libraries(client PRIVATE client_lib)
-target_link_libraries(client PRIVATE GameNetworkingSockets2)
+if (NOT BUILD_WEBASM_CLIENT_TRANSPORT)
+    target_link_libraries(client PRIVATE GameNetworkingSockets2)
+endif()
 target_link_libraries(client PRIVATE Spdlog)
 target_link_libraries(client PRIVATE cxxopts::cxxopts)
 target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR}/source/client)
 target_include_directories(client PUBLIC ${CMAKE_SOURCE_DIR}/build/bindings)
+if (BUILD_WEBASM_CLIENT_TRANSPORT AND EMSCRIPTEN)
+  target_link_options(client PRIVATE
+    "SHELL:--js-library ${CMAKE_CURRENT_SOURCE_DIR}/networking/browser/webrtc_bridge.js"
+  )
+endif()
 soldank_target_precompile_headers(client)
 install(TARGETS client DESTINATION ${CMAKE_SOURCE_DIR}/bin)

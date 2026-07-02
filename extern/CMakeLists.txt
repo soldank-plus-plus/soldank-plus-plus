@@ -5,7 +5,7 @@ if (BUILD_CLIENT_ENABLED)
     add_subdirectory(glad-2.1.0)
 endif()
 
-if (BUILD_CLIENT_ENABLED OR BUILD_SERVER_ENABLED)
+if ((BUILD_CLIENT_ENABLED AND NOT BUILD_WEBASM_CLIENT_TRANSPORT) OR BUILD_SERVER_ENABLED)
     add_subdirectory(game_networking_sockets)
 endif()
 

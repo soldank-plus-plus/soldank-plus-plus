@@ -9,14 +9,20 @@ module;
 export module Networking.NetworkingClient;
 
 import Networking.INetworkingClient;
-import Networking.NetworkingInterface;
 import Networking.IConnection;
+#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+import Networking.Browser.WebRtcBrowserConnection;
+#else
+import Networking.NetworkingInterface;
 import Networking.Connection;
+#endif
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
 
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
 import Extern.GameNetworkingSockets;
+#endif
 import Extern.Spdlog;
 
 export namespace Soldank
@@ -26,19 +32,26 @@ class NetworkingClient : public INetworkingClient
 public:
     NetworkingClient(const char* server_ip, std::uint16_t server_port)
     {
+#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+        connection_ = std::make_shared<WebRtcBrowserConnection>(server_ip, server_port);
+#else
         NetworkingInterface::Init();
         NetworkingInterface::RegisterObserver(
           [this](GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) {
               OnSteamNetConnectionStatusChanged(connection_info);
           });
 
-        connection_ = NetworkingInterface::CreateConnection(server_ip, server_port);
+        gns_connection_ = NetworkingInterface::CreateConnection(server_ip, server_port);
+        connection_ = gns_connection_;
+#endif
     }
 
     void Update(const std::shared_ptr<NetworkEventDispatcher>& network_event_dispatcher) final
     {
         connection_->PollIncomingMessages(network_event_dispatcher);
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
         NetworkingInterface::PollConnectionStateChanges();
+#endif
     }
 
     void SendNetworkMessage(const NetworkMessage& network_message) final
@@ -48,17 +61,23 @@ public:
 
     void SetLag(int lag_to_add_milliseconds) final
     {
+#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+        Spdlog::info("Ignoring packet lag setting for browser WebRTC transport: {}",
+                     lag_to_add_milliseconds);
+#else
         GNS::GameNetworkingUtils()->SetGlobalConfigValueInt32(
           GNS::ESteamNetworkingConfig::FakePacketLag_Send, lag_to_add_milliseconds / 2);
         GNS::GameNetworkingUtils()->SetGlobalConfigValueInt32(
           GNS::ESteamNetworkingConfig::FakePacketLag_Recv, lag_to_add_milliseconds / 2);
+#endif
     }
 
 private:
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
     void OnSteamNetConnectionStatusChanged(
       GNS::SteamNetConnectionStatusChangedCallback_t* connection_info)
     {
-        connection_->AssertConnectionInfo(connection_info);
+        gns_connection_->AssertConnectionInfo(connection_info);
 
         switch (connection_info->m_info.m_eState) {
             case GNS::ESteamNetworkingConnectionState::None:
@@ -105,8 +124,12 @@ private:
                 break;
         }
     }
+#endif
 
     std::shared_ptr<IConnection> connection_;
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+    std::shared_ptr<Connection> gns_connection_;
+#endif
     std::shared_ptr<NetworkEventDispatcher> network_event_dispatcher_;
 };
 

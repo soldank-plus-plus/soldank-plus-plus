@@ -9,7 +9,6 @@ module;
 export module Networking.NetworkingInterface;
 
 import Networking.Connection;
-import Networking.IConnection;
 import Extern.GameNetworkingSockets;
 import Extern.Spdlog;
 
@@ -33,8 +32,8 @@ export void Init()
     interface = GNS::GameNetworkingSockets();
 }
 
-export std::shared_ptr<IConnection> CreateConnection(const char* server_ip,
-                                                     std::uint16_t server_port)
+export std::shared_ptr<Connection> CreateConnection(const char* server_ip,
+                                                    std::uint16_t server_port)
 {
     GNS::SteamNetworkingIPAddr server_addr{};
     server_addr.Clear();

@@ -68,7 +68,7 @@ public:
     }
 
     void AssertConnectionInfo(
-      GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) const final
+      GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) const
     {
         assert(connection_info->m_hConn == connection_handle_ ||
                connection_handle_ == GNS::HSteamNetConnection_Enum::Invalid);

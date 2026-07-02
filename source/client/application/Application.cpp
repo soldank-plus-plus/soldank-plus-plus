@@ -51,7 +51,9 @@ import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
 
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
 import Extern.GameNetworkingSockets;
+#endif
 import Extern.Spdlog;
 import Extern.SimpleIni;
 
@@ -91,6 +93,7 @@ private:
 
 namespace Soldank
 {
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
 GNS::SteamNetworkingMicroseconds log_time_zero;
 
 void DebugOutput(GNS::ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
@@ -103,6 +106,7 @@ void DebugOutput(GNS::ESteamNetworkingSocketsDebugOutputType output_type, const 
         exit(1);
     }
 }
+#endif
 
 Application::Application(const std::vector<const char*>& cli_parameters)
 {
@@ -219,6 +223,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         client_network_event_dispatcher_ =
           std::make_shared<NetworkEventDispatcher>(network_event_handlers);
 
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
         GNS::SteamDatagramErrMsg err_msg;
         if (!GNS::GameNetworkingSocketsInit(nullptr, err_msg)) {
             Spdlog::error("GameNetworkingSocketsInit failed. {}", std::span(err_msg).data());
@@ -228,6 +233,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
 
         GNS::GameNetworkingUtils()->SetDebugOutputFunction(
           GNS::ESteamNetworkingSocketsDebugOutputType_Enum::Msg, DebugOutput);
+#endif
 
         networking_client_ = std::make_unique<NetworkingClient>(server_ip.c_str(), server_port);
     } else {
@@ -241,6 +247,7 @@ Application::~Application()
     networking_client_.reset(nullptr);
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
+#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
         // Give connections time to finish up.  This is an application layer protocol
         // here, it's not TCP.  Note that if you have an application and you need to be
         // more sure about cleanup, you won't be able to do this.  You will need to send
@@ -249,6 +256,7 @@ Application::~Application()
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         GNS::GameNetworkingSocketsKill();
+#endif
     }
 }
 

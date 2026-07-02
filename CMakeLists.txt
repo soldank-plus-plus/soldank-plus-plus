@@ -22,6 +22,7 @@ option(BUILD_ENABLE_TIME_REPORT "Print compiler time reports for each compiled s
 option(BUILD_USE_ADDRESS_SANITIZER "Build with AddressSanitizer instrumentation" OFF)
 option(BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER "Build with UndefinedBehaviorSanitizer instrumentation" OFF)
 option(BUILD_WEBRTC_SERVER_TRANSPORT "Build the experimental WebRTC server transport skeleton" OFF)
+option(BUILD_WEBASM_CLIENT_TRANSPORT "Build the experimental browser WebRTC client transport" OFF)
 
 if (BUILD_USE_COMPILER_CACHE)
     if (MSVC)
@@ -168,7 +169,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
-if (BUILD_CLIENT_ENABLED OR BUILD_SERVER_ENABLED)
+if ((BUILD_CLIENT_ENABLED AND NOT BUILD_WEBASM_CLIENT_TRANSPORT) OR BUILD_SERVER_ENABLED)
     find_package(GameNetworkingSockets CONFIG REQUIRED)
     find_package(Protobuf REQUIRED)
 endif()
