@@ -4,14 +4,14 @@ module;
 
 export module Networking.Types.Connection;
 
-import Extern.GameNetworkingSockets;
+import Networking.Transport.TransportTypes;
 
 export namespace Soldank
 {
 struct Connection
 {
-    GNS::HSteamNetConnection connection_handle;
+    ConnectionId connection_id;
     std::string nick;
-    unsigned int soldier_id;
+    unsigned int soldier_id = 0;
 };
 } // namespace Soldank

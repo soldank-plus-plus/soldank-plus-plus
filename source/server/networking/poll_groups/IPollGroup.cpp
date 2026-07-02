@@ -6,6 +6,7 @@ module;
 export module Networking.PollGroups.IPollGroup;
 
 import Networking.Types.Connection;
+import Networking.Transport.TransportTypes;
 
 import Shared.Networking.NetworkMessage;
 
@@ -29,23 +30,21 @@ public:
     virtual void CloseConnection(
       GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) = 0;
     virtual bool AssignConnection(const Connection& connection) = 0;
-    virtual bool IsConnectionAssigned(GNS::HSteamNetConnection steam_net_connection_handle) = 0;
-    virtual unsigned int GetConnectionSoldierId(
-      GNS::HSteamNetConnection steam_net_connection_handle) = 0;
-    virtual std::string GetConnectionSoldierNick(
-      GNS::HSteamNetConnection steam_net_connection_handle) = 0;
+    virtual bool IsConnectionAssigned(ConnectionId connection_id) = 0;
+    virtual unsigned int GetConnectionSoldierId(ConnectionId connection_id) = 0;
+    virtual std::string GetConnectionSoldierNick(ConnectionId connection_id) = 0;
 
-    virtual void SendNetworkMessage(unsigned int connection_id,
+    virtual void SendNetworkMessage(ConnectionId connection_id,
                                     const NetworkMessage& network_message) = 0;
     virtual void SendNetworkMessageToAll(
       const NetworkMessage& network_message,
-      std::optional<unsigned int> except_connection_id = std::nullopt) = 0;
+      std::optional<ConnectionId> except_connection_id = std::nullopt) = 0;
 
-    virtual void SendReliableNetworkMessage(unsigned int connection_id,
+    virtual void SendReliableNetworkMessage(ConnectionId connection_id,
                                             const NetworkMessage& network_message) = 0;
     virtual void SendReliableNetworkMessageToAll(
       const NetworkMessage& network_message,
-      std::optional<unsigned int> except_connection_id = std::nullopt) = 0;
+      std::optional<ConnectionId> except_connection_id = std::nullopt) = 0;
 
 protected:
     IPollGroup(GNS::ISteamNetworkingSockets* interface)

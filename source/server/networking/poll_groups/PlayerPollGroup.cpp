@@ -10,6 +10,8 @@ export module Networking.PollGroups.PlayerPollGroup;
 
 export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
+import Networking.Transport.GnsServerTransport;
+import Networking.Transport.TransportTypes;
 
 import Shared.Core.IWorld;
 
@@ -52,15 +54,13 @@ public:
                 break;
             }
             assert(messages_count == 1 && incoming_message);
-            assert(IsConnectionAssigned(incoming_message->m_conn));
-
-            auto it_client = FindConnection(incoming_message->m_conn);
+            const auto connection_id =
+              GnsServerTransport::ToConnectionId(incoming_message->m_conn);
+            assert(IsConnectionAssigned(connection_id));
 
             std::span<char> received_bytes{ static_cast<char*>(incoming_message->m_pData),
                                             static_cast<unsigned int>(incoming_message->m_cbSize) };
             NetworkMessage network_message(received_bytes);
-
-            unsigned int connection_id = incoming_message->m_conn;
 
             ConnectionMetadata connection_metadata{
                 .connection_id = connection_id,
@@ -83,21 +83,21 @@ private:
     {
         world_->GetStateManager()->ForEachSoldier([&](const auto& soldier) {
             std::string player_nick =
-              GetConnectionSoldierNick(FindConnectionHandleBySoldierId(soldier.id));
+              GetConnectionSoldierNick(FindConnectionIdBySoldierId(soldier.id));
             NetworkMessage network_message(NetworkEvent::SoldierInfo, soldier.id, player_nick);
-            SendReliableNetworkMessage(connection.connection_handle, network_message);
+            SendReliableNetworkMessage(connection.connection_id, network_message);
         });
 
         std::uint8_t soldier_id = world_->CreateSoldier().id;
         connection.soldier_id = soldier_id;
         Spdlog::info("OnAssignPlayerId: {}", soldier_id);
         NetworkMessage network_message(NetworkEvent::AssignPlayerId, soldier_id);
-        SendReliableNetworkMessage(connection.connection_handle, network_message);
+        SendReliableNetworkMessage(connection.connection_id, network_message);
 
         network_message = { NetworkEvent::SoldierInfo, soldier_id, connection.nick };
-        SendReliableNetworkMessage(connection.connection_handle, network_message);
+        SendReliableNetworkMessage(connection.connection_id, network_message);
 
-        SendReliableNetworkMessageToAll(network_message, connection.connection_handle);
+        SendReliableNetworkMessageToAll(network_message, connection.connection_id);
 
         world_->SpawnSoldier(soldier_id);
     }

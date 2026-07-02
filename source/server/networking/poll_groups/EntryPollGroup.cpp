@@ -11,6 +11,8 @@ export module Networking.PollGroups.EntryPollGroup;
 
 export import Networking.PollGroups.PollGroupBase;
 import Networking.Types.Connection;
+import Networking.Transport.GnsServerTransport;
+import Networking.Transport.TransportTypes;
 
 import Shared.Networking.NetworkEvent;
 
@@ -40,21 +42,23 @@ public:
                 Spdlog::error("[EntryPollGroup] Error checking for messages");
             }
             assert(messages_count == 1 && incoming_message);
-            assert(IsConnectionAssigned(incoming_message->m_conn));
-            auto it_client = FindConnection(incoming_message->m_conn);
+            const auto connection_id =
+              GnsServerTransport::ToConnectionId(incoming_message->m_conn);
+            assert(IsConnectionAssigned(connection_id));
+            auto it_client = FindConnection(connection_id);
 
             std::string message_from_client;
             message_from_client.assign(static_cast<char*>(incoming_message->m_pData),
                                        incoming_message->m_cbSize);
             it_client->second.nick = message_from_client;
-            SetClientNick(it_client->second.connection_handle, it_client->second.nick);
+            SetClientNick(it_client->second.connection_id, it_client->second.nick);
             Spdlog::info("[EntryPollGroup] Name assigned to connection {}: {}",
-                         it_client->second.connection_handle,
+                         it_client->second.connection_id,
                          it_client->second.nick);
             incoming_message->Release();
 
             SendNetworkMessage(
-              it_client->second.connection_handle,
+              it_client->second.connection_id,
               { NetworkEvent::ChatMessage, "Welcome to the server " + it_client->second.nick });
 
             player_poll_group_->AssignConnection(it_client->second);
@@ -66,7 +70,9 @@ public:
       GNS::SteamNetConnectionStatusChangedCallback_t* new_connection_info) override
     {
         // This must be a new connection
-        assert(!IsConnectionAssigned(new_connection_info->m_hConn));
+        const auto connection_id =
+          GnsServerTransport::ToConnectionId(new_connection_info->m_hConn);
+        assert(!IsConnectionAssigned(connection_id));
 
         Spdlog::info("[EntryPollGroup] Connection request from {}",
                      std::span{ new_connection_info->m_info.m_szConnectionDescription }.data());
@@ -80,7 +86,7 @@ public:
         Spdlog::info("[EntryPollGroup] Connection accepted: {}\n",
                      std::span{ new_connection_info->m_info.m_szConnectionDescription }.data());
 
-        if (!AssignConnection({ .connection_handle = new_connection_info->m_hConn,
+        if (!AssignConnection({ .connection_id = connection_id,
                                 .nick = "NEW CONNECTION PLACEHOLDER" })) {
             return;
         }
@@ -88,7 +94,7 @@ public:
         Spdlog::info("[EntryPollGroup] Connection assigned: {}",
                      std::span{ new_connection_info->m_info.m_szConnectionDescription }.data());
 
-        SetClientNick(new_connection_info->m_hConn, "NEW CONNECTION PLACEHOLDER");
+        SetClientNick(connection_id, "NEW CONNECTION PLACEHOLDER");
     }
 
     void RegisterPlayerPollGroup(std::shared_ptr<IPollGroup> poll_group)

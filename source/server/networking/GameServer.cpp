@@ -12,6 +12,8 @@ import Networking.IGameServer;
 import Networking.Interface.NetworkingInterface;
 import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
+import Networking.Transport.GnsServerTransport;
+import Networking.Transport.TransportTypes;
 
 import Shared.Core.IWorld;
 
@@ -95,17 +97,18 @@ private:
 
             case GNS::ESteamNetworkingConnectionState::ClosedByPeer:
             case GNS::ESteamNetworkingConnectionState::ProblemDetectedLocally: {
-                if (entry_poll_group_->IsConnectionAssigned(p_info->m_hConn)) {
+                const auto connection_id = GnsServerTransport::ToConnectionId(p_info->m_hConn);
+                if (entry_poll_group_->IsConnectionAssigned(connection_id)) {
                     entry_poll_group_->CloseConnection(p_info);
                 }
-                if (player_poll_group_->IsConnectionAssigned(p_info->m_hConn)) {
-                    Spdlog::info("CLOSING CONNECTION conn: {}", p_info->m_hConn);
+                if (player_poll_group_->IsConnectionAssigned(connection_id)) {
+                    Spdlog::info("CLOSING CONNECTION conn: {}", connection_id);
                     std::uint8_t soldier_id =
-                      player_poll_group_->GetConnectionSoldierId(p_info->m_hConn);
+                      player_poll_group_->GetConnectionSoldierId(connection_id);
                     Spdlog::info("CLOSING CONNECTION soldier_id: {}", soldier_id);
                     NetworkMessage network_message(NetworkEvent::PlayerLeave, soldier_id);
                     player_poll_group_->SendReliableNetworkMessageToAll(network_message,
-                                                                        p_info->m_hConn);
+                                                                        connection_id);
                     player_poll_group_->CloseConnection(p_info);
 
                     Spdlog::info("CLOSING CONNECTION soldiers size before: {}",

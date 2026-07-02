@@ -10,6 +10,8 @@ export module Networking.PollGroups.PollGroupBase;
 
 export import Networking.PollGroups.IPollGroup;
 import Networking.Types.Connection;
+import Networking.Transport.GnsServerTransport;
+import Networking.Transport.TransportTypes;
 
 import Shared.Networking.NetworkMessage;
 
@@ -46,7 +48,9 @@ public:
         // Ignore if they were not previously connected. (If they disconnected
         // before we accepted the connection.)
         if (connection_info->m_eOldState == GNS::ESteamNetworkingConnectionState::Connected) {
-            auto it_client = connections_.find(connection_info->m_hConn);
+            const auto connection_id =
+              GnsServerTransport::ToConnectionId(connection_info->m_hConn);
+            auto it_client = connections_.find(connection_id);
             assert(it_client != connections_.end());
 
             std::string debug_log_action;
@@ -72,9 +76,11 @@ public:
                    GNS::ESteamNetworkingConnectionState::Connecting);
         }
 
-        auto it_client = FindConnection(connection_info->m_hConn);
+        auto it_client =
+          FindConnection(GnsServerTransport::ToConnectionId(connection_info->m_hConn));
 
-        GetInterface()->CloseConnection(connection_info->m_hConn, 0, nullptr, false);
+        GnsServerTransport::CloseConnection(
+          GetInterface(), GnsServerTransport::ToConnectionId(connection_info->m_hConn));
 
         if (it_client != connections_.end()) {
             EraseConnection(it_client);
@@ -83,95 +89,83 @@ public:
 
     bool AssignConnection(const Connection& connection) override
     {
-        if (!GetInterface()->SetConnectionPollGroup(connection.connection_handle,
-                                                    poll_group_handle_)) {
-            GetInterface()->CloseConnection(connection.connection_handle, 0, nullptr, false);
+        if (!GnsServerTransport::SetConnectionPollGroup(
+              GetInterface(), connection.connection_id, poll_group_handle_)) {
+            GnsServerTransport::CloseConnection(GetInterface(), connection.connection_id);
             Spdlog::warn("Failed to set poll group?");
             return false;
         }
-        connections_[connection.connection_handle] = connection;
-        OnAssignConnection(connections_[connection.connection_handle]);
+        connections_[connection.connection_id] = connection;
+        OnAssignConnection(connections_[connection.connection_id]);
 
         return true;
     }
 
-    bool IsConnectionAssigned(GNS::HSteamNetConnection steam_net_connection_handle) override
+    bool IsConnectionAssigned(ConnectionId connection_id) override
     {
-        auto it_client = connections_.find(steam_net_connection_handle);
+        auto it_client = connections_.find(connection_id);
         return it_client != connections_.end();
     }
 
-    unsigned int GetConnectionSoldierId(
-      GNS::HSteamNetConnection steam_net_connection_handle) override
+    unsigned int GetConnectionSoldierId(ConnectionId connection_id) override
     {
-        auto it_client = connections_.find(steam_net_connection_handle);
+        auto it_client = connections_.find(connection_id);
         return it_client->second.soldier_id;
     }
 
-    std::string GetConnectionSoldierNick(
-      GNS::HSteamNetConnection steam_net_connection_handle) override
+    std::string GetConnectionSoldierNick(ConnectionId connection_id) override
     {
-        auto it_client = connections_.find(steam_net_connection_handle);
+        auto it_client = connections_.find(connection_id);
         return it_client->second.nick;
     }
 
-    void SendNetworkMessage(GNS::HSteamNetConnection connection_id,
+    void SendNetworkMessage(ConnectionId connection_id,
                             const NetworkMessage& network_message) override
     {
         // TODO: handle result
-        auto result = GetInterface()->SendMessageToConnection(connection_id,
-                                                              network_message.GetData().data(),
-                                                              network_message.GetData().size(),
-                                                              GNS::nSteamNetworkingSend::Unreliable,
-                                                              nullptr);
+        GnsServerTransport::SendNetworkMessage(
+          GetInterface(), connection_id, network_message, DeliveryMode::Unreliable);
     }
 
     void SendNetworkMessageToAll(
       const NetworkMessage& network_message,
-      std::optional<unsigned int> except_connection_id = std::nullopt) override
+      std::optional<ConnectionId> except_connection_id = std::nullopt) override
     {
         for (auto& connection : connections_) {
             if (except_connection_id.has_value() &&
-                *except_connection_id == connection.second.connection_handle) {
+                *except_connection_id == connection.second.connection_id) {
                 continue;
             }
             // TODO: handle result
-            auto result =
-              GetInterface()->SendMessageToConnection(connection.second.connection_handle,
-                                                      network_message.GetData().data(),
-                                                      network_message.GetData().size(),
-                                                      GNS::nSteamNetworkingSend::Unreliable,
-                                                      nullptr);
+            GnsServerTransport::SendNetworkMessage(GetInterface(),
+                                                   connection.second.connection_id,
+                                                   network_message,
+                                                   DeliveryMode::Unreliable);
         }
     }
 
-    void SendReliableNetworkMessage(unsigned int connection_id,
+    void SendReliableNetworkMessage(ConnectionId connection_id,
                                     const NetworkMessage& network_message) override
     {
         // TODO: handle result
-        auto result = GetInterface()->SendMessageToConnection(connection_id,
-                                                              network_message.GetData().data(),
-                                                              network_message.GetData().size(),
-                                                              GNS::nSteamNetworkingSend::Reliable,
-                                                              nullptr);
+        GnsServerTransport::SendNetworkMessage(
+          GetInterface(), connection_id, network_message, DeliveryMode::Reliable);
     }
 
     void SendReliableNetworkMessageToAll(
       const NetworkMessage& network_message,
-      std::optional<unsigned int> except_connection_id = std::nullopt) override
+      std::optional<ConnectionId> except_connection_id = std::nullopt) override
     {
         for (auto& connection : connections_) {
             if (except_connection_id.has_value() &&
-                *except_connection_id == connection.second.connection_handle) {
+                *except_connection_id == connection.second.connection_id) {
                 continue;
             }
             // TODO: handle result
-            auto result =
-              GetInterface()->SendMessageToConnection(connection.second.connection_handle,
-                                                      network_message.GetData().data(),
-                                                      network_message.GetData().size(),
-                                                      GNS::nSteamNetworkingSend::Reliable,
-                                                      nullptr);
+            GnsServerTransport::SendNetworkMessage(GetInterface(),
+                                                   connection.second.connection_id,
+                                                   network_message,
+                                                   DeliveryMode::Reliable);
         }
     }
 
@@ -180,37 +174,36 @@ protected:
 
     GNS::HSteamNetPollGroup GetPollGroupHandle() const { return poll_group_handle_; }
 
-    std::unordered_map<GNS::HSteamNetConnection, Connection>::iterator FindConnection(
-      GNS::HSteamNetConnection steam_net_connection_handle)
+    std::unordered_map<ConnectionId, Connection>::iterator FindConnection(
+      ConnectionId connection_id)
     {
-        return connections_.find(steam_net_connection_handle);
+        return connections_.find(connection_id);
     }
 
-    GNS::HSteamNetConnection FindConnectionHandleBySoldierId(unsigned int soldier_id)
+    ConnectionId FindConnectionIdBySoldierId(unsigned int soldier_id)
     {
         for (const auto& connection : connections_) {
             if (connection.second.soldier_id == soldier_id) {
-                return connection.second.connection_handle;
+                return connection.second.connection_id;
             }
         }
 
-        Spdlog::critical("[FindConnectionHandleBySoldierId] Wrong soldier_id");
+        Spdlog::critical("[FindConnectionIdBySoldierId] Wrong soldier_id");
         return 0;
     }
 
-    void EraseConnection(
-      std::unordered_map<GNS::HSteamNetConnection, Connection>::iterator it_connection)
+    void EraseConnection(std::unordered_map<ConnectionId, Connection>::iterator it_connection)
     {
         connections_.erase(it_connection);
     }
 
-    void SendStringToClient(GNS::HSteamNetConnection conn, const std::string& message)
+    void SendStringToClient(ConnectionId connection_id, const std::string& message)
     {
-        GetInterface()->SendMessageToConnection(
-          conn, message.c_str(), message.size(), GNS::nSteamNetworkingSend::Reliable, nullptr);
+        GnsServerTransport::SendString(
+          GetInterface(), connection_id, message, DeliveryMode::Reliable);
     }
 
-    void SendStringToAllClients(const std::string& message, GNS::HSteamNetConnection except)
+    void SendStringToAllClients(const std::string& message, ConnectionId except)
     {
         for (auto& c : connections_) {
             if (c.first != except) {
@@ -219,16 +212,16 @@ protected:
         }
     }
 
-    void SetClientNick(GNS::HSteamNetConnection h_conn, const std::string& nick)
+    void SetClientNick(ConnectionId connection_id, const std::string& nick)
     {
-        connections_[h_conn].nick = nick;
+        connections_[connection_id].nick = nick;
         // Set the connection name, too, which is useful for debugging
-        GetInterface()->SetConnectionName(h_conn, nick.c_str());
+        GnsServerTransport::SetConnectionName(GetInterface(), connection_id, nick);
     }
 
 private:
     GNS::HSteamNetPollGroup poll_group_handle_;
 
-    std::unordered_map<GNS::HSteamNetConnection, Connection> connections_;
+    std::unordered_map<ConnectionId, Connection> connections_;
 };
 } // namespace Soldank

@@ -13,6 +13,9 @@ set(server_lib_modules
     networking/event_handlers/PingCheckNetworkEventHandler.cpp
     networking/event_handlers/SoldierInputNetworkEventHandler.cpp
     networking/interface/NetworkingInterface.cpp
+    networking/transport/TransportTypes.cpp
+    networking/transport/IServerTransport.cpp
+    networking/transport/GnsServerTransport.cpp
     networking/poll_groups/IPollGroup.cpp
     networking/poll_groups/PollGroupBase.cpp
     networking/poll_groups/EntryPollGroup.cpp
