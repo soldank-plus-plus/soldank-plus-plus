@@ -1,20 +1,15 @@
 module;
 
 #include <cstddef>
-#include <cstdint>
 #include <span>
 
 export module Networking.Transport.TransportTypes;
 
+export import Shared.Networking.DeliveryMode;
+
 export namespace Soldank
 {
 using ConnectionId = unsigned int;
-
-enum class DeliveryMode : std::uint8_t
-{
-    Unreliable,
-    Reliable
-};
 
 struct ReceivedPacket
 {

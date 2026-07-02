@@ -12,6 +12,7 @@ import Networking.IConnection;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
+import Shared.Networking.DeliveryMode;
 
 import Extern.GameNetworkingSockets;
 import Extern.Spdlog;
@@ -29,7 +30,7 @@ public:
         interface_->SendMessageToConnection(connection_handle_,
                                             message.c_str(),
                                             (std::uint32_t)message.length(),
-                                            GNS::nSteamNetworkingSend::Reliable,
+                                            ToSendFlag(DeliveryMode::Reliable),
                                             nullptr);
     }
 
@@ -55,7 +56,7 @@ public:
             NetworkMessage received_message(received_bytes);
             ConnectionMetadata connection_metadata{ .connection_id = p_incoming_msg->m_conn,
                                                     .send_message_to_connection =
-                                                      [](const NetworkMessage& message) {} };
+                                                      [](const NetworkMessage& /*message*/) {} };
             // We don't need this anymore.
             p_incoming_msg->Release();
             network_event_dispatcher->ProcessNetworkMessage(connection_metadata, received_message);
@@ -74,16 +75,23 @@ public:
                connection_handle_ == GNS::HSteamNetConnection_Enum::Invalid);
     }
 
-    void SendNetworkMessage(const NetworkMessage& network_message) final
+    void SendNetworkMessage(const NetworkMessage& network_message,
+                            DeliveryMode delivery_mode = DeliveryMode::Unreliable) final
     {
         interface_->SendMessageToConnection(connection_handle_,
                                             network_message.GetData().data(),
                                             network_message.GetData().size(),
-                                            GNS::nSteamNetworkingSend::Unreliable,
+                                            ToSendFlag(delivery_mode),
                                             nullptr);
     }
 
 private:
+    static int ToSendFlag(DeliveryMode delivery_mode)
+    {
+        return delivery_mode == DeliveryMode::Reliable ? GNS::nSteamNetworkingSend::Reliable
+                                                       : GNS::nSteamNetworkingSend::Unreliable;
+    }
+
     GNS::ISteamNetworkingSockets* interface_;
     GNS::HSteamNetConnection connection_handle_;
 };

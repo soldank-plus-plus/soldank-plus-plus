@@ -10,6 +10,7 @@ module;
 #include <sstream>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -67,10 +68,27 @@ public:
               std::span<const char> payload,
               DeliveryMode delivery_mode) override
     {
-        Spdlog::info("[WebRtcServerTransport] Stub send skipped: connection {}, bytes {}, mode {}",
-                     connection_id,
-                     payload.size(),
-                     delivery_mode == DeliveryMode::Reliable ? "reliable" : "unreliable");
+        auto data_channel = FindDataChannel(connection_id, delivery_mode);
+        if (!data_channel) {
+            Spdlog::warn("[WebRtcServerTransport] No {} DataChannel for connection {}",
+                         ToChannelLabel(delivery_mode),
+                         connection_id);
+            return;
+        }
+        if (!data_channel->isOpen()) {
+            Spdlog::warn("[WebRtcServerTransport] {} DataChannel for connection {} is not open",
+                         ToChannelLabel(delivery_mode),
+                         connection_id);
+            return;
+        }
+
+        const auto* bytes =
+          reinterpret_cast<const rtc::byte*>(static_cast<const void*>(payload.data()));
+        if (!data_channel->send(bytes, payload.size())) {
+            Spdlog::warn("[WebRtcServerTransport] {} DataChannel send buffered for connection {}",
+                         ToChannelLabel(delivery_mode),
+                         connection_id);
+        }
     }
 
     void Close(ConnectionId connection_id) override
@@ -89,8 +107,10 @@ private:
 
     struct PeerSession
     {
-        std::string session_id;
+        ConnectionId connection_id;
         std::shared_ptr<rtc::PeerConnection> peer_connection;
+        std::shared_ptr<rtc::DataChannel> unreliable_data_channel;
+        std::shared_ptr<rtc::DataChannel> reliable_data_channel;
     };
 
     struct LocalCandidate
@@ -194,17 +214,80 @@ private:
                  .headers = { { .name = "Access-Control-Allow-Origin", .value = "*" } } };
     }
 
+    static const char* ToChannelLabel(DeliveryMode delivery_mode)
+    {
+        return delivery_mode == DeliveryMode::Reliable ? "reliable" : "unreliable";
+    }
+
+    std::shared_ptr<rtc::DataChannel> FindDataChannel(ConnectionId connection_id,
+                                                      DeliveryMode delivery_mode)
+    {
+        std::scoped_lock sessions_lock(sessions_mutex_);
+        auto session = sessions_.find(connection_id);
+        if (session == sessions_.end()) {
+            return {};
+        }
+        return delivery_mode == DeliveryMode::Reliable ? session->second.reliable_data_channel
+                                                       : session->second.unreliable_data_channel;
+    }
+
+    void RegisterDataChannel(ConnectionId connection_id,
+                             const std::shared_ptr<rtc::DataChannel>& data_channel)
+    {
+        const auto label = data_channel->label();
+        {
+            std::scoped_lock sessions_lock(sessions_mutex_);
+            auto session = sessions_.find(connection_id);
+            if (session == sessions_.end()) {
+                Spdlog::warn(
+                  "[WebRtcServerTransport] DataChannel '{}' arrived for unknown connection {}",
+                  label,
+                  connection_id);
+                return;
+            }
+            if (label == ToChannelLabel(DeliveryMode::Reliable)) {
+                session->second.reliable_data_channel = data_channel;
+            } else if (label == ToChannelLabel(DeliveryMode::Unreliable)) {
+                session->second.unreliable_data_channel = data_channel;
+            } else {
+                Spdlog::warn(
+                  "[WebRtcServerTransport] Ignoring unexpected DataChannel '{}' for connection {}",
+                  label,
+                  connection_id);
+                return;
+            }
+        }
+
+        data_channel->onOpen([connection_id, label]() {
+            Spdlog::info("[WebRtcServerTransport] {} DataChannel open for connection {}",
+                         label,
+                         connection_id);
+        });
+        data_channel->onClosed([connection_id, label]() {
+            Spdlog::info("[WebRtcServerTransport] {} DataChannel closed for connection {}",
+                         label,
+                         connection_id);
+        });
+    }
+
+    void RemoveSession(ConnectionId connection_id)
+    {
+        std::scoped_lock sessions_lock(sessions_mutex_);
+        sessions_.erase(connection_id);
+    }
+
     Httplib::ServerResponse HandleOffer(const Httplib::ServerRequest& request)
     {
         if (request.body.empty()) {
             return JsonResponse(400, R"({"error":"empty WebRTC offer"})");
         }
 
-        std::string session_id;
+        ConnectionId connection_id;
         {
             std::scoped_lock sessions_lock(sessions_mutex_);
-            session_id = std::to_string(next_session_id_++);
+            connection_id = next_connection_id_++;
         }
+        const auto session_id = std::to_string(connection_id);
         auto peer_connection = std::make_shared<rtc::PeerConnection>(rtc::Configuration{});
         auto pending_description = std::make_shared<PendingDescription>();
         auto local_candidates = std::make_shared<std::vector<LocalCandidate>>();
@@ -230,11 +313,22 @@ private:
               }
           });
 
-        peer_connection->onDataChannel([session_id](std::shared_ptr<rtc::DataChannel> data_channel) {
-            Spdlog::info("[WebRtcServerTransport] Session {} received DataChannel '{}'",
-                         session_id,
-                         data_channel->label());
-        });
+        {
+            std::scoped_lock sessions_lock(sessions_mutex_);
+            sessions_.emplace(connection_id,
+                              PeerSession{ .connection_id = connection_id,
+                                           .peer_connection = peer_connection,
+                                           .unreliable_data_channel = nullptr,
+                                           .reliable_data_channel = nullptr });
+        }
+
+        peer_connection->onDataChannel(
+          [this, connection_id](std::shared_ptr<rtc::DataChannel> data_channel) {
+              Spdlog::info("[WebRtcServerTransport] Connection {} received DataChannel '{}'",
+                           connection_id,
+                           data_channel->label());
+              RegisterDataChannel(connection_id, data_channel);
+          });
         peer_connection->onLocalCandidate(
           [session_id, local_candidates, local_candidates_mutex](rtc::Candidate candidate) {
               {
@@ -253,6 +347,7 @@ private:
         } catch (const std::exception& exception) {
             Spdlog::warn("[WebRtcServerTransport] Failed to process WebRTC offer: {}",
                          exception.what());
+            RemoveSession(connection_id);
             return JsonResponse(400, R"({"error":"invalid WebRTC offer"})");
         }
 
@@ -265,16 +360,11 @@ private:
 
         if (!pending_description->description.has_value()) {
             Spdlog::warn("[WebRtcServerTransport] Timed out creating WebRTC answer");
+            RemoveSession(connection_id);
             return JsonResponse(504, R"({"error":"timed out creating WebRTC answer"})");
         }
 
         const std::string answer_sdp = static_cast<std::string>(*pending_description->description);
-        {
-            std::scoped_lock sessions_lock(sessions_mutex_);
-            sessions_.push_back(
-              { .session_id = session_id, .peer_connection = std::move(peer_connection) });
-        }
-
         std::string local_candidates_json;
         {
             std::scoped_lock local_candidates_lock(*local_candidates_mutex);
@@ -306,14 +396,19 @@ private:
             return JsonResponse(400, R"({"error":"session_id and candidate are required"})");
         }
 
+        ConnectionId connection_id = 0;
+        try {
+            connection_id = static_cast<ConnectionId>(std::stoul(session_id));
+        } catch (const std::exception&) {
+            return JsonResponse(400, R"({"error":"invalid session_id"})");
+        }
+
         std::shared_ptr<rtc::PeerConnection> peer_connection;
         {
             std::scoped_lock sessions_lock(sessions_mutex_);
-            for (const auto& session : sessions_) {
-                if (session.session_id == session_id) {
-                    peer_connection = session.peer_connection;
-                    break;
-                }
+            auto session = sessions_.find(connection_id);
+            if (session != sessions_.end()) {
+                peer_connection = session->second.peer_connection;
             }
         }
 
@@ -335,11 +430,11 @@ private:
     }
 
     std::uint16_t port_ = 0;
-    unsigned int next_session_id_ = 1;
+    ConnectionId next_connection_id_ = 1;
     Httplib::Server signaling_server_;
     std::thread signaling_thread_;
     std::mutex sessions_mutex_;
-    std::vector<PeerSession> sessions_;
+    std::unordered_map<ConnectionId, PeerSession> sessions_;
     std::vector<ConnectionStateChangedHandler> observers_;
 };
 } // namespace Soldank

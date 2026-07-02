@@ -14,6 +14,7 @@ import Networking.IConnection;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
+import Shared.Networking.DeliveryMode;
 
 extern "C"
 {
@@ -65,11 +66,17 @@ public:
 
     void CloseConnection() final { soldank_webrtc_close(); }
 
-    void SendNetworkMessage(const NetworkMessage& network_message) final
+    void SendNetworkMessage(const NetworkMessage& network_message,
+                            DeliveryMode delivery_mode = DeliveryMode::Unreliable) final
     {
-        soldank_webrtc_send_unreliable(
-          reinterpret_cast<const std::uint8_t*>(network_message.GetData().data()),
-          static_cast<int>(network_message.GetData().size()));
+        const auto* data =
+          reinterpret_cast<const std::uint8_t*>(network_message.GetData().data());
+        const auto data_size = static_cast<int>(network_message.GetData().size());
+        if (delivery_mode == DeliveryMode::Reliable) {
+            soldank_webrtc_send_reliable(data, data_size);
+        } else {
+            soldank_webrtc_send_unreliable(data, data_size);
+        }
     }
 };
 } // namespace Soldank

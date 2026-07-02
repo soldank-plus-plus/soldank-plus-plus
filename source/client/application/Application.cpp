@@ -50,6 +50,7 @@ import Shared.Core.Entities.Item;
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
+import Shared.Networking.DeliveryMode;
 
 #if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
 import Extern.GameNetworkingSockets;
@@ -502,11 +503,13 @@ void Application::Run()
                 if (client_state_->ping_timer.IsRunning()) {
                     client_state_->ping_timer.Update();
                     if (client_state_->ping_timer.IsOverThreshold()) {
-                        networking_client_->SendNetworkMessage({ NetworkEvent::PingCheck });
+                        networking_client_->SendNetworkMessage({ NetworkEvent::PingCheck },
+                                                               DeliveryMode::Unreliable);
                     }
                 } else {
                     client_state_->ping_timer.Start();
-                    networking_client_->SendNetworkMessage({ NetworkEvent::PingCheck });
+                    networking_client_->SendNetworkMessage({ NetworkEvent::PingCheck },
+                                                           DeliveryMode::Unreliable);
                 }
             }
         }
@@ -644,11 +647,13 @@ void Application::Run()
                     client_state_->pending_inputs.push_back(update_soldier_state_packet);
                 }
                 networking_client_->SendNetworkMessage(
-                  { NetworkEvent::SoldierInput, update_soldier_state_packet });
+                  { NetworkEvent::SoldierInput, update_soldier_state_packet },
+                  DeliveryMode::Unreliable);
 
                 if (client_state_->kill_button_just_pressed) {
                     client_state_->kill_button_just_pressed = false;
-                    networking_client_->SendNetworkMessage({ NetworkEvent::KillCommand });
+                    networking_client_->SendNetworkMessage({ NetworkEvent::KillCommand },
+                                                           DeliveryMode::Unreliable);
                 }
             } else {
                 if (client_state_->kill_button_just_pressed) {

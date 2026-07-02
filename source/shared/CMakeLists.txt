@@ -1,4 +1,5 @@
 set(shared_lib_modules
+    communication/DeliveryMode.cpp
     communication/NetworkEvent.cpp
     communication/NetworkEventDispatcher.cpp
     communication/NetworkMessage.cpp

@@ -6,6 +6,7 @@ export module Networking.IConnection;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
+import Shared.Networking.DeliveryMode;
 
 export namespace Soldank
 {
@@ -19,6 +20,7 @@ public:
 
     virtual void CloseConnection() = 0;
 
-    virtual void SendNetworkMessage(const NetworkMessage& network_message) = 0;
+    virtual void SendNetworkMessage(const NetworkMessage& network_message,
+                                    DeliveryMode delivery_mode = DeliveryMode::Unreliable) = 0;
 };
 } // namespace Soldank

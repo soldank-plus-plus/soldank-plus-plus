@@ -19,6 +19,7 @@ import Networking.Connection;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
+import Shared.Networking.DeliveryMode;
 
 #if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
 import Extern.GameNetworkingSockets;
@@ -54,9 +55,11 @@ public:
 #endif
     }
 
-    void SendNetworkMessage(const NetworkMessage& network_message) final
+    void SendNetworkMessage(
+      const NetworkMessage& network_message,
+      DeliveryMode delivery_mode = DeliveryMode::Unreliable) final
     {
-        connection_->SendNetworkMessage(network_message);
+        connection_->SendNetworkMessage(network_message, delivery_mode);
     }
 
     void SetLag(int lag_to_add_milliseconds) final
