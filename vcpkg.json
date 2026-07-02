@@ -20,6 +20,14 @@
         },
         "gtest",
         "cpp-httplib"
-	],
+    ],
+    "features": {
+        "webrtc-server": {
+            "description": "Build the experimental WebRTC server transport.",
+            "dependencies": [
+                "libdatachannel"
+            ]
+        }
+    },
     "builtin-baseline": "ab2977be50c702126336e5088f4836060733c899"
 }

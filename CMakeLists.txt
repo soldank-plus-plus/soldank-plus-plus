@@ -190,6 +190,12 @@ endif()
 
 if (BUILD_SERVER_ENABLED)
     find_package(httplib CONFIG REQUIRED)
+    if (BUILD_WEBRTC_SERVER_TRANSPORT)
+        find_package(LibDataChannel CONFIG REQUIRED)
+        if (NOT TARGET LibDataChannel::LibDataChannel)
+            add_library(LibDataChannel::LibDataChannel ALIAS LibDataChannel::LibDataChannelStatic)
+        endif()
+    endif()
 endif()
 
 include(cmake/CPM.cmake)
