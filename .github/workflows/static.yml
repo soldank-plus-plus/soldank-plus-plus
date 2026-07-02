@@ -132,7 +132,7 @@ jobs:
           EOF
           chmod +x /tmp/llvm-gcov.sh
           ctest --preset clang-ninja-coverage-all
-          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-coverage-all --capture --output-file build/clang-ninja-coverage-all/coverage.info --keep-going --ignore-errors gcov,inconsistent
+          lcov --gcov-tool /tmp/llvm-gcov.sh --directory build/clang-ninja-coverage-all --capture --output-file build/clang-ninja-coverage-all/coverage.info --keep-going --ignore-errors gcov,inconsistent,format
           lcov --extract build/clang-ninja-coverage-all/coverage.info '*/source/*' --output-file build/clang-ninja-coverage-all/coverage-src.info --ignore-errors gcov,inconsistent
           genhtml -o build/clang-ninja-coverage-all/coverage build/clang-ninja-coverage-all/coverage-src.info --ignore-errors inconsistent,unsupported,category
 
