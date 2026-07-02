@@ -23,6 +23,12 @@ set(server_lib_modules
     networking/types/Connection.cpp
 )
 
+if (BUILD_WEBRTC_SERVER_TRANSPORT)
+    list(APPEND server_lib_modules
+        networking/transport/WebRtcServerTransport.cpp
+    )
+endif()
+
 add_library(server_lib)
 target_sources(server_lib
     PUBLIC
@@ -31,6 +37,9 @@ target_sources(server_lib
 )
 
 target_compile_definitions(server_lib PRIVATE ${SERVER_COMPILE_DEFINITIONS})
+if (BUILD_WEBRTC_SERVER_TRANSPORT)
+    target_compile_definitions(server_lib PRIVATE SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+endif()
 
 if(MSVC)
   target_compile_options(server_lib PRIVATE /W4)

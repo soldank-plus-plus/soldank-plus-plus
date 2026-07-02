@@ -21,6 +21,7 @@ option(BUILD_USE_PCH "Use precompiled headers for project targets" OFF)
 option(BUILD_ENABLE_TIME_REPORT "Print compiler time reports for each compiled source" OFF)
 option(BUILD_USE_ADDRESS_SANITIZER "Build with AddressSanitizer instrumentation" OFF)
 option(BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER "Build with UndefinedBehaviorSanitizer instrumentation" OFF)
+option(BUILD_WEBRTC_SERVER_TRANSPORT "Build the experimental WebRTC server transport skeleton" OFF)
 
 if (BUILD_USE_COMPILER_CACHE)
     if (MSVC)

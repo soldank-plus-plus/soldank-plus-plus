@@ -3,6 +3,7 @@ module;
 #include <memory>
 #include <cassert>
 #include <cstdint>
+#include <vector>
 
 export module Networking.GameServer;
 
@@ -14,6 +15,10 @@ import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
 import Networking.Transport.GnsServerTransport;
 import Networking.Transport.TransportTypes;
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+import Networking.Transport.IServerTransport;
+import Networking.Transport.WebRtcServerTransport;
+#endif
 
 import Shared.Core.IWorld;
 
@@ -48,6 +53,11 @@ public:
         entry_poll_group_->RegisterPlayerPollGroup(player_poll_group_);
         player_poll_group_->SetServerNetworkEventDispatcher(network_event_dispatcher);
         player_poll_group_->SetWorld(world);
+
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+        transports_.push_back(std::make_unique<WebRtcServerTransport>());
+        transports_.back()->Init(port);
+#endif
     };
     ~GameServer() override { NetworkingInterface::Free(); }
 
@@ -60,6 +70,11 @@ public:
     {
         entry_poll_group_->PollIncomingMessages();
         player_poll_group_->PollIncomingMessages();
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+        for (auto& transport : transports_) {
+            transport->PollConnectionStateChanges();
+        }
+#endif
         NetworkingInterface::PollConnectionStateChanges();
     }
 
@@ -86,6 +101,9 @@ public:
 private:
     std::unique_ptr<EntryPollGroup> entry_poll_group_;
     std::shared_ptr<PlayerPollGroup> player_poll_group_;
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+    std::vector<std::unique_ptr<IServerTransport>> transports_;
+#endif
 
     void OnSteamNetConnectionStatusChanged(GNS::SteamNetConnectionStatusChangedCallback_t* p_info)
     {
