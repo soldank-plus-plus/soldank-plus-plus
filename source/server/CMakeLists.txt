@@ -97,4 +97,13 @@ endif()
 target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
 soldank_target_precompile_headers(server)
 
+if (dascript_SOURCE_DIR AND EXISTS "${dascript_SOURCE_DIR}/daslib")
+  add_custom_command(TARGET server POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${dascript_SOURCE_DIR}/daslib"
+      "${CMAKE_BINARY_DIR}/daslib"
+    COMMENT "Copying daScript standard library to runtime root"
+  )
+endif()
+
 install(TARGETS server DESTINATION ${CMAKE_SOURCE_DIR}/bin)
