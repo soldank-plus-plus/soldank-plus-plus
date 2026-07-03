@@ -4,6 +4,10 @@ module;
 
 #include "spdlog/spdlog.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <algorithm>
 #include <random>
 #include <ranges>
@@ -56,93 +60,108 @@ public:
 
     void RunLoop() final
     {
-        std::chrono::time_point<std::chrono::system_clock> last_frame_time;
-        std::chrono::time_point<std::chrono::system_clock> last_render_time =
-          std::chrono::system_clock::now();
-        std::chrono::time_point<std::chrono::system_clock> last_update_time =
-          std::chrono::system_clock::now();
-        auto last_fps_check_time = std::chrono::system_clock::now();
-        int frame_count_since_last_fps_check = 0;
-        int last_fps = 0;
+        struct LoopState
+        {
+            World* world;
+            std::chrono::time_point<std::chrono::system_clock> last_frame_time =
+              std::chrono::system_clock::now();
+            std::chrono::time_point<std::chrono::system_clock> last_render_time =
+              std::chrono::system_clock::now();
+            std::chrono::time_point<std::chrono::system_clock> last_fps_check_time =
+              std::chrono::system_clock::now();
+            std::chrono::time_point<std::chrono::system_clock> timeprv =
+              std::chrono::system_clock::now();
+            std::chrono::duration<double> timeacc{ 0 };
+            unsigned int game_tick = 0;
+            int world_updates = 0;
+            int frame_count_since_last_fps_check = 0;
+            int last_fps = 0;
+            std::function<bool(LoopState&)> run_iteration;
+        };
 
-        auto timecur = std::chrono::system_clock::now();
-        auto timeprv = timecur;
-        std::chrono::duration<double> timeacc{ 0 };
-
-        unsigned int game_tick = 0;
-        int world_updates = 0;
-        auto should_run_game_loop_iteration = [&]() {
-            if (should_stop_game_loop_callback_) {
-                return !should_stop_game_loop_callback_();
+        auto should_run_game_loop_iteration = [](World& world) {
+            if (world.should_stop_game_loop_callback_) {
+                return !world.should_stop_game_loop_callback_();
             }
             return true;
         };
-        while (should_run_game_loop_iteration()) {
-            if (pre_game_loop_iteration_callback_) {
-                pre_game_loop_iteration_callback_();
+
+        auto run_iteration = [should_run_game_loop_iteration](LoopState& loop_state) {
+            World& world = *loop_state.world;
+            if (!should_run_game_loop_iteration(world)) {
+                return false;
+            }
+
+            if (world.pre_game_loop_iteration_callback_) {
+                world.pre_game_loop_iteration_callback_();
             }
 
             auto current_frame_time = std::chrono::system_clock::now();
-            std::chrono::duration<double> delta_time = current_frame_time - last_frame_time;
-            last_frame_time = current_frame_time;
+            std::chrono::duration<double> delta_time =
+              current_frame_time - loop_state.last_frame_time;
+            loop_state.last_frame_time = current_frame_time;
 
-            frame_count_since_last_fps_check++;
-            std::chrono::duration<double> diff = current_frame_time - last_fps_check_time;
+            loop_state.frame_count_since_last_fps_check++;
+            std::chrono::duration<double> diff =
+              current_frame_time - loop_state.last_fps_check_time;
             if (diff.count() >= 1.0) {
-                spdlog::info("{} ms/frame", 1000.0 / double(frame_count_since_last_fps_check));
-                spdlog::info("FPS: {}", frame_count_since_last_fps_check);
-                last_fps = frame_count_since_last_fps_check;
-                frame_count_since_last_fps_check = 0;
-                last_fps_check_time = current_frame_time;
+                spdlog::info("{} ms/frame",
+                             1000.0 / double(loop_state.frame_count_since_last_fps_check));
+                spdlog::info("FPS: {}", loop_state.frame_count_since_last_fps_check);
+                loop_state.last_fps = loop_state.frame_count_since_last_fps_check;
+                loop_state.frame_count_since_last_fps_check = 0;
+                loop_state.last_fps_check_time = current_frame_time;
 
-                spdlog::info("World updates: {}", world_updates);
-                world_updates = 0;
+                spdlog::info("World updates: {}", loop_state.world_updates);
+                loop_state.world_updates = 0;
             }
 
             double dt = 1.0 / 60.0;
 
-            while (timeacc.count() >= dt) {
+            while (loop_state.timeacc.count() >= dt) {
                 std::chrono::duration<double> dt_in_duration{ dt };
-                timeacc -= dt_in_duration;
+                loop_state.timeacc -= dt_in_duration;
 
-                if (!state_manager_->IsGamePaused()) {
-                    if (pre_world_update_callback_) {
-                        pre_world_update_callback_();
+                if (!world.state_manager_->IsGamePaused()) {
+                    if (world.pre_world_update_callback_) {
+                        world.pre_world_update_callback_();
                     }
-                    Update(delta_time.count());
-                    if (post_world_update_callback_) {
-                        post_world_update_callback_(*state_manager_);
+                    world.Update(delta_time.count());
+                    if (world.post_world_update_callback_) {
+                        world.post_world_update_callback_(*world.state_manager_);
                     }
 
-                    world_updates++;
-                    game_tick++;
-                    state_manager_->SetGameTick(game_tick);
+                    loop_state.world_updates++;
+                    loop_state.game_tick++;
+                    world.state_manager_->SetGameTick(loop_state.game_tick);
                 }
 
-                timecur = std::chrono::system_clock::now();
-                timeacc += timecur - timeprv;
-                timeprv = timecur;
+                auto timecur = std::chrono::system_clock::now();
+                loop_state.timeacc += timecur - loop_state.timeprv;
+                loop_state.timeprv = timecur;
             }
 
             double frame_percent = 1.0F;
-            if (!state_manager_->IsGamePaused()) {
-                frame_percent = std::min(1.0, std::max(0.0, timeacc.count() / dt));
+            if (!world.state_manager_->IsGamePaused()) {
+                frame_percent = std::min(1.0, std::max(0.0, loop_state.timeacc.count() / dt));
             }
 
-            if (post_game_loop_iteration_callback_) {
-                post_game_loop_iteration_callback_(*state_manager_, frame_percent, last_fps);
+            if (world.post_game_loop_iteration_callback_) {
+                world.post_game_loop_iteration_callback_(
+                  *world.state_manager_, frame_percent, loop_state.last_fps);
             }
 
-            timecur = std::chrono::system_clock::now();
-            timeacc += (timecur - timeprv);
-            timeprv = timecur;
+            auto timecur = std::chrono::system_clock::now();
+            loop_state.timeacc += timecur - loop_state.timeprv;
+            loop_state.timeprv = timecur;
 
+#ifndef __EMSCRIPTEN__
             std::chrono::duration<double> render_time_delta =
-              std::chrono::system_clock::now() - last_render_time;
+              std::chrono::system_clock::now() - loop_state.last_render_time;
 
-            double render_time_limit = 1.0 / (double)fps_limit_;
+            double render_time_limit = 1.0 / (double)world.fps_limit_;
 
-            while (fps_limit_ != 0 && render_time_delta.count() <= render_time_limit) {
+            while (world.fps_limit_ != 0 && render_time_delta.count() <= render_time_limit) {
                 double time_to_wait_nanos = render_time_limit - render_time_delta.count();
                 // sleep_for isn't super accurate that's why we don't want to wait the exact
                 // amount of time, that's why we do - 0.2
@@ -155,14 +174,38 @@ public:
                 std::this_thread::sleep_for(std::chrono::milliseconds(time_to_wait_ms));
 
                 timecur = std::chrono::system_clock::now();
-                timeacc += timecur - timeprv;
-                timeprv = timecur;
+                loop_state.timeacc += timecur - loop_state.timeprv;
+                loop_state.timeprv = timecur;
 
-                render_time_delta = std::chrono::system_clock::now() - last_render_time;
+                render_time_delta = std::chrono::system_clock::now() - loop_state.last_render_time;
             }
+#endif
 
-            last_render_time = std::chrono::system_clock::now();
+            loop_state.last_render_time = std::chrono::system_clock::now();
+            return true;
+        };
+
+#ifdef __EMSCRIPTEN__
+        auto* loop_state = new LoopState{};
+        loop_state->world = this;
+        loop_state->run_iteration = run_iteration;
+        emscripten_set_main_loop_arg(
+          [](void* arg) {
+              auto* loop_state = static_cast<LoopState*>(arg);
+              if (!loop_state->run_iteration(*loop_state)) {
+                  emscripten_cancel_main_loop();
+              }
+          },
+          loop_state,
+          0,
+          false);
+#else
+        LoopState loop_state{};
+        loop_state.world = this;
+        loop_state.run_iteration = run_iteration;
+        while (loop_state.run_iteration(loop_state)) {
         }
+#endif
     }
 
     void Update(double /*delta_time*/) final

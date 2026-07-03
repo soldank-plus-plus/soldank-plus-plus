@@ -11,10 +11,10 @@ module;
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include <map>
 #include <array>
-#include <vector>
+#include <map>
 #include <string>
+#include <vector>
 
 export module TextRenderer;
 
@@ -98,15 +98,26 @@ TextRenderer::TextRenderer(const std::string& file_path, unsigned int font_heigh
             glActiveTexture(GL_TEXTURE0);
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
+#ifdef __EMSCRIPTEN__
+            constexpr GLenum GLYPH_TEXTURE_INTERNAL_FORMAT = 0x8229; // GL_R8
+            constexpr GLenum GLYPH_TEXTURE_FORMAT = GL_RED;
+#else
+            constexpr GLenum GLYPH_TEXTURE_INTERNAL_FORMAT = GL_RED;
+            constexpr GLenum GLYPH_TEXTURE_FORMAT = GL_RED;
+#endif
+            const GLsizei glyph_width = static_cast<GLsizei>(face->glyph->bitmap.width);
+            const GLsizei glyph_height = static_cast<GLsizei>(face->glyph->bitmap.rows);
+            const bool has_glyph_bitmap = glyph_width > 0 && glyph_height > 0;
+            const std::array<unsigned char, 1> empty_glyph = { 0 };
             glTexImage2D(GL_TEXTURE_2D,
                          0,
-                         GL_RED,
-                         (GLsizei)face->glyph->bitmap.width,
-                         (GLsizei)face->glyph->bitmap.rows,
+                         GLYPH_TEXTURE_INTERNAL_FORMAT,
+                         has_glyph_bitmap ? glyph_width : 1,
+                         has_glyph_bitmap ? glyph_height : 1,
                          0,
-                         GL_RED,
+                         GLYPH_TEXTURE_FORMAT,
                          GL_UNSIGNED_BYTE,
-                         face->glyph->bitmap.buffer);
+                         has_glyph_bitmap ? face->glyph->bitmap.buffer : empty_glyph.data());
             // set texture options
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -153,13 +164,26 @@ void TextRenderer::Render(std::string text,
     shader_.SetMatrix4("projection", projection);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
+    glVertexAttrib4f(1, 1.0F, 1.0F, 1.0F, 1.0F);
+    glVertexAttrib2f(2, 0.0F, 0.0F);
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
     // iterate through all characters
     std::string::const_iterator c;
     for (c = text.begin(); c != text.end(); c++) {
-        Character ch = characters_[*c];
+        auto character = characters_.find(*c);
+        if (character == characters_.end()) {
+            continue;
+        }
+        Character ch = character->second;
+
+        if (ch.size.x <= 0 || ch.size.y <= 0) {
+            x += (float)(ch.advance >> 6) * scale;
+            continue;
+        }
 
         float xpos = x + (float)ch.bearing.x * scale;
         float ypos = y - (float)(ch.size.y - ch.bearing.y) * scale;

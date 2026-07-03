@@ -119,9 +119,29 @@ endif()
 target_include_directories(client_lib PUBLIC ${CMAKE_SOURCE_DIR}/source/client)
 target_include_directories(client_lib PUBLIC ${CMAKE_SOURCE_DIR}/build/bindings)
 target_include_directories(client_lib PRIVATE ${Stb_INCLUDE_DIR})
+if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  target_include_directories(
+    client_lib BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/platform/emscripten
+  )
+endif()
+find_path(EMSCRIPTEN_GLFW_INCLUDE_DIR
+  NAMES GLFW/glfw3.h
+  PATHS
+    "$ENV{EMSCRIPTEN_ROOT}/cache/sysroot/include"
+    "$ENV{EMSCRIPTEN_ROOT}/system/include"
+    "/usr/share/emscripten/cache/sysroot/include"
+    "/usr/share/emscripten/system/include"
+  NO_DEFAULT_PATH
+)
+if (EMSCRIPTEN_GLFW_INCLUDE_DIR)
+  target_include_directories(client_lib PUBLIC ${EMSCRIPTEN_GLFW_INCLUDE_DIR})
+  target_compile_options(client_lib PUBLIC "-I${EMSCRIPTEN_GLFW_INCLUDE_DIR}")
+endif()
 
 target_link_libraries(client_lib PUBLIC glfw)
-target_link_libraries(client_lib PUBLIC glad)
+if (NOT (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten"))
+  target_link_libraries(client_lib PUBLIC glad)
+endif()
 target_link_libraries(client_lib PUBLIC glm::glm)
 target_link_libraries(client_lib PRIVATE SimpleIni)
 
@@ -172,9 +192,94 @@ target_link_libraries(client PRIVATE Spdlog)
 target_link_libraries(client PRIVATE cxxopts::cxxopts)
 target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR}/source/client)
 target_include_directories(client PUBLIC ${CMAKE_SOURCE_DIR}/build/bindings)
-if (BUILD_WEBASM_CLIENT_TRANSPORT AND EMSCRIPTEN)
+if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  set_target_properties(client PROPERTIES SUFFIX ".html")
+
+  set(webasm_preload_options)
+  if (BUILD_WEBASM_PRELOAD_ASSETS)
+    function(soldank_webasm_preload_directory asset_directory virtual_directory)
+      foreach(asset_root
+          "${CMAKE_SOURCE_DIR}"
+          "${soldatbase_SOURCE_DIR}/shared"
+      )
+        if (EXISTS "${asset_root}/${asset_directory}")
+          list(APPEND webasm_preload_options
+            "SHELL:--preload-file ${asset_root}/${asset_directory}@/${virtual_directory}"
+          )
+          set(webasm_preload_options "${webasm_preload_options}" PARENT_SCOPE)
+          return()
+        endif()
+      endforeach()
+    endfunction()
+
+    function(soldank_webasm_preload_file asset_file virtual_file)
+      foreach(asset_root
+          "${CMAKE_SOURCE_DIR}"
+          "${soldatbase_SOURCE_DIR}"
+          "${soldatbase_SOURCE_DIR}/shared"
+          "${soldatbase_SOURCE_DIR}/shared/objects"
+          "${soldatbase_SOURCE_DIR}/client/configs"
+      )
+        if (EXISTS "${asset_root}/${asset_file}")
+          list(APPEND webasm_preload_options
+            "SHELL:--preload-file ${asset_root}/${asset_file}@/${virtual_file}"
+          )
+          set(webasm_preload_options "${webasm_preload_options}" PARENT_SCOPE)
+          return()
+        endif()
+      endforeach()
+    endfunction()
+
+    foreach(asset_directory
+        anims
+        maps
+        textures
+        gostek-gfx
+        weapons-gfx
+        interface-gfx
+        objects-gfx
+        scenery-gfx
+    )
+      soldank_webasm_preload_directory("${asset_directory}" "${asset_directory}")
+    endforeach()
+
+    foreach(asset_directory
+        objects
+    )
+      soldank_webasm_preload_directory("${asset_directory}" "${asset_directory}")
+    endforeach()
+
+    foreach(asset_file
+        debug_config.ini
+        play-regular.ttf
+        weapons.ini
+        weapons_realistic.ini
+    )
+      soldank_webasm_preload_file("${asset_file}" "${asset_file}")
+    endforeach()
+
+    foreach(asset_file
+        gostek.po
+    )
+      soldank_webasm_preload_file("${asset_file}" "${asset_file}")
+      if (EXISTS "${soldatbase_SOURCE_DIR}/shared/objects/${asset_file}")
+        list(APPEND webasm_preload_options
+          "SHELL:--preload-file ${soldatbase_SOURCE_DIR}/shared/objects/${asset_file}@/objects/${asset_file}"
+        )
+      endif()
+    endforeach()
+  endif()
+
   target_link_options(client PRIVATE
     "SHELL:--js-library ${CMAKE_CURRENT_SOURCE_DIR}/networking/browser/webrtc_bridge.js"
+    "SHELL:-sUSE_GLFW=3"
+    "SHELL:-sUSE_WEBGL2=1"
+    "SHELL:-sMIN_WEBGL_VERSION=2"
+    "SHELL:-sMAX_WEBGL_VERSION=2"
+    "SHELL:-sGL_ASSERTIONS=1"
+    "SHELL:-sALLOW_MEMORY_GROWTH=1"
+    "SHELL:-sASYNCIFY=1"
+    ${webasm_preload_options}
   )
 endif()
 soldank_target_precompile_headers(client)

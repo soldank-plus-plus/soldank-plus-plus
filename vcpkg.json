@@ -1,6 +1,10 @@
 {
+    "default-features": [
+        "native-networking",
+        "server",
+        "tests"
+    ],
     "dependencies": [
-        "gamenetworkingsockets",
         "zlib",
         "bzip2",
         "libpng",
@@ -17,11 +21,27 @@
                 "opengl3-binding",
                 "glfw-binding"
             ]
-        },
-        "gtest",
-        "cpp-httplib"
+        }
     ],
     "features": {
+        "native-networking": {
+            "description": "Build native GameNetworkingSockets networking support.",
+            "dependencies": [
+                "gamenetworkingsockets"
+            ]
+        },
+        "server": {
+            "description": "Build server dependencies.",
+            "dependencies": [
+                "cpp-httplib"
+            ]
+        },
+        "tests": {
+            "description": "Build test dependencies.",
+            "dependencies": [
+                "gtest"
+            ]
+        },
         "webrtc-server": {
             "description": "Build the experimental WebRTC server transport.",
             "dependencies": [

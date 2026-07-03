@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.28)
 
 cmake_policy(SET CMP0141 NEW)
 
-if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake )
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake )
 	message(STATUS "Found ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake; using it!")
 	set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake
 		CACHE STRING "Vcpkg toolchain file")
@@ -22,7 +22,18 @@ option(BUILD_ENABLE_TIME_REPORT "Print compiler time reports for each compiled s
 option(BUILD_USE_ADDRESS_SANITIZER "Build with AddressSanitizer instrumentation" OFF)
 option(BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER "Build with UndefinedBehaviorSanitizer instrumentation" OFF)
 option(BUILD_WEBRTC_SERVER_TRANSPORT "Build the experimental WebRTC server transport skeleton" OFF)
+option(BUILD_WEBASM_CLIENT "Build the browser WebAssembly client" OFF)
 option(BUILD_WEBASM_CLIENT_TRANSPORT "Build the experimental browser WebRTC client transport" OFF)
+option(BUILD_WEBASM_PRELOAD_ASSETS "Preload game asset directories into the Emscripten virtual filesystem when they exist" ON)
+
+if (BUILD_WEBASM_CLIENT OR (CMAKE_SYSTEM_NAME STREQUAL "Emscripten"))
+    set(BUILD_CLIENT_ENABLED ON CACHE BOOL "Build client" FORCE)
+    set(BUILD_SERVER_ENABLED OFF CACHE BOOL "Build server" FORCE)
+    set(BUILD_TESTS_ENABLED OFF CACHE BOOL "Build all available tests" FORCE)
+    set(BUILD_WEBASM_CLIENT_TRANSPORT ON CACHE BOOL "Build the experimental browser WebRTC client transport" FORCE)
+    set(BUILD_USE_MOLD_LINKER OFF CACHE BOOL "Use mold as the linker when supported" FORCE)
+    set(BUILD_USE_LLD_LINKER OFF CACHE BOOL "Use LLVM lld as the linker when supported" FORCE)
+endif()
 
 if (BUILD_USE_COMPILER_CACHE)
     if (MSVC)
@@ -136,12 +147,17 @@ else()
     message("COMPILE WITH COVERAGE OFF")
 endif()
 
-if (NOT MSVC)
+if (NOT MSVC AND NOT (CMAKE_SYSTEM_NAME STREQUAL "Emscripten"))
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 endif()
 
 function(soldank_target_precompile_headers target_name)
     if (BUILD_USE_PCH)
+        if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+            message(STATUS "Skipping PCH for ${target_name}: Emscripten libc++ module scanning does not work with this project's PCH setup")
+            return()
+        endif()
+
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 21)
             message(STATUS "Skipping PCH for ${target_name}: Clang ${CMAKE_CXX_COMPILER_VERSION} crashes when this project combines PCH with C++ module PCMs")
             return()
@@ -205,7 +221,85 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_CXX_EXTENSIONS Off)
 
-if (BUILD_TESTS_ENABLED)
+if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    if (CMAKE_CXX_COMPILER)
+        execute_process(
+            COMMAND "${CMAKE_CXX_COMPILER}" --cflags
+            OUTPUT_VARIABLE EMSCRIPTEN_CXX_FLAGS_OUTPUT
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (EMSCRIPTEN_CXX_FLAGS_OUTPUT MATCHES "(^| )--sysroot=([^ ]+)")
+            set(EMSCRIPTEN_SYSROOT_DIR "${CMAKE_MATCH_2}")
+        endif()
+    endif()
+
+    set(EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES)
+    if (EMSCRIPTEN_SYSROOT_DIR)
+        list(APPEND EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES "${EMSCRIPTEN_SYSROOT_DIR}/include")
+    endif()
+    if (CMAKE_SYSROOT)
+        list(APPEND EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES "${CMAKE_SYSROOT}/include")
+    endif()
+    if (SOLDANK_EMSCRIPTEN_ROOT)
+        list(APPEND EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES
+            "${SOLDANK_EMSCRIPTEN_ROOT}/cache/sysroot/include")
+    endif()
+    if (DEFINED ENV{EMSCRIPTEN_ROOT})
+        list(APPEND EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES
+            "$ENV{EMSCRIPTEN_ROOT}/cache/sysroot/include")
+    endif()
+    if (DEFINED ENV{EMSDK})
+        list(APPEND EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES
+            "$ENV{EMSDK}/upstream/emscripten/cache/sysroot/include")
+    endif()
+    if (CMAKE_CXX_COMPILER)
+        get_filename_component(EMSCRIPTEN_CXX_COMPILER_REALPATH "${CMAKE_CXX_COMPILER}" REALPATH)
+        get_filename_component(EMSCRIPTEN_CXX_COMPILER_DIRECTORY
+            "${EMSCRIPTEN_CXX_COMPILER_REALPATH}" DIRECTORY)
+        list(APPEND EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES
+            "${EMSCRIPTEN_CXX_COMPILER_DIRECTORY}/cache/sysroot/include"
+            "${EMSCRIPTEN_CXX_COMPILER_DIRECTORY}/../cache/sysroot/include"
+            "${EMSCRIPTEN_CXX_COMPILER_DIRECTORY}/../upstream/emscripten/cache/sysroot/include")
+    endif()
+    list(APPEND EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES
+        "/usr/share/emscripten/cache/sysroot/include")
+
+    if (NOT EMSCRIPTEN_SYSROOT_DIR)
+        find_path(EMSCRIPTEN_SYSROOT_INCLUDE_DIR
+            NAMES c++/v1/vector
+            PATHS ${EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES}
+            NO_DEFAULT_PATH
+        )
+        if (EMSCRIPTEN_SYSROOT_INCLUDE_DIR)
+            get_filename_component(EMSCRIPTEN_SYSROOT_DIR
+                "${EMSCRIPTEN_SYSROOT_INCLUDE_DIR}" DIRECTORY)
+        endif()
+    endif()
+
+    find_path(EMSCRIPTEN_SYSROOT_INCLUDE_DIR
+        NAMES c++/v1/vector GLFW/glfw3.h
+        PATHS ${EMSCRIPTEN_SYSROOT_INCLUDE_CANDIDATES}
+        NO_DEFAULT_PATH
+    )
+    if (NOT EMSCRIPTEN_SYSROOT_INCLUDE_DIR)
+        message(FATAL_ERROR
+            "Emscripten sysroot headers were not found. "
+            "Install/activate emsdk so em++ is in PATH, or set EMSCRIPTEN_ROOT.")
+    endif()
+    add_compile_options(
+        --target=wasm32-unknown-emscripten
+        --sysroot=${EMSCRIPTEN_SYSROOT_DIR}
+        $<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>
+    )
+    add_link_options(
+        --target=wasm32-unknown-emscripten
+        --sysroot=${EMSCRIPTEN_SYSROOT_DIR}
+        -stdlib=libc++
+    )
+endif()
+
+if (BUILD_TESTS_ENABLED OR BUILD_WEBASM_CLIENT)
     CPMAddPackage(
         NAME soldatbase
         URL https://github.com/nedik/soldat-base/archive/55c6867a943a6ffc62a57b46eb7742c2e39766aa.tar.gz

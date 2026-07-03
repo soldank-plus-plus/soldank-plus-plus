@@ -52,6 +52,7 @@ private:
         GIFTexture(const std::shared_ptr<Texture::TextureGIFData>& gif_data);
 
         void Update();
+        bool IsValid() const;
         unsigned int GetTextureId() const;
 
     private:
@@ -197,8 +198,12 @@ void SceneriesRenderer::Render(glm::mat4 transform,
         if (texture.gif_texture == nullptr) {
             Renderer::BindTexture(texture.texture_id);
         } else {
-            texture.gif_texture->Update();
-            Renderer::BindTexture(texture.gif_texture->GetTextureId());
+            if (!texture.gif_texture->IsValid()) {
+                Renderer::BindTexture(0);
+            } else {
+                texture.gif_texture->Update();
+                Renderer::BindTexture(texture.gif_texture->GetTextureId());
+            }
         }
 
         Renderer::DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (i * 6ULL * sizeof(GLuint)));
@@ -386,6 +391,10 @@ SceneriesRenderer::GIFTexture::GIFTexture(const std::shared_ptr<Texture::Texture
 
 void SceneriesRenderer::GIFTexture::Update()
 {
+    if (!IsValid()) {
+        return;
+    }
+
     auto time_now = std::chrono::system_clock::now();
     std::chrono::duration<double> delta_time = time_now - last_switch_time_;
     unsigned int next_frame_id = (current_frame_id_ + 1) % gif_data_->Size();
@@ -397,8 +406,17 @@ void SceneriesRenderer::GIFTexture::Update()
     }
 }
 
+bool SceneriesRenderer::GIFTexture::IsValid() const
+{
+    return gif_data_ != nullptr && gif_data_->Size() > 0;
+}
+
 unsigned int SceneriesRenderer::GIFTexture::GetTextureId() const
 {
+    if (!IsValid()) {
+        return 0;
+    }
+
     return gif_data_->GetFrame(current_frame_id_).first;
 }
 } // namespace Soldank

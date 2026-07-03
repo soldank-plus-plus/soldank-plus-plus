@@ -84,11 +84,15 @@ private:
     std::shared_ptr<ClientState> client_state_;
     std::shared_ptr<NetworkEventDispatcher> client_network_event_dispatcher_;
     std::unique_ptr<MapEditor> map_editor_;
+    std::unique_ptr<Scene> scene_;
 
     CommandLineParameters::ApplicationMode application_mode_;
     WindowSizeMode window_size_mode_;
 
     int fps_limit_ = 0;
+    glm::vec2 last_mouse_screen_position_;
+    glm::vec2 last_mouse_map_position_;
+    unsigned int input_sequence_id_ = 1;
 };
 } // namespace Soldank
 
@@ -332,8 +336,8 @@ void Application::Run()
       });
 
     window_->Create(window_size_mode_);
-    glm::vec2 last_mouse_screen_position = GetCurrentMouseScreenPosition();
-    glm::vec2 last_mouse_map_position = GetCurrentMouseMapPosition();
+    last_mouse_screen_position_ = GetCurrentMouseScreenPosition();
+    last_mouse_map_position_ = GetCurrentMouseMapPosition();
     UpdateWindowSize();
     client_state_->camera_component.UpdateWindowDimensions(
       { client_state_->window_width, client_state_->window_height });
@@ -413,23 +417,23 @@ void Application::Run()
 
     Mouse::SubscribeMouseMovementObserver([&](double /*x*/, double /*y*/) {
         glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
-        if (std::abs(last_mouse_screen_position.x - mouse_screen_position.x) > 0.001F ||
-            std::abs(last_mouse_screen_position.y - mouse_screen_position.y) > 0.001F) {
-            client_state_->event_mouse_screen_position_changed.Notify(last_mouse_screen_position,
+        if (std::abs(last_mouse_screen_position_.x - mouse_screen_position.x) > 0.001F ||
+            std::abs(last_mouse_screen_position_.y - mouse_screen_position.y) > 0.001F) {
+            client_state_->event_mouse_screen_position_changed.Notify(last_mouse_screen_position_,
                                                                       mouse_screen_position);
             mouse_screen_position = GetCurrentMouseScreenPosition();
         }
-        last_mouse_screen_position = mouse_screen_position;
+        last_mouse_screen_position_ = mouse_screen_position;
 
         glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
-        if (std::abs(last_mouse_map_position.x - mouse_map_position.x) > 0.0000001F ||
-            std::abs(last_mouse_map_position.y - mouse_map_position.y) > 0.0000001F) {
-            client_state_->event_mouse_map_position_changed.Notify(last_mouse_map_position,
+        if (std::abs(last_mouse_map_position_.x - mouse_map_position.x) > 0.0000001F ||
+            std::abs(last_mouse_map_position_.y - mouse_map_position.y) > 0.0000001F) {
+            client_state_->event_mouse_map_position_changed.Notify(last_mouse_map_position_,
                                                                    mouse_map_position);
             mouse_map_position = GetCurrentMouseMapPosition();
             client_state_->mouse_map_position = mouse_map_position;
         }
-        last_mouse_map_position = mouse_map_position;
+        last_mouse_map_position_ = mouse_map_position;
     });
 
     Mouse::SubscribeMouseScrollObserver([&](double /*dx*/, double dy) {
@@ -440,17 +444,17 @@ void Application::Run()
         }
 
         glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
-        if (std::abs(last_mouse_map_position.x - mouse_map_position.x) > 0.0000001F ||
-            std::abs(last_mouse_map_position.y - mouse_map_position.y) > 0.0000001F) {
-            client_state_->event_mouse_map_position_changed.Notify(last_mouse_map_position,
+        if (std::abs(last_mouse_map_position_.x - mouse_map_position.x) > 0.0000001F ||
+            std::abs(last_mouse_map_position_.y - mouse_map_position.y) > 0.0000001F) {
+            client_state_->event_mouse_map_position_changed.Notify(last_mouse_map_position_,
                                                                    mouse_map_position);
             mouse_map_position = GetCurrentMouseMapPosition();
             client_state_->mouse_map_position = mouse_map_position;
         }
-        last_mouse_map_position = mouse_map_position;
+        last_mouse_map_position_ = mouse_map_position;
     });
 
-    Scene scene(world_->GetStateManager(), *client_state_);
+    scene_ = std::make_unique<Scene>(world_->GetStateManager(), *client_state_);
 
     client_state_->map_editor_state.event_pixel_color_under_cursor_requested.AddObserver([&]() {
         glm::vec2 mouse_position = window_->GetCursorScreenPosition();
@@ -491,7 +495,6 @@ void Application::Run()
             client_state_->mouse.y = mouse_screen_position.y;
         }
     });
-    unsigned int input_sequence_id = 1;
     world_->SetPreWorldUpdateCallback([&]() {
         client_state_->colliding_polygon_ids.clear();
 
@@ -630,7 +633,7 @@ void Application::Run()
                 glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
 
                 SoldierInputPacket update_soldier_state_packet{
-                    .input_sequence_id = input_sequence_id,
+                    .input_sequence_id = input_sequence_id_,
                     .game_tick = world_->GetStateManager()->GetGameTick(),
                     .position_x = world_->GetSoldier(client_soldier_id).particle.position.x,
                     .position_y = world_->GetSoldier(client_soldier_id).particle.position.y,
@@ -640,9 +643,9 @@ void Application::Run()
                 };
                 if (client_state_->server_reconciliation) {
                     client_state_->soldier_snapshot_history.emplace_back(
-                      input_sequence_id, world_->GetSoldier(client_soldier_id));
+                      input_sequence_id_, world_->GetSoldier(client_soldier_id));
                 }
-                input_sequence_id++;
+                input_sequence_id_++;
                 if (client_state_->server_reconciliation) {
                     client_state_->pending_inputs.push_back(update_soldier_state_packet);
                 }
@@ -671,7 +674,7 @@ void Application::Run()
           if (!client_state_->objects_interpolation) {
               frame_percent = 1.0F;
           }
-          scene.Render(state_manager, *client_state_, frame_percent, last_fps);
+          scene_->Render(state_manager, *client_state_, frame_percent, last_fps);
 
           window_->SwapBuffers();
           window_->PollInput();

@@ -281,10 +281,10 @@ public:
             { ObjectSpriteType::Infflag, "textures/objects/infflag.bmp" },
             { ObjectSpriteType::Medikit, "textures/objects/medikit.png" },
             { ObjectSpriteType::Grenadekit, "textures/objects/grenadekit.png" },
-            { ObjectSpriteType::Flamerkit, "textures/objects/flamerkit.bmp" },
-            { ObjectSpriteType::Predatorkit, "textures/objects/predatorkit.bmp" },
+            { ObjectSpriteType::Flamerkit, "textures/objects/flamerkit.png" },
+            { ObjectSpriteType::Predatorkit, "textures/objects/predatorkit.png" },
             { ObjectSpriteType::Vestkit, "textures/objects/vestkit.png" },
-            { ObjectSpriteType::Berserkerkit, "textures/objects/berserkerkit.bmp" },
+            { ObjectSpriteType::Berserkerkit, "textures/objects/berserkerkit.png" },
             { ObjectSpriteType::Clusterkit, "textures/objects/clusterkit.png" },
             { ObjectSpriteType::Ilum, "objects-gfx/ilum.png" },
             { ObjectSpriteType::FlagHandle, "objects-gfx/flag.png" },
@@ -307,6 +307,7 @@ public:
                   switch (texture_data_or_error.error()) {
                       case Texture::LoadError::TextureNotFound: {
                           Spdlog::critical("Sprite file not found: {}", type_and_file_path.second);
+                          texture_data = Texture::CreateSinglePixel(0, 0, 0, 0);
                       }
                   }
               }

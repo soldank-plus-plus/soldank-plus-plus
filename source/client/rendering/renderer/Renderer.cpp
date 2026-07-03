@@ -7,6 +7,7 @@ module;
 #include <vector>
 #include <optional>
 #include <array>
+#include <cstdio>
 
 export module Renderer;
 
@@ -35,6 +36,26 @@ void DrawElements(GLenum mode,
 
 namespace Soldank::Renderer
 {
+namespace
+{
+unsigned int current_vbo = 0;
+unsigned int current_ebo = 0;
+
+#ifdef __EMSCRIPTEN__
+void LogMissingBufferOnce(const char* draw_call, const char* buffer_name)
+{
+    static bool logged = false;
+    if (!logged) {
+        logged = true;
+        // Avoid drawing with client-side arrays in WebGL; they are invalid and can abort in JS.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+        std::fprintf(
+          stderr, "WebGL renderer state error: %s called without %s\n", draw_call, buffer_name);
+    }
+}
+#endif
+} // namespace
+
 unsigned int CreateVBO(const std::vector<float>& vertices, GLenum usage)
 {
     unsigned int vbo = 0;
@@ -87,6 +108,9 @@ void SetupVertexArray(unsigned int vbo,
                       bool has_color,
                       bool has_texture)
 {
+    current_vbo = vbo;
+    current_ebo = ebo.value_or(0);
+
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
     if (ebo) {
@@ -105,31 +129,26 @@ void SetupVertexArray(unsigned int vbo,
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
-
-    unsigned int index = 0;
+    glVertexAttrib4f(1, 1.0F, 1.0F, 1.0F, 1.0F);
+    glVertexAttrib2f(2, 0.0F, 0.0F);
 
     // position attribute
-    glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
-    glEnableVertexAttribArray(index);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
+    glEnableVertexAttribArray(0);
+
     int offset = 3;
-    index++;
     if (has_color) {
         // color attribute
         // NOLINTNEXTLINE(performance-no-int-to-ptr,cppcoreguidelines-pro-type-cstyle-cast)
-        glVertexAttribPointer(
-          index, 4, GL_FLOAT, GL_FALSE, stride, (void*)(offset * sizeof(float)));
-        glEnableVertexAttribArray(index);
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(offset * sizeof(float)));
+        glEnableVertexAttribArray(1);
         offset += 4;
-        index++;
     }
     if (has_texture) {
         // texture coord attribute
         // NOLINTNEXTLINE(performance-no-int-to-ptr,cppcoreguidelines-pro-type-cstyle-cast)
-        glVertexAttribPointer(
-          index, 2, GL_FLOAT, GL_FALSE, stride, (void*)(offset * sizeof(float)));
-        glEnableVertexAttribArray(index);
-        offset += 2;
-        index++;
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(offset * sizeof(float)));
+        glEnableVertexAttribArray(2);
     }
 }
 
@@ -140,6 +159,13 @@ void BindTexture(unsigned int texture)
 
 void DrawArrays(GLenum mode, GLint first, GLsizei count)
 {
+#ifdef __EMSCRIPTEN__
+    if (current_vbo == 0) {
+        LogMissingBufferOnce("DrawArrays", "ARRAY_BUFFER");
+        return;
+    }
+#endif
+    glBindBuffer(GL_ARRAY_BUFFER, current_vbo);
     glDrawArrays(mode, first, count);
 }
 
@@ -148,6 +174,19 @@ void DrawElements(GLenum mode,
                   GLenum type,
                   std::optional<unsigned int> indices_offset)
 {
+#ifdef __EMSCRIPTEN__
+    if (current_vbo == 0) {
+        LogMissingBufferOnce("DrawElements", "ARRAY_BUFFER");
+        return;
+    }
+    if (current_ebo == 0) {
+        LogMissingBufferOnce("DrawElements", "ELEMENT_ARRAY_BUFFER");
+        return;
+    }
+#endif
+    glBindBuffer(GL_ARRAY_BUFFER, current_vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, current_ebo);
+
     if (indices_offset) {
         unsigned int offset = *indices_offset;
         // NOLINTNEXTLINE(performance-no-int-to-ptr,cppcoreguidelines-pro-type-cstyle-cast)

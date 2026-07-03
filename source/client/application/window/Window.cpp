@@ -61,6 +61,11 @@ public:
 #ifdef __APPLE__
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+#ifdef __EMSCRIPTEN__
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
 
         width_ = width;
         height_ = height;
@@ -82,6 +87,12 @@ public:
 
     void SetCursorMode(CursorMode cursor_mode)
     {
+#ifdef __EMSCRIPTEN__
+        if (cursor_mode == CursorMode::Locked) {
+            cursor_mode = CursorMode::Normal;
+        }
+#endif
+
         int glfw_cursor_mode = GLFW_CURSOR_HIDDEN;
         switch (cursor_mode) {
             case CursorMode::Locked:
@@ -130,26 +141,42 @@ public:
 
     void Create(WindowSizeMode window_size_mode)
     {
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        if (monitor == nullptr) {
-            Spdlog::error("Error: Failed to get primary monitor");
-            throw "Error: Failed to get primary monitor";
-        }
-
-        const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
-        if (video_mode == nullptr) {
-            Spdlog::error("Error: Failed to get video mode");
-            throw "Error: Failed to get video mode";
-        }
+#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+        window_size_mode = WindowSizeMode::Windowed;
+#endif
 
         switch (window_size_mode) {
             case WindowSizeMode::Fullscreen: {
+                GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                if (monitor == nullptr) {
+                    Spdlog::error("Error: Failed to get primary monitor");
+                    throw "Error: Failed to get primary monitor";
+                }
+
+                const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
+                if (video_mode == nullptr) {
+                    Spdlog::error("Error: Failed to get video mode");
+                    throw "Error: Failed to get video mode";
+                }
+
                 width_ = video_mode->width;
                 height_ = video_mode->height;
                 glfw_window_ = glfwCreateWindow(width_, height_, title_.c_str(), monitor, nullptr);
                 break;
             }
             case WindowSizeMode::BorderlessFullscreen: {
+                GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                if (monitor == nullptr) {
+                    Spdlog::error("Error: Failed to get primary monitor");
+                    throw "Error: Failed to get primary monitor";
+                }
+
+                const GLFWvidmode* video_mode = glfwGetVideoMode(monitor);
+                if (video_mode == nullptr) {
+                    Spdlog::error("Error: Failed to get video mode");
+                    throw "Error: Failed to get video mode";
+                }
+
                 glfwWindowHint(GLFW_RED_BITS, video_mode->redBits);
                 glfwWindowHint(GLFW_GREEN_BITS, video_mode->greenBits);
                 glfwWindowHint(GLFW_BLUE_BITS, video_mode->blueBits);
@@ -174,14 +201,18 @@ public:
 
         glfwMakeContextCurrent(glfw_window_);
 
+#ifndef __EMSCRIPTEN__
         glfwSwapInterval(0);
+#endif
 
+#ifndef __EMSCRIPTEN__
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) == 0) {
             Spdlog::error("Error: Failed to initialize GLAD.");
             glfwTerminate();
             throw "Error: Failed to initialize GLAD.";
         }
+#endif
 
         glfwSetWindowUserPointer(glfw_window_, this);
         glfwSetFramebufferSizeCallback(
@@ -198,7 +229,11 @@ public:
             auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
             window->OnFocusStateChange(glfw_window, focused);
         });
+#ifdef __EMSCRIPTEN__
+        SetCursorMode(CursorMode::Normal);
+#else
         SetCursorMode(CursorMode::Locked);
+#endif
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -210,7 +245,11 @@ public:
         // ImGui::StyleColorsLight();
 
         ImGui_ImplGlfw_InitForOpenGL(glfw_window_, true);
+#ifdef __EMSCRIPTEN__
+        ImGui_ImplOpenGL3_Init("#version 300 es");
+#else
         ImGui_ImplOpenGL3_Init();
+#endif
     }
 
     void Close() { glfwSetWindowShouldClose(glfw_window_, 1); }

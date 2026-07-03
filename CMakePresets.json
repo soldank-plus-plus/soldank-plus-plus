@@ -80,6 +80,24 @@
       }
     },
     {
+      "name": "emscripten-client-debug",
+      "displayName": "Emscripten Browser Client Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/emscripten-client-debug",
+      "toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "VCPKG_TARGET_TRIPLET": "soldank-wasm32-emscripten",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/triplets",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/emscripten.cmake",
+        "VCPKG_MANIFEST_NO_DEFAULT_FEATURES": "ON",
+        "BUILD_WEBASM_CLIENT": "ON",
+        "BUILD_USE_COMPILER_CACHE": "ON",
+        "BUILD_USE_PCH": "OFF"
+      }
+    },
+    {
       "name": "clang-ninja-server-debug",
       "displayName": "Clang Ninja Server Debug",
       "inherits": "clang-ninja-debug",
@@ -437,6 +455,14 @@
       "name": "clang-ninja-client-debug",
       "displayName": "Build Clang Ninja Client Debug",
       "configurePreset": "clang-ninja-client-debug",
+      "targets": [
+        "client"
+      ]
+    },
+    {
+      "name": "emscripten-client-debug",
+      "displayName": "Build Emscripten Browser Client Debug",
+      "configurePreset": "emscripten-client-debug",
       "targets": [
         "client"
       ]

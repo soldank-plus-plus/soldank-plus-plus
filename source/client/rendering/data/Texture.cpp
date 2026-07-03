@@ -12,6 +12,7 @@ module;
 #include <utility>
 #include <vector>
 #include <memory>
+#include <array>
 
 #include "core/utility/Expected.hpp"
 
@@ -82,12 +83,6 @@ std::expected<TextureData, LoadError> Load(const char* texture_path)
     int texture_width = 0;
     int texture_height = 0;
 
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     int texture_nr_channels = 0;
     stbi_set_flip_vertically_on_load(1);
     unsigned char* data = stbi_load(
@@ -106,6 +101,13 @@ std::expected<TextureData, LoadError> Load(const char* texture_path)
             }
         }
 
+        glGenTextures(1, &texture_id);
+        glBindTexture(GL_TEXTURE_2D, texture_id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
         glTexImage2D(GL_TEXTURE_2D,
                      0,
                      GL_RGBA,
@@ -121,6 +123,33 @@ std::expected<TextureData, LoadError> Load(const char* texture_path)
     stbi_image_free(data);
 
     return TextureData{ .opengl_id = texture_id, .width = texture_width, .height = texture_height };
+}
+
+TextureData CreateSinglePixel(unsigned char red,
+                              unsigned char green,
+                              unsigned char blue,
+                              unsigned char alpha)
+{
+    unsigned int texture_id = 0;
+    const std::array<unsigned char, 4> pixel{ red, green, blue, alpha };
+
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_RGBA,
+                 1,
+                 1,
+                 0,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 pixel.data());
+
+    return TextureData{ .opengl_id = texture_id, .width = 1, .height = 1 };
 }
 
 std::expected<std::shared_ptr<TextureGIFData>, LoadError> LoadGIF(const char* texture_path)
@@ -212,6 +241,9 @@ std::expected<std::shared_ptr<TextureGIFData>, LoadError> LoadGIF(const char* te
 
 void Delete(unsigned int texture_id)
 {
+    if (texture_id == 0) {
+        return;
+    }
     glDeleteTextures(1, &texture_id);
 }
 } // namespace Soldank::Texture

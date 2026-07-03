@@ -253,8 +253,9 @@ void PolygonsRenderer::LoadTexture(const std::string& texture_name)
         texture_ = texture_data.opengl_id;
         texture_dimensions_ = { texture_data.width, texture_data.height };
     } else {
-        texture_ = 0;
-        texture_dimensions_ = { 0, 0 };
+        const auto fallback_texture = Texture::CreateSinglePixel(255, 255, 255, 255);
+        texture_ = fallback_texture.opengl_id;
+        texture_dimensions_ = { fallback_texture.width, fallback_texture.height };
         Spdlog::critical("Texture file not found {}", texture_name);
     }
 }
