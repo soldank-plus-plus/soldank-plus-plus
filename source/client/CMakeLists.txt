@@ -277,7 +277,10 @@ if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     "SHELL:-sMIN_WEBGL_VERSION=2"
     "SHELL:-sMAX_WEBGL_VERSION=2"
     "SHELL:-sGL_ASSERTIONS=1"
-    "SHELL:-sALLOW_MEMORY_GROWTH=1"
+    # Keep wasm memory fixed so Emscripten's TextDecoder path does not see
+    # resizable ArrayBuffer views in browsers.
+    "SHELL:-sALLOW_MEMORY_GROWTH=0"
+    "SHELL:-sINITIAL_MEMORY=536870912"
     "SHELL:-sASYNCIFY=1"
     ${webasm_preload_options}
   )
