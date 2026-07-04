@@ -4,6 +4,7 @@ module;
 #include <functional>
 #include <span>
 #include <string>
+#include <vector>
 
 export module Networking.Transport.IServerTransport;
 
@@ -40,6 +41,7 @@ public:
 
     virtual void Init(std::uint16_t port) = 0;
     virtual void PollConnectionStateChanges() = 0;
+    virtual std::vector<ReceivedPacket> PollIncomingPackets() = 0;
     virtual void RegisterObserver(ConnectionStateChangedHandler observer) = 0;
     virtual void Send(ConnectionId connection_id,
                       std::span<const char> payload,

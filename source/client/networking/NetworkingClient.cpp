@@ -49,6 +49,10 @@ public:
 
     void Update(const std::shared_ptr<NetworkEventDispatcher>& network_event_dispatcher) final
     {
+        if (!has_logged_first_update_) {
+            Spdlog::info("NetworkingClient::Update polling incoming messages");
+            has_logged_first_update_ = true;
+        }
         connection_->PollIncomingMessages(network_event_dispatcher);
 #if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
         NetworkingInterface::PollConnectionStateChanges();
@@ -65,8 +69,11 @@ public:
     void SetLag(int lag_to_add_milliseconds) final
     {
 #if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-        Spdlog::info("Ignoring packet lag setting for browser WebRTC transport: {}",
-                     lag_to_add_milliseconds);
+        if (!has_logged_ignored_lag_) {
+            Spdlog::info("Ignoring packet lag setting for browser WebRTC transport: {}",
+                         lag_to_add_milliseconds);
+            has_logged_ignored_lag_ = true;
+        }
 #else
         GNS::GameNetworkingUtils()->SetGlobalConfigValueInt32(
           GNS::ESteamNetworkingConfig::FakePacketLag_Send, lag_to_add_milliseconds / 2);
@@ -130,6 +137,8 @@ private:
 #endif
 
     std::shared_ptr<IConnection> connection_;
+    bool has_logged_first_update_ = false;
+    bool has_logged_ignored_lag_ = false;
 #if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
     std::shared_ptr<Connection> gns_connection_;
 #endif

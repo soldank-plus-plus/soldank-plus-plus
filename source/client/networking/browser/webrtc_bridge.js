@@ -21,18 +21,33 @@ mergeInto(LibraryManager.library, {
 
     const onMessage = function (event) {
       const pushBytes = function (data) {
-        state.incoming.push(new Uint8Array(data));
+        const bytes = new Uint8Array(data);
+        state.incoming.push(bytes);
       };
       if (event.data instanceof ArrayBuffer) {
         pushBytes(event.data);
+      } else if (typeof event.data === "string") {
+        const bytes = new Uint8Array(event.data.length);
+        for (let index = 0; index < event.data.length; index += 1) {
+          bytes[index] = event.data.charCodeAt(index) & 0xff;
+        }
+        state.incoming.push(bytes);
       } else if (event.data && event.data.arrayBuffer) {
         event.data.arrayBuffer().then(pushBytes);
+      } else {
+        console.warn("[soldank-webrtc] ignored unsupported packet", typeof event.data);
       }
     };
 
     (async function () {
       const pc = new RTCPeerConnection();
       state.peerConnection = pc;
+      pc.onconnectionstatechange = function () {
+        console.info("[soldank-webrtc] peer connection state", pc.connectionState);
+      };
+      pc.oniceconnectionstatechange = function () {
+        console.info("[soldank-webrtc] ICE connection state", pc.iceConnectionState);
+      };
 
       const signalingBaseUrl = "http://" + serverIp + ":" + serverPort;
 
@@ -63,8 +78,14 @@ mergeInto(LibraryManager.library, {
       state.reliable.binaryType = "arraybuffer";
       state.unreliable.onmessage = onMessage;
       state.reliable.onmessage = onMessage;
-      state.unreliable.onopen = function () { flush(state.unreliable, state.unreliableQueue); };
-      state.reliable.onopen = function () { flush(state.reliable, state.reliableQueue); };
+      state.unreliable.onopen = function () {
+        console.info("[soldank-webrtc] unreliable channel open");
+        flush(state.unreliable, state.unreliableQueue);
+      };
+      state.reliable.onopen = function () {
+        console.info("[soldank-webrtc] reliable channel open");
+        flush(state.reliable, state.reliableQueue);
+      };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);

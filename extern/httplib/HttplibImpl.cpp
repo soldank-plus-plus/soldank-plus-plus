@@ -95,6 +95,20 @@ void Server::Post(const std::string& path, Handler handler)
       });
 }
 
+void Server::Options(const std::string& path, Handler handler)
+{
+    implementation_->server.Options(
+      path, [handler = std::move(handler)](const httplib::Request& request,
+                                           httplib::Response& response) {
+          const auto server_response = handler(ServerRequest{ .body = request.body });
+          response.status = server_response.status;
+          for (const auto& header : server_response.headers) {
+              response.set_header(header.name, header.value);
+          }
+          response.set_content(server_response.body, server_response.content_type);
+      });
+}
+
 bool Server::Listen(const std::string& host, int port)
 {
     return implementation_->server.listen(host, port);

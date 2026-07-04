@@ -16,6 +16,8 @@ import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.DeliveryMode;
 
+import Extern.Spdlog;
+
 extern "C"
 {
 void soldank_webrtc_connect(const char* server_ip, int server_port);
@@ -32,35 +34,43 @@ class WebRtcBrowserConnection : public IConnection
 public:
     WebRtcBrowserConnection(const char* server_ip, std::uint16_t server_port)
     {
+        Spdlog::info("[WebRtcBrowserConnection] Connecting to {}:{}", server_ip, server_port);
         soldank_webrtc_connect(server_ip, static_cast<int>(server_port));
 
         const std::string nick = "test name";
         soldank_webrtc_send_reliable(reinterpret_cast<const std::uint8_t*>(nick.data()),
                                      static_cast<int>(nick.size()));
+        Spdlog::info("[WebRtcBrowserConnection] Queued nick: {}", nick);
     }
 
     void PollIncomingMessages(
       const std::shared_ptr<NetworkEventDispatcher>& network_event_dispatcher) final
     {
-        std::array<std::uint8_t, 64 * 1024> buffer{};
         while (true) {
             const int message_size =
-              soldank_webrtc_poll_message(buffer.data(), static_cast<int>(buffer.size()));
+              soldank_webrtc_poll_message(receive_buffer_.data(),
+                                          static_cast<int>(receive_buffer_.size()));
             if (message_size <= 0) {
                 return;
             }
 
             const auto clamped_message_size =
-              std::min(static_cast<std::size_t>(message_size), buffer.size());
+              std::min(static_cast<std::size_t>(message_size), receive_buffer_.size());
             std::span<const char> received_bytes{
-                reinterpret_cast<const char*>(buffer.data()), clamped_message_size
+                reinterpret_cast<const char*>(receive_buffer_.data()), clamped_message_size
             };
             NetworkMessage received_message(received_bytes);
             ConnectionMetadata connection_metadata{
                 .connection_id = 0,
                 .send_message_to_connection = [](const NetworkMessage& /*message*/) {}
             };
-            network_event_dispatcher->ProcessNetworkMessage(connection_metadata, received_message);
+            auto dispatch_result =
+              network_event_dispatcher->ProcessNetworkMessage(connection_metadata,
+                                                              received_message);
+            if (dispatch_result.first != NetworkEventDispatchResult::Success) {
+                Spdlog::warn("[WebRtcBrowserConnection] Packet dispatch failed: result={}",
+                             static_cast<int>(dispatch_result.first));
+            }
         }
     }
 
@@ -78,5 +88,8 @@ public:
             soldank_webrtc_send_unreliable(data, data_size);
         }
     }
+
+private:
+    std::array<std::uint8_t, 64 * 1024> receive_buffer_{};
 };
 } // namespace Soldank

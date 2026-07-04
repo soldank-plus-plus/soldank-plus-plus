@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <array>
 #include <optional>
 #include <string>
@@ -142,6 +143,22 @@ TEST(NetworkMessageTests, TestNetworkMessageConstructFromBytes)
     auto network_event_or_error = network_message.GetNetworkEvent();
     ASSERT_TRUE(network_event_or_error.has_value());
     ASSERT_EQ(*network_event_or_error, NetworkEvent::AssignPlayerId);
+}
+
+TEST(NetworkMessageTests, TestNetworkMessageParseDataUnalignedBuffer)
+{
+    NetworkMessage network_message(NetworkEvent::AssignPlayerId, std::uint8_t{ 3 });
+    std::vector<char> bytes_with_padding{ 'x' };
+    auto data = network_message.GetData();
+    bytes_with_padding.insert(bytes_with_padding.end(), data.begin(), data.end());
+
+    std::span<const char> unaligned_data{ bytes_with_padding.data() + 1, data.size() };
+    auto parsed = NetworkMessage::ParseData<NetworkEvent, std::uint8_t>(unaligned_data);
+
+    ASSERT_TRUE(parsed.has_value());
+    auto [network_event, player_id] = *parsed;
+    ASSERT_EQ(network_event, NetworkEvent::AssignPlayerId);
+    ASSERT_EQ(player_id, 3);
 }
 
 TEST(NetworkMessageTests, TestNetworkMessageGetNetworkEventEmptyData)

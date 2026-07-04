@@ -157,13 +157,6 @@ private:
                     // CheckSkeletonOutOfBounds;
                 }
             }
-            for (auto it = client_state_->soldier_snapshot_history.begin();
-                 it != client_state_->soldier_snapshot_history.end();
-                 ++it) {
-                if (it->first == last_processed_input_id + 1) {
-                    it->second.CompareAndLog(soldier);
-                }
-            }
         });
 
         if (client_state_->server_reconciliation && is_soldier_id_me) {

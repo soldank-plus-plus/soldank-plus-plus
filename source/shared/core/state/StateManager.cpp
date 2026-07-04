@@ -478,7 +478,7 @@ const Soldier& StateManager::CreateSoldier(std::optional<unsigned int> force_sol
     state_.soldiers.at(new_soldier_id).active = true;
     state_.soldiers.at(new_soldier_id).id = new_soldier_id;
 
-    return state_.soldiers.back();
+    return state_.soldiers.at(new_soldier_id);
 }
 
 glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,

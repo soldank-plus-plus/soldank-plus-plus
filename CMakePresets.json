@@ -70,6 +70,16 @@
       }
     },
     {
+      "name": "clang-ninja-debug-all-webrtc",
+      "displayName": "Clang Ninja Debug (All Optimizations, WebRTC)",
+      "inherits": "clang-ninja-debug-all",
+      "binaryDir": "${sourceDir}/build/clang-ninja-debug-all-webrtc",
+      "cacheVariables": {
+        "BUILD_WEBRTC_SERVER_TRANSPORT": "ON",
+        "VCPKG_MANIFEST_FEATURES": "webrtc-server"
+      }
+    },
+    {
       "name": "clang-ninja-client-debug",
       "displayName": "Clang Ninja Client Debug",
       "inherits": "clang-ninja-debug",
@@ -450,6 +460,14 @@
       "name": "clang-ninja-debug-all-time-report",
       "displayName": "Build Clang Ninja Debug (All Optimizations, Time Report)",
       "configurePreset": "clang-ninja-debug-all-time-report"
+    },
+    {
+      "name": "clang-ninja-debug-all-webrtc",
+      "displayName": "Build Clang Ninja Debug (All Optimizations, WebRTC)",
+      "configurePreset": "clang-ninja-debug-all-webrtc",
+      "targets": [
+        "server"
+      ]
     },
     {
       "name": "clang-ninja-client-debug",

@@ -6,6 +6,8 @@ module;
 #include <tuple>
 #include <cmath>
 #include <utility>
+#include <cstring>
+#include <cstdint>
 
 #include "core/utility/Expected.hpp"
 
@@ -37,8 +39,8 @@ struct NetworkMessageData
             return std::unexpected(ParseError::BufferTooSmall);
         }
 
-        Arg converted_data =
-          *static_cast<const Arg*>(static_cast<const void*>(data.subspan(0, sizeof(Arg)).data()));
+        Arg converted_data{};
+        std::memcpy(&converted_data, data.subspan(0, sizeof(Arg)).data(), sizeof(Arg));
         return converted_data;
     }
 
@@ -48,23 +50,23 @@ struct NetworkMessageData
     ParseDataParameter(std::span<const char> data)
     {
         auto text_size_or_error =
-          ParseDataParameter<unsigned short>(data.subspan(0, sizeof(unsigned short)));
+          ParseDataParameter<std::uint16_t>(data.subspan(0, sizeof(std::uint16_t)));
         if (!text_size_or_error.has_value()) {
             return std::unexpected(text_size_or_error.error());
         }
 
-        unsigned short text_size = *text_size_or_error;
-        if (text_size == 0 || text_size > data.size() - 2) {
+        std::uint16_t text_size = *text_size_or_error;
+        if (text_size == 0 || text_size > data.size() - sizeof(std::uint16_t)) {
             return std::unexpected(ParseError::InvalidStringSize);
         }
 
-        for (char character : data.subspan(2, text_size)) {
+        for (char character : data.subspan(sizeof(std::uint16_t), text_size)) {
             if (character == 0) {
                 return std::unexpected(ParseError::InvalidString);
             }
         }
 
-        auto text_data = data.subspan(2, text_size);
+        auto text_data = data.subspan(sizeof(std::uint16_t), text_size);
         std::string text{ text_data.begin(), text_data.end() };
         return text;
     }
@@ -87,16 +89,16 @@ struct NetworkMessageData
     ParseDataParameterSize(std::span<const char> data)
     {
         auto text_size_or_error =
-          ParseDataParameter<unsigned short>(data.subspan(0, sizeof(unsigned short)));
+          ParseDataParameter<std::uint16_t>(data.subspan(0, sizeof(std::uint16_t)));
         if (!text_size_or_error.has_value()) {
             return std::unexpected(text_size_or_error.error());
         }
-        unsigned short text_size = *text_size_or_error;
-        if ((text_size == 0) || text_size > data.size() - 2) {
+        std::uint16_t text_size = *text_size_or_error;
+        if ((text_size == 0) || text_size > data.size() - sizeof(std::uint16_t)) {
             return std::unexpected(ParseError::InvalidStringSize);
         }
 
-        return sizeof(unsigned short) + text_size;
+        return sizeof(std::uint16_t) + text_size;
     }
 
     template<typename Head, typename... Tail>
@@ -193,7 +195,7 @@ public:
 
     void AppendBytes(const std::string& text)
     {
-        unsigned short text_length = text.length();
+        std::uint16_t text_length = static_cast<std::uint16_t>(text.length());
         auto text_length_bytes_to_append =
           std::span{ static_cast<const char*>(static_cast<void*>(&text_length)),
                      sizeof(text_length) };
@@ -208,7 +210,7 @@ public:
     void AppendBytes(const char* head)
     {
         std::string text = head;
-        unsigned short text_length = text.length();
+        std::uint16_t text_length = static_cast<std::uint16_t>(text.length());
         auto text_length_bytes_to_append =
           std::span{ static_cast<const char*>(static_cast<void*>(&text_length)),
                      sizeof(text_length) };

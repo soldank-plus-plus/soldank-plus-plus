@@ -3,6 +3,7 @@ module;
 #include <cstdint>
 #include <condition_variable>
 #include <chrono>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -12,6 +13,7 @@ module;
 #include <thread>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <rtc/rtc.hpp>
@@ -46,6 +48,13 @@ public:
         signaling_server_.Post("/webrtc/candidate", [this](const Httplib::ServerRequest& request) {
             return HandleRemoteCandidate(request);
         });
+        signaling_server_.Options("/webrtc/offer", [](const Httplib::ServerRequest& /*request*/) {
+            return CorsPreflightResponse();
+        });
+        signaling_server_.Options("/webrtc/candidate",
+                                  [](const Httplib::ServerRequest& /*request*/) {
+                                      return CorsPreflightResponse();
+                                  });
         signaling_thread_ = std::thread([this]() {
             Spdlog::info("[WebRtcServerTransport] Signaling endpoint listening on 0.0.0.0:{}",
                          port_);
@@ -57,6 +66,17 @@ public:
     }
 
     void PollConnectionStateChanges() override {}
+
+    std::vector<ReceivedPacket> PollIncomingPackets() override
+    {
+        std::vector<ReceivedPacket> packets;
+        std::scoped_lock incoming_packets_lock(incoming_packets_mutex_);
+        while (!incoming_packets_.empty()) {
+            packets.push_back(std::move(incoming_packets_.front()));
+            incoming_packets_.pop_front();
+        }
+        return packets;
+    }
 
     void RegisterObserver(ConnectionStateChangedHandler observer) override
     {
@@ -70,24 +90,36 @@ public:
     {
         auto data_channel = FindDataChannel(connection_id, delivery_mode);
         if (!data_channel) {
-            Spdlog::warn("[WebRtcServerTransport] No {} DataChannel for connection {}",
-                         ToChannelLabel(delivery_mode),
-                         connection_id);
+            if (delivery_mode == DeliveryMode::Reliable) {
+                Spdlog::warn("[WebRtcServerTransport] No {} DataChannel for connection {}",
+                             ToChannelLabel(delivery_mode),
+                             connection_id);
+            }
             return;
         }
         if (!data_channel->isOpen()) {
-            Spdlog::warn("[WebRtcServerTransport] {} DataChannel for connection {} is not open",
-                         ToChannelLabel(delivery_mode),
-                         connection_id);
+            if (delivery_mode == DeliveryMode::Reliable) {
+                Spdlog::warn(
+                  "[WebRtcServerTransport] {} DataChannel for connection {} is not open",
+                  ToChannelLabel(delivery_mode),
+                  connection_id);
+            }
             return;
         }
 
-        const auto* bytes =
-          reinterpret_cast<const rtc::byte*>(static_cast<const void*>(payload.data()));
-        if (!data_channel->send(bytes, payload.size())) {
-            Spdlog::warn("[WebRtcServerTransport] {} DataChannel send buffered for connection {}",
-                         ToChannelLabel(delivery_mode),
-                         connection_id);
+        rtc::binary message;
+        message.reserve(payload.size());
+        for (const char byte : payload) {
+            message.push_back(static_cast<rtc::byte>(byte));
+        }
+
+        if (!data_channel->send(std::move(message))) {
+            if (delivery_mode == DeliveryMode::Reliable) {
+                Spdlog::warn(
+                  "[WebRtcServerTransport] {} DataChannel send buffered for connection {}",
+                  ToChannelLabel(delivery_mode),
+                  connection_id);
+            }
         }
     }
 
@@ -211,7 +243,23 @@ private:
         return { .status = status,
                  .body = body,
                  .content_type = "application/json",
-                 .headers = { { .name = "Access-Control-Allow-Origin", .value = "*" } } };
+                 .headers = { { .name = "Access-Control-Allow-Origin", .value = "*" },
+                              { .name = "Access-Control-Allow-Headers",
+                                .value = "Content-Type" },
+                              { .name = "Access-Control-Allow-Methods",
+                                .value = "POST, OPTIONS" } } };
+    }
+
+    static Httplib::ServerResponse CorsPreflightResponse()
+    {
+        return { .status = 204,
+                 .body = "",
+                 .content_type = "text/plain",
+                 .headers = { { .name = "Access-Control-Allow-Origin", .value = "*" },
+                              { .name = "Access-Control-Allow-Headers",
+                                .value = "Content-Type" },
+                              { .name = "Access-Control-Allow-Methods",
+                                .value = "POST, OPTIONS" } } };
     }
 
     static const char* ToChannelLabel(DeliveryMode delivery_mode)
@@ -267,6 +315,24 @@ private:
             Spdlog::info("[WebRtcServerTransport] {} DataChannel closed for connection {}",
                          label,
                          connection_id);
+        });
+        data_channel->onMessage([this, connection_id](rtc::message_variant data) {
+            ReceivedPacket packet{ .connection_id = connection_id, .payload = {} };
+            if (std::holds_alternative<rtc::binary>(data)) {
+                const auto& bytes = std::get<rtc::binary>(data);
+                packet.payload.assign(bytes.begin(), bytes.end());
+            } else {
+                const auto& text = std::get<std::string>(data);
+                packet.payload.reserve(text.size());
+                for (const char character : text) {
+                    packet.payload.push_back(static_cast<std::byte>(character));
+                }
+            }
+
+            {
+                std::scoped_lock incoming_packets_lock(incoming_packets_mutex_);
+                incoming_packets_.push_back(std::move(packet));
+            }
         });
     }
 
@@ -436,5 +502,7 @@ private:
     std::mutex sessions_mutex_;
     std::unordered_map<ConnectionId, PeerSession> sessions_;
     std::vector<ConnectionStateChangedHandler> observers_;
+    std::mutex incoming_packets_mutex_;
+    std::deque<ReceivedPacket> incoming_packets_;
 };
 } // namespace Soldank

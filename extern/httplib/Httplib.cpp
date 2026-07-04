@@ -107,6 +107,8 @@ public:
 
     void Post(const std::string& path, Handler handler);
 
+    void Options(const std::string& path, Handler handler);
+
     bool Listen(const std::string& host, int port);
 
     void Stop();

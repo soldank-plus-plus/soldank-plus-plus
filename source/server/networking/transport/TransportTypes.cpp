@@ -1,7 +1,7 @@
 module;
 
 #include <cstddef>
-#include <span>
+#include <vector>
 
 export module Networking.Transport.TransportTypes;
 
@@ -14,6 +14,6 @@ using ConnectionId = unsigned int;
 struct ReceivedPacket
 {
     ConnectionId connection_id;
-    std::span<const std::byte> payload;
+    std::vector<std::byte> payload;
 };
 } // namespace Soldank

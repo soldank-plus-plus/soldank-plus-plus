@@ -3,6 +3,10 @@ module;
 #include <memory>
 #include <cassert>
 #include <cstdint>
+#include <optional>
+#include <span>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 export module Networking.GameServer;
@@ -40,6 +44,7 @@ public:
                const std::shared_ptr<ServerState>& server_state)
         : world_(world)
         , server_state_(server_state)
+        , network_event_dispatcher_(network_event_dispatcher)
     {
         // TODO: we shouldn't init NetworkingInterface here because it's global
         NetworkingInterface::Init(port);
@@ -72,6 +77,7 @@ public:
         player_poll_group_->PollIncomingMessages();
 #if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
         for (auto& transport : transports_) {
+            ProcessWebRtcIncomingPackets(*transport);
             transport->PollConnectionStateChanges();
         }
 #endif
@@ -87,14 +93,33 @@ public:
         if (player_poll_group_->IsConnectionAssigned(connection_id)) {
             player_poll_group_->SendNetworkMessage(connection_id, network_message);
         }
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+        if (web_rtc_connections_.contains(connection_id)) {
+            SendWebRtcNetworkMessage(connection_id, network_message, DeliveryMode::Unreliable);
+        }
+#endif
     }
     void SendNetworkMessageToAll(const NetworkMessage& network_message) override
     {
         player_poll_group_->SendNetworkMessageToAll(network_message);
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+        for (const auto& [connection_id, connection] : web_rtc_connections_) {
+            if (connection.soldier_id.has_value()) {
+                SendWebRtcNetworkMessage(connection_id, network_message, DeliveryMode::Unreliable);
+            }
+        }
+#endif
     }
 
     unsigned int GetSoldierIdFromConnectionId(unsigned int connection_id) override
     {
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+        const auto web_rtc_connection = web_rtc_connections_.find(connection_id);
+        if (web_rtc_connection != web_rtc_connections_.end() &&
+            web_rtc_connection->second.soldier_id.has_value()) {
+            return *web_rtc_connection->second.soldier_id;
+        }
+#endif
         return player_poll_group_->GetConnectionSoldierId(connection_id);
     }
 
@@ -103,6 +128,15 @@ private:
     std::shared_ptr<PlayerPollGroup> player_poll_group_;
 #if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
     std::vector<std::unique_ptr<IServerTransport>> transports_;
+
+    struct WebRtcConnection
+    {
+        ConnectionId connection_id;
+        std::string nick;
+        std::optional<unsigned int> soldier_id;
+    };
+
+    std::unordered_map<ConnectionId, WebRtcConnection> web_rtc_connections_;
 #endif
 
     void OnSteamNetConnectionStatusChanged(GNS::SteamNetConnectionStatusChangedCallback_t* p_info)
@@ -159,5 +193,141 @@ private:
 
     std::shared_ptr<IWorld> world_;
     std::shared_ptr<ServerState> server_state_;
+    std::shared_ptr<NetworkEventDispatcher> network_event_dispatcher_;
+
+#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+    void SendWebRtcNetworkMessage(ConnectionId connection_id,
+                                  const NetworkMessage& network_message,
+                                  DeliveryMode delivery_mode)
+    {
+        std::span<const char> payload{ network_message.GetData().data(),
+                                       network_message.GetData().size() };
+        for (auto& transport : transports_) {
+            transport->Send(connection_id, payload, delivery_mode);
+        }
+    }
+
+    void ProcessWebRtcIncomingPackets(IServerTransport& transport)
+    {
+        for (const auto& packet : transport.PollIncomingPackets()) {
+            const auto connection = web_rtc_connections_.find(packet.connection_id);
+            if (connection == web_rtc_connections_.end() ||
+                !connection->second.soldier_id.has_value()) {
+                AcceptWebRtcConnection(transport, packet);
+                continue;
+            }
+
+            std::span<const char> received_bytes{
+                reinterpret_cast<const char*>(packet.payload.data()), packet.payload.size()
+            };
+            NetworkMessage network_message(received_bytes);
+            ConnectionMetadata connection_metadata{
+                .connection_id = packet.connection_id,
+                .send_message_to_connection = [this, connection_id = packet.connection_id](
+                                                const NetworkMessage& message) {
+                    SendWebRtcNetworkMessage(connection_id, message, DeliveryMode::Unreliable);
+                }
+            };
+            network_event_dispatcher_->ProcessNetworkMessage(connection_metadata, network_message);
+        }
+    }
+
+    void AcceptWebRtcConnection(IServerTransport& transport, const ReceivedPacket& first_packet)
+    {
+        std::string nick{ reinterpret_cast<const char*>(first_packet.payload.data()),
+                          first_packet.payload.size() };
+        if (nick.empty()) {
+            nick = "Web player";
+        }
+
+        Spdlog::info("[GameServer] WebRTC connection {} nick: {}",
+                     first_packet.connection_id,
+                     nick);
+
+        auto [connection, inserted] =
+          web_rtc_connections_.try_emplace(first_packet.connection_id,
+                                           WebRtcConnection{ .connection_id =
+                                                               first_packet.connection_id,
+                                                            .nick = nick,
+                                                            .soldier_id = std::nullopt });
+        if (!inserted && connection->second.soldier_id.has_value()) {
+            return;
+        }
+
+        NetworkMessage welcome_message{ NetworkEvent::ChatMessage,
+                                        "Welcome to the server " + nick };
+        std::span<const char> welcome_payload{ welcome_message.GetData().data(),
+                                               welcome_message.GetData().size() };
+        Spdlog::info("[GameServer] WebRTC send initial ChatMessage: connection={}, size={}",
+                     first_packet.connection_id,
+                     welcome_message.GetData().size());
+        transport.Send(first_packet.connection_id, welcome_payload, DeliveryMode::Reliable);
+
+        world_->GetStateManager()->ForEachSoldier([&](const auto& soldier) {
+            std::string player_nick = "Player";
+            for (const auto& [_, web_rtc_connection] : web_rtc_connections_) {
+                if (web_rtc_connection.soldier_id == soldier.id) {
+                    player_nick = web_rtc_connection.nick;
+                    break;
+                }
+            }
+            NetworkMessage soldier_info{ NetworkEvent::SoldierInfo, soldier.id, player_nick };
+            std::span<const char> soldier_info_payload{ soldier_info.GetData().data(),
+                                                        soldier_info.GetData().size() };
+            Spdlog::info(
+              "[GameServer] WebRTC send initial SoldierInfo: connection={}, soldier={}, size={}",
+              first_packet.connection_id,
+              soldier.id,
+              soldier_info.GetData().size());
+            transport.Send(first_packet.connection_id,
+                           soldier_info_payload,
+                           DeliveryMode::Reliable);
+        });
+
+        const std::uint8_t soldier_id = world_->CreateSoldier().id;
+        connection->second.soldier_id = soldier_id;
+        Spdlog::info("[GameServer] WebRTC AssignPlayerId: {}", soldier_id);
+
+        NetworkMessage assign_player_message{ NetworkEvent::AssignPlayerId, soldier_id };
+        std::span<const char> assign_player_payload{ assign_player_message.GetData().data(),
+                                                     assign_player_message.GetData().size() };
+        Spdlog::info(
+          "[GameServer] WebRTC send initial AssignPlayerId: connection={}, soldier={}, size={}",
+          first_packet.connection_id,
+          soldier_id,
+          assign_player_message.GetData().size());
+        transport.Send(first_packet.connection_id, assign_player_payload, DeliveryMode::Reliable);
+
+        NetworkMessage soldier_info_message{ NetworkEvent::SoldierInfo, soldier_id, nick };
+        std::span<const char> own_soldier_info_payload{ soldier_info_message.GetData().data(),
+                                                        soldier_info_message.GetData().size() };
+        Spdlog::info(
+          "[GameServer] WebRTC send own SoldierInfo: connection={}, soldier={}, size={}",
+          first_packet.connection_id,
+          soldier_id,
+          soldier_info_message.GetData().size());
+        transport.Send(first_packet.connection_id,
+                       own_soldier_info_payload,
+                       DeliveryMode::Reliable);
+
+        SendNetworkMessageToAll(soldier_info_message);
+
+        const auto spawn_position = world_->SpawnSoldier(soldier_id);
+        NetworkMessage spawn_soldier_message{ NetworkEvent::SpawnSoldier,
+                                              soldier_id,
+                                              spawn_position.x,
+                                              spawn_position.y };
+        std::span<const char> spawn_soldier_payload{ spawn_soldier_message.GetData().data(),
+                                                     spawn_soldier_message.GetData().size() };
+        Spdlog::info(
+          "[GameServer] WebRTC send own SpawnSoldier: connection={}, soldier={}, size={}",
+          first_packet.connection_id,
+          soldier_id,
+          spawn_soldier_message.GetData().size());
+        transport.Send(first_packet.connection_id,
+                       spawn_soldier_payload,
+                       DeliveryMode::Reliable);
+    }
+#endif
 };
 } // namespace Soldank
