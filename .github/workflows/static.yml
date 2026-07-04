@@ -1,5 +1,4 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy test coverage report to Pages
+name: Deploy web reports to Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -95,6 +94,11 @@ jobs:
           clang++ --version
           llvm-cov --version
 
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
       - name: Configure
         run: cmake --preset clang-ninja-coverage-all
 
@@ -149,13 +153,56 @@ jobs:
           lcov --extract build/clang-ninja-coverage-all/coverage.info '*/source/*' --output-file build/clang-ninja-coverage-all/coverage-src.info --ignore-errors gcov,inconsistent
           genhtml -o build/clang-ninja-coverage-all/coverage build/clang-ninja-coverage-all/coverage-src.info --ignore-errors inconsistent,unsupported,category
 
+      - name: Configure browser client
+        run: cmake --preset emscripten-client-debug
+
+      - name: Build browser client
+        run: cmake --build --preset emscripten-client-debug --parallel
+
+      - name: Assemble Pages site
+        run: |
+          rm -rf build/pages
+          mkdir -p build/pages/coverage build/pages/browser-client
+          touch build/pages/.nojekyll
+          cp -a build/clang-ninja-coverage-all/coverage/. build/pages/coverage/
+          cp -a build/emscripten-client-debug/bin/Debug/. build/pages/browser-client/
+          cat > build/pages/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <title>Soldank++ Reports</title>
+            </head>
+            <body>
+              <h1>Soldank++ Reports</h1>
+              <ul>
+                <li><a href="./coverage/">Coverage report</a></li>
+                <li><a href="./browser-client/client.html">Browser client</a></li>
+              </ul>
+            </body>
+          </html>
+          EOF
+          cat > build/pages/browser-client/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=./client.html">
+              <title>Soldank++ Browser Client</title>
+            </head>
+            <body>
+              <p><a href="./client.html">Open the browser client</a></p>
+            </body>
+          </html>
+          EOF
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: './build/clang-ninja-coverage-all/coverage'
+          path: './build/pages'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
