@@ -34,10 +34,16 @@ public:
         lastx_ = x;
         lasty_ = y;
 
-        x_ += dx_;
+        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+            x_ += dx_;
+            y_ += dy_;
+        } else {
+            x_ = x;
+            y_ = window_height - y;
+        }
+
         x_ = std::min<double>(x_, window_width);
         x_ = std::max(x_, 0.0);
-        y_ += dy_;
         y_ = std::min<double>(y_, window_height);
         y_ = std::max(y_, 0.0);
     }

@@ -154,10 +154,10 @@ jobs:
           genhtml -o build/clang-ninja-coverage-all/coverage build/clang-ninja-coverage-all/coverage-src.info --ignore-errors inconsistent,unsupported,category
 
       - name: Configure browser client
-        run: cmake --preset emscripten-client-debug
+        run: cmake --preset emscripten-client-release
 
       - name: Build browser client
-        run: cmake --build --preset emscripten-client-debug --parallel
+        run: cmake --build --preset emscripten-client-release --parallel
 
       - name: Assemble Pages site
         run: |
@@ -165,7 +165,7 @@ jobs:
           mkdir -p build/pages/coverage build/pages/browser-client
           touch build/pages/.nojekyll
           cp -a build/clang-ninja-coverage-all/coverage/. build/pages/coverage/
-          cp -a build/emscripten-client-debug/bin/Debug/. build/pages/browser-client/
+          cp -a build/emscripten-client-release/bin/Release/. build/pages/browser-client/
           cat > build/pages/index.html <<'EOF'
           <!doctype html>
           <html lang="en">

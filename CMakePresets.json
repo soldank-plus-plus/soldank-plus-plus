@@ -108,6 +108,15 @@
       }
     },
     {
+      "name": "emscripten-client-release",
+      "displayName": "Emscripten Browser Client Release",
+      "inherits": "emscripten-client-debug",
+      "binaryDir": "${sourceDir}/build/emscripten-client-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
       "name": "clang-ninja-server-debug",
       "displayName": "Clang Ninja Server Debug",
       "inherits": "clang-ninja-debug",
@@ -481,6 +490,14 @@
       "name": "emscripten-client-debug",
       "displayName": "Build Emscripten Browser Client Debug",
       "configurePreset": "emscripten-client-debug",
+      "targets": [
+        "client"
+      ]
+    },
+    {
+      "name": "emscripten-client-release",
+      "displayName": "Build Emscripten Browser Client Release",
+      "configurePreset": "emscripten-client-release",
       "targets": [
         "client"
       ]

@@ -189,6 +189,7 @@ public:
         auto* loop_state = new LoopState{};
         loop_state->world = this;
         loop_state->run_iteration = run_iteration;
+        const int emscripten_fps = fps_limit_ > 0 ? fps_limit_ : 0;
         emscripten_set_main_loop_arg(
           [](void* arg) {
               auto* loop_state = static_cast<LoopState*>(arg);
@@ -197,7 +198,7 @@ public:
               }
           },
           loop_state,
-          0,
+          emscripten_fps,
           false);
 #else
         LoopState loop_state{};
