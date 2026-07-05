@@ -4,32 +4,28 @@ module;
 
 #include <GLFW/glfw3.h>
 
-#include <chrono>
 #include <cstdint>
-#include <cstdlib>
 #include <cmath>
 #include <memory>
 #include <optional>
-#include <span>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
-
-#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-#include <emscripten/emscripten.h>
-#endif
 
 export module Application;
 
 import Application.CLI.CommandLineParameters;
 import Application.Window;
-import Application.Input.Keyboard;
-import Application.Input.Mouse;
+import Application.Input.InputSnapshot;
+import Application.Input.InputRouter;
+import Application.Input.PlatformInput;
 import Application.Input.PlayerInput;
+import Application.Platform.ClientTransportStartup;
+import Application.Platform.WebAssemblyStartupAdapter;
 import Scene;
 import MapEditor;
 import ClientState;
+import DebugUI;
 
 import Networking.NetworkingClient;
 import Networking.INetworkingClient;
@@ -59,9 +55,6 @@ import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.DeliveryMode;
 
-#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-import Extern.GameNetworkingSockets;
-#endif
 import Extern.Spdlog;
 import Extern.SimpleIni;
 
@@ -84,6 +77,8 @@ private:
     glm::vec2 GetCurrentMouseScreenPosition();
     glm::vec2 GetCurrentMouseMapPosition();
     void UpdateWindowSize();
+    void RouteInput();
+    void UpdateInputContext();
 
     std::unique_ptr<Window> window_;
     std::shared_ptr<IWorld> world_;
@@ -97,29 +92,14 @@ private:
     WindowSizeMode window_size_mode_;
 
     int fps_limit_ = 0;
-    glm::vec2 last_mouse_screen_position_;
-    glm::vec2 last_mouse_map_position_;
     unsigned int input_sequence_id_ = 1;
+    InputRouter input_router_;
+    ClientTransportStartup client_transport_startup_;
 };
 } // namespace Soldank
 
 namespace Soldank
 {
-#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-GNS::SteamNetworkingMicroseconds log_time_zero;
-
-void DebugOutput(GNS::ESteamNetworkingSocketsDebugOutputType output_type, const char* message)
-{
-    GNS::SteamNetworkingMicroseconds time =
-      GNS::GameNetworkingUtils()->GetLocalTimestamp() - log_time_zero;
-    Spdlog::info("{} {}", (double)time * 1e-6, message);
-    fflush(stdout);
-    if (output_type == GNS::ESteamNetworkingSocketsDebugOutputType_Enum::Bug) {
-        exit(1);
-    }
-}
-#endif
-
 Application::Application(const std::vector<const char*>& cli_parameters)
 {
     Spdlog::set_level(Spdlog::level::debug);
@@ -158,69 +138,12 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         exit(1);
     }
 
-#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-    struct UrlServerEndpoint
-    {
-        std::string ip;
-        std::uint16_t port;
-    };
-
-    auto get_server_endpoint_from_url = []() -> std::optional<UrlServerEndpoint> {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        auto* raw_ip = reinterpret_cast<char*>(EM_ASM_PTR({
-            const params = new URLSearchParams(globalThis.location ? globalThis.location.search
-                                                                   : "");
-            const endpoint = params.get("server") || params.get("connect") || "";
-            let host = params.get("ip") || params.get("server_ip") || params.get("host") || "";
-            if (!host && endpoint) {
-                const bracketEnd = endpoint.startsWith("[") ? endpoint.indexOf("]") : -1;
-                if (bracketEnd > 0) {
-                    host = endpoint.slice(1, bracketEnd);
-                } else {
-                    const lastColon = endpoint.lastIndexOf(":");
-                    host = lastColon > 0 ? endpoint.slice(0, lastColon) : endpoint;
-                }
-            }
-            return stringToNewUTF8(host);
-        }));
-        std::unique_ptr<char, decltype(&std::free)> ip_holder(raw_ip, &std::free);
-        if (ip_holder == nullptr || ip_holder.get()[0] == '\0') {
-            return std::nullopt;
-        }
-
-        const int port = EM_ASM_INT({
-            const params = new URLSearchParams(globalThis.location ? globalThis.location.search
-                                                                   : "");
-            const endpoint = params.get("server") || params.get("connect") || "";
-            let portText = params.get("port") || params.get("server_port") || "";
-            if (!portText && endpoint) {
-                const bracketEnd = endpoint.startsWith("[") ? endpoint.indexOf("]") : -1;
-                if (bracketEnd > 0 && endpoint[bracketEnd + 1] === ":") {
-                    portText = endpoint.slice(bracketEnd + 2);
-                } else {
-                    const lastColon = endpoint.lastIndexOf(":");
-                    portText = lastColon > 0 ? endpoint.slice(lastColon + 1) : "";
-                }
-            }
-            const parsedPort = Number.parseInt(portText, 10);
-            return Number.isInteger(parsedPort) ? parsedPort : 0;
-        });
-
-        if (port <= 0 || port > 65535) {
-            return std::nullopt;
-        }
-
-        return UrlServerEndpoint{ .ip = ip_holder.get(),
-                                  .port = static_cast<std::uint16_t>(port) };
-    };
-
-    if (auto url_server_endpoint = get_server_endpoint_from_url()) {
+    if (auto url_server_endpoint = WebAssemblyStartupAdapter::GetServerEndpointFromUrl()) {
         application_mode_ = CommandLineParameters::ApplicationMode::Online;
         server_ip = url_server_endpoint->ip;
         server_port = url_server_endpoint->port;
         Spdlog::info("Using server endpoint from URL: {}:{}", server_ip, server_port);
     }
-#endif
 
     window_size_mode_ = parsed_cli_parameters.window_size_mode;
     fps_limit_ = parsed_cli_parameters.fps_limit;
@@ -299,18 +222,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         client_network_event_dispatcher_ =
           std::make_shared<NetworkEventDispatcher>(network_event_handlers);
 
-#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-        GNS::SteamDatagramErrMsg err_msg;
-        if (!GNS::GameNetworkingSocketsInit(nullptr, err_msg)) {
-            Spdlog::error("GameNetworkingSocketsInit failed. {}", std::span(err_msg).data());
-        }
-
-        log_time_zero = GNS::GameNetworkingUtils()->GetLocalTimestamp();
-
-        GNS::GameNetworkingUtils()->SetDebugOutputFunction(
-          GNS::ESteamNetworkingSocketsDebugOutputType_Enum::Msg, DebugOutput);
-#endif
-
+        client_transport_startup_.Initialize();
         networking_client_ = std::make_unique<NetworkingClient>(server_ip.c_str(), server_port);
     } else {
         CoreEventHandler::ObserveAll(world_.get());
@@ -323,23 +235,13 @@ Application::~Application()
     networking_client_.reset(nullptr);
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
-#if !defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-        // Give connections time to finish up.  This is an application layer protocol
-        // here, it's not TCP.  Note that if you have an application and you need to be
-        // more sure about cleanup, you won't be able to do this.  You will need to send
-        // a message and then either wait for the peer to close the connection, or
-        // you can pool the connection to see if any reliable data is pending.
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        GNS::GameNetworkingSocketsKill();
-#endif
+        client_transport_startup_.Shutdown();
     }
 }
 
 void Application::Run()
 {
-
-    Mouse::SubscribeButtonObserver([&](int button, int action) {
+    input_router_.SetMouseButtonHandler([&](int button, int action) {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             client_state_->event_left_mouse_button_clicked.Notify();
         }
@@ -365,7 +267,7 @@ void Application::Run()
         }
     });
 
-    Keyboard::SubscribeKeyObserver([&](int key, int action) {
+    input_router_.SetKeyHandler([&](int key, int action) {
         if (action == GLFW_PRESS) {
             client_state_->event_key_pressed.Notify(key);
         }
@@ -373,6 +275,35 @@ void Application::Run()
         if (action == GLFW_RELEASE) {
             client_state_->event_key_released.Notify(key);
         }
+    });
+    input_router_.SetMouseScreenMoveHandler(
+      [&](glm::vec2 last_mouse_position, glm::vec2 new_mouse_position) {
+          if (std::abs(last_mouse_position.x - new_mouse_position.x) > 0.001F ||
+              std::abs(last_mouse_position.y - new_mouse_position.y) > 0.001F) {
+              client_state_->event_mouse_screen_position_changed.Notify(last_mouse_position,
+                                                                        new_mouse_position);
+          }
+      });
+    input_router_.SetMouseMapMoveHandler(
+      [&](glm::vec2 last_mouse_position, glm::vec2 new_mouse_position) {
+          if (std::abs(last_mouse_position.x - new_mouse_position.x) > 0.0000001F ||
+              std::abs(last_mouse_position.y - new_mouse_position.y) > 0.0000001F) {
+              client_state_->event_mouse_map_position_changed.Notify(last_mouse_position,
+                                                                     new_mouse_position);
+              client_state_->mouse_map_position = GetCurrentMouseMapPosition();
+          }
+      });
+    input_router_.SetMouseScrollHandler([&](float wheel_delta) {
+        if (wheel_delta < 0.0F) {
+            client_state_->event_mouse_wheel_scrolled_down.Notify();
+        } else if (wheel_delta > 0.0F) {
+            client_state_->event_mouse_wheel_scrolled_up.Notify();
+        }
+
+        glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
+        client_state_->event_mouse_map_position_changed.Notify(client_state_->mouse_map_position,
+                                                               mouse_map_position);
+        client_state_->mouse_map_position = mouse_map_position;
     });
 
     world_->GetPhysicsEvents().soldier_collides_with_polygon.AddObserver(
@@ -407,8 +338,7 @@ void Application::Run()
       });
 
     window_->Create(window_size_mode_);
-    last_mouse_screen_position_ = GetCurrentMouseScreenPosition();
-    last_mouse_map_position_ = GetCurrentMouseMapPosition();
+    input_router_.ResetMousePositions(GetCurrentMouseScreenPosition(), GetCurrentMouseMapPosition());
     UpdateWindowSize();
     client_state_->camera_component.UpdateWindowDimensions(
       { client_state_->window_width, client_state_->window_height });
@@ -486,45 +416,6 @@ void Application::Run()
         }
     });
 
-    Mouse::SubscribeMouseMovementObserver([&](double /*x*/, double /*y*/) {
-        glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
-        if (std::abs(last_mouse_screen_position_.x - mouse_screen_position.x) > 0.001F ||
-            std::abs(last_mouse_screen_position_.y - mouse_screen_position.y) > 0.001F) {
-            client_state_->event_mouse_screen_position_changed.Notify(last_mouse_screen_position_,
-                                                                      mouse_screen_position);
-            mouse_screen_position = GetCurrentMouseScreenPosition();
-        }
-        last_mouse_screen_position_ = mouse_screen_position;
-
-        glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
-        if (std::abs(last_mouse_map_position_.x - mouse_map_position.x) > 0.0000001F ||
-            std::abs(last_mouse_map_position_.y - mouse_map_position.y) > 0.0000001F) {
-            client_state_->event_mouse_map_position_changed.Notify(last_mouse_map_position_,
-                                                                   mouse_map_position);
-            mouse_map_position = GetCurrentMouseMapPosition();
-            client_state_->mouse_map_position = mouse_map_position;
-        }
-        last_mouse_map_position_ = mouse_map_position;
-    });
-
-    Mouse::SubscribeMouseScrollObserver([&](double /*dx*/, double dy) {
-        if (dy < 0.0) {
-            client_state_->event_mouse_wheel_scrolled_down.Notify();
-        } else if (dy > 0.0) {
-            client_state_->event_mouse_wheel_scrolled_up.Notify();
-        }
-
-        glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
-        if (std::abs(last_mouse_map_position_.x - mouse_map_position.x) > 0.0000001F ||
-            std::abs(last_mouse_map_position_.y - mouse_map_position.y) > 0.0000001F) {
-            client_state_->event_mouse_map_position_changed.Notify(last_mouse_map_position_,
-                                                                   mouse_map_position);
-            mouse_map_position = GetCurrentMouseMapPosition();
-            client_state_->mouse_map_position = mouse_map_position;
-        }
-        last_mouse_map_position_ = mouse_map_position;
-    });
-
     scene_ = std::make_unique<Scene>(world_->GetStateManager(), *client_state_);
 
     client_state_->map_editor_state.event_pixel_color_under_cursor_requested.AddObserver([&]() {
@@ -537,7 +428,11 @@ void Application::Run()
 
     world_->SetShouldStopGameLoopCallback([&]() { return window_->ShouldClose(); });
     world_->SetPreGameLoopIterationCallback([&]() {
-        if (Keyboard::KeyWentDown(GLFW_KEY_ESCAPE)) {
+        UpdateInputContext();
+        RouteInput();
+
+        const PlatformInput& input = window_->GetPlatformInput();
+        if (input.KeyWentDown(GLFW_KEY_ESCAPE)) {
             window_->Close();
         }
         UpdateWindowSize();
@@ -547,12 +442,13 @@ void Application::Run()
         if (application_mode_ == CommandLineParameters::ApplicationMode::Local ||
             (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
              client_state_->draw_game_interface)) {
-            if (Keyboard::KeyWentDown(GLFW_KEY_F10)) {
+            if (input_router_.GetActiveContext() != InputContext::UiCaptured &&
+                input.KeyWentDown(GLFW_KEY_F10)) {
                 world_->GetStateManager()->TogglePauseGame();
             }
 
             if (world_->GetStateManager()->IsGamePaused()) {
-                glm::vec2 mouse_position = { Mouse::GetX(), Mouse::GetY() };
+                glm::vec2 mouse_position = { input.GetX(), input.GetY() };
 
                 client_state_->camera_prev = client_state_->camera;
 
@@ -588,7 +484,8 @@ void Application::Run()
             }
         }
 
-        glm::vec2 mouse_position = { Mouse::GetX(), Mouse::GetY() };
+        const PlatformInput& input = window_->GetPlatformInput();
+        glm::vec2 mouse_position = { input.GetX(), input.GetY() };
         client_state_->mouse.x = mouse_position.x;
         client_state_->mouse.y = mouse_position.y;
 
@@ -608,38 +505,38 @@ void Application::Run()
             if (is_soldier_active) {
                 if (is_soldier_alive) {
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id, ControlActionType::MoveLeft, Keyboard::Key(GLFW_KEY_A));
+                      client_soldier_id, ControlActionType::MoveLeft, input.Key(GLFW_KEY_A));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id, ControlActionType::MoveRight, Keyboard::Key(GLFW_KEY_D));
+                      client_soldier_id, ControlActionType::MoveRight, input.Key(GLFW_KEY_D));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id, ControlActionType::Jump, Keyboard::Key(GLFW_KEY_W));
+                      client_soldier_id, ControlActionType::Jump, input.Key(GLFW_KEY_W));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id, ControlActionType::Crouch, Keyboard::Key(GLFW_KEY_S));
+                      client_soldier_id, ControlActionType::Crouch, input.Key(GLFW_KEY_S));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id,
                       ControlActionType::ChangeWeapon,
-                      Keyboard::Key(GLFW_KEY_Q));
+                      input.Key(GLFW_KEY_Q));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id,
                       ControlActionType::ThrowGrenade,
-                      Keyboard::Key(GLFW_KEY_E));
+                      input.Key(GLFW_KEY_E));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id, ControlActionType::DropWeapon, Keyboard::Key(GLFW_KEY_F));
+                      client_soldier_id, ControlActionType::DropWeapon, input.Key(GLFW_KEY_F));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id, ControlActionType::Prone, Keyboard::Key(GLFW_KEY_X));
+                      client_soldier_id, ControlActionType::Prone, input.Key(GLFW_KEY_X));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id,
                       ControlActionType::ThrowFlag,
-                      Keyboard::Key(GLFW_KEY_W) && Keyboard::Key(GLFW_KEY_S));
+                      input.Key(GLFW_KEY_W) && input.Key(GLFW_KEY_S));
 
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id,
                       ControlActionType::UseJets,
-                      Mouse::Button(GLFW_MOUSE_BUTTON_RIGHT));
+                      input.Button(GLFW_MOUSE_BUTTON_RIGHT));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id,
                       ControlActionType::Fire,
-                      Mouse::Button(GLFW_MOUSE_BUTTON_LEFT));
+                      input.Button(GLFW_MOUSE_BUTTON_LEFT));
 
                     world_->GetStateManager()->SoldierControlApply(
                       client_soldier_id, [&](const Soldier& soldier, Control& control) {
@@ -748,6 +645,7 @@ void Application::Run()
           scene_->Render(state_manager, *client_state_, frame_percent, last_fps);
 
           window_->SwapBuffers();
+          window_->GetPlatformInput().ResetFrame();
           window_->PollInput();
       });
 
@@ -793,7 +691,8 @@ glm::vec2 Application::GetCurrentMouseMapPosition()
     glm::vec2 window_size = window_->GetWindowSize();
     glm::vec2 mouse_map_position;
     if (window_->GetCursorMode() == CursorMode::Locked) {
-        mouse_map_position = { Mouse::GetX(), window_size.y - Mouse::GetY() };
+        mouse_map_position = { window_->GetPlatformInput().GetX(),
+                               window_size.y - window_->GetPlatformInput().GetY() };
     } else {
         mouse_map_position = window_->GetCursorScreenPosition();
     }
@@ -818,5 +717,31 @@ void Application::UpdateWindowSize()
     glm::ivec2 window_size = window_->GetWindowSize();
     client_state_->window_width = (float)window_size.x;
     client_state_->window_height = (float)window_size.y;
+}
+
+void Application::RouteInput()
+{
+    const InputSnapshot input_snapshot = window_->GetPlatformInput().CreateSnapshot(
+      GetCurrentMouseScreenPosition(), GetCurrentMouseMapPosition());
+    input_router_.Route(input_snapshot);
+}
+
+void Application::UpdateInputContext()
+{
+    if (DebugUI::GetWantCaptureMouse() ||
+        client_state_->map_editor_state.is_mouse_hovering_over_ui ||
+        client_state_->map_editor_state.is_modal_or_popup_open) {
+        input_router_.SetActiveContext(InputContext::UiCaptured);
+        return;
+    }
+
+    if (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
+        input_router_.SetActiveContext(client_state_->draw_game_interface
+                                         ? InputContext::EditorPlayTest
+                                         : InputContext::Editor);
+        return;
+    }
+
+    input_router_.SetActiveContext(InputContext::Gameplay);
 }
 } // namespace Soldank

@@ -4,9 +4,13 @@ set(client_lib_modules
     application/Application.cpp
     application/cli/CommandLineParameters.cpp
     application/window/Window.cpp
-    application/input/Keyboard.cpp
-    application/input/Mouse.cpp
+    application/window/WindowBackendAdapter.cpp
+    application/input/InputRouter.cpp
+    application/input/InputSnapshot.cpp
+    application/input/PlatformInput.cpp
     application/input/PlayerInput.cpp
+    application/platform/ClientTransportStartup.cpp
+    application/platform/WebAssemblyStartupAdapter.cpp
 
     map_editor/MapEditor.cpp
     map_editor/actions/MapEditorAction.cpp
@@ -38,6 +42,7 @@ set(client_lib_modules
     networking/IConnection.cpp
     networking/NetworkingClient.cpp
     networking/INetworkingClient.cpp
+    networking/transport/ClientTransportAdapter.cpp
     networking/event_handlers/AssignPlayerIdNetworkEventHandler.cpp
     networking/event_handlers/HitSoldierNetworkEventHandler.cpp
     networking/event_handlers/KillSoldierNetworkEventHandler.cpp
@@ -124,18 +129,20 @@ if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     client_lib BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/platform/emscripten
   )
 endif()
-find_path(EMSCRIPTEN_GLFW_INCLUDE_DIR
-  NAMES GLFW/glfw3.h
-  PATHS
-    "$ENV{EMSCRIPTEN_ROOT}/cache/sysroot/include"
-    "$ENV{EMSCRIPTEN_ROOT}/system/include"
-    "/usr/share/emscripten/cache/sysroot/include"
-    "/usr/share/emscripten/system/include"
-  NO_DEFAULT_PATH
-)
-if (EMSCRIPTEN_GLFW_INCLUDE_DIR)
-  target_include_directories(client_lib PUBLIC ${EMSCRIPTEN_GLFW_INCLUDE_DIR})
-  target_compile_options(client_lib PUBLIC "-I${EMSCRIPTEN_GLFW_INCLUDE_DIR}")
+if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  find_path(EMSCRIPTEN_GLFW_INCLUDE_DIR
+    NAMES GLFW/glfw3.h
+    PATHS
+      "$ENV{EMSCRIPTEN_ROOT}/cache/sysroot/include"
+      "$ENV{EMSCRIPTEN_ROOT}/system/include"
+      "/usr/share/emscripten/cache/sysroot/include"
+      "/usr/share/emscripten/system/include"
+    NO_DEFAULT_PATH
+  )
+  if (EMSCRIPTEN_GLFW_INCLUDE_DIR)
+    target_include_directories(client_lib PUBLIC ${EMSCRIPTEN_GLFW_INCLUDE_DIR})
+    target_compile_options(client_lib PUBLIC "-I${EMSCRIPTEN_GLFW_INCLUDE_DIR}")
+  endif()
 endif()
 
 target_link_libraries(client_lib PUBLIC glfw)

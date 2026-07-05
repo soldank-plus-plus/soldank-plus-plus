@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI tools like Claude Code or Codex when working with code in this repository.
 
 ## Project
 
@@ -14,15 +14,20 @@ Vcpkg is required to pull `GameNetworkingSockets` (it can't come through CPM). T
 
 ```
 git clone https://github.com/microsoft/vcpkg && ./vcpkg/bootstrap-vcpkg.sh
-cmake -Bbuild [-DCMAKE_EXPORT_COMPILE_COMMANDS=On]
-cmake --build build -j
+cmake --preset clang-ninja-debug-all
+cmake --build --preset clang-ninja-debug-all --parallel
 ```
 
-CMake options:
-- `BUILD_CLIENT_ENABLED`, `BUILD_SERVER_ENABLED`, `BUILD_TESTS_ENABLED`.
-- `BUILD_COMPILE_WITH_COVERAGE` defaults `OFF`; use the `clang-ninja-coverage` preset to enable gcov-compatible coverage flags (`-coverage -fprofile-arcs -ftest-coverage`).
+There are several presets defined for this project but the best ones to use are:
+- clang-ninja-debug-all
+- clang-ninja-release-all
+- msvc-ninja-debug-all
+- msvc-ninja-release-all
+They have all optimizations enabled so they will compile the fastest.
 
-Artifacts land in `build/bin/<Config>/` (POSIX) or `build/bin/` (MSVC); `install` copies them to `./bin/`.
+CMake options are defined in root CMakeLists.txt file.
+
+Artifacts land in `build/<Build_type>/bin/<Config>/` (POSIX) or `build/<Build_type>/bin/` (MSVC); `install` copies them to `./bin/`.
 
 CPM (`cmake/CPM.cmake`) downloads two external dependencies at configure time: `soldatbase` (game assets — animations under `shared/anims/*.poa`, `shared/objects/*.po`, weapon INIs) and `daScript` (server-only).
 
@@ -31,7 +36,7 @@ CPM (`cmake/CPM.cmake`) downloads two external dependencies at configure time: `
 GTest, driven by CTest. Each test is its own executable declared in `tests/shared/CMakeLists.txt`:
 
 ```
-cd build && ctest --output-on-failure          # all tests
+cd build/<Preset> && ctest --output-on-failure          # all tests
 ctest -R MapTest                                # one test by name
 ./bin/Debug/MapTest --gtest_filter=Foo.Bar      # run a single GTest case directly
 ```
@@ -48,6 +53,8 @@ Three CMake targets, all built as C++ module libraries (`FILE_SET ... TYPE CXX_M
 - **`client_lib`** + `client` exe (`source/client/`) — adds `Application` (top-level lifecycle), GLFW `Window`, input, OpenGL `rendering/` (one renderer per drawable kind, plus ImGui-based debug/map-editor UI), `map_editor/` (command-pattern actions + tools), and `networking/` with a `NetworkingClient` that registers concrete `*NetworkEventHandler`s into the dispatcher.
 - **`server_lib`** + `server` exe (`source/server/`) — `GameServer` drives the same `IWorld`; networking uses poll groups (`EntryPollGroup` for handshake, `PlayerPollGroup` once authenticated). Scripting goes through `IScriptingEngine` → `DaScriptScriptingEngine`. `LobbyClient` talks to a master server via cpp-httplib.
 
+Most of the code is written as C++ modules. All new code should be written as C++ modules too unless it's impossible for it to be a C++ module.
+
 When adding a new networked message: extend the `NetworkEvent` enum in `source/shared/communication/NetworkEvent.cpp`, add packet structs in `NetworkPackets.cpp`, then add a handler under `source/client/networking/event_handlers/` and/or `source/server/networking/event_handlers/`, and register it where the dispatcher is constructed (`Application.cpp` on the client, `GameServer.cpp` on the server). All three source files must also be appended to the `*_lib_modules` list in the corresponding `CMakeLists.txt` — the module file set is explicit, not glob-based.
 
 ## Code style
@@ -61,4 +68,6 @@ When adding a new networked message: extend the `NetworkEvent` enum in `source/s
 - Constants, constexpr, macros: **UPPER_CASE**
 
 Checks enabled: `bugprone-*, cppcoreguidelines-*, clang-analyzer-*, modernize-*, readability-*, misc-*, performance-*` with a small explicit deny-list (magic-numbers, identifier-length, trailing-return-type, nodiscard, easily-swappable-parameters, pro-type-union-access — the last so `glm::vec2::x` access doesn't fire).
+
+Don't use em-dashes anywhere in the code. User regular "-" dashes if you want. Em-dashes can sometimes break the code even if they are in the comments.
 

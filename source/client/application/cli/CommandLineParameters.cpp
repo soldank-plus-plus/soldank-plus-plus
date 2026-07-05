@@ -118,11 +118,7 @@ ParsedValues Parse(const std::vector<const char*>& cli_parameters)
         } else if (result.count("windowed") != 0) {
             parsed_values.window_size_mode = WindowSizeMode::Windowed;
         } else {
-#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-            parsed_values.window_size_mode = WindowSizeMode::Windowed;
-#else
-            parsed_values.window_size_mode = WindowSizeMode::Fullscreen;
-#endif
+            parsed_values.window_size_mode = WindowBackendAdapter::GetDefaultWindowSizeMode();
         }
 
         if (result.count("max-fps") != 0) {

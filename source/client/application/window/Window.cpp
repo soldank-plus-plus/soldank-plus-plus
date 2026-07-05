@@ -17,8 +17,9 @@ module;
 
 export module Application.Window;
 
-import Application.Input.Keyboard;
-import Application.Input.Mouse;
+export import Application.WindowBackendAdapter;
+
+import Application.Input.PlatformInput;
 
 import Shared.Core.Utility.Observable;
 
@@ -26,20 +27,6 @@ import Extern.Spdlog;
 
 export namespace Soldank
 {
-enum class CursorMode : std::uint8_t
-{
-    Locked,
-    Normal,
-    Hidden
-};
-
-enum class WindowSizeMode : std::uint8_t
-{
-    Fullscreen = 0,
-    BorderlessFullscreen,
-    Windowed
-};
-
 class Window
 {
 public:
@@ -58,14 +45,7 @@ public:
             throw "Error: Failed to initialize GLFW";
         }
 
-#ifdef __APPLE__
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-#ifdef __EMSCRIPTEN__
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-#endif
+        WindowBackendAdapter::ApplyGlfwWindowHints();
 
         width_ = width;
         height_ = height;
@@ -87,25 +67,9 @@ public:
 
     void SetCursorMode(CursorMode cursor_mode)
     {
-#ifdef __EMSCRIPTEN__
-        if (cursor_mode == CursorMode::Locked) {
-            cursor_mode = CursorMode::Normal;
-        }
-#endif
-
-        int glfw_cursor_mode = GLFW_CURSOR_HIDDEN;
-        switch (cursor_mode) {
-            case CursorMode::Locked:
-                glfw_cursor_mode = GLFW_CURSOR_DISABLED;
-                break;
-            case CursorMode::Normal:
-                glfw_cursor_mode = GLFW_CURSOR_NORMAL;
-                break;
-            case CursorMode::Hidden:
-                glfw_cursor_mode = GLFW_CURSOR_HIDDEN;
-                break;
-        }
-        glfwSetInputMode(glfw_window_, GLFW_CURSOR, glfw_cursor_mode);
+        cursor_mode = WindowBackendAdapter::AdjustCursorMode(cursor_mode);
+        glfwSetInputMode(glfw_window_, GLFW_CURSOR, WindowBackendAdapter::ToGlfwCursorMode(
+                                                     cursor_mode));
         current_cursor_mode_ = cursor_mode;
     }
 
@@ -141,9 +105,7 @@ public:
 
     void Create(WindowSizeMode window_size_mode)
     {
-#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
-        window_size_mode = WindowSizeMode::Windowed;
-#endif
+        window_size_mode = WindowBackendAdapter::AdjustWindowSizeMode(window_size_mode);
 
         switch (window_size_mode) {
             case WindowSizeMode::Fullscreen: {
@@ -201,18 +163,9 @@ public:
 
         glfwMakeContextCurrent(glfw_window_);
 
-#ifndef __EMSCRIPTEN__
-        glfwSwapInterval(0);
-#endif
+        WindowBackendAdapter::ConfigureSwapInterval();
 
-#ifndef __EMSCRIPTEN__
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) == 0) {
-            Spdlog::error("Error: Failed to initialize GLAD.");
-            glfwTerminate();
-            throw "Error: Failed to initialize GLAD.";
-        }
-#endif
+        WindowBackendAdapter::LoadOpenGl();
 
         glfwSetWindowUserPointer(glfw_window_, this);
         glfwSetFramebufferSizeCallback(
@@ -220,20 +173,31 @@ public:
               auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
               window->ResizeCallback(glfw_window, width, height);
           });
-        glfwSetKeyCallback(glfw_window_, Keyboard::KeyCallback);
-        glfwSetCursorPosCallback(glfw_window_, Mouse::CursorPosCallback);
-        glfwSetScrollCallback(glfw_window_, Mouse::MouseWheelCallback);
-        glfwSetMouseButtonCallback(glfw_window_, Mouse::MouseButtonCallback);
+        glfwSetKeyCallback(
+          glfw_window_, [](GLFWwindow* glfw_window, int key, int /*scancode*/, int action,
+                           int /*mods*/) {
+              auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+              window->GetPlatformInput().OnKey(key, action);
+          });
+        glfwSetCursorPosCallback(glfw_window_, [](GLFWwindow* glfw_window, double x, double y) {
+            auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+            window->GetPlatformInput().OnCursorPos(glfw_window, x, y);
+        });
+        glfwSetScrollCallback(glfw_window_, [](GLFWwindow* glfw_window, double dx, double dy) {
+            auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+            window->GetPlatformInput().OnScroll(dx, dy);
+        });
+        glfwSetMouseButtonCallback(
+          glfw_window_, [](GLFWwindow* glfw_window, int button, int action, int /*mods*/) {
+              auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
+              window->GetPlatformInput().OnMouseButton(button, action);
+          });
         glfwSetErrorCallback(GLFWErrorCallback);
         glfwSetWindowFocusCallback(glfw_window_, [](GLFWwindow* glfw_window, int focused) {
             auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
             window->OnFocusStateChange(glfw_window, focused);
         });
-#ifdef __EMSCRIPTEN__
-        SetCursorMode(CursorMode::Normal);
-#else
-        SetCursorMode(CursorMode::Locked);
-#endif
+        SetCursorMode(WindowBackendAdapter::GetInitialCursorMode());
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -245,19 +209,18 @@ public:
         // ImGui::StyleColorsLight();
 
         ImGui_ImplGlfw_InitForOpenGL(glfw_window_, true);
-#ifdef __EMSCRIPTEN__
-        ImGui_ImplOpenGL3_Init("#version 300 es");
-#else
-        ImGui_ImplOpenGL3_Init();
-#endif
+        ImGui_ImplOpenGL3_Init(WindowBackendAdapter::GetGlslVersion());
     }
 
     void Close() { glfwSetWindowShouldClose(glfw_window_, 1); }
 
     void MakeContextCurrent() { glfwMakeContextCurrent(glfw_window_); }
-    static void PollInput() { glfwPollEvents(); }
+    void PollInput() { glfwPollEvents(); }
     void SwapBuffers() { glfwSwapBuffers(glfw_window_); }
     bool ShouldClose() { return glfwWindowShouldClose(glfw_window_) != 0; }
+
+    PlatformInput& GetPlatformInput() { return platform_input_; }
+    const PlatformInput& GetPlatformInput() const { return platform_input_; }
 
     void ResizeCallback(GLFWwindow* /*window*/, const int width, const int height)
     {
@@ -311,5 +274,6 @@ private:
     Observable<> event_window_gained_focus_;
 
     CursorMode current_cursor_mode_;
+    PlatformInput platform_input_;
 };
 } // namespace Soldank
