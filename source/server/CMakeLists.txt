@@ -1,11 +1,25 @@
 set(server_lib_modules
     application/Application.cpp
+    application/ServerBootstrap.cpp
+    application/ServerConfig.cpp
+    application/ServerConfigLoader.cpp
     application/ServerState.cpp
+
+    runtime/ServerCommandQueues.cpp
+    runtime/ServerRuntime.cpp
+    runtime/ServerSimulationEventRouter.cpp
+
+    sessions/PlayerSessionManager.cpp
+
+    events/ServerEvent.cpp
+
+    replication/ReplicationService.cpp
 
     scripting/IScriptingEngine.cpp
     scripting/dascript/DaScriptScriptingEngine.cpp
 
     networking/IGameServer.cpp
+    networking/ServerNetworkHost.cpp
     networking/GameServer.cpp
     networking/CoreEventsConnectionNotifier.cpp
     networking/LobbyClient.cpp
