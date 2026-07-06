@@ -7,6 +7,7 @@ module;
 
 #include <algorithm>
 #include <filesystem>
+#include <memory>
 #include <string>
 
 export module MapEditorUI;
@@ -189,7 +190,10 @@ void Render(const StateManager& game_state_manager, ClientState& client_state)
             client_state.map_editor_state.should_open_map_settings_modal = false;
             std::filesystem::path textures_directory_path = "textures";
             client_state.map_editor_state.all_textures_in_directory.clear();
-            for (const auto& entry : std::filesystem::directory_iterator(textures_directory_path)) {
+            for (std::filesystem::directory_iterator entry_iterator(textures_directory_path);
+                 entry_iterator != std::filesystem::directory_iterator();
+                 ++entry_iterator) {
+                const auto& entry = *entry_iterator;
                 if (entry.is_directory()) {
                     continue;
                 }
@@ -828,8 +832,10 @@ void Render(const StateManager& game_state_manager, ClientState& client_state)
         if (client_state.map_editor_state.should_open_scenery_picker_popup) {
             std::filesystem::path sceneries_directory_path = "scenery-gfx";
             client_state.map_editor_state.all_sceneries_in_directory.clear();
-            for (const auto& entry :
-                 std::filesystem::directory_iterator(sceneries_directory_path)) {
+            for (std::filesystem::directory_iterator entry_iterator(sceneries_directory_path);
+                 entry_iterator != std::filesystem::directory_iterator();
+                 ++entry_iterator) {
+                const auto& entry = *entry_iterator;
                 if (entry.is_directory()) {
                     continue;
                 }

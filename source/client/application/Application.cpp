@@ -213,9 +213,9 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     Spdlog::debug("{} Map: {}", map_path.empty(), map_path);
 
     if (map_path.empty()) {
-        world_->GetStateManager()->GetMap().CreateEmptyMap();
+        world_->GetStateManager()->CreateEmptyMapDocument();
     } else {
-        world_->GetStateManager()->GetMap().LoadMap(map_path);
+        world_->GetStateManager()->LoadMapDocument(map_path);
     }
 
     if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {

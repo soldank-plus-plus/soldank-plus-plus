@@ -128,6 +128,7 @@ public:
         map_data_.polygons_min_y = 0.0F;
         map_data_.polygons_max_y = 0.0F;
 
+        map_data_.sectors_count = 25;
         int n = 2 * map_data_.sectors_count + 1;
         map_data_.sectors_poly = std::vector<std::vector<PMSSector>>(n, std::vector<PMSSector>(n));
 

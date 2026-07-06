@@ -3,6 +3,7 @@ module;
 #include "core/math/Glm.hpp"
 
 #include <cstdint>
+#include <optional>
 
 export module Editor.PlayTestSession;
 
@@ -11,6 +12,8 @@ import MapEditor;
 import ClientState;
 
 import Shared.Core.IWorld;
+import Shared.Core.Map.Map;
+import Shared.Core.Map.RuntimeMap;
 import Shared.Core.State.StateManager;
 
 export namespace Soldank
@@ -22,6 +25,8 @@ public:
 
     void Start(ClientState& client_state, IWorld& world, Window& window, MapEditor& map_editor)
     {
+        editor_map_snapshot_ = world.GetStateManager()->GetConstMap();
+
         if (client_state.client_soldier_id.has_value()) {
             std::uint8_t client_soldier_id = *client_state.client_soldier_id;
             bool is_soldier_active =
@@ -39,7 +44,7 @@ public:
         client_state.draw_game_debug_interface = true;
         client_state.camera_component.ResetZoom();
         world.GetStateManager()->UnPauseGame();
-        RegenerateMapSectorsAndMoveSoldiers(world);
+        BuildRuntimeMapAndMoveSoldiers(world);
         window.SetCursorMode(CursorMode::Locked);
         map_editor.Lock();
         is_active_ = true;
@@ -51,27 +56,21 @@ public:
         client_state.draw_map_editor_interface = true;
         client_state.draw_game_debug_interface = false;
         world.GetStateManager()->PauseGame();
+        if (editor_map_snapshot_.has_value()) {
+            world.GetStateManager()->OverrideMap(*editor_map_snapshot_);
+            editor_map_snapshot_.reset();
+        }
         window.SetCursorMode(CursorMode::Normal);
         map_editor.Unlock();
         is_active_ = false;
     }
 
 private:
-    static void RegenerateMapSectorsAndMoveSoldiers(IWorld& world)
+    static void BuildRuntimeMapAndMoveSoldiers(IWorld& world)
     {
-        auto& map = world.GetStateManager()->GetMap();
-        if (map.GetPolygons().empty()) {
-            return;
-        }
-
-        auto vertex = map.GetPolygons().at(0).vertices.at(0);
-        glm::vec2 old_polygon_position = { vertex.x, vertex.y };
-
-        map.GenerateSectors();
-
-        vertex = map.GetPolygons().at(0).vertices.at(0);
-        glm::vec2 move_offset = { vertex.x - old_polygon_position.x,
-                                  vertex.y - old_polygon_position.y };
+        RuntimeMap runtime_map = world.GetStateManager()->BuildRuntimeMapFromDocument();
+        glm::vec2 move_offset = runtime_map.GetDocumentToRuntimeOffset();
+        world.GetStateManager()->ApplyRuntimeMap(runtime_map);
 
         world.GetStateManager()->TransformSoldiers([&](auto& soldier) {
             world.GetStateManager()->MoveSoldier(soldier.id, move_offset);
@@ -79,5 +78,6 @@ private:
     }
 
     bool is_active_ = false;
+    std::optional<Map> editor_map_snapshot_;
 };
 } // namespace Soldank

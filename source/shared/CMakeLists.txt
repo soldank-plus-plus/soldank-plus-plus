@@ -61,9 +61,11 @@ set(shared_lib_modules
     core/entities/WeaponParametersFactory.cpp
 
     core/map/Map.cpp
+    core/map/MapDocument.cpp
     core/map/PMSEnums.cpp
     core/map/PMSStructs.cpp
     core/map/PMSConstants.cpp
+    core/map/RuntimeMap.cpp
 
     core/math/Glm.cpp
     core/math/Calc.cpp

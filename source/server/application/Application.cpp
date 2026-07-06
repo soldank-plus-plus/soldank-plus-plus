@@ -44,7 +44,7 @@ public:
         , player_session_manager_(std::make_unique<PlayerSessionManager>(*server_state_))
         , command_queues_(std::make_unique<ServerCommandQueues>())
     {
-        world_->GetStateManager()->GetMap().LoadMap(config_.map_path);
+        world_->GetStateManager()->LoadMapDocument(config_.map_path);
 
         scripting_engine_ = std::make_shared<DaScriptScriptingEngine>();
 

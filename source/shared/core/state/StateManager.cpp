@@ -6,6 +6,7 @@ module;
 #include <algorithm>
 #include <utility>
 #include <memory>
+#include <filesystem>
 #include <functional>
 #include <random>
 
@@ -18,7 +19,9 @@ import Shared.Core.Entities.Soldier;
 import Shared.Core.Entities.Item;
 import Shared.Core.Math.Calc;
 import Shared.Core.Map.Map;
+import Shared.Core.Map.MapDocument;
 import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.RuntimeMap;
 import Shared.Core.Physics.SoldierSkeletonPhysics;
 import Shared.Core.Physics.Particles;
 import Shared.Core.State.Control;
@@ -39,6 +42,25 @@ public:
     Map& GetMap() { return state_.map; } // TODO: Change this to const
     const Map& GetConstMap() const { return state_.map; }
     void OverrideMap(const Map& map) { state_.map = map; }
+    MapDocument CreateMapDocumentSnapshot() const { return MapDocument::FromMap(state_.map); }
+    void ApplyMapDocument(const MapDocument& map_document) { state_.map = map_document.GetMap(); }
+    void CreateEmptyMapDocument()
+    {
+        MapDocument map_document;
+        map_document.CreateEmptyMap();
+        ApplyMapDocument(map_document);
+    }
+    void LoadMapDocument(const std::filesystem::path& map_path)
+    {
+        MapDocument map_document;
+        map_document.LoadMap(map_path);
+        ApplyMapDocument(map_document);
+    }
+    RuntimeMap BuildRuntimeMapFromDocument() const
+    {
+        return RuntimeMap::BuildFromDocument(CreateMapDocumentSnapshot());
+    }
+    void ApplyRuntimeMap(const RuntimeMap& runtime_map) { state_.map = runtime_map.GetMap(); }
 
     void ChangeSoldierControlActionState(std::uint8_t soldier_id,
                                          ControlActionType control_action_type,
