@@ -13,6 +13,7 @@ module;
 #include <functional>
 #include <utility>
 #include <optional>
+#include <vector>
 
 export module Shared.Core.World;
 
@@ -29,6 +30,9 @@ import Shared.Core.Entities.Soldier;
 import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.Loop.FixedTimestepRunner;
 import Shared.Core.Loop.PlatformFixedTimestepLoop;
+import Shared.Core.Simulation.SimulationCommands;
+import Shared.Core.Simulation.SimulationEvents;
+import Shared.Core.Simulation.WorldTick;
 
 import Shared.Core.Animations;
 import Shared.Core.Animations.States;
@@ -38,6 +42,7 @@ import Shared.Core.Physics.Particles;
 import Shared.Core.State.Control;
 import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Types.WeaponType;
+import Shared.Core.Utility.VisitHelper;
 
 export namespace Soldank
 {
@@ -74,11 +79,18 @@ public:
               },
             .should_tick = [&]() { return !state_manager_->IsGamePaused(); },
             .tick =
-              [&](double delta_time) {
+              [&](double /*delta_time*/) {
                   if (pre_world_update_callback_) {
                       pre_world_update_callback_();
                   }
-                  Update(delta_time);
+                  const std::vector<PlayerInputCommand> player_inputs;
+                  const std::vector<SimulationCommand> commands;
+                  const WorldTickInput input{
+                      .tick = state_manager_->GetGameTick(),
+                      .player_inputs = player_inputs,
+                      .commands = commands,
+                  };
+                  static_cast<void>(Tick(input));
               },
             .after_tick =
               [&](unsigned int next_game_tick) {
@@ -103,6 +115,24 @@ public:
         };
 
         platform_loop.Run(fixed_timestep_runner, callbacks, [&]() { return fps_limit_; });
+    }
+
+    WorldTickResult Tick(const WorldTickInput& input) final
+    {
+        pending_simulation_events_.clear();
+        state_manager_->SetGameTick(input.tick);
+
+        for (const auto& player_input : input.player_inputs) {
+            ApplyPlayerInputCommand(player_input);
+        }
+
+        for (const auto& command : input.commands) {
+            ApplySimulationCommand(command);
+        }
+
+        Update(1.0 / 60.0);
+
+        return WorldTickResult{ .events = std::move(pending_simulation_events_) };
     }
 
     void Update(double /*delta_time*/) final
@@ -147,6 +177,9 @@ public:
 
             if (should_spawn_projectile) {
                 state_manager_->CreateProjectile(bullet_params);
+                pending_simulation_events_.push_back(ProjectileSpawnedEvent{
+                  .bullet_params = bullet_params,
+                });
             }
         }
 
@@ -268,6 +301,10 @@ public:
     {
         auto initial_soldier_position = state_manager_->SpawnSoldier(soldier_id, spawn_position);
         world_events_->after_soldier_spawns.Notify(state_manager_->GetSoldier(soldier_id));
+        pending_simulation_events_.push_back(SoldierSpawnedEvent{
+          .soldier_id = static_cast<std::uint8_t>(soldier_id),
+          .position = initial_soldier_position,
+        });
         return initial_soldier_position;
     }
 
@@ -278,6 +315,9 @@ public:
             soldier.dead_meat = true;
             soldier.ticks_to_respawn = 180; // 3 seconds
             world_events_->soldier_died.Notify(soldier);
+            pending_simulation_events_.push_back(SoldierKilledEvent{
+              .soldier_id = static_cast<std::uint8_t>(soldier_id),
+            });
         });
     }
 
@@ -336,6 +376,37 @@ public:
     void SetFPSLimit(int new_fps_limit) final { fps_limit_ = new_fps_limit; }
 
 private:
+    void ApplyPlayerInputCommand(const PlayerInputCommand& command)
+    {
+        state_manager_->SoldierControlApply(command.soldier_id,
+                                            [&](const Soldier& /*soldier*/, Control& control) {
+                                                control = command.control;
+                                            });
+        state_manager_->ChangeSoldierMouseMapPosition(command.soldier_id,
+                                                      command.mouse_map_position);
+    }
+
+    void ApplySimulationCommand(const SimulationCommand& command)
+    {
+        std::visit(VisitOverload{
+                     [&](const SpawnSoldierCommand& spawn_command) {
+                         SpawnSoldier(spawn_command.soldier_id, spawn_command.spawn_position);
+                     },
+                     [&](const KillSoldierCommand& kill_command) {
+                         KillSoldier(kill_command.soldier_id);
+                     },
+                     [&](const RemoveSoldierCommand& remove_command) {
+                         state_manager_->RemoveSoldier(remove_command.soldier_id);
+                     },
+                     [&](const SetWeaponChoiceCommand& weapon_choice_command) {
+                         UpdateWeaponChoices(weapon_choice_command.soldier_id,
+                                             weapon_choice_command.primary_weapon_type,
+                                             weapon_choice_command.secondary_weapon_type);
+                     },
+                   },
+                   command);
+    }
+
     std::shared_ptr<StateManager> state_manager_;
     std::unique_ptr<PhysicsEvents> physics_events_;
     std::unique_ptr<WorldEvents> world_events_;
@@ -352,6 +423,7 @@ private:
     AnimationDataManager animation_data_manager_;
 
     int fps_limit_;
+    std::vector<SimulationEvent> pending_simulation_events_;
 };
 
 } // namespace Soldank

@@ -5,6 +5,7 @@ set(shared_lib_modules
     communication/NetworkMessage.cpp
     communication/NetworkPackets.cpp
     communication/PingTimer.cpp
+    communication/ProtocolConversions.cpp
 
     core/IWorld.cpp
     core/World.cpp
@@ -78,6 +79,12 @@ set(shared_lib_modules
     core/state/Control.cpp
     core/state/State.cpp
     core/state/StateManager.cpp
+
+    core/simulation/SimulationCommands.cpp
+    core/simulation/SimulationCommandQueue.cpp
+    core/simulation/SimulationEvents.cpp
+    core/simulation/SimulationEventSink.cpp
+    core/simulation/WorldTick.cpp
 
     core/types/BulletType.cpp
     core/types/ItemType.cpp

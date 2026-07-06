@@ -2,6 +2,7 @@ module;
 
 #include "core/math/Glm.hpp"
 
+#include <cstdint>
 #include <memory>
 
 export module Networking.EventHandlers.SoldierInputNetworkEventHandler;
@@ -15,6 +16,8 @@ import Shared.Core.IWorld;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkPackets;
+import Shared.Networking.ProtocolConversions;
+import Shared.Core.Simulation.SimulationCommands;
 import Shared.Core.State.Control;
 
 import Extern.Spdlog;
@@ -42,11 +45,10 @@ private:
     {
         unsigned int input_sequence_id = soldier_input_packet.input_sequence_id;
         unsigned int soldier_id = game_server_->GetSoldierIdFromConnectionId(sender_connection_id);
-        glm::vec2 soldier_position = { soldier_input_packet.position_x,
-                                       soldier_input_packet.position_y };
-        glm::vec2 mouse_map_position = { soldier_input_packet.mouse_map_position_x,
-                                         soldier_input_packet.mouse_map_position_y };
-        const Control& player_control = soldier_input_packet.control;
+        PlayerInputCommand player_input_command =
+          ProtocolConversions::ToPlayerInputCommand(
+            static_cast<std::uint8_t>(soldier_id), soldier_input_packet);
+        const Control& player_control = player_input_command.control;
 
         // TODO: validate arguments
         // Spdlog::info("{} Soldier pos from client: {} {}",
@@ -79,9 +81,9 @@ private:
 
         world_->GetStateManager()->ChangeSoldierMouseMapPosition(
           soldier_id,
-          { mouse_map_position.x,
-            mouse_map_position.y }); // TODO: smooth camera handling, probably need to
-                                     // send mouse aim instead of cursor pos in packets
+          player_input_command.mouse_map_position); // TODO: smooth camera handling, probably need
+                                                    // to send mouse aim instead of cursor pos in
+                                                    // packets
         world_->GetStateManager()->ChangeSoldierControlActionState(
           soldier_id, ControlActionType::UseJets, player_control.jets);
         world_->GetStateManager()->ChangeSoldierControlActionState(
