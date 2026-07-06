@@ -10,6 +10,9 @@ set(shared_lib_modules
     core/World.cpp
     core/WorldEvents.cpp
     core/CoreEventHandler.cpp
+    core/loop/FixedTimestepRunner.cpp
+    core/loop/NativeFixedTimestepLoop.cpp
+    core/loop/PlatformFixedTimestepLoop.cpp
 
     core/animations/AnimationData.cpp
     core/animations/AnimationState.cpp

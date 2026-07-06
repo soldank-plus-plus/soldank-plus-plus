@@ -46,6 +46,7 @@ public:
     static WindowSizeMode AdjustWindowSizeMode(WindowSizeMode window_size_mode)
     {
 #if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+        (void)window_size_mode;
         return WindowSizeMode::Windowed;
 #else
         return window_size_mode;
