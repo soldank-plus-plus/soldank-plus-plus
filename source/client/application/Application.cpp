@@ -15,6 +15,7 @@ module;
 export module Application;
 
 import Application.CLI.CommandLineParameters;
+import Application.ClientModes;
 import Application.Window;
 import Application.Input.InputSnapshot;
 import Application.Input.InputRouter;
@@ -22,6 +23,9 @@ import Application.Input.PlatformInput;
 import Application.Input.PlayerInput;
 import Application.Platform.ClientTransportStartup;
 import Application.Platform.WebAssemblyStartupAdapter;
+import Runtime.ClientRuntime;
+import Gameplay.GameSession;
+import Editor.EditorSession;
 import Scene;
 import MapEditor;
 import ClientState;
@@ -29,6 +33,7 @@ import DebugUI;
 
 import Networking.NetworkingClient;
 import Networking.INetworkingClient;
+import Networking.NetworkClientSession;
 import Networking.AssignPlayerIdNetworkEventHandler;
 import Networking.PingCheckNetworkEventHandler;
 import Networking.PlayerLeaveNetworkEventHandler;
@@ -86,14 +91,17 @@ private:
     std::shared_ptr<ClientState> client_state_;
     std::shared_ptr<NetworkEventDispatcher> client_network_event_dispatcher_;
     std::unique_ptr<MapEditor> map_editor_;
+    std::unique_ptr<EditorSession> editor_session_;
+    std::unique_ptr<NetworkClientSession> network_client_session_;
     std::unique_ptr<Scene> scene_;
 
     CommandLineParameters::ApplicationMode application_mode_;
     WindowSizeMode window_size_mode_;
 
     int fps_limit_ = 0;
-    unsigned int input_sequence_id_ = 1;
     InputRouter input_router_;
+    ClientRuntime client_runtime_;
+    GameSession game_session_;
     ClientTransportStartup client_transport_startup_;
 };
 } // namespace Soldank
@@ -168,6 +176,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         }
         case CommandLineParameters::ApplicationMode::Local: {
             Spdlog::info("Application mode = Local");
+            client_runtime_.SetClientMode(ClientMode::LocalGame);
             map_path = "maps/ctf_Ash.pms";
             client_state_->draw_game_debug_interface = true;
             client_state_->draw_game_interface = true;
@@ -179,6 +188,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
                 server_ip = parsed_cli_parameters.join_server_ip;
                 server_port = parsed_cli_parameters.join_server_port;
             }
+            client_runtime_.SetClientMode(ClientMode::OnlineGame);
             map_path = "maps/ctf_Ash.pms";
             client_state_->draw_game_debug_interface = true;
             client_state_->draw_server_pov_client_pos = true;
@@ -187,6 +197,8 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             break;
         }
         case CommandLineParameters::ApplicationMode::MapEditor: {
+            client_runtime_.SetClientMode(ClientMode::MapEditor);
+            client_runtime_.SetEditorMode(EditorMode::Edit);
             client_state_->draw_map_editor_interface = true;
             client_state_->draw_game_interface = false;
             map_editor_ = std::make_unique<MapEditor>(*client_state_, *world_->GetStateManager());
@@ -224,6 +236,8 @@ Application::Application(const std::vector<const char*>& cli_parameters)
 
         client_transport_startup_.Initialize();
         networking_client_ = std::make_unique<NetworkingClient>(server_ip.c_str(), server_port);
+        network_client_session_ = std::make_unique<NetworkClientSession>(
+          *networking_client_, client_network_event_dispatcher_, *world_, *client_state_);
     } else {
         CoreEventHandler::ObserveAll(world_.get());
     }
@@ -365,53 +379,23 @@ void Application::Run()
     if (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
         window_->SetCursorMode(CursorMode::Normal);
         world_->GetStateManager()->PauseGame();
+        editor_session_ =
+          std::make_unique<EditorSession>(*client_state_, *world_, *window_, *map_editor_);
     }
 
     client_state_->map_editor_state.event_pressed_play.AddObserver([&]() {
-        std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
-        bool is_soldier_active = world_->GetStateManager()->GetSoldier(client_soldier_id).active;
-        bool is_soldier_alive = !world_->GetStateManager()->GetSoldier(client_soldier_id).dead_meat;
-
-        if (!is_soldier_active || !is_soldier_alive) {
-            world_->SpawnSoldier(*client_state_->client_soldier_id);
+        if (editor_session_) {
+            editor_session_->StartPlayTest();
+            client_runtime_.SetEditorMode(editor_session_->GetEditorMode());
         }
-
-        client_state_->draw_game_interface = true;
-        client_state_->draw_map_editor_interface = false;
-        client_state_->draw_game_debug_interface = true;
-        client_state_->camera_component.ResetZoom();
-        world_->GetStateManager()->UnPauseGame();
-        if (!world_->GetStateManager()->GetMap().GetPolygons().empty()) {
-            auto vertex = world_->GetStateManager()->GetMap().GetPolygons().at(0).vertices.at(0);
-            glm::vec2 old_polygon_position = { vertex.x, vertex.y };
-
-            world_->GetStateManager()->GetMap().GenerateSectors();
-
-            vertex = world_->GetStateManager()->GetMap().GetPolygons().at(0).vertices.at(0);
-            glm::vec2 move_offset = { vertex.x - old_polygon_position.x,
-                                      vertex.y - old_polygon_position.y };
-
-            // Move soldiers if the map moved
-            world_->GetStateManager()->TransformSoldiers([&](auto& soldier) {
-                world_->GetStateManager()->MoveSoldier(soldier.id, move_offset);
-            });
-        }
-        window_->SetCursorMode(CursorMode::Locked);
-        map_editor_->Lock();
     });
 
     client_state_->event_key_pressed.AddObserver([&](int key) {
         if (key == GLFW_KEY_F5 &&
             application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
-            if (client_state_->draw_game_interface) {
-                client_state_->draw_game_interface = false;
-                client_state_->draw_map_editor_interface = true;
-                client_state_->draw_game_debug_interface = false;
-                world_->GetStateManager()->PauseGame();
-                window_->SetCursorMode(CursorMode::Normal);
-                map_editor_->Unlock();
-            } else {
-                client_state_->map_editor_state.event_pressed_play.Notify();
+            if (editor_session_) {
+                editor_session_->TogglePlayTest();
+                client_runtime_.SetEditorMode(editor_session_->GetEditorMode());
             }
         }
     });
@@ -439,9 +423,10 @@ void Application::Run()
 
         glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
 
-        if (application_mode_ == CommandLineParameters::ApplicationMode::Local ||
-            (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
-             client_state_->draw_game_interface)) {
+        bool is_gameplay_active =
+          game_session_.IsGameplayActive(client_runtime_.GetClientMode(),
+                                         client_runtime_.GetEditorMode());
+        if (is_gameplay_active) {
             if (input_router_.GetActiveContext() != InputContext::UiCaptured &&
                 input.KeyWentDown(GLFW_KEY_F10)) {
                 world_->GetStateManager()->TogglePauseGame();
@@ -455,7 +440,7 @@ void Application::Run()
                 client_state_->mouse.x = mouse_position.x;
                 client_state_->mouse.y = mouse_position.y;
             }
-        } else if (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
+        } else if (client_runtime_.GetClientMode() == ClientMode::MapEditor) {
             client_state_->camera_prev = client_state_->camera;
 
             client_state_->mouse.x = mouse_screen_position.x;
@@ -466,22 +451,7 @@ void Application::Run()
         client_state_->colliding_polygon_ids.clear();
 
         if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
-            networking_client_->SetLag(client_state_->network_lag);
-            networking_client_->Update(client_network_event_dispatcher_);
-
-            if ((world_->GetStateManager()->GetGameTick() % 60 == 0)) {
-                if (client_state_->ping_timer.IsRunning()) {
-                    client_state_->ping_timer.Update();
-                    if (client_state_->ping_timer.IsOverThreshold()) {
-                        networking_client_->SendNetworkMessage({ NetworkEvent::PingCheck },
-                                                               DeliveryMode::Unreliable);
-                    }
-                } else {
-                    client_state_->ping_timer.Start();
-                    networking_client_->SendNetworkMessage({ NetworkEvent::PingCheck },
-                                                           DeliveryMode::Unreliable);
-                }
-            }
+            network_client_session_->UpdateBeforeWorldTick();
         }
 
         const PlatformInput& input = window_->GetPlatformInput();
@@ -599,32 +569,11 @@ void Application::Run()
 
             if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
                 glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
-
-                SoldierInputPacket update_soldier_state_packet{
-                    .input_sequence_id = input_sequence_id_,
-                    .game_tick = world_->GetStateManager()->GetGameTick(),
-                    .position_x = world_->GetSoldier(client_soldier_id).particle.position.x,
-                    .position_y = world_->GetSoldier(client_soldier_id).particle.position.y,
-                    .mouse_map_position_x = mouse_map_position.x,
-                    .mouse_map_position_y = mouse_map_position.y,
-                    .control = world_->GetSoldier(client_soldier_id).control
-                };
-                if (client_state_->server_reconciliation) {
-                    client_state_->soldier_snapshot_history.emplace_back(
-                      input_sequence_id_, world_->GetSoldier(client_soldier_id));
-                }
-                input_sequence_id_++;
-                if (client_state_->server_reconciliation) {
-                    client_state_->pending_inputs.push_back(update_soldier_state_packet);
-                }
-                networking_client_->SendNetworkMessage(
-                  { NetworkEvent::SoldierInput, update_soldier_state_packet },
-                  DeliveryMode::Unreliable);
+                network_client_session_->SendSoldierInput(client_soldier_id, mouse_map_position);
 
                 if (client_state_->kill_button_just_pressed) {
                     client_state_->kill_button_just_pressed = false;
-                    networking_client_->SendNetworkMessage({ NetworkEvent::KillCommand },
-                                                           DeliveryMode::Unreliable);
+                    network_client_session_->SendKillCommand();
                 }
             } else {
                 if (client_state_->kill_button_just_pressed) {
@@ -731,17 +680,9 @@ void Application::UpdateInputContext()
     if (DebugUI::GetWantCaptureMouse() ||
         client_state_->map_editor_state.is_mouse_hovering_over_ui ||
         client_state_->map_editor_state.is_modal_or_popup_open) {
-        input_router_.SetActiveContext(InputContext::UiCaptured);
-        return;
+        input_router_.SetActiveContext(client_runtime_.GetInputContext(true));
+    } else {
+        input_router_.SetActiveContext(client_runtime_.GetInputContext(false));
     }
-
-    if (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
-        input_router_.SetActiveContext(client_state_->draw_game_interface
-                                         ? InputContext::EditorPlayTest
-                                         : InputContext::Editor);
-        return;
-    }
-
-    input_router_.SetActiveContext(InputContext::Gameplay);
 }
 } // namespace Soldank

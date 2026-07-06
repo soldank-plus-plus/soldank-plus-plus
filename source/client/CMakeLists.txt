@@ -2,6 +2,7 @@ set(client_lib_modules
     stb.cpp
 
     application/Application.cpp
+    application/ClientModes.cpp
     application/cli/CommandLineParameters.cpp
     application/window/Window.cpp
     application/window/WindowBackendAdapter.cpp
@@ -11,6 +12,10 @@ set(client_lib_modules
     application/input/PlayerInput.cpp
     application/platform/ClientTransportStartup.cpp
     application/platform/WebAssemblyStartupAdapter.cpp
+
+    editor/EditorSession.cpp
+    editor/PlayTestSession.cpp
+    gameplay/GameSession.cpp
 
     map_editor/MapEditor.cpp
     map_editor/actions/MapEditorAction.cpp
@@ -42,6 +47,7 @@ set(client_lib_modules
     networking/IConnection.cpp
     networking/NetworkingClient.cpp
     networking/INetworkingClient.cpp
+    networking/NetworkClientSession.cpp
     networking/transport/ClientTransportAdapter.cpp
     networking/event_handlers/AssignPlayerIdNetworkEventHandler.cpp
     networking/event_handlers/HitSoldierNetworkEventHandler.cpp
@@ -52,6 +58,9 @@ set(client_lib_modules
     networking/event_handlers/SoldierInfoNetworkEventHandler.cpp
     networking/event_handlers/SoldierStateNetworkEventHandler.cpp
     networking/event_handlers/SpawnSoldierNetworkEventHandler.cpp
+
+    runtime/ClientRuntime.cpp
+    simulation/ClientSimulationEventRouter.cpp
 
     rendering/Scene.cpp
     rendering/ClientState.cpp
