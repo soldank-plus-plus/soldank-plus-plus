@@ -12,6 +12,7 @@ module;
 export module SceneryOutlinesRenderer;
 
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 
 import Shared.Core.Map.Map;
@@ -53,7 +54,7 @@ private:
     Shader shader_;
     glm::vec4 color_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
 };
 } // namespace Soldank
 
@@ -68,7 +69,7 @@ SceneryOutlinesRenderer::SceneryOutlinesRenderer(Map& map, glm::vec4 color)
 
     GenerateGLBufferVertices(map.GetSceneryInstances(), vertices);
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 
     map.GetMapChangeEvents().added_new_scenery.AddObserver(
       [this](const PMSScenery& new_scenery, unsigned int new_scenery_id) {
@@ -94,15 +95,12 @@ SceneryOutlinesRenderer::SceneryOutlinesRenderer(Map& map, glm::vec4 color)
       });
 }
 
-SceneryOutlinesRenderer::~SceneryOutlinesRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+SceneryOutlinesRenderer::~SceneryOutlinesRenderer() = default;
 
 void SceneryOutlinesRenderer::Render(glm::mat4 transform, unsigned int scenery_id)
 {
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, true, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, true, false);
     shader_.SetMatrix4("transform", transform);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // TODO: Move to Renderer if needed
     Renderer::DrawArrays(GL_LINE_LOOP, (int)scenery_id * 4, 4);
@@ -115,7 +113,7 @@ void SceneryOutlinesRenderer::OnAddScenery(const PMSScenery& new_scenery,
     std::vector<float> vertices;
     GenerateGLBufferVerticesForScenery(new_scenery, vertices);
     int offset = new_scenery_id * 4 * 7 * sizeof(GLfloat);
-    Renderer::ModifyVBOVertices(vbo_, vertices, offset);
+    vbo_.UpdateVertices(vertices, offset);
 }
 
 void SceneryOutlinesRenderer::OnRemoveScenery(
@@ -127,7 +125,7 @@ void SceneryOutlinesRenderer::OnRemoveScenery(
     GenerateGLBufferVertices(sceneries_after_removal, vertices);
 
     if (!vertices.empty()) {
-        Renderer::ModifyVBOVertices(vbo_, vertices);
+        vbo_.UpdateVertices(vertices);
     }
 }
 
@@ -135,7 +133,7 @@ void SceneryOutlinesRenderer::OnAddSceneries(const std::vector<PMSScenery>& scen
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(sceneries_after_adding, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
+    vbo_.UpdateVertices(vertices);
 }
 
 void SceneryOutlinesRenderer::OnRemoveSceneries(
@@ -143,7 +141,7 @@ void SceneryOutlinesRenderer::OnRemoveSceneries(
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(sceneries_after_removal, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
+    vbo_.UpdateVertices(vertices);
 }
 
 void SceneryOutlinesRenderer::OnModifySceneries(
@@ -151,7 +149,7 @@ void SceneryOutlinesRenderer::OnModifySceneries(
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(sceneries_after_modify, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
+    vbo_.UpdateVertices(vertices);
 }
 
 void SceneryOutlinesRenderer::GenerateGLBufferVertices(

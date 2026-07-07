@@ -62,12 +62,14 @@ set(client_lib_modules
     runtime/ClientRuntime.cpp
     simulation/ClientSimulationEventRouter.cpp
 
+    rendering/RenderPipeline.cpp
     rendering/Scene.cpp
     rendering/ClientState.cpp
     rendering/components/Camera.cpp
     rendering/data/Texture.cpp
     rendering/data/sprites/SoldierPartData.cpp
     rendering/data/sprites/SpritesManager.cpp
+    rendering/gpu/GpuBuffer.cpp
     rendering/renderer/BackgroundRenderer.cpp
     rendering/renderer/BulletRenderer.cpp
     rendering/renderer/CircleRenderer.cpp
@@ -81,6 +83,7 @@ set(client_lib_modules
     rendering/renderer/SceneryOutlinesRenderer.cpp
     rendering/renderer/SoldierRenderer.cpp
     rendering/renderer/interface/CursorRenderer.cpp
+    rendering/renderer/interface/GameHudRenderer.cpp
     rendering/renderer/interface/ImGuiThemes.cpp
     rendering/renderer/interface/debug/DebugUI.cpp
     rendering/renderer/interface/map_editor/GridRenderer.cpp

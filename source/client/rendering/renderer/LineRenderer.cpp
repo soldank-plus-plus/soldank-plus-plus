@@ -11,6 +11,7 @@ module;
 export module LineRenderer;
 
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 
 export namespace Soldank
@@ -33,7 +34,7 @@ public:
 private:
     Shader shader_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
 };
 } // namespace Soldank
 
@@ -51,13 +52,10 @@ LineRenderer::LineRenderer()
         vertices.push_back(0.0F);
     }
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 }
 
-LineRenderer::~LineRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+LineRenderer::~LineRenderer() = default;
 
 void LineRenderer::Render(glm::mat4 transform,
                           glm::vec2 p1,
@@ -90,12 +88,11 @@ void LineRenderer::Render(glm::mat4 transform,
     // clang-format on
 
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, false, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, false, false);
     shader_.SetMatrix4("transform", transform);
     shader_.SetVec4("color", color);
 
-    glBufferSubData(
-      GL_ARRAY_BUFFER, 0, (long long)vertices.size() * (long long)sizeof(float), vertices.data());
+    vbo_.UpdateVertices(vertices);
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

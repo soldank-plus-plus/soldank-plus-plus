@@ -11,6 +11,7 @@ module;
 export module CircleRenderer;
 
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 
 export namespace Soldank
@@ -37,7 +38,7 @@ public:
 private:
     Shader shader_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
 };
 } // namespace Soldank
 
@@ -49,13 +50,10 @@ CircleRenderer::CircleRenderer()
 {
     std::vector<float> vertices(18, 0.0F);
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 }
 
-CircleRenderer::~CircleRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+CircleRenderer::~CircleRenderer() = default;
 
 void CircleRenderer::Render(glm::mat4 transform,
                             glm::vec2 position,
@@ -69,7 +67,7 @@ void CircleRenderer::Render(glm::mat4 transform,
     float top = outer_radius;
 
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, false, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, false, false);
 
     // clang-format off
     std::vector<float> vertices{
@@ -83,8 +81,7 @@ void CircleRenderer::Render(glm::mat4 transform,
     };
     // clang-format on
 
-    glBufferSubData(
-      GL_ARRAY_BUFFER, 0, (long long)vertices.size() * (long long)sizeof(float), vertices.data());
+    vbo_.UpdateVertices(vertices);
 
     transform = glm::translate(transform, glm::vec3(position.x, -position.y, 0.0));
     shader_.SetMatrix4("transform", transform);

@@ -15,6 +15,7 @@ export module RectangleRenderer;
 
 import Texture;
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 
 import Shared.Core.Math.Calc;
@@ -39,7 +40,7 @@ public:
 private:
     Shader shader_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
 };
 } // namespace Soldank
 
@@ -72,20 +73,17 @@ RectangleRenderer::RectangleRenderer()
                                  right, top,    1.0, top_red,    top_green,    top_blue,    1.0
     };
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_STATIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_STATIC_DRAW);
 }
 
-RectangleRenderer::~RectangleRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+RectangleRenderer::~RectangleRenderer() = default;
 
 void RectangleRenderer::Render(const glm::mat4& transform,
                                const glm::vec2& position,
                                const glm::vec4& color)
 {
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, true, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, true, false);
 
     glm::mat4 current_transform =
       glm::translate(transform, glm::vec3(position.x, -position.y, 0.0));

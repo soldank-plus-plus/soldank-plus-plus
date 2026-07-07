@@ -8,7 +8,6 @@ module;
 #include <string>
 #include <algorithm>
 #include <vector>
-#include <format>
 #include <memory>
 
 export module Scene;
@@ -26,6 +25,7 @@ import SceneriesRenderer;
 import SoldierRenderer;
 import CursorRenderer;
 import TextRenderer;
+import GameHudRenderer;
 import RectangleRenderer;
 import BulletRenderer;
 import LineRenderer;
@@ -50,6 +50,18 @@ public:
                 ClientState& client_state,
                 double frame_percent,
                 int fps);
+    void RenderGame(const StateManager& game_state_manager,
+                    ClientState& client_state,
+                    double frame_percent,
+                    int fps);
+    void RenderEditor(const StateManager& game_state_manager,
+                      ClientState& client_state,
+                      double frame_percent,
+                      int fps);
+    void RenderPlayTest(const StateManager& game_state_manager,
+                        ClientState& client_state,
+                        double frame_percent,
+                        int fps);
 
     void RenderSoldiers(const StateManager& game_state_manager,
                         const ClientState& client_state,
@@ -60,6 +72,16 @@ public:
     static glm::vec4 GetPixelColor(const glm::vec2& position);
 
 private:
+    void RenderWorld(const StateManager& game_state_manager,
+                     ClientState& client_state,
+                     double frame_percent);
+    void RenderDebugOverlay(const StateManager& game_state_manager,
+                            ClientState& client_state,
+                            double frame_percent,
+                            int fps);
+    void RenderEditorOverlay(const StateManager& game_state_manager, ClientState& client_state);
+    void RenderDebugMouseAim(const StateManager& game_state_manager, const ClientState& client_state);
+
     Sprites::SpriteManager sprite_manager_;
     BackgroundRenderer background_renderer_;
     std::unique_ptr<PolygonsRenderer> polygons_renderer_;
@@ -67,7 +89,7 @@ private:
     SceneriesRenderer sceneries_renderer_;
     SoldierRenderer soldier_renderer_;
     CursorRenderer cursor_renderer_;
-    TextRenderer text_renderer_;
+    GameHudRenderer game_hud_renderer_;
     RectangleRenderer rectangle_renderer_;
     BulletRenderer bullet_renderer_;
     LineRenderer line_renderer_;
@@ -88,7 +110,6 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& clien
     , sceneries_renderer_(game_state->GetMap())
     , soldier_renderer_(sprite_manager_)
     , cursor_renderer_(client_state)
-    , text_renderer_("play-regular.ttf", 48)
     , bullet_renderer_(sprite_manager_)
     , item_renderer_(sprite_manager_)
     , map_editor_scene_(client_state, *game_state)
@@ -103,6 +124,47 @@ void Scene::Render(const StateManager& game_state_manager,
                    ClientState& client_state,
                    double frame_percent,
                    int fps)
+{
+    RenderWorld(game_state_manager, client_state, frame_percent);
+    RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
+    RenderEditorOverlay(game_state_manager, client_state);
+    game_hud_renderer_.Render(game_state_manager, client_state);
+    RenderDebugMouseAim(game_state_manager, client_state);
+}
+
+void Scene::RenderGame(const StateManager& game_state_manager,
+                       ClientState& client_state,
+                       double frame_percent,
+                       int fps)
+{
+    RenderWorld(game_state_manager, client_state, frame_percent);
+    RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
+    game_hud_renderer_.Render(game_state_manager, client_state);
+    RenderDebugMouseAim(game_state_manager, client_state);
+}
+
+void Scene::RenderEditor(const StateManager& game_state_manager,
+                         ClientState& client_state,
+                         double frame_percent,
+                         int fps)
+{
+    RenderWorld(game_state_manager, client_state, frame_percent);
+    RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
+    RenderEditorOverlay(game_state_manager, client_state);
+    RenderDebugMouseAim(game_state_manager, client_state);
+}
+
+void Scene::RenderPlayTest(const StateManager& game_state_manager,
+                           ClientState& client_state,
+                           double frame_percent,
+                           int fps)
+{
+    RenderGame(game_state_manager, client_state, frame_percent, fps);
+}
+
+void Scene::RenderWorld(const StateManager& game_state_manager,
+                        ClientState& client_state,
+                        double frame_percent)
 {
     // TODO: handle it better, this is not a good place for this to be
     client_state.current_polygon_texture_dimensions = polygons_renderer_->GetTextureDimensions();
@@ -253,7 +315,13 @@ void Scene::Render(const StateManager& game_state_manager,
           camera.GetView(), { left, bottom }, { right, bottom }, color, thickness);
         line_renderer_.Render(camera.GetView(), { left, bottom }, { left, top }, color, thickness);
     }
+}
 
+void Scene::RenderDebugOverlay(const StateManager& game_state_manager,
+                               ClientState& client_state,
+                               double frame_percent,
+                               int fps)
+{
     if (client_state.draw_game_debug_interface) {
         if (client_state.is_game_debug_interface_enabled) {
             DebugUI::Render(game_state_manager, client_state, frame_percent, fps);
@@ -263,61 +331,22 @@ void Scene::Render(const StateManager& game_state_manager,
                                     { client_state.window_width, client_state.window_height });
         }
     }
+}
 
+void Scene::RenderEditorOverlay(const StateManager& game_state_manager, ClientState& client_state)
+{
     if (client_state.draw_map_editor_interface) {
         map_editor_scene_.Render(game_state_manager, client_state, *polygons_renderer_);
     }
+}
 
-    if (client_state.draw_game_interface) {
-        game_state_manager.ForEachSoldier([&](const auto& soldier) {
-            if (client_state.client_soldier_id.has_value() &&
-                *client_state.client_soldier_id == soldier.id) {
-                text_renderer_.Render("Health: " + std::to_string((int)soldier.health),
-                                      50.0,
-                                      100.0,
-                                      1.0,
-                                      { 1.0, 1.0, 1.0 },
-                                      { client_state.window_width, client_state.window_height });
-                text_renderer_.Render("Jets: " + std::to_string((int)soldier.jets_count),
-                                      50.0,
-                                      50.0,
-                                      1.0,
-                                      { 1.0, 1.0, 1.0 },
-                                      { client_state.window_width, client_state.window_height });
-            }
-        });
-
-        if (client_state.client_soldier_id.has_value()) {
-            game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                if (*client_state.client_soldier_id == soldier.id) {
-                    if (soldier.dead_meat) {
-                        text_renderer_.Render(
-                          "Respawn timer: " +
-                            std::format("{:.2f}", (float)soldier.ticks_to_respawn / 60.0F),
-                          400.0,
-                          100.0,
-                          1.0,
-                          { 1.0, 1.0, 1.0 },
-                          { client_state.window_width, client_state.window_height });
-                    }
-                }
-            });
-        }
-
-        if (game_state_manager.IsGamePaused()) {
-            text_renderer_.Render("Game paused",
-                                  400.0,
-                                  700.0,
-                                  1.0,
-                                  { 0.6, 0.7, 0.4 },
-                                  { client_state.window_width, client_state.window_height });
-        }
-    }
-
+void Scene::RenderDebugMouseAim(const StateManager& game_state_manager,
+                                const ClientState& client_state)
+{
     if (Config::DEBUG_DRAW) {
         game_state_manager.ForEachSoldier([&](const auto& soldier) {
             rectangle_renderer_.Render(
-              camera.GetView(),
+              client_state.camera_component.GetView(),
               glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y),
               { 1.0F, 0.0F, 0.0F, 1.0F });
         });

@@ -14,6 +14,7 @@ module;
 export module BackgroundRenderer;
 
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 
 import Shared.Core.Map.Map;
@@ -47,7 +48,7 @@ private:
 
     Shader shader_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
 };
 } // namespace Soldank
 
@@ -64,7 +65,7 @@ BackgroundRenderer::BackgroundRenderer(Map& map)
 
     GenerateGLBufferVertices(background_top_color, background_bottom_color, boundaries, vertices);
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 
     map.GetMapChangeEvents().changed_background_color.AddObserver(
       [this](const PMSColor& top_color,
@@ -74,15 +75,12 @@ BackgroundRenderer::BackgroundRenderer(Map& map)
       });
 }
 
-BackgroundRenderer::~BackgroundRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+BackgroundRenderer::~BackgroundRenderer() = default;
 
 void BackgroundRenderer::Render(glm::mat4 transform)
 {
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, true, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, true, false);
     shader_.SetMatrix4("transform", transform);
     Renderer::DrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -93,7 +91,7 @@ void BackgroundRenderer::OnChangeBackgroundColor(const PMSColor& top_color,
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(top_color, bottom_color, boundaries, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
+    vbo_.UpdateVertices(vertices);
 }
 
 void BackgroundRenderer::GenerateGLBufferVertices(PMSColor background_top_color,

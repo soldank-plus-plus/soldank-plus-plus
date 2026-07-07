@@ -27,6 +27,7 @@ import Runtime.ClientRuntime;
 import Gameplay.GameSession;
 import Editor.EditorSession;
 import Scene;
+import RenderPipeline;
 import MapEditor;
 import ClientState;
 import DebugUI;
@@ -93,7 +94,7 @@ private:
     std::unique_ptr<MapEditor> map_editor_;
     std::unique_ptr<EditorSession> editor_session_;
     std::unique_ptr<NetworkClientSession> network_client_session_;
-    std::unique_ptr<Scene> scene_;
+    std::unique_ptr<RenderPipeline> render_pipeline_;
 
     CommandLineParameters::ApplicationMode application_mode_;
     WindowSizeMode window_size_mode_;
@@ -400,7 +401,7 @@ void Application::Run()
         }
     });
 
-    scene_ = std::make_unique<Scene>(world_->GetStateManager(), *client_state_);
+    render_pipeline_ = std::make_unique<RenderPipeline>(world_->GetStateManager(), *client_state_);
 
     client_state_->map_editor_state.event_pixel_color_under_cursor_requested.AddObserver([&]() {
         glm::vec2 mouse_position = window_->GetCursorScreenPosition();
@@ -591,7 +592,12 @@ void Application::Run()
           if (!client_state_->objects_interpolation) {
               frame_percent = 1.0F;
           }
-          scene_->Render(state_manager, *client_state_, frame_percent, last_fps);
+          render_pipeline_->Render(state_manager,
+                                   *client_state_,
+                                   client_runtime_.GetClientMode(),
+                                   client_runtime_.GetEditorMode(),
+                                   frame_percent,
+                                   last_fps);
 
           window_->SwapBuffers();
           window_->GetPlatformInput().ResetFrame();

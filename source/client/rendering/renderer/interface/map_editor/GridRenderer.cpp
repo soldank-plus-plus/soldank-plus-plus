@@ -11,6 +11,7 @@ module;
 export module GridRenderer;
 
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 
 export namespace Soldank
@@ -33,7 +34,7 @@ public:
 private:
     Shader shader_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
 };
 } // namespace Soldank
 
@@ -59,18 +60,15 @@ GridRenderer::GridRenderer()
     };
     // clang-format on
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_STATIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_STATIC_DRAW);
 }
 
-GridRenderer::~GridRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+GridRenderer::~GridRenderer() = default;
 
 void GridRenderer::Render(glm::vec2 window_dimensions, glm::vec2 view_position, float view_zoom)
 {
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, false, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, false, false);
     shader_.SetVec2("dimensions", window_dimensions);
     shader_.SetVec2("view_position", view_position);
     shader_.SetFloat("view_zoom", view_zoom);

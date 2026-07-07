@@ -14,6 +14,7 @@ module;
 export module PolygonVertexOutlinesRenderer;
 
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 import ClientState;
 
@@ -56,7 +57,7 @@ private:
     Shader shader_;
     glm::vec4 color_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
     unsigned int polygons_count_;
 
     std::array<std::bitset<3>, MAX_POLYGONS_COUNT> selected_polygon_vertices_;
@@ -77,7 +78,7 @@ PolygonVertexOutlinesRenderer::PolygonVertexOutlinesRenderer(ClientState& client
 
     GenerateGLBufferVertices(map.GetPolygons(), vertices);
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 
     client_state.map_editor_state.event_polygon_selected.AddObserver(
       [this](const PMSPolygon& polygon, const std::bitset<3>& selected_vertices) {
@@ -106,15 +107,12 @@ PolygonVertexOutlinesRenderer::PolygonVertexOutlinesRenderer(ClientState& client
       });
 }
 
-PolygonVertexOutlinesRenderer::~PolygonVertexOutlinesRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+PolygonVertexOutlinesRenderer::~PolygonVertexOutlinesRenderer() = default;
 
 void PolygonVertexOutlinesRenderer::Render(glm::mat4 transform)
 {
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, true, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, true, false);
     shader_.SetMatrix4("transform", transform);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // TODO: Move to Renderer if needed
     Renderer::DrawArrays(GL_TRIANGLES, 0, (int)polygons_count_ * 3);
@@ -129,7 +127,7 @@ void PolygonVertexOutlinesRenderer::OnChangePolygonVertexSelection(
     GenerateGLBufferVerticesForPolygon(polygon, selected_vertices, vertices);
 
     int offset = polygon.id * 7 * sizeof(GLfloat) * 3;
-    Renderer::ModifyVBOVertices(vbo_, vertices, offset);
+    vbo_.UpdateVertices(vertices, offset);
 
     selected_polygon_vertices_.at(polygon.id) = selected_vertices;
 }
@@ -140,7 +138,7 @@ void PolygonVertexOutlinesRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
     GenerateGLBufferVerticesForPolygon(new_polygon, { 0b000 }, vertices);
     if (!vertices.empty()) {
         int offset = new_polygon.id * 7 * sizeof(GLfloat) * 3;
-        Renderer::ModifyVBOVertices(vbo_, vertices, offset);
+        vbo_.UpdateVertices(vertices, offset);
     }
 
     selected_polygon_vertices_.at(new_polygon.id) = { 0b000 };
@@ -155,7 +153,7 @@ void PolygonVertexOutlinesRenderer::OnRemovePolygon(const PMSPolygon& removed_po
 
     if (!vertices.empty()) {
         int offset = removed_polygon.id * 7 * sizeof(GLfloat) * 3;
-        Renderer::ModifyVBOVertices(vbo_, vertices, offset);
+        vbo_.UpdateVertices(vertices, offset);
     }
 
     selected_polygon_vertices_.at(removed_polygon.id) = { 0b000 };
@@ -168,7 +166,7 @@ void PolygonVertexOutlinesRenderer::OnAddPolygons(
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(polygons_after_adding, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
+    vbo_.UpdateVertices(vertices);
     for (unsigned int i = polygons_count_; i < polygons_after_adding.size(); ++i) {
         selected_polygon_vertices_.at(i) = { 0b000 };
     }
@@ -180,7 +178,7 @@ void PolygonVertexOutlinesRenderer::OnRemovePolygons(
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(polygons_after_removal, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
+    vbo_.UpdateVertices(vertices);
     polygons_count_ = polygons_after_removal.size();
 }
 
@@ -189,7 +187,7 @@ void PolygonVertexOutlinesRenderer::OnModifyPolygons(
 {
     std::vector<float> vertices;
     GenerateGLBufferVertices(polygons_after_modify, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
+    vbo_.UpdateVertices(vertices);
     polygons_count_ = polygons_after_modify.size();
 }
 

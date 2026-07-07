@@ -12,6 +12,7 @@ module;
 export module PolygonOutlinesRenderer;
 
 import Renderer;
+import Rendering.Gpu.GpuBuffer;
 import Shader;
 
 import Shared.Core.Map.Map;
@@ -49,7 +50,7 @@ private:
     Shader shader_;
     glm::vec4 color_;
 
-    unsigned int vbo_;
+    GpuBuffer vbo_;
 };
 } // namespace Soldank
 
@@ -64,7 +65,7 @@ PolygonOutlinesRenderer::PolygonOutlinesRenderer(Map& map, glm::vec4 color)
 
     GenerateGLBufferVertices(map.GetPolygons(), vertices);
 
-    vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
+    vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 
     map.GetMapChangeEvents().added_new_polygon.AddObserver(
       [this](const PMSPolygon& new_polygon) { OnAddPolygon(new_polygon); });
@@ -85,15 +86,12 @@ PolygonOutlinesRenderer::PolygonOutlinesRenderer(Map& map, glm::vec4 color)
       });
 }
 
-PolygonOutlinesRenderer::~PolygonOutlinesRenderer()
-{
-    Renderer::FreeVBO(vbo_);
-}
+PolygonOutlinesRenderer::~PolygonOutlinesRenderer() = default;
 
 void PolygonOutlinesRenderer::Render(glm::mat4 transform, unsigned int polygon_id)
 {
     shader_.Use();
-    Renderer::SetupVertexArray(vbo_, std::nullopt, true, false);
+    Renderer::SetupVertexArray(vbo_.GetId(), std::nullopt, true, false);
     shader_.SetMatrix4("transform", transform);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // TODO: Move to Renderer if needed
     Renderer::DrawArrays(GL_TRIANGLES, (int)polygon_id * 3, 3);
@@ -106,7 +104,7 @@ void PolygonOutlinesRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
     GenerateGLBufferVerticesForPolygon(new_polygon, vertices);
 
     int offset = new_polygon.id * 7 * sizeof(GLfloat) * 3;
-    Renderer::ModifyVBOVertices(vbo_, vertices, offset);
+    vbo_.UpdateVertices(vertices, offset);
 }
 
 void PolygonOutlinesRenderer::OnRemovePolygon(const std::vector<PMSPolygon>& polygons_after_removal)
@@ -115,7 +113,7 @@ void PolygonOutlinesRenderer::OnRemovePolygon(const std::vector<PMSPolygon>& pol
     GenerateGLBufferVertices(polygons_after_removal, vertices);
 
     if (!vertices.empty()) {
-        Renderer::ModifyVBOVertices(vbo_, vertices, 0);
+        vbo_.UpdateVertices(vertices, 0);
     }
 }
 
@@ -125,7 +123,7 @@ void PolygonOutlinesRenderer::OnAddPolygons(const std::vector<PMSPolygon>& polyg
     GenerateGLBufferVertices(polygons_after_adding, vertices);
 
     if (!vertices.empty()) {
-        Renderer::ModifyVBOVertices(vbo_, vertices, 0);
+        vbo_.UpdateVertices(vertices, 0);
     }
 }
 
@@ -136,7 +134,7 @@ void PolygonOutlinesRenderer::OnRemovePolygons(
     GenerateGLBufferVertices(polygons_after_removal, vertices);
 
     if (!vertices.empty()) {
-        Renderer::ModifyVBOVertices(vbo_, vertices, 0);
+        vbo_.UpdateVertices(vertices, 0);
     }
 }
 
