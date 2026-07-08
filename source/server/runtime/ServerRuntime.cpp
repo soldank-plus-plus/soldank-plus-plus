@@ -9,7 +9,6 @@ module;
 export module Runtime.ServerRuntime;
 
 import Application.ServerConfig;
-import Application.ServerState;
 import Networking.IGameServer;
 import Networking.ServerNetworkHost;
 import Networking.LobbyClient;
@@ -52,9 +51,8 @@ public:
     void Run()
     {
         Spdlog::info("Server started!");
-        world_->SetPreProjectileSpawnCallback([](const BulletParams& /*bullet_params*/) {
-            return true;
-        });
+        world_->SetPreProjectileSpawnCallback(
+          [](const BulletParams& /*bullet_params*/) { return true; });
 
         FixedTimestepRunner fixed_timestep_runner;
         NativeFixedTimestepLoop native_loop;

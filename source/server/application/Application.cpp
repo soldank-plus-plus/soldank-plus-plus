@@ -41,7 +41,7 @@ public:
         , world_(std::make_shared<World>())
         , server_state_(std::make_shared<ServerState>())
         , lobby_client_(std::make_shared<LobbyClient>())
-        , player_session_manager_(std::make_unique<PlayerSessionManager>(*server_state_))
+        , player_session_manager_(std::make_unique<PlayerSessionManager>())
         , command_queues_(std::make_unique<ServerCommandQueues>())
     {
         world_->GetStateManager()->LoadMapDocument(config_.map_path);
