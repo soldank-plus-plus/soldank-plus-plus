@@ -16,6 +16,7 @@ export module MapEditorUI;
 
 import ClientState;
 import MapEditor.EditorAssetBrowser;
+import MapEditor.EditorUiOptions;
 import MapEditorToolDetailsWindow;
 import MapEditorState;
 
@@ -213,34 +214,16 @@ void RenderToolsWindow(ClientState& client_state, ImGuiWindowFlags default_windo
 
     ImGui::Begin("Tools", nullptr, default_window_flags);
 
-    static std::vector<std::pair<std::string, ToolType>> tool_options = {
-        { "Transform tool (A)", ToolType::Transform },
-        { "Polygon tool (Q)", ToolType::Polygon },
-        { "Vertex selection tool (S)", ToolType::VertexSelection },
-        { "Selection tool (W)", ToolType::Selection },
-        { "Vertex color tool (D)", ToolType::VertexColor },
-        { "Color tool (E)", ToolType::Color },
-        { "Texture tool (F)", ToolType::Texture },
-        { "Scenery tool (R)", ToolType::Scenery },
-        { "Waypoint tool (G)", ToolType::Waypoint },
-        { "Spawnpoint tool (T)", ToolType::Spawnpoint },
-        { "Color picker tool (H)", ToolType::ColorPicker },
-    };
-
-    static std::vector<ToolType> disabled_tool_types = { ToolType::VertexColor,
-                                                         ToolType::Texture,
-                                                         ToolType::Waypoint };
-
-    for (const auto& tool_option : tool_options) {
-        if (std::ranges::contains(disabled_tool_types, tool_option.second)) {
-            ImGui::Selectable(tool_option.first.c_str(),
+    for (const auto& tool_option : EditorUiOptions::GetToolOptions()) {
+        if (std::ranges::contains(EditorUiOptions::GetDisabledToolTypes(), tool_option.second)) {
+            ImGui::Selectable(tool_option.first.data(),
                               client_state.map_editor_state.selected_tool == tool_option.second,
                               ImGuiSelectableFlags_Disabled);
             ImGui::SetItemTooltip("This tool is not implemented yet. Coming soon!");
             continue;
         }
 
-        if (ImGui::Selectable(tool_option.first.c_str(),
+        if (ImGui::Selectable(tool_option.first.data(),
                               client_state.map_editor_state.selected_tool == tool_option.second)) {
             if (client_state.map_editor_state.selected_tool != tool_option.second) {
                 client_state.map_editor_state.event_selected_new_tool.Notify(tool_option.second);
@@ -445,28 +428,8 @@ void RenderSpawnPointPopup(ClientState& client_state)
     if (ImGui::BeginPopup("SpawnPointPopupMenu", ImGuiWindowFlags_NoMove)) {
         client_state.map_editor_state.is_modal_or_popup_open = true;
 
-        static std::vector<std::pair<std::string, PMSSpawnPointType>> spawn_point_options = {
-            { "Player Spawn", PMSSpawnPointType::General },
-            { "Alpha Team", PMSSpawnPointType::Alpha },
-            { "Bravo Team", PMSSpawnPointType::Bravo },
-            { "Charlie Team", PMSSpawnPointType::Charlie },
-            { "Delta Team", PMSSpawnPointType::Delta },
-            { "Alpha Flag", PMSSpawnPointType::AlphaFlag },
-            { "Bravo Flag", PMSSpawnPointType::BravoFlag },
-            { "Pointmatch Flag", PMSSpawnPointType::YellowFlag },
-            { "Grenade Kit", PMSSpawnPointType::Grenades },
-            { "Medical Kit", PMSSpawnPointType::Medkits },
-            { "Cluster Grenade Kit", PMSSpawnPointType::Clusters },
-            { "Vest Kit", PMSSpawnPointType::Vest },
-            { "Flamer Kit", PMSSpawnPointType::Flamer },
-            { "Berserker Kit", PMSSpawnPointType::Berserker },
-            { "Predator Kit", PMSSpawnPointType::Predator },
-            { "Rambo Bow", PMSSpawnPointType::RamboBow },
-            { "Stationary Gun", PMSSpawnPointType::StatGun },
-        };
-
-        for (const auto& spawn_point_option : spawn_point_options) {
-            if (ImGui::Selectable(spawn_point_option.first.c_str(),
+        for (const auto& spawn_point_option : EditorUiOptions::GetSpawnPointOptions()) {
+            if (ImGui::Selectable(spawn_point_option.first.data(),
                                   client_state.map_editor_state.selected_spawn_point_type ==
                                     spawn_point_option.second)) {
                 client_state.map_editor_state.selected_spawn_point_type = spawn_point_option.second;
@@ -486,35 +449,8 @@ void RenderPolygonTypePopup(ClientState& client_state)
     if (ImGui::BeginPopup("PolygonTypePopupMenu", ImGuiWindowFlags_NoMove)) {
         client_state.map_editor_state.is_modal_or_popup_open = true;
 
-        static std::vector<std::pair<std::string, PMSPolygonType>> polygon_type_options = {
-            { "Normal", PMSPolygonType::Normal },
-            { "All Bullets Collide", PMSPolygonType::OnlyBulletsCollide },
-            { "All Players Collide", PMSPolygonType::OnlyPlayersCollide },
-            { "Doesn't Collide", PMSPolygonType::NoCollide },
-            { "Icy", PMSPolygonType::Ice },
-            { "Deadly", PMSPolygonType::Deadly },
-            { "Bloody Deadly", PMSPolygonType::BloodyDeadly },
-            { "Hurting", PMSPolygonType::Hurts },
-            { "Regenerative", PMSPolygonType::Regenerates },
-            { "Lava", PMSPolygonType::Lava },
-            { "Only Alpha Bullets Collide", PMSPolygonType::AlphaBullets },
-            { "Only Alpha Players Collide", PMSPolygonType::AlphaPlayers },
-            { "Only Bravo Bullets Collide", PMSPolygonType::BravoBullets },
-            { "Only Bravo Players Collide", PMSPolygonType::BravoPlayers },
-            { "Only Charlie Bullets Collide", PMSPolygonType::CharlieBullets },
-            { "Only Charlie Players Collide", PMSPolygonType::CharliePlayers },
-            { "Only Delta Bullets Collide", PMSPolygonType::DeltaBullets },
-            { "Only Delta Players Collide", PMSPolygonType::DeltaPlayers },
-            { "Bouncy", PMSPolygonType::Bouncy },
-            { "Explosive", PMSPolygonType::Explosive },
-            { "Hurting Flaggers", PMSPolygonType::HurtFlaggers },
-            { "Only Flaggers Collide", PMSPolygonType::FlaggerCollides },
-            { "Only Non Flaggers Collide", PMSPolygonType::NonFlaggerCollides },
-            { "Only Flag Collide", PMSPolygonType::FlagCollides },
-        };
-
-        for (const auto& polygon_type_option : polygon_type_options) {
-            if (ImGui::Selectable(polygon_type_option.first.c_str(),
+        for (const auto& polygon_type_option : EditorUiOptions::GetPolygonTypeOptions()) {
+            if (ImGui::Selectable(polygon_type_option.first.data(),
                                   client_state.map_editor_state.polygon_tool_polygon_type ==
                                     polygon_type_option.second)) {
                 client_state.map_editor_state.polygon_tool_polygon_type =
@@ -578,6 +514,287 @@ void RenderSceneryPickerPopup(ClientState& client_state)
     }
 }
 
+void RenderMapSettingsWeatherAndStep(const StateManager& game_state_manager,
+                                     ClientState& client_state)
+{
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    if (ImGui::BeginTable("weather_and_step_table", 2, ImGuiTableFlags_SizingStretchSame)) {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::SeparatorText("Weather type");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SeparatorText("Step type");
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        if (ImGui::BeginCombo("##WeatherInput",
+                              game_state_manager.GetConstMap().GetWeatherTypeText().c_str())) {
+            for (const auto& weather_option : EditorUiOptions::GetWeatherOptions()) {
+                if (ImGui::Selectable(weather_option.first.data(),
+                                      game_state_manager.GetConstMap().GetWeatherType() ==
+                                        weather_option.second)) {
+                    client_state.map_editor_state.event_set_map_weather_type.Notify(
+                      weather_option.second);
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        if (ImGui::BeginCombo("##StepsInput",
+                              game_state_manager.GetConstMap().GetStepTypeText().c_str())) {
+            for (const auto& step_option : EditorUiOptions::GetStepOptions()) {
+                if (ImGui::Selectable(step_option.first.data(),
+                                      game_state_manager.GetConstMap().GetStepType() ==
+                                        step_option.second)) {
+                    client_state.map_editor_state.event_set_map_step_type.Notify(
+                      step_option.second);
+                }
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::EndTable();
+    }
+}
+
+void RenderMapSettingsKits(const StateManager& game_state_manager,
+                           ClientState& client_state,
+                           std::string_view drag_int_tooltip)
+{
+    ImGui::Separator();
+    float drag_int_width = ImGui::CalcTextSize("Medical kits: 99").x + 50.0F;
+    int grenades_count = game_state_manager.GetConstMap().GetGrenadesCount();
+    ImGui::SetNextItemWidth(drag_int_width);
+    if (ImGui::DragInt("##GrenadesInput", &grenades_count, 0.1F, 0, 12, "Grenades: %d")) {
+        if (grenades_count < 0) {
+            grenades_count = 0;
+        }
+        if (grenades_count > 12) {
+            grenades_count = 12;
+        }
+        client_state.map_editor_state.event_set_map_grenades_count.Notify(grenades_count);
+    }
+    ImGui::SetItemTooltip("%s", drag_int_tooltip.data());
+
+    ImGui::SameLine();
+
+    int medikits_count = game_state_manager.GetConstMap().GetMedikitsCount();
+    ImGui::SetNextItemWidth(drag_int_width);
+    if (ImGui::DragInt("##MedikitsInput", &medikits_count, 0.1F, 0, 12, "Medical kits: %d")) {
+        if (medikits_count < 0) {
+            medikits_count = 0;
+        }
+        if (medikits_count > 12) {
+            medikits_count = 12;
+        }
+        client_state.map_editor_state.event_set_map_medikits_count.Notify(medikits_count);
+    }
+    ImGui::SetItemTooltip("%s", drag_int_tooltip.data());
+}
+
+void RenderMapSettingsJetFuel(const StateManager& game_state_manager,
+                              ClientState& client_state,
+                              std::string_view drag_int_tooltip)
+{
+    ImVec2 jet_fuel_buttons_size(ImGui::GetContentRegionAvail().x / 4.0F - 9.0F, 0);
+    ImGui::SeparatorText("Jet fuel:");
+
+    int option_index = 0;
+    for (const auto& jet_fuel_option : EditorUiOptions::GetJetFuelOptions()) {
+        if (option_index > 0 && option_index % 4 != 0) {
+            ImGui::SameLine();
+        }
+
+        std::string button_label =
+          std::string(jet_fuel_option.label) + "##JetFuelInput" + std::string(jet_fuel_option.id);
+        if (ImGui::Button(button_label.c_str(), jet_fuel_buttons_size)) {
+            client_state.map_editor_state.event_set_map_jet_count.Notify(jet_fuel_option.value);
+        }
+        ImGui::SetItemTooltip("Value: %d", jet_fuel_option.value);
+        ++option_index;
+    }
+
+    int jet_count = game_state_manager.GetConstMap().GetJetCount();
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    if (ImGui::DragInt("##JetFuelCustomInput", &jet_count, 1.0F, 0, 25999)) {
+        if (jet_count < 0) {
+            jet_count = 0;
+        }
+        if (jet_count > 25999) {
+            jet_count = 25999;
+        }
+        client_state.map_editor_state.event_set_map_jet_count.Notify(jet_count);
+    }
+    ImGui::SetItemTooltip("%s", drag_int_tooltip.data());
+}
+
+void RenderMapSettingsTextureAndBackground(const StateManager& game_state_manager,
+                                           ClientState& client_state)
+{
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    if (ImGui::BeginTable("texture_and_background_table", 2, ImGuiTableFlags_SizingStretchSame)) {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::SeparatorText("Background");
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SeparatorText("Texture");
+
+        ImGui::TableNextRow();
+
+        ImVec2 color_button_size(ImGui::GetContentRegionAvail().x,
+                                 ImGui::GetContentRegionAvail().x / 2.0F + 15.0F);
+
+        ImGui::TableSetColumnIndex(0);
+        PMSColor top_background_color = game_state_manager.GetConstMap().GetBackgroundTopColor();
+        ImVec4 im_top_background_color = ImVec4((float)top_background_color.red / 255.0F,
+                                                (float)top_background_color.green / 255.0F,
+                                                (float)top_background_color.blue / 255.0F,
+                                                (float)top_background_color.alpha / 255.0F);
+        if (ImGui::ColorButton("TopBackgroundColorButton",
+                               im_top_background_color,
+                               ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha,
+                               color_button_size)) {
+            ImGui::OpenPopup("TopBackgroundColorPicker");
+        }
+        if (ImGui::BeginPopup("TopBackgroundColorPicker")) {
+            if (ImGui::ColorPicker4("##topcolorpicker1",
+                                    &im_top_background_color.x,
+                                    ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha)) {
+                top_background_color.red = (unsigned char)(im_top_background_color.x * 255.0F);
+                top_background_color.green = (unsigned char)(im_top_background_color.y * 255.0F);
+                top_background_color.blue = (unsigned char)(im_top_background_color.z * 255.0F);
+                top_background_color.alpha = (unsigned char)(im_top_background_color.w * 255.0F);
+                client_state.map_editor_state.event_set_map_background_top_color.Notify(
+                  top_background_color);
+            }
+            ImGui::EndPopup();
+        }
+
+        PMSColor bottom_background_color =
+          game_state_manager.GetConstMap().GetBackgroundBottomColor();
+        ImVec4 im_bottom_background_color = ImVec4((float)bottom_background_color.red / 255.0F,
+                                                   (float)bottom_background_color.green / 255.0F,
+                                                   (float)bottom_background_color.blue / 255.0F,
+                                                   (float)bottom_background_color.alpha / 255.0F);
+        if (ImGui::ColorButton("BottomBackgroundColorButton",
+                               im_bottom_background_color,
+                               ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha,
+                               color_button_size)) {
+            ImGui::OpenPopup("BottomBackgroundColorPicker");
+        }
+        if (ImGui::BeginPopup("BottomBackgroundColorPicker")) {
+            if (ImGui::ColorPicker4("##bottomcolorpicker1",
+                                    &im_bottom_background_color.x,
+                                    ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha)) {
+                bottom_background_color.red =
+                  (unsigned char)(im_bottom_background_color.x * 255.0F);
+                bottom_background_color.green =
+                  (unsigned char)(im_bottom_background_color.y * 255.0F);
+                bottom_background_color.blue =
+                  (unsigned char)(im_bottom_background_color.z * 255.0F);
+                bottom_background_color.alpha =
+                  (unsigned char)(im_bottom_background_color.w * 255.0F);
+                client_state.map_editor_state.event_set_map_background_bottom_color.Notify(
+                  bottom_background_color);
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        if (ImGui::BeginCombo("##TextureComboPicker",
+                              game_state_manager.GetConstMap().GetTextureName().c_str())) {
+
+            if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+                !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
+                ImGui::SetKeyboardFocusHere(0);
+            }
+            ImGui::InputText("##TextureSearchFilterInput",
+                             client_state.map_editor_state.texture_search_filter.data(),
+                             client_state.map_editor_state.texture_search_filter.size());
+            std::string search_filter =
+              ReadInputBuffer(client_state.map_editor_state.texture_search_filter);
+            ImGui::Separator();
+
+            std::filesystem::path map_texture_in_png =
+              game_state_manager.GetConstMap().GetTextureName();
+            map_texture_in_png.replace_extension(".png");
+            for (const auto& texture_file_name :
+                 client_state.map_editor_state.all_textures_in_directory) {
+
+                if (!search_filter.empty() &&
+                    texture_file_name.find(search_filter) == std::string::npos) {
+                    continue;
+                }
+
+                if (ImGui::Selectable(texture_file_name.c_str(),
+                                      texture_file_name ==
+                                          game_state_manager.GetConstMap().GetTextureName() ||
+                                        texture_file_name == map_texture_in_png.string())) {
+
+                    client_state.map_editor_state.event_set_map_texture_name.Notify(
+                      texture_file_name);
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Image((ImTextureID)(intptr_t)client_state.map_editor_state.polygon_texture_opengl_id,
+                     { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x });
+
+        ImGui::EndTable();
+    }
+}
+
+void RenderMapSettingsModal(const StateManager& game_state_manager, ClientState& client_state)
+{
+    if (client_state.map_editor_state.should_open_map_settings_modal) {
+        client_state.map_editor_state.should_open_map_settings_modal = false;
+        client_state.map_editor_state.all_textures_in_directory =
+          EditorAssetBrowser::LoadTextureNames();
+
+        client_state.map_editor_state.texture_search_filter.fill(0);
+
+        ImGui::OpenPopup("Map settings");
+    }
+
+    if (ImGui::BeginPopupModal("Map settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        client_state.map_editor_state.is_modal_or_popup_open = true;
+
+        constexpr std::string_view DRAG_INT_TOOLTIP =
+          "Drag left or right to change.\n\nDouble-click to input text manually.";
+        client_state.map_editor_state.map_description_input =
+          game_state_manager.GetConstMap().GetDescription();
+        client_state.map_editor_state.map_description_input += (char)0;
+        ImGui::SeparatorText("Description");
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        if (ImGui::InputText("##DescriptionInput",
+                             client_state.map_editor_state.map_description_input.data(),
+                             DESCRIPTION_MAX_LENGTH)) {
+            client_state.map_editor_state.event_set_map_description.Notify(
+              client_state.map_editor_state.map_description_input);
+        }
+
+        RenderMapSettingsWeatherAndStep(game_state_manager, client_state);
+        RenderMapSettingsKits(game_state_manager, client_state, DRAG_INT_TOOLTIP);
+        RenderMapSettingsJetFuel(game_state_manager, client_state, DRAG_INT_TOOLTIP);
+        RenderMapSettingsTextureAndBackground(game_state_manager, client_state);
+
+        ImGui::Separator();
+
+        float close_button_width =
+          ImGui::CalcTextSize("CLOSE").x + ImGui::GetStyle().FramePadding.x * 2.F;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
+                             close_button_width);
+        if (ImGui::Button("CLOSE")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
 void Render(const StateManager& game_state_manager, ClientState& client_state)
 {
     BeginFrame(client_state);
@@ -586,309 +803,7 @@ void Render(const StateManager& game_state_manager, ClientState& client_state)
     {
         RenderMainMenuBar(game_state_manager, client_state);
         RenderSaveAsModal(game_state_manager, client_state);
-
-        if (client_state.map_editor_state.should_open_map_settings_modal) {
-            client_state.map_editor_state.should_open_map_settings_modal = false;
-            client_state.map_editor_state.all_textures_in_directory =
-              EditorAssetBrowser::LoadTextureNames();
-
-            client_state.map_editor_state.texture_search_filter.fill(0);
-
-            ImGui::OpenPopup("Map settings");
-        }
-
-        if (ImGui::BeginPopupModal("Map settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            client_state.map_editor_state.is_modal_or_popup_open = true;
-
-            static std::string drag_int_tooltip =
-              "Drag left or right to change.\n\nDouble-click to input text manually.";
-            client_state.map_editor_state.map_description_input =
-              game_state_manager.GetConstMap().GetDescription();
-            client_state.map_editor_state.map_description_input += (char)0;
-            ImGui::SeparatorText("Description");
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            if (ImGui::InputText("##DescriptionInput",
-                                 client_state.map_editor_state.map_description_input.data(),
-                                 DESCRIPTION_MAX_LENGTH)) {
-                client_state.map_editor_state.event_set_map_description.Notify(
-                  client_state.map_editor_state.map_description_input);
-            }
-
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            if (ImGui::BeginTable("weather_and_step_table", 2, ImGuiTableFlags_SizingStretchSame)) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::SeparatorText("Weather type");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::SeparatorText("Step type");
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                static std::vector<std::pair<std::string, PMSWeatherType>> weather_options = {
-                    { "None", PMSWeatherType::None },
-                    { "Rain", PMSWeatherType::Rain },
-                    { "Sandstorm", PMSWeatherType::Sandstorm },
-                    { "Snow", PMSWeatherType::Snow },
-                };
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::BeginCombo(
-                      "##WeatherInput",
-                      game_state_manager.GetConstMap().GetWeatherTypeText().c_str())) {
-                    for (const auto& weather_option : weather_options) {
-                        if (ImGui::Selectable(weather_option.first.c_str(),
-                                              game_state_manager.GetConstMap().GetWeatherType() ==
-                                                weather_option.second)) {
-                            client_state.map_editor_state.event_set_map_weather_type.Notify(
-                              weather_option.second);
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-
-                ImGui::TableSetColumnIndex(1);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                static std::vector<std::pair<std::string, PMSStepType>> step_options = {
-                    { "Hard", PMSStepType::HardGround },
-                    { "Soft", PMSStepType::SoftGround },
-                    { "None", PMSStepType::None },
-                };
-                // ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::BeginCombo("##StepsInput",
-                                      game_state_manager.GetConstMap().GetStepTypeText().c_str())) {
-                    for (const auto& step_option : step_options) {
-                        if (ImGui::Selectable(step_option.first.c_str(),
-                                              game_state_manager.GetConstMap().GetStepType() ==
-                                                step_option.second)) {
-                            client_state.map_editor_state.event_set_map_step_type.Notify(
-                              step_option.second);
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-                ImGui::EndTable();
-            }
-
-            ImGui::Separator();
-            float drag_int_width = ImGui::CalcTextSize("Medical kits: 99").x + 50.0F;
-            int grenades_count = game_state_manager.GetConstMap().GetGrenadesCount();
-            ImGui::SetNextItemWidth(drag_int_width);
-            if (ImGui::DragInt("##GrenadesInput", &grenades_count, 0.1F, 0, 12, "Grenades: %d")) {
-                if (grenades_count < 0) {
-                    grenades_count = 0;
-                }
-                if (grenades_count > 12) {
-                    grenades_count = 12;
-                }
-                client_state.map_editor_state.event_set_map_grenades_count.Notify(grenades_count);
-            }
-            ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
-
-            ImGui::SameLine();
-
-            int medikits_count = game_state_manager.GetConstMap().GetMedikitsCount();
-            ImGui::SetNextItemWidth(drag_int_width);
-            if (ImGui::DragInt(
-                  "##MedikitsInput", &medikits_count, 0.1F, 0, 12, "Medical kits: %d")) {
-                if (medikits_count < 0) {
-                    medikits_count = 0;
-                }
-                if (medikits_count > 12) {
-                    medikits_count = 12;
-                }
-                client_state.map_editor_state.event_set_map_medikits_count.Notify(medikits_count);
-            }
-            ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
-
-            ImVec2 jet_fuel_buttons_size(ImGui::GetContentRegionAvail().x / 4.0F - 9.0F, 0);
-            ImGui::SeparatorText("Jet fuel:");
-            if (ImGui::Button("None##JetFuelInputNone", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(0);
-            }
-            ImGui::SetItemTooltip("Value: 0");
-            ImGui::SameLine();
-            if (ImGui::Button("Minimal##JetFuelInputMinimal", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(12);
-            }
-            ImGui::SetItemTooltip("Value: 12");
-            ImGui::SameLine();
-            if (ImGui::Button("Very Low##JetFuelInputVeryLow", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(45);
-            }
-            ImGui::SetItemTooltip("Value: 45");
-            ImGui::SameLine();
-            if (ImGui::Button("Low##JetFuelInputLow", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(95);
-            }
-
-            // new line
-            ImGui::SetItemTooltip("Value: 95");
-            if (ImGui::Button("Normal##JetFuelInputNormal", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(190);
-            }
-            ImGui::SetItemTooltip("Value: 190");
-            ImGui::SameLine();
-            if (ImGui::Button("High##JetFuelInputHigh", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(320);
-            }
-            ImGui::SetItemTooltip("Value: 320");
-            ImGui::SameLine();
-            if (ImGui::Button("Extreme##JetFuelInputExtreme", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(800);
-            }
-            ImGui::SetItemTooltip("Value: 800");
-            ImGui::SameLine();
-            if (ImGui::Button("Infinite##JetFuelInputInfinite", jet_fuel_buttons_size)) {
-                client_state.map_editor_state.event_set_map_jet_count.Notify(25999);
-            }
-            ImGui::SetItemTooltip("Value: 25999");
-            int jet_count = game_state_manager.GetConstMap().GetJetCount();
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            if (ImGui::DragInt("##JetFuelCustomInput", &jet_count, 1.0F, 0, 25999)) {
-                if (jet_count < 0) {
-                    jet_count = 0;
-                }
-                if (jet_count > 25999) {
-                    jet_count = 25999;
-                }
-                client_state.map_editor_state.event_set_map_jet_count.Notify(jet_count);
-            }
-            ImGui::SetItemTooltip("%s", drag_int_tooltip.c_str());
-
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-            if (ImGui::BeginTable(
-                  "texture_and_background_table", 2, ImGuiTableFlags_SizingStretchSame)) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::SeparatorText("Background");
-                ImGui::TableSetColumnIndex(1);
-                ImGui::SeparatorText("Texture");
-
-                ImGui::TableNextRow();
-
-                ImVec2 color_button_size(ImGui::GetContentRegionAvail().x,
-                                         ImGui::GetContentRegionAvail().x / 2.0F + 15.0F);
-
-                ImGui::TableSetColumnIndex(0);
-                PMSColor top_background_color =
-                  game_state_manager.GetConstMap().GetBackgroundTopColor();
-                ImVec4 im_top_background_color = ImVec4((float)top_background_color.red / 255.0F,
-                                                        (float)top_background_color.green / 255.0F,
-                                                        (float)top_background_color.blue / 255.0F,
-                                                        (float)top_background_color.alpha / 255.0F);
-                if (ImGui::ColorButton("TopBackgroundColorButton",
-                                       im_top_background_color,
-                                       ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha,
-                                       color_button_size)) {
-                    ImGui::OpenPopup("TopBackgroundColorPicker");
-                }
-                if (ImGui::BeginPopup("TopBackgroundColorPicker")) {
-                    if (ImGui::ColorPicker4("##topcolorpicker1",
-                                            &im_top_background_color.x,
-                                            ImGuiColorEditFlags_NoLabel |
-                                              ImGuiColorEditFlags_NoAlpha)) {
-                        top_background_color.red =
-                          (unsigned char)(im_top_background_color.x * 255.0F);
-                        top_background_color.green =
-                          (unsigned char)(im_top_background_color.y * 255.0F);
-                        top_background_color.blue =
-                          (unsigned char)(im_top_background_color.z * 255.0F);
-                        top_background_color.alpha =
-                          (unsigned char)(im_top_background_color.w * 255.0F);
-                        client_state.map_editor_state.event_set_map_background_top_color.Notify(
-                          top_background_color);
-                    }
-                    ImGui::EndPopup();
-                }
-
-                PMSColor bottom_background_color =
-                  game_state_manager.GetConstMap().GetBackgroundBottomColor();
-                ImVec4 im_bottom_background_color =
-                  ImVec4((float)bottom_background_color.red / 255.0F,
-                         (float)bottom_background_color.green / 255.0F,
-                         (float)bottom_background_color.blue / 255.0F,
-                         (float)bottom_background_color.alpha / 255.0F);
-                if (ImGui::ColorButton("BottomBackgroundColorButton",
-                                       im_bottom_background_color,
-                                       ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha,
-                                       color_button_size)) {
-                    ImGui::OpenPopup("BottomBackgroundColorPicker");
-                }
-                if (ImGui::BeginPopup("BottomBackgroundColorPicker")) {
-                    if (ImGui::ColorPicker4("##bottomcolorpicker1",
-                                            &im_bottom_background_color.x,
-                                            ImGuiColorEditFlags_NoLabel |
-                                              ImGuiColorEditFlags_NoAlpha)) {
-                        bottom_background_color.red =
-                          (unsigned char)(im_bottom_background_color.x * 255.0F);
-                        bottom_background_color.green =
-                          (unsigned char)(im_bottom_background_color.y * 255.0F);
-                        bottom_background_color.blue =
-                          (unsigned char)(im_bottom_background_color.z * 255.0F);
-                        bottom_background_color.alpha =
-                          (unsigned char)(im_bottom_background_color.w * 255.0F);
-                        client_state.map_editor_state.event_set_map_background_bottom_color.Notify(
-                          bottom_background_color);
-                    }
-                    ImGui::EndPopup();
-                }
-
-                ImGui::TableSetColumnIndex(1);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                if (ImGui::BeginCombo("##TextureComboPicker",
-                                      game_state_manager.GetConstMap().GetTextureName().c_str())) {
-
-                    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
-                        !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
-                        ImGui::SetKeyboardFocusHere(0);
-                    }
-                    ImGui::InputText("##TextureSearchFilterInput",
-                                     client_state.map_editor_state.texture_search_filter.data(),
-                                     client_state.map_editor_state.texture_search_filter.size());
-                    std::string search_filter =
-                      ReadInputBuffer(client_state.map_editor_state.texture_search_filter);
-                    ImGui::Separator();
-
-                    std::filesystem::path map_texture_in_png =
-                      game_state_manager.GetConstMap().GetTextureName();
-                    map_texture_in_png.replace_extension(".png");
-                    for (const auto& texture_file_name :
-                         client_state.map_editor_state.all_textures_in_directory) {
-
-                        if (!search_filter.empty() &&
-                            texture_file_name.find(search_filter) == std::string::npos) {
-                            continue;
-                        }
-
-                        if (ImGui::Selectable(
-                              texture_file_name.c_str(),
-                              texture_file_name ==
-                                  game_state_manager.GetConstMap().GetTextureName() ||
-                                texture_file_name == map_texture_in_png.string())) {
-
-                            client_state.map_editor_state.event_set_map_texture_name.Notify(
-                              texture_file_name);
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-
-                ImGui::Image(
-                  (ImTextureID)(intptr_t)client_state.map_editor_state.polygon_texture_opengl_id,
-                  { ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x });
-
-                ImGui::EndTable();
-            }
-
-            ImGui::Separator();
-
-            float close_button_width =
-              ImGui::CalcTextSize("CLOSE").x + ImGui::GetStyle().FramePadding.x * 2.F;
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
-                                 close_button_width);
-            if (ImGui::Button("CLOSE")) {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
+        RenderMapSettingsModal(game_state_manager, client_state);
     }
 
     RenderToolsWindow(client_state, default_window_flags);

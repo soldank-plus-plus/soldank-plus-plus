@@ -7,6 +7,8 @@ module;
 
 export module MapEditor.EditorAssetBrowser;
 
+import MapEditor.EditorUiOptions;
+
 export namespace Soldank
 {
 class EditorAssetBrowser
@@ -19,8 +21,9 @@ public:
 private:
     static bool IsSupportedImageExtension(const std::filesystem::path& extension)
     {
-        return extension == ".bmp" || extension == ".jpg" || extension == ".jpeg" ||
-               extension == ".gif" || extension == ".png";
+        const std::string extension_string = extension.string();
+        return std::ranges::contains(EditorUiOptions::GetSupportedImageExtensions(),
+                                     extension_string);
     }
 
     static std::vector<std::string> LoadImageNames(const std::filesystem::path& directory_path)

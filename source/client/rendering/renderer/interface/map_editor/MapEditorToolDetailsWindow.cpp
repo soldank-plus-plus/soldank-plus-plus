@@ -7,12 +7,11 @@ module;
 
 #include <numbers>
 #include <string>
-#include <utility>
-#include <vector>
 
 export module MapEditorToolDetailsWindow;
 
 import ClientState;
+import MapEditor.EditorUiOptions;
 import MapEditorState;
 
 import Shared.Core.State.StateManager;
@@ -80,34 +79,8 @@ void RenderPolygonToolDetails(const StateManager& game_state_manager, ClientStat
     }
 
     ImGui::SeparatorText("Type");
-    static std::vector<std::pair<std::string, PMSPolygonType>> polygon_type_options = {
-        { "Normal", PMSPolygonType::Normal },
-        { "All Bullets Collide", PMSPolygonType::OnlyBulletsCollide },
-        { "All Players Collide", PMSPolygonType::OnlyPlayersCollide },
-        { "Doesn't Collide", PMSPolygonType::NoCollide },
-        { "Icy", PMSPolygonType::Ice },
-        { "Deadly", PMSPolygonType::Deadly },
-        { "Bloody Deadly", PMSPolygonType::BloodyDeadly },
-        { "Hurting", PMSPolygonType::Hurts },
-        { "Regenerative", PMSPolygonType::Regenerates },
-        { "Lava", PMSPolygonType::Lava },
-        { "Only Alpha Bullets Collide", PMSPolygonType::AlphaBullets },
-        { "Only Alpha Players Collide", PMSPolygonType::AlphaPlayers },
-        { "Only Bravo Bullets Collide", PMSPolygonType::BravoBullets },
-        { "Only Bravo Players Collide", PMSPolygonType::BravoPlayers },
-        { "Only Charlie Bullets Collide", PMSPolygonType::CharlieBullets },
-        { "Only Charlie Players Collide", PMSPolygonType::CharliePlayers },
-        { "Only Delta Bullets Collide", PMSPolygonType::DeltaBullets },
-        { "Only Delta Players Collide", PMSPolygonType::DeltaPlayers },
-        { "Bouncy", PMSPolygonType::Bouncy },
-        { "Explosive", PMSPolygonType::Explosive },
-        { "Hurting Flaggers", PMSPolygonType::HurtFlaggers },
-        { "Only Flaggers Collide", PMSPolygonType::FlaggerCollides },
-        { "Only Non Flaggers Collide", PMSPolygonType::NonFlaggerCollides },
-        { "Only Flag Collide", PMSPolygonType::FlagCollides },
-    };
     std::string current_polygon_type;
-    for (const auto& polygon_type_option : polygon_type_options) {
+    for (const auto& polygon_type_option : EditorUiOptions::GetPolygonTypeOptions()) {
         if (client_state.map_editor_state.polygon_tool_polygon_type == polygon_type_option.second) {
             current_polygon_type = polygon_type_option.first;
         }
@@ -115,8 +88,8 @@ void RenderPolygonToolDetails(const StateManager& game_state_manager, ClientStat
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     if (ImGui::BeginCombo("##PolygonTypeComboInput", current_polygon_type.c_str())) {
         client_state.map_editor_state.is_modal_or_popup_open = true;
-        for (const auto& polygon_type_option : polygon_type_options) {
-            if (ImGui::Selectable(polygon_type_option.first.c_str(),
+        for (const auto& polygon_type_option : EditorUiOptions::GetPolygonTypeOptions()) {
+            if (ImGui::Selectable(polygon_type_option.first.data(),
                                   client_state.map_editor_state.polygon_tool_polygon_type ==
                                     polygon_type_option.second)) {
                 client_state.map_editor_state.polygon_tool_polygon_type =
@@ -220,34 +193,8 @@ void RenderSelectionToolDetails(const StateManager& game_state_manager, ClientSt
             const auto& polygon = game_state_manager.GetConstMap().GetPolygons().at(
               client_state.map_editor_state.selected_polygon_vertices.at(0).first);
 
-            static std::vector<std::pair<std::string, PMSPolygonType>> polygon_type_options = {
-                { "Normal", PMSPolygonType::Normal },
-                { "All Bullets Collide", PMSPolygonType::OnlyBulletsCollide },
-                { "All Players Collide", PMSPolygonType::OnlyPlayersCollide },
-                { "Doesn't Collide", PMSPolygonType::NoCollide },
-                { "Icy", PMSPolygonType::Ice },
-                { "Deadly", PMSPolygonType::Deadly },
-                { "Bloody Deadly", PMSPolygonType::BloodyDeadly },
-                { "Hurting", PMSPolygonType::Hurts },
-                { "Regenerative", PMSPolygonType::Regenerates },
-                { "Lava", PMSPolygonType::Lava },
-                { "Only Alpha Bullets Collide", PMSPolygonType::AlphaBullets },
-                { "Only Alpha Players Collide", PMSPolygonType::AlphaPlayers },
-                { "Only Bravo Bullets Collide", PMSPolygonType::BravoBullets },
-                { "Only Bravo Players Collide", PMSPolygonType::BravoPlayers },
-                { "Only Charlie Bullets Collide", PMSPolygonType::CharlieBullets },
-                { "Only Charlie Players Collide", PMSPolygonType::CharliePlayers },
-                { "Only Delta Bullets Collide", PMSPolygonType::DeltaBullets },
-                { "Only Delta Players Collide", PMSPolygonType::DeltaPlayers },
-                { "Bouncy", PMSPolygonType::Bouncy },
-                { "Explosive", PMSPolygonType::Explosive },
-                { "Hurting Flaggers", PMSPolygonType::HurtFlaggers },
-                { "Only Flaggers Collide", PMSPolygonType::FlaggerCollides },
-                { "Only Non Flaggers Collide", PMSPolygonType::NonFlaggerCollides },
-                { "Only Flag Collide", PMSPolygonType::FlagCollides },
-            };
             std::string current_polygon_type;
-            for (const auto& polygon_type_option : polygon_type_options) {
+            for (const auto& polygon_type_option : EditorUiOptions::GetPolygonTypeOptions()) {
                 if (polygon.polygon_type == polygon_type_option.second) {
                     current_polygon_type = polygon_type_option.first;
                 }
@@ -255,8 +202,8 @@ void RenderSelectionToolDetails(const StateManager& game_state_manager, ClientSt
             if (ImGui::BeginCombo("##ToolDetailsPolygonTypeComboInput",
                                   current_polygon_type.c_str())) {
                 client_state.map_editor_state.is_modal_or_popup_open = true;
-                for (const auto& polygon_type_option : polygon_type_options) {
-                    if (ImGui::Selectable(polygon_type_option.first.c_str(),
+                for (const auto& polygon_type_option : EditorUiOptions::GetPolygonTypeOptions()) {
+                    if (ImGui::Selectable(polygon_type_option.first.data(),
                                           polygon.polygon_type == polygon_type_option.second)) {
                         client_state.map_editor_state.event_selected_polygons_type_changed.Notify(
                           polygon_type_option.second);
@@ -365,34 +312,15 @@ void RenderSelectionToolDetails(const StateManager& game_state_manager, ClientSt
             const auto& spawn_point =
               game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id);
 
-            static std::vector<std::pair<std::string, PMSSpawnPointType>> spawn_point_options = {
-                { "Player Spawn", PMSSpawnPointType::General },
-                { "Alpha Team", PMSSpawnPointType::Alpha },
-                { "Bravo Team", PMSSpawnPointType::Bravo },
-                { "Charlie Team", PMSSpawnPointType::Charlie },
-                { "Delta Team", PMSSpawnPointType::Delta },
-                { "Alpha Flag", PMSSpawnPointType::AlphaFlag },
-                { "Bravo Flag", PMSSpawnPointType::BravoFlag },
-                { "Pointmatch Flag", PMSSpawnPointType::YellowFlag },
-                { "Grenade Kit", PMSSpawnPointType::Grenades },
-                { "Medical Kit", PMSSpawnPointType::Medkits },
-                { "Cluster Grenade Kit", PMSSpawnPointType::Clusters },
-                { "Vest Kit", PMSSpawnPointType::Vest },
-                { "Flamer Kit", PMSSpawnPointType::Flamer },
-                { "Berserker Kit", PMSSpawnPointType::Berserker },
-                { "Predator Kit", PMSSpawnPointType::Predator },
-                { "Rambo Bow", PMSSpawnPointType::RamboBow },
-                { "Stationary Gun", PMSSpawnPointType::StatGun },
-            };
             std::string current_spawn_point_type;
-            for (const auto& spawn_point_option : spawn_point_options) {
+            for (const auto& spawn_point_option : EditorUiOptions::GetSpawnPointOptions()) {
                 if (spawn_point.type == spawn_point_option.second) {
                     current_spawn_point_type = spawn_point_option.first;
                 }
             }
             if (ImGui::BeginCombo("##SpawnPointTypeComboInput", current_spawn_point_type.c_str())) {
-                for (const auto& spawn_point_option : spawn_point_options) {
-                    if (ImGui::Selectable(spawn_point_option.first.c_str(),
+                for (const auto& spawn_point_option : EditorUiOptions::GetSpawnPointOptions()) {
+                    if (ImGui::Selectable(spawn_point_option.first.data(),
                                           spawn_point.type == spawn_point_option.second)) {
                         client_state.map_editor_state.event_selected_spawn_points_type_changed
                           .Notify(spawn_point_option.second);

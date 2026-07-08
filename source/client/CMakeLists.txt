@@ -25,6 +25,7 @@ set(client_lib_modules
     map_editor/EditorMapProperties.cpp
     map_editor/EditorShortcutController.cpp
     map_editor/EditorToolController.cpp
+    map_editor/EditorUiOptions.cpp
     map_editor/EditorViewportController.cpp
     map_editor/actions/MapEditorAction.cpp
     map_editor/actions/AddObjectsMapEditorAction.cpp
