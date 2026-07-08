@@ -11,14 +11,13 @@ module;
 
 export module Networking.GameServer;
 
-import Application.ServerState;
-
 import Networking.IGameServer;
 import Networking.Interface.NetworkingInterface;
 import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
 import Networking.Transport.GnsServerTransport;
 import Networking.Transport.TransportTypes;
+import Sessions.PlayerSessionManager;
 #if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
 import Networking.Transport.IServerTransport;
 import Networking.Transport.WebRtcServerTransport;
@@ -41,9 +40,9 @@ public:
     GameServer(std::uint16_t port,
                const std::shared_ptr<NetworkEventDispatcher>& network_event_dispatcher,
                const std::shared_ptr<IWorld>& world,
-               const std::shared_ptr<ServerState>& server_state)
+               PlayerSessionManager& player_session_manager)
         : world_(world)
-        , server_state_(server_state)
+        , player_session_manager_(player_session_manager)
         , network_event_dispatcher_(network_event_dispatcher)
     {
         // TODO: we shouldn't init NetworkingInterface here because it's global
@@ -170,7 +169,7 @@ private:
                     Spdlog::info("CLOSING CONNECTION soldiers size after: {}",
                                  world_->GetStateManager()->GetSoldiersCount());
 
-                    server_state_->last_processed_input_id.at(soldier_id) = 0;
+                    player_session_manager_.ClearSoldier(soldier_id);
                 }
                 break;
             }
@@ -192,7 +191,7 @@ private:
     }
 
     std::shared_ptr<IWorld> world_;
-    std::shared_ptr<ServerState> server_state_;
+    PlayerSessionManager& player_session_manager_;
     std::shared_ptr<NetworkEventDispatcher> network_event_dispatcher_;
 
 #if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
@@ -223,10 +222,10 @@ private:
             NetworkMessage network_message(received_bytes);
             ConnectionMetadata connection_metadata{
                 .connection_id = packet.connection_id,
-                .send_message_to_connection = [this, connection_id = packet.connection_id](
-                                                const NetworkMessage& message) {
-                    SendWebRtcNetworkMessage(connection_id, message, DeliveryMode::Unreliable);
-                }
+                .send_message_to_connection =
+                  [this, connection_id = packet.connection_id](const NetworkMessage& message) {
+                      SendWebRtcNetworkMessage(connection_id, message, DeliveryMode::Unreliable);
+                  }
             };
             network_event_dispatcher_->ProcessNetworkMessage(connection_metadata, network_message);
         }
@@ -240,16 +239,14 @@ private:
             nick = "Web player";
         }
 
-        Spdlog::info("[GameServer] WebRTC connection {} nick: {}",
-                     first_packet.connection_id,
-                     nick);
+        Spdlog::info(
+          "[GameServer] WebRTC connection {} nick: {}", first_packet.connection_id, nick);
 
-        auto [connection, inserted] =
-          web_rtc_connections_.try_emplace(first_packet.connection_id,
-                                           WebRtcConnection{ .connection_id =
-                                                               first_packet.connection_id,
-                                                            .nick = nick,
-                                                            .soldier_id = std::nullopt });
+        auto [connection, inserted] = web_rtc_connections_.try_emplace(
+          first_packet.connection_id,
+          WebRtcConnection{ .connection_id = first_packet.connection_id,
+                            .nick = nick,
+                            .soldier_id = std::nullopt });
         if (!inserted && connection->second.soldier_id.has_value()) {
             return;
         }
@@ -279,9 +276,8 @@ private:
               first_packet.connection_id,
               soldier.id,
               soldier_info.GetData().size());
-            transport.Send(first_packet.connection_id,
-                           soldier_info_payload,
-                           DeliveryMode::Reliable);
+            transport.Send(
+              first_packet.connection_id, soldier_info_payload, DeliveryMode::Reliable);
         });
 
         const std::uint8_t soldier_id = world_->CreateSoldier().id;
@@ -301,22 +297,19 @@ private:
         NetworkMessage soldier_info_message{ NetworkEvent::SoldierInfo, soldier_id, nick };
         std::span<const char> own_soldier_info_payload{ soldier_info_message.GetData().data(),
                                                         soldier_info_message.GetData().size() };
-        Spdlog::info(
-          "[GameServer] WebRTC send own SoldierInfo: connection={}, soldier={}, size={}",
-          first_packet.connection_id,
-          soldier_id,
-          soldier_info_message.GetData().size());
-        transport.Send(first_packet.connection_id,
-                       own_soldier_info_payload,
-                       DeliveryMode::Reliable);
+        Spdlog::info("[GameServer] WebRTC send own SoldierInfo: connection={}, soldier={}, size={}",
+                     first_packet.connection_id,
+                     soldier_id,
+                     soldier_info_message.GetData().size());
+        transport.Send(
+          first_packet.connection_id, own_soldier_info_payload, DeliveryMode::Reliable);
 
         SendNetworkMessageToAll(soldier_info_message);
 
         const auto spawn_position = world_->SpawnSoldier(soldier_id);
-        NetworkMessage spawn_soldier_message{ NetworkEvent::SpawnSoldier,
-                                              soldier_id,
-                                              spawn_position.x,
-                                              spawn_position.y };
+        NetworkMessage spawn_soldier_message{
+            NetworkEvent::SpawnSoldier, soldier_id, spawn_position.x, spawn_position.y
+        };
         std::span<const char> spawn_soldier_payload{ spawn_soldier_message.GetData().data(),
                                                      spawn_soldier_message.GetData().size() };
         Spdlog::info(
@@ -324,9 +317,7 @@ private:
           first_packet.connection_id,
           soldier_id,
           spawn_soldier_message.GetData().size());
-        transport.Send(first_packet.connection_id,
-                       spawn_soldier_payload,
-                       DeliveryMode::Reliable);
+        transport.Send(first_packet.connection_id, spawn_soldier_payload, DeliveryMode::Reliable);
     }
 #endif
 };

@@ -353,9 +353,10 @@ void Application::Run()
       });
 
     window_->Create(window_size_mode_);
-    input_router_.ResetMousePositions(GetCurrentMouseScreenPosition(), GetCurrentMouseMapPosition());
+    input_router_.ResetMousePositions(GetCurrentMouseScreenPosition(),
+                                      GetCurrentMouseMapPosition());
     UpdateWindowSize();
-    client_state_->camera_component.UpdateWindowDimensions(
+    client_state_->camera.UpdateWindowDimensions(
       { client_state_->window_width, client_state_->window_height });
 
     client_state_->event_respawn_player_at_spawn_point_requested.AddObserver(
@@ -369,7 +370,7 @@ void Application::Run()
       [&](unsigned int soldier_id) { world_->SpawnSoldier(soldier_id); });
 
     window_->RegisterOnScreenResizedObserver([&](glm::vec2 new_window_dimensions) {
-        client_state_->camera_component.UpdateWindowDimensions(new_window_dimensions);
+        client_state_->camera.UpdateWindowDimensions(new_window_dimensions);
         client_state_->event_window_resized.Notify(new_window_dimensions);
     });
 
@@ -424,9 +425,8 @@ void Application::Run()
 
         glm::vec2 mouse_screen_position = GetCurrentMouseScreenPosition();
 
-        bool is_gameplay_active =
-          game_session_.IsGameplayActive(client_runtime_.GetClientMode(),
-                                         client_runtime_.GetEditorMode());
+        bool is_gameplay_active = game_session_.IsGameplayActive(client_runtime_.GetClientMode(),
+                                                                 client_runtime_.GetEditorMode());
         if (is_gameplay_active) {
             if (input_router_.GetActiveContext() != InputContext::UiCaptured &&
                 input.KeyWentDown(GLFW_KEY_F10)) {
@@ -436,16 +436,16 @@ void Application::Run()
             if (world_->GetStateManager()->IsGamePaused()) {
                 glm::vec2 mouse_position = { input.GetX(), input.GetY() };
 
-                client_state_->camera_prev = client_state_->camera;
+                client_state_->previous_camera_position = client_state_->camera_position;
 
-                client_state_->mouse.x = mouse_position.x;
-                client_state_->mouse.y = mouse_position.y;
+                client_state_->mouse_screen_position.x = mouse_position.x;
+                client_state_->mouse_screen_position.y = mouse_position.y;
             }
         } else if (client_runtime_.GetClientMode() == ClientMode::MapEditor) {
-            client_state_->camera_prev = client_state_->camera;
+            client_state_->previous_camera_position = client_state_->camera_position;
 
-            client_state_->mouse.x = mouse_screen_position.x;
-            client_state_->mouse.y = mouse_screen_position.y;
+            client_state_->mouse_screen_position.x = mouse_screen_position.x;
+            client_state_->mouse_screen_position.y = mouse_screen_position.y;
         }
     });
     world_->SetPreWorldUpdateCallback([&]() {
@@ -457,14 +457,14 @@ void Application::Run()
 
         const PlatformInput& input = window_->GetPlatformInput();
         glm::vec2 mouse_position = { input.GetX(), input.GetY() };
-        client_state_->mouse.x = mouse_position.x;
-        client_state_->mouse.y = mouse_position.y;
+        client_state_->mouse_screen_position.x = mouse_position.x;
+        client_state_->mouse_screen_position.y = mouse_position.y;
 
-        float ratio_x = client_state_->window_width / client_state_->camera_component.GetWidth();
-        float ratio_y = client_state_->window_height / client_state_->camera_component.GetHeight();
+        float ratio_x = client_state_->window_width / client_state_->camera.GetWidth();
+        float ratio_y = client_state_->window_height / client_state_->camera.GetHeight();
         mouse_position.x /= ratio_x;
         mouse_position.y /= ratio_y;
-        client_state_->camera_prev = client_state_->camera;
+        client_state_->previous_camera_position = client_state_->camera_position;
 
         if (client_state_->client_soldier_id.has_value()) {
             std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
@@ -484,13 +484,9 @@ void Application::Run()
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id, ControlActionType::Crouch, input.Key(GLFW_KEY_S));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id,
-                      ControlActionType::ChangeWeapon,
-                      input.Key(GLFW_KEY_Q));
+                      client_soldier_id, ControlActionType::ChangeWeapon, input.Key(GLFW_KEY_Q));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
-                      client_soldier_id,
-                      ControlActionType::ThrowGrenade,
-                      input.Key(GLFW_KEY_E));
+                      client_soldier_id, ControlActionType::ThrowGrenade, input.Key(GLFW_KEY_E));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id, ControlActionType::DropWeapon, input.Key(GLFW_KEY_F));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
@@ -521,18 +517,18 @@ void Application::Run()
                                             client_state_->secondary_weapon_type_choice);
 
                 // TODO: Move camera calculation somewhere
-                client_state_->camera_prev = client_state_->camera;
+                client_state_->previous_camera_position = client_state_->camera_position;
 
                 glm::vec2 mouse;
                 mouse.x = mouse_position.x;
-                mouse.y = client_state_->camera_component.GetHeight() -
+                mouse.y = client_state_->camera.GetHeight() -
                           mouse_position.y; // TODO: soldier.control.mouse_aim_y expects
                 // top to be 0 and bottom to be game_height
 
                 mouse.y = mouse_position.y;
 
-                float width = client_state_->camera_component.GetWidth();
-                float height = client_state_->camera_component.GetHeight();
+                float width = client_state_->camera.GetWidth();
+                float height = client_state_->camera.GetHeight();
 
                 if (client_state_->smooth_camera) {
                     auto z = 1.0F;
@@ -542,20 +538,20 @@ void Application::Run()
                           ((2.0F * 640.0F / width - 1.0F) + (width - 640.0F) / width * 0.0F / 6.8F);
                     m.y = z * (mouse.y - height / 2.0F) / 7.0F;
 
-                    glm::vec2 cam_v = client_state_->camera;
+                    glm::vec2 cam_v = client_state_->camera_position;
                     glm::vec2 p = { world_->GetSoldier(client_soldier_id).particle.position.x,
                                     -world_->GetSoldier(client_soldier_id).particle.position.y };
                     glm::vec2 norm = p - cam_v;
                     glm::vec2 s = norm * 0.14F;
                     cam_v += s;
                     cam_v += m;
-                    client_state_->camera = cam_v;
+                    client_state_->camera_position = cam_v;
 
                 } else {
-                    client_state_->camera.x =
+                    client_state_->camera_position.x =
                       world_->GetSoldier(client_soldier_id).particle.position.x +
                       (float)(mouse.x - (width / 2));
-                    client_state_->camera.y =
+                    client_state_->camera_position.y =
                       -world_->GetSoldier(client_soldier_id).particle.position.y +
                       (float)((mouse.y) - (height / 2));
                 }
@@ -565,7 +561,7 @@ void Application::Run()
                 world_->GetStateManager()->ChangeSoldierMouseMapPosition(client_soldier_id,
                                                                          mouse_map_position);
             } else {
-                client_state_->camera = { 0.0F, 0.0F };
+                client_state_->camera_position = { 0.0F, 0.0F };
             }
 
             if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
@@ -583,7 +579,7 @@ void Application::Run()
                 }
             }
         } else {
-            client_state_->camera = { 0.0F, 0.0F };
+            client_state_->camera_position = { 0.0F, 0.0F };
         }
     });
     world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {});
@@ -652,8 +648,8 @@ glm::vec2 Application::GetCurrentMouseMapPosition()
         mouse_map_position = window_->GetCursorScreenPosition();
     }
 
-    float ratio_x = window_size.x / client_state_->camera_component.GetWidth();
-    float ratio_y = window_size.y / client_state_->camera_component.GetHeight();
+    float ratio_x = window_size.x / client_state_->camera.GetWidth();
+    float ratio_y = window_size.y / client_state_->camera.GetHeight();
 
     mouse_map_position.x /= ratio_x;
     mouse_map_position.y /= ratio_y;
@@ -661,9 +657,9 @@ glm::vec2 Application::GetCurrentMouseMapPosition()
     window_size.y /= ratio_y;
 
     mouse_map_position.x =
-      (mouse_map_position.x - (float)window_size.x / 2.0F + client_state_->camera.x);
+      (mouse_map_position.x - (float)window_size.x / 2.0F + client_state_->camera_position.x);
     mouse_map_position.y =
-      (mouse_map_position.y - (float)window_size.y / 2.0F - client_state_->camera.y);
+      (mouse_map_position.y - (float)window_size.y / 2.0F - client_state_->camera_position.y);
     return mouse_map_position;
 }
 

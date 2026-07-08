@@ -80,7 +80,8 @@ private:
                             double frame_percent,
                             int fps);
     void RenderEditorOverlay(const StateManager& game_state_manager, ClientState& client_state);
-    void RenderDebugMouseAim(const StateManager& game_state_manager, const ClientState& client_state);
+    void RenderDebugMouseAim(const StateManager& game_state_manager,
+                             const ClientState& client_state);
 
     Sprites::SpriteManager sprite_manager_;
     BackgroundRenderer background_renderer_;
@@ -169,9 +170,9 @@ void Scene::RenderWorld(const StateManager& game_state_manager,
     // TODO: handle it better, this is not a good place for this to be
     client_state.current_polygon_texture_dimensions = polygons_renderer_->GetTextureDimensions();
 
-    glm::vec2 new_camera_position =
-      Calc::Lerp(client_state.camera_prev, client_state.camera, (float)frame_percent);
-    Camera& camera = client_state.camera_component;
+    glm::vec2 new_camera_position = Calc::Lerp(
+      client_state.previous_camera_position, client_state.camera_position, (float)frame_percent);
+    Camera& camera = client_state.camera;
     camera.Move(new_camera_position.x, new_camera_position.y);
 
     glViewport(0, 0, (int)client_state.window_width, (int)client_state.window_height);
@@ -327,8 +328,9 @@ void Scene::RenderDebugOverlay(const StateManager& game_state_manager,
             DebugUI::Render(game_state_manager, client_state, frame_percent, fps);
         }
         if (!DebugUI::GetWantCaptureMouse()) {
-            cursor_renderer_.Render({ client_state.mouse.x, client_state.mouse.y },
-                                    { client_state.window_width, client_state.window_height });
+            cursor_renderer_.Render(
+              { client_state.mouse_screen_position.x, client_state.mouse_screen_position.y },
+              { client_state.window_width, client_state.window_height });
         }
     }
 }
@@ -346,7 +348,7 @@ void Scene::RenderDebugMouseAim(const StateManager& game_state_manager,
     if (Config::DEBUG_DRAW) {
         game_state_manager.ForEachSoldier([&](const auto& soldier) {
             rectangle_renderer_.Render(
-              client_state.camera_component.GetView(),
+              client_state.camera.GetView(),
               glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y),
               { 1.0F, 0.0F, 0.0F, 1.0F });
         });
@@ -369,7 +371,7 @@ void Scene::RenderSoldiers(const StateManager& game_state_manager,
                            const ClientState& client_state,
                            double frame_percent)
 {
-    const Camera& camera = client_state.camera_component;
+    const Camera& camera = client_state.camera;
 
     game_state_manager.ForEachSoldier([&](const auto& soldier) {
         // TODO: implement different method to execute the lambda for one soldier

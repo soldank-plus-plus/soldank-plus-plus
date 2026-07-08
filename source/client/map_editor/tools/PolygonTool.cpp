@@ -121,8 +121,8 @@ public:
                                   const StateManager& game_state_manager) final
     {
         bool alread_snapped = false;
-        float closest_distance = SNAP_TO_VERTICES_DISTANCE * SNAP_TO_VERTICES_DISTANCE *
-                                 client_state.camera_component.GetZoom();
+        float closest_distance =
+          SNAP_TO_VERTICES_DISTANCE * SNAP_TO_VERTICES_DISTANCE * client_state.camera.GetZoom();
         if (client_state.map_editor_state.is_snap_to_vertices_enabled) {
             for (const auto& polygon : game_state_manager.GetConstMap().GetPolygons()) {
                 for (const auto& vertex : polygon.vertices) {

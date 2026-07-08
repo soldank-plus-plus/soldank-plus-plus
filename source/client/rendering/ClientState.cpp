@@ -30,14 +30,14 @@ struct ClientState
      */
     std::optional<std::uint8_t> client_soldier_id;
 
-    Camera camera_component; // TODO: change name to just camera
-    glm::vec2 camera;        // TODO: change name to camera_position or move it to the Camera class
-    glm::vec2 camera_prev;
+    Camera camera;
+    glm::vec2 camera_position;
+    glm::vec2 previous_camera_position;
     bool smooth_camera = true;
-    glm::vec2 mouse;
+    glm::vec2 mouse_screen_position;
     glm::vec2 mouse_map_position;
-    bool mouse_left_button_pressed;
-    bool mouse_right_button_pressed;
+    bool is_left_mouse_button_pressed;
+    bool is_right_mouse_button_pressed;
     float window_width;
     float window_height;
 

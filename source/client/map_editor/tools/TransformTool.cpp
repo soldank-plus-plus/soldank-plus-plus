@@ -90,7 +90,7 @@ public:
 
             for (unsigned int i = 0; i < origin_positions.size(); ++i) {
                 const auto& origin_position = origin_positions.at(i);
-                float max_distance = 5.0F * client_state.camera_component.GetZoom();
+                float max_distance = 5.0F * client_state.camera.GetZoom();
 
                 if (Calc::SquareDistance(origin_position, client_state.mouse_map_position) <=
                     max_distance * max_distance) {
@@ -422,7 +422,7 @@ private:
                  client_state.map_editor_state.selected_spawn_point_ids) {
                 const auto& spawn_point =
                   game_state_manager.GetConstMap().GetSpawnPoints().at(spawn_point_id);
-                float zoom = client_state.camera_component.GetZoom();
+                float zoom = client_state.camera.GetZoom();
                 glm::vec2 top_left_corner = { (float)spawn_point.x - 8.0F * zoom,
                                               (float)spawn_point.y - 8.0F * zoom };
                 glm::vec2 bottom_right_corner = { (float)spawn_point.x + 8.0F * zoom,

@@ -55,7 +55,7 @@ public:
         server_network_event_dispatcher_ =
           std::make_shared<NetworkEventDispatcher>(network_event_handlers);
         game_server_ = std::make_shared<GameServer>(
-          config_.server_port, server_network_event_dispatcher_, world_, server_state_);
+          config_.server_port, server_network_event_dispatcher_, world_, *player_session_manager_);
         server_network_event_dispatcher_->AddNetworkEventHandler(
           std::make_shared<PingCheckNetworkEventHandler>(game_server_));
         server_network_event_dispatcher_->AddNetworkEventHandler(
@@ -67,12 +67,8 @@ public:
         CoreEventHandler::ObserveAll(world_.get());
         CoreEventsConnectionNotifier::ObserveAll(
           game_server_.get(), world_->GetWorldEvents(), world_->GetPhysicsEvents());
-        server_runtime_ = std::make_unique<ServerRuntime>(config_,
-                                                          world_,
-                                                          game_server_,
-                                                          lobby_client_,
-                                                          *player_session_manager_,
-                                                          *command_queues_);
+        server_runtime_ = std::make_unique<ServerRuntime>(
+          config_, world_, game_server_, lobby_client_, *player_session_manager_, *command_queues_);
     }
 
     ~Application() = default;

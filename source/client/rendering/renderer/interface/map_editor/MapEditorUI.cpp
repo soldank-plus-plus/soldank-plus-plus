@@ -43,7 +43,7 @@ ImGuiWindowFlags GetDefaultWindowFlags()
 void BeginFrame(ClientState& client_state)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent(client_state.mouse.x, client_state.mouse.y);
+    io.AddMousePosEvent(client_state.mouse_screen_position.x, client_state.mouse_screen_position.y);
     io.MouseDrawCursor = io.WantCaptureMouse;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -405,7 +405,7 @@ void RenderStatusBar(const StateManager& game_state_manager, ClientState& client
             ImGui::SameLine(0, viewport->Size.x / 10.0F);
             ImGui::Text("Zoom: %.0f%%",
                         // TODO: need to invert zoom on camera class level instead of this
-                        (1.0F / client_state.camera_component.GetZoom()) * 100.0F);
+                        (1.0F / client_state.camera.GetZoom()) * 100.0F);
             ImGui::SameLine(0, viewport->Size.x / 10.0F);
             ImGui::Text("%s",
                         client_state.map_editor_state.current_tool_action_description.c_str());

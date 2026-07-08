@@ -29,8 +29,7 @@ public:
 
         if (client_state.client_soldier_id.has_value()) {
             std::uint8_t client_soldier_id = *client_state.client_soldier_id;
-            bool is_soldier_active =
-              world.GetStateManager()->GetSoldier(client_soldier_id).active;
+            bool is_soldier_active = world.GetStateManager()->GetSoldier(client_soldier_id).active;
             bool is_soldier_alive =
               !world.GetStateManager()->GetSoldier(client_soldier_id).dead_meat;
 
@@ -42,7 +41,7 @@ public:
         client_state.draw_game_interface = true;
         client_state.draw_map_editor_interface = false;
         client_state.draw_game_debug_interface = true;
-        client_state.camera_component.ResetZoom();
+        client_state.camera.ResetZoom();
         world.GetStateManager()->UnPauseGame();
         BuildRuntimeMapAndMoveSoldiers(world);
         window.SetCursorMode(CursorMode::Locked);
@@ -72,9 +71,8 @@ private:
         glm::vec2 move_offset = runtime_map.GetDocumentToRuntimeOffset();
         world.GetStateManager()->ApplyRuntimeMap(runtime_map);
 
-        world.GetStateManager()->TransformSoldiers([&](auto& soldier) {
-            world.GetStateManager()->MoveSoldier(soldier.id, move_offset);
-        });
+        world.GetStateManager()->TransformSoldiers(
+          [&](auto& soldier) { world.GetStateManager()->MoveSoldier(soldier.id, move_offset); });
     }
 
     bool is_active_ = false;

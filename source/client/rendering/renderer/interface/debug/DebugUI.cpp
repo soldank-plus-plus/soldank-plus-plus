@@ -261,7 +261,8 @@ void Render(const StateManager& game_state_manager,
             int fps)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent(client_state.mouse.x, client_state.window_height - client_state.mouse.y);
+    io.AddMousePosEvent(client_state.mouse_screen_position.x,
+                        client_state.window_height - client_state.mouse_screen_position.y);
     io.MouseDrawCursor = io.WantCaptureMouse;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
