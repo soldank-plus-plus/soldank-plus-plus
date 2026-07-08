@@ -18,6 +18,14 @@ set(client_lib_modules
     gameplay/GameSession.cpp
 
     map_editor/MapEditor.cpp
+    map_editor/EditorAssetBrowser.cpp
+    map_editor/EditorCommandHistory.cpp
+    map_editor/EditorDocument.cpp
+    map_editor/EditorEventRouter.cpp
+    map_editor/EditorMapProperties.cpp
+    map_editor/EditorShortcutController.cpp
+    map_editor/EditorToolController.cpp
+    map_editor/EditorViewportController.cpp
     map_editor/actions/MapEditorAction.cpp
     map_editor/actions/AddObjectsMapEditorAction.cpp
     map_editor/actions/AddPolygonMapEditorAction.cpp
@@ -113,7 +121,7 @@ add_library(client_lib)
 
 target_sources(client_lib
     PUBLIC
-        FILE_SET all_my_modules TYPE CXX_MODULES FILES 
+        FILE_SET all_my_modules TYPE CXX_MODULES FILES
         ${client_lib_modules}
 )
 
@@ -262,9 +270,7 @@ if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
       soldank_webasm_preload_directory("${asset_directory}" "${asset_directory}")
     endforeach()
 
-    foreach(asset_directory
-        objects
-    )
+    foreach(asset_directory objects)
       soldank_webasm_preload_directory("${asset_directory}" "${asset_directory}")
     endforeach()
 
@@ -277,9 +283,7 @@ if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
       soldank_webasm_preload_file("${asset_file}" "${asset_file}")
     endforeach()
 
-    foreach(asset_file
-        gostek.po
-    )
+    foreach(asset_file gostek.po)
       soldank_webasm_preload_file("${asset_file}" "${asset_file}")
       if (EXISTS "${soldatbase_SOURCE_DIR}/shared/objects/${asset_file}")
         list(APPEND webasm_preload_options

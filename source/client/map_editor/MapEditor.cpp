@@ -7,14 +7,21 @@ module;
 #include <memory>
 #include <string>
 #include <utility>
-#include <deque>
-#include <vector>
 #include <functional>
+#include <optional>
+#include <vector>
 
 export module MapEditor;
 
 import Tool;
 import MapEditorAction;
+import MapEditor.EditorCommandHistory;
+import MapEditor.EditorDocument;
+import MapEditor.EditorEventRouter;
+import MapEditor.EditorMapProperties;
+import MapEditor.EditorShortcutController;
+import MapEditor.EditorToolController;
+import MapEditor.EditorViewportController;
 import ClientState;
 import MapEditorState;
 import AddObjectsMapEditorAction;
@@ -22,17 +29,6 @@ import RemoveSelectionMapEditorAction;
 import TransformPolygonsMapEditorAction;
 import TransformSceneriesMapEditorAction;
 import TransformSpawnPointsMapEditorAction;
-import ColorPickerTool;
-import ColorTool;
-import PolygonTool;
-import SceneryTool;
-import SelectionTool;
-import SpawnpointTool;
-import TextureTool;
-import TransformTool;
-import VertexColorTool;
-import VertexSelectionTool;
-import WaypointTool;
 
 import Shared.Core.State.StateManager;
 import Shared.Core.Map.PMSEnums;
@@ -49,8 +45,6 @@ public:
     void Unlock();
 
 private:
-    static const int ACTION_HISTORY_LIMIT = 50;
-
     void OnSelectNewTool(ToolType tool_type,
                          ClientState& client_state,
                          const StateManager& game_state_manager);
@@ -80,8 +74,6 @@ private:
                           std::unique_ptr<MapEditorAction> new_action);
     void UndoLastAction(ClientState& client_state, StateManager& game_state_manager);
     void RedoUndoneAction(ClientState& client_state, StateManager& game_state_manager);
-    void UpdateUndoRedoButtons(ClientState& client_state);
-
     void RemoveCurrentSelection(ClientState& client_state, StateManager& game_state_manager);
 
     void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
@@ -95,21 +87,17 @@ private:
       ClientState& client_state,
       StateManager& game_state_manager);
 
-    ToolType selected_tool_;
-    std::vector<std::unique_ptr<Tool>> tools_;
     std::function<void(std::unique_ptr<MapEditorAction>)> add_new_map_editor_action_;
     std::function<void(MapEditorAction*)> execute_without_adding_map_editor_action_;
-    std::deque<std::unique_ptr<MapEditorAction>> map_editor_executed_actions_;
-    std::vector<std::unique_ptr<MapEditorAction>> map_editor_undone_actions_;
+    EditorDocument document_;
+    EditorCommandHistory command_history_;
+    EditorEventRouter event_router_;
+    EditorMapProperties map_properties_;
+    std::unique_ptr<EditorToolController> tool_controller_;
+    EditorShortcutController shortcut_controller_;
+    EditorViewportController viewport_controller_;
 
-    glm::vec2 current_mouse_screen_position_;
-    glm::vec2 camera_position_on_start_dragging_;
-    glm::vec2 mouse_screen_position_on_start_dragging_;
-    bool is_dragging_camera_;
     bool locked_;
-
-    bool is_holding_left_ctrl_;
-    bool is_holding_left_shift_;
 
     std::vector<PMSPolygon> copied_polygons_;
     std::vector<std::pair<unsigned int, std::pair<PMSScenery, std::string>>> copied_sceneries_;
@@ -120,14 +108,9 @@ private:
 namespace Soldank
 {
 MapEditor::MapEditor(ClientState& client_state, StateManager& game_state_manager)
-    : selected_tool_(client_state.map_editor_state.selected_tool)
-    , current_mouse_screen_position_()
-    , camera_position_on_start_dragging_()
-    , mouse_screen_position_on_start_dragging_()
-    , is_dragging_camera_(false)
+    : document_(client_state, game_state_manager)
+    , map_properties_(client_state.map_editor_state, game_state_manager)
     , locked_(false)
-    , is_holding_left_ctrl_(false)
-    , is_holding_left_shift_(false)
 {
     add_new_map_editor_action_ =
       [this, &client_state, &game_state_manager](std::unique_ptr<MapEditorAction> new_action) {
@@ -138,6 +121,8 @@ MapEditor::MapEditor(ClientState& client_state, StateManager& game_state_manager
         new_action->Execute(client_state, game_state_manager);
         return new_action;
     };
+    tool_controller_ = std::make_unique<EditorToolController>(
+      add_new_map_editor_action_, execute_without_adding_map_editor_action_);
 
     client_state.event_left_mouse_button_clicked.AddObserver(
       [this, &client_state, &game_state_manager]() {
@@ -232,19 +217,6 @@ MapEditor::MapEditor(ClientState& client_state, StateManager& game_state_manager
           RedoUndoneAction(client_state, game_state_manager);
       });
 
-    tools_.emplace_back(std::make_unique<TransformTool>(add_new_map_editor_action_,
-                                                        execute_without_adding_map_editor_action_));
-    tools_.emplace_back(std::make_unique<PolygonTool>(add_new_map_editor_action_));
-    tools_.emplace_back(std::make_unique<VertexSelectionTool>());
-    tools_.emplace_back(std::make_unique<SelectionTool>());
-    tools_.emplace_back(std::make_unique<VertexColorTool>());
-    tools_.emplace_back(std::make_unique<ColorTool>(add_new_map_editor_action_));
-    tools_.emplace_back(std::make_unique<TextureTool>());
-    tools_.emplace_back(std::make_unique<SceneryTool>(add_new_map_editor_action_));
-    tools_.emplace_back(std::make_unique<WaypointTool>());
-    tools_.emplace_back(std::make_unique<SpawnpointTool>(add_new_map_editor_action_));
-    tools_.emplace_back(std::make_unique<ColorPickerTool>());
-
     for (int i = 0; auto& saved_color : client_state.map_editor_state.palette_saved_colors) {
         int row = i / 12;
         if ((row + (i % 2)) % 2 == 0) {
@@ -286,73 +258,33 @@ MapEditor::MapEditor(ClientState& client_state, StateManager& game_state_manager
             game_state_manager);
       });
 
-    client_state.map_editor_state.event_save_map.AddObserver(
-      [&game_state_manager](const std::string& map_name) {
-          game_state_manager.GetMap().SaveMap(map_name);
-      });
-    client_state.map_editor_state.event_set_map_name.AddObserver(
-      [&game_state_manager](const std::string& map_name) {
-          game_state_manager.GetMap().SetName(map_name);
-      });
-    client_state.map_editor_state.event_set_map_description.AddObserver(
-      [&game_state_manager](const std::string& description) {
-          game_state_manager.GetMap().SetDescription(description);
-      });
-    client_state.map_editor_state.event_set_map_weather_type.AddObserver(
-      [&game_state_manager](PMSWeatherType weather_type) {
-          game_state_manager.GetMap().SetWeatherType(weather_type);
-      });
-    client_state.map_editor_state.event_set_map_step_type.AddObserver(
-      [&game_state_manager](PMSStepType step_type) {
-          game_state_manager.GetMap().SetStepType(step_type);
-      });
-    client_state.map_editor_state.event_set_map_grenades_count.AddObserver(
-      [&game_state_manager](unsigned char grenades_count) {
-          game_state_manager.GetMap().SetGrenadesCount(grenades_count);
-      });
-    client_state.map_editor_state.event_set_map_medikits_count.AddObserver(
-      [&game_state_manager](unsigned char medikits_count) {
-          game_state_manager.GetMap().SetMedikitsCount(medikits_count);
-      });
-    client_state.map_editor_state.event_set_map_jet_count.AddObserver(
-      [&game_state_manager](int jet_count) { game_state_manager.GetMap().SetJetCount(jet_count); });
-    client_state.map_editor_state.event_set_map_background_top_color.AddObserver(
-      [&game_state_manager](const PMSColor& background_top_color) {
-          game_state_manager.GetMap().SetBackgroundTopColor(background_top_color);
-      });
-    client_state.map_editor_state.event_set_map_background_bottom_color.AddObserver(
-      [&game_state_manager](const PMSColor& background_bottom_color) {
-          game_state_manager.GetMap().SetBackgroundBottomColor(background_bottom_color);
-      });
-    client_state.map_editor_state.event_set_map_texture_name.AddObserver(
-      [&game_state_manager](const std::string& texture_name) {
-          game_state_manager.GetMap().SetTextureName(texture_name);
-      });
-
     OnSelectNewTool(client_state.map_editor_state.selected_tool, client_state, game_state_manager);
 }
 
 void MapEditor::Lock()
 {
     locked_ = true;
+    tool_controller_->Deactivate();
+    event_router_.Emit(EditorToolsDeactivatedEvent{});
 }
 
 void MapEditor::Unlock()
 {
     locked_ = false;
+    tool_controller_->Activate();
+    event_router_.Emit(EditorToolsActivatedEvent{});
 }
 
 void MapEditor::OnSelectNewTool(ToolType tool_type,
                                 ClientState& client_state,
                                 const StateManager& game_state_manager)
 {
-    if (locked_) {
+    if (locked_ || !tool_controller_->IsActive()) {
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnUnselect(client_state);
-    selected_tool_ = tool_type;
-    tools_.at(std::to_underlying(selected_tool_))->OnSelect(client_state, game_state_manager);
+    tool_controller_->Select(tool_type, client_state, game_state_manager);
+    event_router_.Emit(EditorToolSelectedEvent{ tool_type });
 }
 
 void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state,
@@ -362,8 +294,7 @@ void MapEditor::OnSceneLeftMouseButtonClick(ClientState& client_state,
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))
-      ->OnSceneLeftMouseButtonClick(client_state, game_state_manager);
+    tool_controller_->ActiveTool().OnSceneLeftMouseButtonClick(client_state, game_state_manager);
 }
 
 void MapEditor::OnSceneLeftMouseButtonRelease(ClientState& client_state,
@@ -373,8 +304,7 @@ void MapEditor::OnSceneLeftMouseButtonRelease(ClientState& client_state,
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))
-      ->OnSceneLeftMouseButtonRelease(client_state, game_state_manager);
+    tool_controller_->ActiveTool().OnSceneLeftMouseButtonRelease(client_state, game_state_manager);
 }
 
 void MapEditor::OnSceneRightMouseButtonClick(ClientState& client_state)
@@ -383,7 +313,7 @@ void MapEditor::OnSceneRightMouseButtonClick(ClientState& client_state)
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnSceneRightMouseButtonClick(client_state);
+    tool_controller_->ActiveTool().OnSceneRightMouseButtonClick(client_state);
 }
 
 void MapEditor::OnSceneRightMouseButtonRelease()
@@ -392,7 +322,7 @@ void MapEditor::OnSceneRightMouseButtonRelease()
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))->OnSceneRightMouseButtonRelease();
+    tool_controller_->ActiveTool().OnSceneRightMouseButtonRelease();
 }
 
 void MapEditor::OnSceneMiddleMouseButtonClick(ClientState& client_state)
@@ -401,9 +331,7 @@ void MapEditor::OnSceneMiddleMouseButtonClick(ClientState& client_state)
         return;
     }
 
-    is_dragging_camera_ = true;
-    mouse_screen_position_on_start_dragging_ = current_mouse_screen_position_;
-    camera_position_on_start_dragging_ = client_state.camera;
+    viewport_controller_.BeginCameraDrag(client_state);
 }
 
 void MapEditor::OnSceneMiddleMouseButtonRelease()
@@ -412,7 +340,7 @@ void MapEditor::OnSceneMiddleMouseButtonRelease()
         return;
     }
 
-    is_dragging_camera_ = false;
+    viewport_controller_.EndCameraDrag();
 }
 
 void MapEditor::OnMouseScrollUp(ClientState& client_state) const
@@ -421,24 +349,7 @@ void MapEditor::OnMouseScrollUp(ClientState& client_state) const
         return;
     }
 
-    // TODO: move it somewhere else where it fits better
-    glm::vec2 old_camera_dimensions = { client_state.camera_component.GetWidth(),
-                                        client_state.camera_component.GetHeight() };
-    glm::vec2 camera_position = client_state.camera;
-    camera_position.y = -camera_position.y;
-    glm::vec2 mouse_camera_diff = client_state.mouse_map_position - camera_position;
-    glm::vec2 mouse_on_view_position = mouse_camera_diff + (old_camera_dimensions / 2.0F);
-    glm::vec2 side_ratio =
-      (mouse_on_view_position - (old_camera_dimensions / 2.0F)) / old_camera_dimensions;
-
-    client_state.camera_component.ZoomIn();
-
-    glm::vec2 new_camera_dimensions = { client_state.camera_component.GetWidth(),
-                                        client_state.camera_component.GetHeight() };
-    glm::vec2 pixels_difference = old_camera_dimensions - new_camera_dimensions;
-    side_ratio.y = -side_ratio.y;
-
-    client_state.camera += pixels_difference * side_ratio;
+    viewport_controller_.ZoomInAtMouse(client_state);
 }
 
 void MapEditor::OnMouseScrollDown(ClientState& client_state) const
@@ -447,23 +358,7 @@ void MapEditor::OnMouseScrollDown(ClientState& client_state) const
         return;
     }
 
-    glm::vec2 old_camera_dimensions = { client_state.camera_component.GetWidth(),
-                                        client_state.camera_component.GetHeight() };
-    glm::vec2 camera_position = client_state.camera;
-    camera_position.y = -camera_position.y;
-    glm::vec2 mouse_camera_diff = client_state.mouse_map_position - camera_position;
-    glm::vec2 mouse_on_view_position = mouse_camera_diff + (old_camera_dimensions / 2.0F);
-    glm::vec2 side_ratio =
-      (mouse_on_view_position - (old_camera_dimensions / 2.0F)) / old_camera_dimensions;
-
-    client_state.camera_component.ZoomOut();
-
-    glm::vec2 new_camera_dimensions = { client_state.camera_component.GetWidth(),
-                                        client_state.camera_component.GetHeight() };
-    glm::vec2 pixels_difference = old_camera_dimensions - new_camera_dimensions;
-    side_ratio.y = -side_ratio.y;
-
-    client_state.camera += pixels_difference * side_ratio;
+    viewport_controller_.ZoomOutAtMouse(client_state);
 }
 
 void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
@@ -474,24 +369,10 @@ void MapEditor::OnMouseScreenPositionChange(ClientState& client_state,
         return;
     }
 
-    new_mouse_position.y = -new_mouse_position.y;
-    current_mouse_screen_position_ = new_mouse_position;
+    viewport_controller_.OnMouseScreenPositionChange(client_state, new_mouse_position);
 
-    if (is_dragging_camera_) {
-        glm::vec2 mouse_position_difference =
-          mouse_screen_position_on_start_dragging_ - new_mouse_position;
-
-        // We need to scale the difference because the window size is different than the camera size
-        mouse_position_difference.x /=
-          client_state.window_width / client_state.camera_component.GetWidth();
-        mouse_position_difference.y /=
-          client_state.window_height / client_state.camera_component.GetHeight();
-
-        client_state.camera = camera_position_on_start_dragging_ + mouse_position_difference;
-    }
-
-    tools_.at(std::to_underlying(selected_tool_))
-      ->OnMouseScreenPositionChange(client_state, last_mouse_position, new_mouse_position);
+    tool_controller_->ActiveTool().OnMouseScreenPositionChange(
+      client_state, last_mouse_position, new_mouse_position);
 }
 
 void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
@@ -503,9 +384,8 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
         return;
     }
 
-    tools_.at(std::to_underlying(selected_tool_))
-      ->OnMouseMapPositionChange(
-        client_state, last_mouse_position, new_mouse_position, game_state_manager);
+    tool_controller_->ActiveTool().OnMouseMapPositionChange(
+      client_state, last_mouse_position, new_mouse_position, game_state_manager);
 }
 
 void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& game_state_manager)
@@ -514,54 +394,38 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
         return;
     }
 
-    if (is_holding_left_ctrl_ && key == GLFW_KEY_S) {
-        if (game_state_manager.GetConstMap().GetName()) {
-            game_state_manager.GetMap().SaveMap("maps/" +
-                                                *game_state_manager.GetConstMap().GetName());
-            client_state.map_editor_state.is_map_changed = false;
-        } else {
-            client_state.map_editor_state.should_open_save_as_modal = true;
-        }
+    shortcut_controller_.OnKeyPressed(key);
+
+    if (shortcut_controller_.IsSaveShortcut(key)) {
+        document_.SaveCurrentMapOrOpenSaveAs();
 
         return;
     }
 
-    if (is_holding_left_ctrl_ && is_holding_left_shift_ && key == GLFW_KEY_Z) {
+    if (shortcut_controller_.IsRedoShortcut(key)) {
         RedoUndoneAction(client_state, game_state_manager);
 
         return;
     }
 
-    if (is_holding_left_ctrl_ && key == GLFW_KEY_Z) {
+    if (shortcut_controller_.IsUndoShortcut(key)) {
         UndoLastAction(client_state, game_state_manager);
 
         return;
     }
 
-    if (is_holding_left_ctrl_ && key == GLFW_KEY_M) {
-        client_state.map_editor_state.should_open_map_settings_modal = true;
+    if (shortcut_controller_.IsMapSettingsShortcut(key)) {
+        document_.OpenMapSettings();
 
         return;
     }
 
-    static std::vector<std::pair<int, ToolType>> key_to_tool_type_map = {
-        { GLFW_KEY_A, ToolType::Transform },       { GLFW_KEY_Q, ToolType::Polygon },
-        { GLFW_KEY_S, ToolType::VertexSelection }, { GLFW_KEY_W, ToolType::Selection },
-        { GLFW_KEY_D, ToolType::VertexColor },     { GLFW_KEY_E, ToolType::Color },
-        { GLFW_KEY_F, ToolType::Texture },         { GLFW_KEY_R, ToolType::Scenery },
-        { GLFW_KEY_G, ToolType::Waypoint },        { GLFW_KEY_T, ToolType::Spawnpoint },
-        { GLFW_KEY_H, ToolType::ColorPicker },
-    };
-
-    for (const auto& key_to_tool_type : key_to_tool_type_map) {
-        if (key == key_to_tool_type.first) {
-            if (client_state.map_editor_state.selected_tool != key_to_tool_type.second) {
-                client_state.map_editor_state.event_selected_new_tool.Notify(
-                  key_to_tool_type.second);
-            }
-            client_state.map_editor_state.selected_tool = key_to_tool_type.second;
-            return;
+    if (std::optional<ToolType> tool_type = shortcut_controller_.GetToolForKey(key)) {
+        if (client_state.map_editor_state.selected_tool != *tool_type) {
+            client_state.map_editor_state.event_selected_new_tool.Notify(*tool_type);
         }
+        client_state.map_editor_state.selected_tool = *tool_type;
+        return;
     }
 
     bool is_anything_selected = false;
@@ -570,7 +434,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
     is_anything_selected |= !client_state.map_editor_state.selected_scenery_ids.empty();
     is_anything_selected |= !client_state.map_editor_state.selected_spawn_point_ids.empty();
 
-    if (is_holding_left_ctrl_ && is_anything_selected && key == GLFW_KEY_C) {
+    if (shortcut_controller_.IsCopyShortcut(key) && is_anything_selected) {
         // TODO: make use of system's clipboard
         copied_polygons_.clear();
         copied_sceneries_.clear();
@@ -607,7 +471,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
         return;
     }
 
-    if (is_holding_left_ctrl_ && key == GLFW_KEY_V) {
+    if (shortcut_controller_.IsPasteShortcut(key)) {
         if (!copied_polygons_.empty() || !copied_sceneries_.empty() ||
             !copied_spawn_points_.empty()) {
 
@@ -622,15 +486,13 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
     }
 
     if (key == GLFW_KEY_LEFT_SHIFT) {
-        is_holding_left_shift_ = true;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Pressed(client_state);
+        tool_controller_->ActiveTool().OnModifierKey1Pressed(client_state);
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
-        is_holding_left_ctrl_ = true;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Pressed(client_state);
+        tool_controller_->ActiveTool().OnModifierKey2Pressed(client_state);
     }
     if (key == GLFW_KEY_LEFT_ALT) {
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Pressed(client_state);
+        tool_controller_->ActiveTool().OnModifierKey3Pressed(client_state);
     }
 
     if (key == GLFW_KEY_DELETE) {
@@ -640,16 +502,16 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
 
 void MapEditor::OnKeyReleased(int key, ClientState& client_state)
 {
+    shortcut_controller_.OnKeyReleased(key);
+
     if (key == GLFW_KEY_LEFT_SHIFT) {
-        is_holding_left_shift_ = false;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey1Released(client_state);
+        tool_controller_->ActiveTool().OnModifierKey1Released(client_state);
     }
     if (key == GLFW_KEY_LEFT_CONTROL) {
-        is_holding_left_ctrl_ = false;
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey2Released(client_state);
+        tool_controller_->ActiveTool().OnModifierKey2Released(client_state);
     }
     if (key == GLFW_KEY_LEFT_ALT) {
-        tools_.at(std::to_underlying(selected_tool_))->OnModifierKey3Released(client_state);
+        tool_controller_->ActiveTool().OnModifierKey3Released(client_state);
     }
 }
 
@@ -661,21 +523,9 @@ void MapEditor::ExecuteNewAction(ClientState& client_state,
         return;
     }
 
-    if (!new_action->CanExecute(client_state, game_state_manager)) {
-        // TODO: Inform the user that the action didn't happen
-        return;
+    if (command_history_.Execute(client_state, game_state_manager, std::move(new_action))) {
+        event_router_.Emit(EditorCommandExecutedEvent{});
     }
-
-    map_editor_undone_actions_.clear();
-    new_action->Execute(client_state, game_state_manager);
-    map_editor_executed_actions_.push_back(std::move(new_action));
-    if (map_editor_executed_actions_.size() > ACTION_HISTORY_LIMIT) {
-        map_editor_executed_actions_.pop_front();
-    }
-
-    UpdateUndoRedoButtons(client_state);
-    // TODO: need to detect if current state is the same as saved state, probably using checksums
-    client_state.map_editor_state.is_map_changed = true;
 }
 
 void MapEditor::UndoLastAction(ClientState& client_state, StateManager& game_state_manager)
@@ -684,14 +534,8 @@ void MapEditor::UndoLastAction(ClientState& client_state, StateManager& game_sta
         return;
     }
 
-    if (!map_editor_executed_actions_.empty()) {
-        map_editor_executed_actions_.back()->Undo(client_state, game_state_manager);
-        map_editor_undone_actions_.push_back(std::move(map_editor_executed_actions_.back()));
-        map_editor_executed_actions_.pop_back();
-    }
-
-    UpdateUndoRedoButtons(client_state);
-    client_state.map_editor_state.is_map_changed = true;
+    command_history_.Undo(client_state, game_state_manager);
+    event_router_.Emit(EditorCommandUndoneEvent{});
 }
 
 void MapEditor::RedoUndoneAction(ClientState& client_state, StateManager& game_state_manager)
@@ -700,20 +544,8 @@ void MapEditor::RedoUndoneAction(ClientState& client_state, StateManager& game_s
         return;
     }
 
-    if (!map_editor_undone_actions_.empty()) {
-        map_editor_executed_actions_.push_back(std::move(map_editor_undone_actions_.back()));
-        map_editor_undone_actions_.pop_back();
-        map_editor_executed_actions_.back()->Execute(client_state, game_state_manager);
-    }
-
-    UpdateUndoRedoButtons(client_state);
-    client_state.map_editor_state.is_map_changed = true;
-}
-
-void MapEditor::UpdateUndoRedoButtons(ClientState& client_state)
-{
-    client_state.map_editor_state.is_undo_enabled = !map_editor_executed_actions_.empty();
-    client_state.map_editor_state.is_redo_enabled = !map_editor_undone_actions_.empty();
+    command_history_.Redo(client_state, game_state_manager);
+    event_router_.Emit(EditorCommandRedoneEvent{});
 }
 
 void MapEditor::RemoveCurrentSelection(ClientState& client_state, StateManager& game_state_manager)

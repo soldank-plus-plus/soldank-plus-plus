@@ -11,6 +11,7 @@ module;
 export module MapEditorState;
 
 import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSConstants;
 import Shared.Core.Map.PMSStructs;
 
 import Shared.Core.Utility.Observable;
@@ -116,8 +117,14 @@ struct MapEditorState
     std::vector<std::string> all_textures_in_directory;
     std::vector<std::string> all_sceneries_in_directory;
 
+    std::array<char, MAP_NAME_MAX_LENGTH> save_as_map_name_input{};
+    std::array<char, TEXTURE_NAME_MAX_LENGTH> texture_search_filter{};
+    std::array<char, SCENERY_NAME_MAX_LENGTH> scenery_search_filter{};
+
     bool should_open_map_settings_modal = false;
     bool should_open_save_as_modal = false;
+
+    bool draw_wireframe = false;
 
     glm::vec4 last_requested_pixel_color;
 
