@@ -38,9 +38,6 @@ public:
             }
         }
 
-        client_state.draw_game_interface = true;
-        client_state.draw_map_editor_interface = false;
-        client_state.draw_game_debug_interface = true;
         client_state.camera.ResetZoom();
         world.GetStateManager()->UnPauseGame();
         BuildRuntimeMapAndMoveSoldiers(world);
@@ -49,11 +46,8 @@ public:
         is_active_ = true;
     }
 
-    void Stop(ClientState& client_state, IWorld& world, Window& window, MapEditor& map_editor)
+    void Stop(ClientState& /*client_state*/, IWorld& world, Window& window, MapEditor& map_editor)
     {
-        client_state.draw_game_interface = false;
-        client_state.draw_map_editor_interface = true;
-        client_state.draw_game_debug_interface = false;
         world.GetStateManager()->PauseGame();
         if (editor_map_snapshot_.has_value()) {
             world.GetStateManager()->OverrideMap(*editor_map_snapshot_);

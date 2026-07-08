@@ -72,10 +72,6 @@ struct ClientState
     bool draw_map_boundaries = false;
     std::vector<unsigned int> colliding_polygon_ids;
 
-    bool draw_map_editor_interface = false;
-    bool draw_game_debug_interface = false;
-    bool draw_game_interface = false;
-
     bool is_game_debug_interface_enabled = false;
 
     MapEditorState map_editor_state;

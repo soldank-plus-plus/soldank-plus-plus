@@ -179,8 +179,6 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             Spdlog::info("Application mode = Local");
             client_runtime_.SetClientMode(ClientMode::LocalGame);
             map_path = "maps/ctf_Ash.pms";
-            client_state_->draw_game_debug_interface = true;
-            client_state_->draw_game_interface = true;
             break;
         }
         case CommandLineParameters::ApplicationMode::Online: {
@@ -191,17 +189,13 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             }
             client_runtime_.SetClientMode(ClientMode::OnlineGame);
             map_path = "maps/ctf_Ash.pms";
-            client_state_->draw_game_debug_interface = true;
             client_state_->draw_server_pov_client_pos = true;
-            client_state_->draw_game_interface = true;
             Spdlog::info("Application mode = Online");
             break;
         }
         case CommandLineParameters::ApplicationMode::MapEditor: {
             client_runtime_.SetClientMode(ClientMode::MapEditor);
             client_runtime_.SetEditorMode(EditorMode::Edit);
-            client_state_->draw_map_editor_interface = true;
-            client_state_->draw_game_interface = false;
             map_editor_ = std::make_unique<MapEditor>(*client_state_, *world_->GetStateManager());
             Spdlog::info("Application mode = MapEditor");
             break;

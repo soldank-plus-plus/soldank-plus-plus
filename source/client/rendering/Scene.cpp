@@ -126,11 +126,7 @@ void Scene::Render(const StateManager& game_state_manager,
                    double frame_percent,
                    int fps)
 {
-    RenderWorld(game_state_manager, client_state, frame_percent);
-    RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
-    RenderEditorOverlay(game_state_manager, client_state);
-    game_hud_renderer_.Render(game_state_manager, client_state);
-    RenderDebugMouseAim(game_state_manager, client_state);
+    RenderGame(game_state_manager, client_state, frame_percent, fps);
 }
 
 void Scene::RenderGame(const StateManager& game_state_manager,
@@ -147,10 +143,9 @@ void Scene::RenderGame(const StateManager& game_state_manager,
 void Scene::RenderEditor(const StateManager& game_state_manager,
                          ClientState& client_state,
                          double frame_percent,
-                         int fps)
+                         int /*fps*/)
 {
     RenderWorld(game_state_manager, client_state, frame_percent);
-    RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
     RenderEditorOverlay(game_state_manager, client_state);
     RenderDebugMouseAim(game_state_manager, client_state);
 }
@@ -323,23 +318,19 @@ void Scene::RenderDebugOverlay(const StateManager& game_state_manager,
                                double frame_percent,
                                int fps)
 {
-    if (client_state.draw_game_debug_interface) {
-        if (client_state.is_game_debug_interface_enabled) {
-            DebugUI::Render(game_state_manager, client_state, frame_percent, fps);
-        }
-        if (!DebugUI::GetWantCaptureMouse()) {
-            cursor_renderer_.Render(
-              { client_state.mouse_screen_position.x, client_state.mouse_screen_position.y },
-              { client_state.window_width, client_state.window_height });
-        }
+    if (client_state.is_game_debug_interface_enabled) {
+        DebugUI::Render(game_state_manager, client_state, frame_percent, fps);
+    }
+    if (!DebugUI::GetWantCaptureMouse()) {
+        cursor_renderer_.Render(
+          { client_state.mouse_screen_position.x, client_state.mouse_screen_position.y },
+          { client_state.window_width, client_state.window_height });
     }
 }
 
 void Scene::RenderEditorOverlay(const StateManager& game_state_manager, ClientState& client_state)
 {
-    if (client_state.draw_map_editor_interface) {
-        map_editor_scene_.Render(game_state_manager, client_state, *polygons_renderer_);
-    }
+    map_editor_scene_.Render(game_state_manager, client_state, *polygons_renderer_);
 }
 
 void Scene::RenderDebugMouseAim(const StateManager& game_state_manager,

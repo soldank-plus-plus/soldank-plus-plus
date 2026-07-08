@@ -22,10 +22,6 @@ public:
 
     void Render(const StateManager& game_state_manager, const ClientState& client_state)
     {
-        if (!client_state.draw_game_interface) {
-            return;
-        }
-
         game_state_manager.ForEachSoldier([&](const auto& soldier) {
             if (client_state.client_soldier_id.has_value() &&
                 *client_state.client_soldier_id == soldier.id) {
