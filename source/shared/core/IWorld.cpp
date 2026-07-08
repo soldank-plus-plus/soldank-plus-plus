@@ -1,12 +1,12 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <memory>
 #include <functional>
 #include <optional>
 
 export module Shared.Core.IWorld;
+
+import Extern.Glm;
 
 import Shared.Core.State.StateManager;
 import Shared.Core.Physics.PhysicsEvents;

@@ -1,13 +1,13 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cmath>
 #include <algorithm>
 #include <optional>
 #include <vector>
 
 export module Shared.Core.Math.Calc;
+
+import Extern.Glm;
 
 
 export namespace Soldank::Calc

@@ -2,13 +2,14 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include "core/math/Glm.hpp"
-
 #include <glad/glad.h>
 
 #include <optional>
+#include <vector>
 
 export module CircleRenderer;
+
+import Extern.Glm;
 
 import Renderer;
 import Rendering.Gpu.GpuBuffer;

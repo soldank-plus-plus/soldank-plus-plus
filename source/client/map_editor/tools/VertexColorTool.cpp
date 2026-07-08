@@ -1,8 +1,8 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 export module VertexColorTool;
+
+import Extern.Glm;
 
 import Tool;
 import ClientState;

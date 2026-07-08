@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
@@ -12,6 +10,8 @@ module;
 #include <optional>
 
 export module RectangleRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;

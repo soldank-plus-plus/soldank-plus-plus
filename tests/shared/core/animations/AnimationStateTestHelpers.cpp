@@ -7,7 +7,6 @@ module;
 #include <string>
 #include <vector>
 
-#include "core/math/Glm.hpp"
 #include "core/utility/Expected.hpp"
 
 export module Tests.Shared.Core.Animations.AnimationStateTestHelpers;
@@ -16,7 +15,7 @@ import Shared.Core.Animations;
 import Shared.Core.Data.IFileReader;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.WeaponParameters;
-import Shared.Core.Math.Glm;
+import Extern.Glm;
 import Shared.Core.Physics.Constants;
 import Shared.Core.State.Control;
 import Shared.Core.Types.BulletType;

@@ -1,5 +1,6 @@
 add_subdirectory(simple_ini)
 add_subdirectory(spdlog)
+add_subdirectory(glm)
 
 if (BUILD_CLIENT_ENABLED)
     add_subdirectory(glad-2.1.0)

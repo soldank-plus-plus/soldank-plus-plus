@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "spdlog/spdlog.h"
 
 #include <filesystem>
@@ -12,6 +10,8 @@ module;
 #include <string>
 
 export module Shared.Core.Physics.Particles;
+
+import Extern.Glm;
 
 import Shared.Core.Utility.Getline;
 import Shared.Core.Data.FileReader;

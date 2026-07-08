@@ -1,10 +1,10 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <string>
 
 export module MapEditorScene;
+
+import Extern.Glm;
 
 import ClientState;
 import SceneryOutlinesRenderer;

@@ -2,13 +2,14 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include "core/math/Glm.hpp"
-
 #include <glad/glad.h>
 
 #include <filesystem>
+#include <vector>
 
 export module CursorRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;
@@ -93,13 +94,15 @@ void CursorRenderer::Render(const glm::vec2& mouse_position, glm::vec2 window_di
     shader_.Use();
     Renderer::SetupVertexArray(vbo_, ebo_);
 
-    glm::mat4 transform(1);
+    glm::mat4 transform(1.0F);
 
-    transform = glm::translate(transform,
-                               glm::vec3(mouse_position.x / (window_dimensions.x / 2.0F) - 1.0,
-                                         mouse_position.y / (window_dimensions.y / 2.0F) - 1.0,
-                                         0.0));
-    transform = glm::scale(transform, glm::vec3(SIZE_SCALE, SIZE_SCALE, 0.0));
+    glm::vec3 cursor_translation(mouse_position.x / (window_dimensions.x / 2.0F) - 1.0F,
+                                 mouse_position.y / (window_dimensions.y / 2.0F) - 1.0F,
+                                 0.0F);
+    glm::vec3 cursor_scale(SIZE_SCALE, SIZE_SCALE, 0.0F);
+
+    transform = glm::translate(transform, cursor_translation);
+    transform = glm::scale(transform, cursor_scale);
 
     shader_.SetMatrix4("transform", transform);
     Renderer::BindTexture(texture_);

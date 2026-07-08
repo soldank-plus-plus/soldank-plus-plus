@@ -1,10 +1,10 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cstdint>
 
 export module Shared.Core.Entities.Bullet;
+
+import Extern.Glm;
 
 import Shared.Core.Physics.Particles;
 import Shared.Core.Types.BulletType;

@@ -3,8 +3,6 @@ module;
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include "core/math/Glm.hpp"
-
 #include <algorithm>
 #include <array>
 #include <filesystem>
@@ -13,6 +11,8 @@ module;
 #include <string_view>
 
 export module MapEditorUI;
+
+import Extern.Glm;
 
 import ClientState;
 import MapEditor.EditorAssetBrowser;

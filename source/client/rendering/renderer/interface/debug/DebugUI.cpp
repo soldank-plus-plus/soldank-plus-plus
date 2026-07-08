@@ -3,14 +3,14 @@ module;
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include "core/math/Glm.hpp"
-
 #include <array>
 #include <string>
 #include <utility>
 #include <vector>
 
 export module DebugUI;
+
+import Extern.Glm;
 
 import ClientState;
 

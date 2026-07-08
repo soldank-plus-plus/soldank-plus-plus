@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "spdlog/spdlog.h"
 
 #include <cstdint>
@@ -9,6 +7,8 @@ module;
 #include <vector>
 
 export module Shared.CoreEventHandler;
+
+import Extern.Glm;
 
 import Shared.Core.IWorld;
 import Shared.Core.WorldEvents;

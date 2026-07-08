@@ -1,13 +1,13 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
 
 export module ColorTool;
+
+import Extern.Glm;
 
 import Tool;
 import MapEditorAction;

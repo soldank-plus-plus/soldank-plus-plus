@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cstdint>
 #include <vector>
 #include <cmath>
@@ -9,6 +7,8 @@ module;
 #include <stdexcept>
 
 export module Shared.Core.Physics.SoldierPhysics;
+
+import Extern.Glm;
 
 import Shared.Core.Animations;
 import Shared.Core.Animations.States;

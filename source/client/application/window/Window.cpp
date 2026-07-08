@@ -2,8 +2,6 @@ module;
 
 #include "application/config/Config.hpp"
 
-#include "core/math/Glm.hpp"
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -16,6 +14,8 @@ module;
 #include <functional>
 
 export module Application.Window;
+
+import Extern.Glm;
 
 export import Application.WindowBackendAdapter;
 

@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
@@ -10,6 +8,8 @@ module;
 #include <vector>
 
 export module SceneryOutlinesRenderer;
+
+import Extern.Glm;
 
 import Renderer;
 import Rendering.Gpu.GpuBuffer;

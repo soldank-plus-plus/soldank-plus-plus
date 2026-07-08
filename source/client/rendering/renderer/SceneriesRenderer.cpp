@@ -2,10 +2,6 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <glad/glad.h>
 
 #include <algorithm>
@@ -13,8 +9,11 @@ module;
 #include <memory>
 #include <chrono>
 #include <filesystem>
+#include <utility>
 
 export module SceneriesRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;

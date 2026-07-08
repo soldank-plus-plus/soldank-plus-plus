@@ -1,11 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cstdint>
 #include <optional>
 
 export module Editor.PlayTestSession;
+
+import Extern.Glm;
 
 import Application.Window;
 import MapEditor;

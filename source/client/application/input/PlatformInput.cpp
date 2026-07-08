@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
@@ -9,6 +7,8 @@ module;
 #include <vector>
 
 export module Application.Input.PlatformInput;
+
+import Extern.Glm;
 
 import Application.Input.InputSnapshot;
 

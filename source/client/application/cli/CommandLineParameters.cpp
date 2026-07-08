@@ -6,6 +6,7 @@ module;
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 export module Application.CLI.CommandLineParameters;
 

@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/data/sprites/SpriteTypes.hpp"
 
 #include <memory>
@@ -19,6 +17,8 @@ module;
 #include "core/utility/Expected.hpp"
 
 export module SpritesManager;
+
+import Extern.Glm;
 
 import Texture;
 import SoldierPartData;

@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/data/sprites/SpriteTypes.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
 
@@ -11,8 +9,11 @@ module;
 #include <unordered_map>
 #include <numbers>
 #include <cmath>
+#include <vector>
 
 export module BulletRenderer;
+
+import Extern.Glm;
 
 import Renderer;
 import Shader;

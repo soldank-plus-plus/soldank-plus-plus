@@ -1,8 +1,8 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 export module Camera;
+
+import Extern.Glm;
 
 export namespace Soldank
 {

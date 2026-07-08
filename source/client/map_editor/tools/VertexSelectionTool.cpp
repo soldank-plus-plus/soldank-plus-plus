@@ -1,12 +1,13 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <algorithm>
+#include <array>
 #include <bitset>
 #include <optional>
 
 export module VertexSelectionTool;
+
+import Extern.Glm;
 
 import Tool;
 import ClientState;

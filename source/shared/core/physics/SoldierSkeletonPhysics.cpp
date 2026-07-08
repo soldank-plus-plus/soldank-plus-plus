@@ -1,10 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cmath>
+#include <vector>
 
 export module Shared.Core.Physics.SoldierSkeletonPhysics;
+
+import Extern.Glm;
 
 import Shared.Core.Physics.Constants;
 import Shared.Core.Entities.Soldier;

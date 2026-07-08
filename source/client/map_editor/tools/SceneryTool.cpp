@@ -1,11 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <functional>
 #include <memory>
 
 export module SceneryTool;
+
+import Extern.Glm;
 
 import Tool;
 import MapEditorAction;

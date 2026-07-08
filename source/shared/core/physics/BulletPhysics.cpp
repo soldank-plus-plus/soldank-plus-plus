@@ -1,14 +1,15 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "spdlog/spdlog.h"
 
 #include <algorithm>
 #include <array>
 #include <optional>
+#include <utility>
 
 export module Shared.Core.Physics.BulletPhysics;
+
+import Extern.Glm;
 
 import Shared.Core.State.StateManager;
 import Shared.Core.Entities.Bullet;

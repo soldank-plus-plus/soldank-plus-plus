@@ -1,10 +1,10 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cstdint>
 
 export module Shared.Networking.ProtocolConversions;
+
+import Extern.Glm;
 
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Simulation.SimulationCommands;

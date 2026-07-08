@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -22,6 +20,8 @@ module;
 #include <string>
 
 export module Shared.Core.Map.Map;
+
+import Extern.Glm;
 
 import Shared.Core.Data.IFileReader;
 import Shared.Core.Data.FileReader;

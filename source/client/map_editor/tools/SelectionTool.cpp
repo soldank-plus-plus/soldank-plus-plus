@@ -1,12 +1,12 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 
 export module SelectionTool;
+
+import Extern.Glm;
 
 import Tool;
 import MapEditorAction;

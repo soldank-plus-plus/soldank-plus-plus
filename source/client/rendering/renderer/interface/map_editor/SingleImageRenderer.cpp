@@ -2,8 +2,6 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include "core/math/Glm.hpp"
-
 #include <glad/glad.h>
 
 #include <filesystem>
@@ -13,6 +11,8 @@ module;
 #include <string>
 
 export module SingleImageRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;

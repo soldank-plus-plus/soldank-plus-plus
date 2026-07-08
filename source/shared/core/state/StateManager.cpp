@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "spdlog/spdlog.h"
 #include <algorithm>
 #include <utility>
@@ -9,8 +7,11 @@ module;
 #include <filesystem>
 #include <functional>
 #include <random>
+#include <vector>
 
 export module Shared.Core.State.StateManager;
+
+import Extern.Glm;
 
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.WeaponParametersFactory;

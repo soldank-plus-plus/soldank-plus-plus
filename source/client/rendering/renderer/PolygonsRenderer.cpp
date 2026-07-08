@@ -1,17 +1,18 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
+#include <array>
 #include <filesystem>
 #include <vector>
 #include <optional>
 #include <string>
 
 export module PolygonsRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;

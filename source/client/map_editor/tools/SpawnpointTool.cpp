@@ -1,12 +1,12 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <functional>
 #include <memory>
 #include <utility>
 
 export module SpawnpointTool;
+
+import Extern.Glm;
 
 import Tool;
 import AddSpawnPointMapEditorAction;

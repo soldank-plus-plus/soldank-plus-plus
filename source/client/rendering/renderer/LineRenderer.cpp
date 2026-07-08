@@ -2,13 +2,15 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include "core/math/Glm.hpp"
-
 #include <glad/glad.h>
 
+#include <cmath>
 #include <optional>
+#include <vector>
 
 export module LineRenderer;
+
+import Extern.Glm;
 
 import Renderer;
 import Rendering.Gpu.GpuBuffer;
@@ -67,7 +69,7 @@ void LineRenderer::Render(glm::mat4 transform,
     p2.y = -p2.y;
     float dx = p2.x - p1.x;
     float dy = p2.y - p1.y;
-    float length = sqrt(dx * dx + dy * dy);
+    float length = std::sqrt(dx * dx + dy * dy);
 
     // Normalize direction vector
     dx /= length;

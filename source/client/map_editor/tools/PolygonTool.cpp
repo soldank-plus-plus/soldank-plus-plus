@@ -1,13 +1,14 @@
 module;
 
-#include "core/math/Glm.hpp"
-
+#include <array>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
 
 export module PolygonTool;
+
+import Extern.Glm;
 
 import Tool;
 import MapEditorAction;

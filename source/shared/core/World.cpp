@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "spdlog/spdlog.h"
 
 #include <algorithm>
@@ -16,6 +14,8 @@ module;
 #include <vector>
 
 export module Shared.Core.World;
+
+import Extern.Glm;
 
 import Shared.Core.IWorld;
 import Shared.Core.WorldEvents;

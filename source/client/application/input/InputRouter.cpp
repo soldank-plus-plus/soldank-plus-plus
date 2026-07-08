@@ -1,12 +1,12 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <GLFW/glfw3.h>
 
 #include <functional>
 
 export module Application.Input.InputRouter;
+
+import Extern.Glm;
 
 import Application.Input.InputSnapshot;
 

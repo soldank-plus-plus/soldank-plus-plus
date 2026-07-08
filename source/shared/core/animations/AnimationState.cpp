@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <utility>
 #include <algorithm>
 #include <vector>
@@ -9,6 +7,8 @@ module;
 #include <optional>
 
 export module Shared.Core.Animations:AnimationState;
+
+import Extern.Glm;
 
 import :AnimationData;
 

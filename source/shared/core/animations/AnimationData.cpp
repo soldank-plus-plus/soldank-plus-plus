@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "spdlog/spdlog.h"
 
 #include <algorithm>
@@ -13,6 +11,8 @@ module;
 #include <memory>
 
 export module Shared.Core.Animations:AnimationData;
+
+import Extern.Glm;
 
 import Shared.Core.Utility.Getline;
 import Shared.Core.Data.FileReader;

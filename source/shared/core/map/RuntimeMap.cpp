@@ -1,10 +1,10 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <optional>
 
 export module Shared.Core.Map.RuntimeMap;
+
+import Extern.Glm;
 
 import Shared.Core.Map.Map;
 import Shared.Core.Map.MapDocument;

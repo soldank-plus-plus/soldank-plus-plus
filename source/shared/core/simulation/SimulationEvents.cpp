@@ -1,11 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cstdint>
 #include <variant>
 
 export module Shared.Core.Simulation.SimulationEvents;
+
+import Extern.Glm;
 
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Types.ItemType;

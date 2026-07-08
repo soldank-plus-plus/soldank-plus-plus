@@ -170,7 +170,7 @@ target_link_libraries(client_lib PUBLIC glfw)
 if (NOT (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten"))
   target_link_libraries(client_lib PUBLIC glad)
 endif()
-target_link_libraries(client_lib PUBLIC glm::glm)
+target_link_libraries(client_lib PUBLIC Glm)
 target_link_libraries(client_lib PRIVATE SimpleIni)
 
 # TODO: check if PNG, ZLIB and BZip2 are needed for linking here

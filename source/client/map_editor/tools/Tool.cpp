@@ -1,8 +1,8 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 export module Tool;
+
+import Extern.Glm;
 
 import ClientState;
 

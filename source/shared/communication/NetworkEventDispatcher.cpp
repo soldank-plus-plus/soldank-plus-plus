@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <memory>
 #include <optional>
 #include <variant>
@@ -12,6 +10,8 @@ module;
 #include "core/utility/Expected.hpp"
 
 export module Shared.Networking.NetworkEventDispatcher;
+
+import Extern.Glm;
 
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkMessage;

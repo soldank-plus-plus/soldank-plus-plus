@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/data/sprites/SpriteTypes.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
 
@@ -13,8 +11,11 @@ module;
 #include <cmath>
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 export module ItemRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;

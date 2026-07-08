@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <optional>
 #include <list>
 #include <chrono>
@@ -10,6 +8,8 @@ module;
 #include <vector>
 
 export module ClientState;
+
+import Extern.Glm;
 
 import Camera;
 import MapEditorState;

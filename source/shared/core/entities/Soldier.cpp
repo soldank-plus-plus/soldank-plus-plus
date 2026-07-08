@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "spdlog/spdlog.h"
 
 #include <utility>
@@ -11,6 +9,8 @@ module;
 #include <array>
 
 export module Shared.Core.Entities.Soldier;
+
+import Extern.Glm;
 
 import Shared.Core.Physics.Particles;
 import Shared.Core.Entities.WeaponParametersFactory;

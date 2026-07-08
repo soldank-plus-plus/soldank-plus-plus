@@ -1,8 +1,8 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 export module Shared.Core.Physics.PhysicsEvents;
+
+import Extern.Glm;
 
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Utility.Observable;

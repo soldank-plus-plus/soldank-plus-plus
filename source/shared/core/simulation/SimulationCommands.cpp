@@ -1,12 +1,12 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cstdint>
 #include <optional>
 #include <variant>
 
 export module Shared.Core.Simulation.SimulationCommands;
+
+import Extern.Glm;
 
 import Shared.Core.State.Control;
 import Shared.Core.Types.WeaponType;

@@ -1,11 +1,11 @@
 module;
 
-#include <core/math/Glm.hpp>
-
 #include <cstdint>
 #include <memory>
 
 export module Networking.SpawnSoldierNetworkEventHandler;
+
+import Extern.Glm;
 
 import Shared.Core.IWorld;
 

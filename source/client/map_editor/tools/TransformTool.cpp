@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <algorithm>
 #include <array>
 #include <bitset>
@@ -14,6 +12,8 @@ module;
 #include <vector>
 
 export module TransformTool;
+
+import Extern.Glm;
 
 import Tool;
 import MapEditorAction;

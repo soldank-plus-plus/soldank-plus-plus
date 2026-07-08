@@ -1,16 +1,17 @@
 module;
 
 #include "application/config/Config.hpp"
-#include "core/math/Glm.hpp"
-
 #include <glad/glad.h>
 
+#include <array>
 #include <string>
 #include <algorithm>
 #include <vector>
 #include <memory>
 
 export module Scene;
+
+import Extern.Glm;
 
 import Camera;
 import ItemRenderer;

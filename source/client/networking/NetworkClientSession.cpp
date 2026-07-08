@@ -1,11 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cstdint>
 #include <memory>
 
 export module Networking.NetworkClientSession;
+
+import Extern.Glm;
 
 import ClientState;
 import Networking.INetworkingClient;

@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <GLFW/glfw3.h>
 
 #include <cstdint>
@@ -13,6 +11,8 @@ module;
 #include <vector>
 
 export module Application;
+
+import Extern.Glm;
 
 import Application.CLI.CommandLineParameters;
 import Application.ClientModes;

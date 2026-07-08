@@ -1,10 +1,10 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <span>
 
 export module Application.Input.InputSnapshot;
+
+import Extern.Glm;
 
 export namespace Soldank
 {

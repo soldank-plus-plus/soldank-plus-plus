@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
@@ -14,6 +12,8 @@ module;
 #include <string>
 
 export module SpawnPointRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;

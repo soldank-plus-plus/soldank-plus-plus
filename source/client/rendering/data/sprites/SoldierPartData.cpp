@@ -2,14 +2,14 @@ module;
 
 #include "rendering/data/sprites/SpriteTypes.hpp"
 
-#include "core/math/Glm.hpp"
-
 #include <string>
 #include <vector>
 #include <optional>
 #include <variant>
 
 export module SoldierPartData;
+
+import Extern.Glm;
 
 import Texture;
 

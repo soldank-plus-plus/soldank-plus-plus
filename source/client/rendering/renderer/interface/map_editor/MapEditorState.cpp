@@ -1,14 +1,15 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <string>
 #include <optional>
 #include <bitset>
 #include <array>
+#include <utility>
 #include <vector>
 
 export module MapEditorState;
+
+import Extern.Glm;
 
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSConstants;

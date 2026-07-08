@@ -1,15 +1,16 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/shaders/ShaderSources.hpp"
 
 #include <glad/glad.h>
 
+#include <array>
 #include <optional>
 #include <vector>
 
 export module PolygonOutlinesRenderer;
+
+import Extern.Glm;
 
 import Renderer;
 import Rendering.Gpu.GpuBuffer;

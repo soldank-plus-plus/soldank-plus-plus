@@ -1,20 +1,22 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include "rendering/shaders/ShaderSources.hpp"
 #include "rendering/data/sprites/SpriteTypes.hpp"
 
 #include <glad/glad.h>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <cmath>
+#include <utility>
 #include <vector>
 #include <optional>
 #include <variant>
 
 export module SoldierRenderer;
+
+import Extern.Glm;
 
 import Texture;
 import Renderer;

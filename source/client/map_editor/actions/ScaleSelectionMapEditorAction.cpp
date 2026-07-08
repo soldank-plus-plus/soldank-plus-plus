@@ -1,13 +1,14 @@
 module;
 
-#include "core/math/Glm.hpp"
-
+#include <array>
 #include <cmath>
 #include <bitset>
 #include <utility>
 #include <vector>
 
 export module ScaleSelectionMapEditorAction;
+
+import Extern.Glm;
 
 import MapEditorAction;
 import ClientState;

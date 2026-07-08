@@ -1,11 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <cmath>
 #include <vector>
 
 export module Shared.Core.Physics.ItemPhysics;
+
+import Extern.Glm;
 
 import Shared.Core.State.StateManager;
 import Shared.Core.Entities.Item;

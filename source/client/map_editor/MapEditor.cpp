@@ -1,7 +1,5 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <GLFW/glfw3.h>
 
 #include <memory>
@@ -12,6 +10,8 @@ module;
 #include <vector>
 
 export module MapEditor;
+
+import Extern.Glm;
 
 import Tool;
 import MapEditorAction;

@@ -1,11 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
 #include <utility>
 #include <vector>
 
 export module MoveSelectionMapEditorAction;
+
+import Extern.Glm;
 
 import MapEditorAction;
 import ClientState;

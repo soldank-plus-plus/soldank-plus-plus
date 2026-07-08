@@ -1,10 +1,11 @@
 module;
 
-#include "core/math/Glm.hpp"
-
+#include <array>
 #include <cstdint>
 
 export module ColorPickerTool;
+
+import Extern.Glm;
 
 import Tool;
 import ClientState;
