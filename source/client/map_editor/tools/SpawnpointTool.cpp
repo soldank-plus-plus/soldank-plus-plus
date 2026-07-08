@@ -34,7 +34,7 @@ public:
     void OnSelect(ClientState& client_state, const StateManager& /*game_state_manager*/) final
     {
         client_state.map_editor_state.spawn_point_preview_position =
-          client_state.mouse_map_position;
+          client_state.input.mouse_map_position;
         client_state.map_editor_state.current_tool_action_description = "Place Spawn Point";
     }
 

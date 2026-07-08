@@ -45,7 +45,7 @@ void RenderPolygonToolDetails(const StateManager& game_state_manager, ClientStat
     glm::vec2 second_vertex_position;
     glm::vec2 third_vertex_position;
 
-    first_vertex_position = client_state.mouse_map_position;
+    first_vertex_position = client_state.input.mouse_map_position;
 
     if (client_state.map_editor_state.polygon_tool_wip_polygon_edge) {
         placed_vertices_count = 1;

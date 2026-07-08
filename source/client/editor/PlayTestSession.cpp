@@ -38,7 +38,7 @@ public:
             }
         }
 
-        client_state.camera.ResetZoom();
+        client_state.camera.view.ResetZoom();
         world.GetStateManager()->UnPauseGame();
         BuildRuntimeMapAndMoveSoldiers(world);
         window.SetCursorMode(CursorMode::Locked);

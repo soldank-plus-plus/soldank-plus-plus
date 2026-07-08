@@ -43,7 +43,8 @@ ImGuiWindowFlags GetDefaultWindowFlags()
 void BeginFrame(ClientState& client_state)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent(client_state.mouse_screen_position.x, client_state.mouse_screen_position.y);
+    io.AddMousePosEvent(client_state.input.mouse_screen_position.x,
+                        client_state.input.mouse_screen_position.y);
     io.MouseDrawCursor = io.WantCaptureMouse;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -275,9 +276,9 @@ void RenderDisplayWindow(ClientState& client_state, ImGuiWindowFlags default_win
 
     ImGui::Begin("Display", nullptr, default_window_flags);
 
-    ImGui::Checkbox("Background", &client_state.draw_background);
-    ImGui::Checkbox("Polygons", &client_state.draw_polygons);
-    ImGui::Checkbox("Sceneries", &client_state.draw_sceneries);
+    ImGui::Checkbox("Background", &client_state.world_render_options.draw_background);
+    ImGui::Checkbox("Polygons", &client_state.world_render_options.draw_polygons);
+    ImGui::Checkbox("Sceneries", &client_state.world_render_options.draw_sceneries);
     ImGui::Checkbox("Spawn points", &client_state.map_editor_state.draw_spawn_points);
     ImGui::Checkbox("Wireframe", &client_state.map_editor_state.draw_wireframe);
     ImGui::Checkbox("Grid", &client_state.map_editor_state.is_grid_visible);
@@ -405,14 +406,14 @@ void RenderStatusBar(const StateManager& game_state_manager, ClientState& client
             ImGui::SameLine(0, viewport->Size.x / 10.0F);
             ImGui::Text("Zoom: %.0f%%",
                         // TODO: need to invert zoom on camera class level instead of this
-                        (1.0F / client_state.camera.GetZoom()) * 100.0F);
+                        (1.0F / client_state.camera.view.GetZoom()) * 100.0F);
             ImGui::SameLine(0, viewport->Size.x / 10.0F);
             ImGui::Text("%s",
                         client_state.map_editor_state.current_tool_action_description.c_str());
             ImGui::SameLine(0, viewport->Size.x / 10.0F);
             ImGui::Text("Mouse position: %.0f, %.0f",
-                        client_state.mouse_map_position.x,
-                        client_state.mouse_map_position.y);
+                        client_state.input.mouse_map_position.x,
+                        client_state.input.mouse_map_position.y);
             ImGui::EndMenuBar();
         }
         ImGui::End();

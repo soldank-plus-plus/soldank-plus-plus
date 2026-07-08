@@ -70,7 +70,8 @@ CursorRenderer::CursorRenderer(ClientState& client_state)
         texture_height_ = 0;
     }
     std::vector<float> vertices;
-    GenerateGLBufferVertices({ client_state.window_width, client_state.window_height }, vertices);
+    GenerateGLBufferVertices({ client_state.input.window_width, client_state.input.window_height },
+                             vertices);
 
     std::vector<unsigned int> indices{ 0, 1, 2, 1, 3, 2 };
 

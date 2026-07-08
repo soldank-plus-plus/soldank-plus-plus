@@ -167,7 +167,8 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     window_ = std::make_unique<Window>();
     world_ = std::make_shared<World>();
     client_state_ = std::make_shared<ClientState>();
-    client_state_->is_game_debug_interface_enabled = parsed_cli_parameters.is_debug_ui_enabled;
+    client_state_->debug_render.is_game_debug_interface_enabled =
+      parsed_cli_parameters.is_debug_ui_enabled;
 
     switch (application_mode_) {
         case CommandLineParameters::ApplicationMode::Default: {
@@ -189,7 +190,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             }
             client_runtime_.SetClientMode(ClientMode::OnlineGame);
             map_path = "maps/ctf_Ash.pms";
-            client_state_->draw_server_pov_client_pos = true;
+            client_state_->network.draw_server_pov_client_pos = true;
             Spdlog::info("Application mode = Online");
             break;
         }
@@ -299,7 +300,7 @@ void Application::Run()
               std::abs(last_mouse_position.y - new_mouse_position.y) > 0.0000001F) {
               client_state_->event_mouse_map_position_changed.Notify(last_mouse_position,
                                                                      new_mouse_position);
-              client_state_->mouse_map_position = GetCurrentMouseMapPosition();
+              client_state_->input.mouse_map_position = GetCurrentMouseMapPosition();
           }
       });
     input_router_.SetMouseScrollHandler([&](float wheel_delta) {
@@ -310,38 +311,38 @@ void Application::Run()
         }
 
         glm::vec2 mouse_map_position = GetCurrentMouseMapPosition();
-        client_state_->event_mouse_map_position_changed.Notify(client_state_->mouse_map_position,
-                                                               mouse_map_position);
-        client_state_->mouse_map_position = mouse_map_position;
+        client_state_->event_mouse_map_position_changed.Notify(
+          client_state_->input.mouse_map_position, mouse_map_position);
+        client_state_->input.mouse_map_position = mouse_map_position;
     });
 
     world_->GetPhysicsEvents().soldier_collides_with_polygon.AddObserver(
       [&](const Soldier& /*soldier*/, const PMSPolygon& polygon) {
-          if (client_state_->draw_colliding_polygons) {
+          if (client_state_->debug_render.draw_colliding_polygons) {
               bool exists = false;
-              for (unsigned int poly_id : client_state_->colliding_polygon_ids) {
+              for (unsigned int poly_id : client_state_->debug_render.colliding_polygon_ids) {
                   if (polygon.id == poly_id) {
                       exists = true;
                       break;
                   }
               }
               if (!exists) {
-                  client_state_->colliding_polygon_ids.push_back(polygon.id);
+                  client_state_->debug_render.colliding_polygon_ids.push_back(polygon.id);
               }
           }
       });
     world_->GetPhysicsEvents().item_collides_with_polygon.AddObserver(
       [&](Item& /*item*/, const PMSPolygon& polygon) {
-          if (client_state_->draw_colliding_polygons) {
+          if (client_state_->debug_render.draw_colliding_polygons) {
               bool exists = false;
-              for (unsigned int poly_id : client_state_->colliding_polygon_ids) {
+              for (unsigned int poly_id : client_state_->debug_render.colliding_polygon_ids) {
                   if (polygon.id == poly_id) {
                       exists = true;
                       break;
                   }
               }
               if (!exists) {
-                  client_state_->colliding_polygon_ids.push_back(polygon.id);
+                  client_state_->debug_render.colliding_polygon_ids.push_back(polygon.id);
               }
           }
       });
@@ -350,8 +351,8 @@ void Application::Run()
     input_router_.ResetMousePositions(GetCurrentMouseScreenPosition(),
                                       GetCurrentMouseMapPosition());
     UpdateWindowSize();
-    client_state_->camera.UpdateWindowDimensions(
-      { client_state_->window_width, client_state_->window_height });
+    client_state_->camera.view.UpdateWindowDimensions(
+      { client_state_->input.window_width, client_state_->input.window_height });
 
     client_state_->event_respawn_player_at_spawn_point_requested.AddObserver(
       [&](unsigned int spawn_point_id) {
@@ -364,7 +365,7 @@ void Application::Run()
       [&](unsigned int soldier_id) { world_->SpawnSoldier(soldier_id); });
 
     window_->RegisterOnScreenResizedObserver([&](glm::vec2 new_window_dimensions) {
-        client_state_->camera.UpdateWindowDimensions(new_window_dimensions);
+        client_state_->camera.view.UpdateWindowDimensions(new_window_dimensions);
         client_state_->event_window_resized.Notify(new_window_dimensions);
     });
 
@@ -430,20 +431,20 @@ void Application::Run()
             if (world_->GetStateManager()->IsGamePaused()) {
                 glm::vec2 mouse_position = { input.GetX(), input.GetY() };
 
-                client_state_->previous_camera_position = client_state_->camera_position;
+                client_state_->camera.previous_position = client_state_->camera.position;
 
-                client_state_->mouse_screen_position.x = mouse_position.x;
-                client_state_->mouse_screen_position.y = mouse_position.y;
+                client_state_->input.mouse_screen_position.x = mouse_position.x;
+                client_state_->input.mouse_screen_position.y = mouse_position.y;
             }
         } else if (client_runtime_.GetClientMode() == ClientMode::MapEditor) {
-            client_state_->previous_camera_position = client_state_->camera_position;
+            client_state_->camera.previous_position = client_state_->camera.position;
 
-            client_state_->mouse_screen_position.x = mouse_screen_position.x;
-            client_state_->mouse_screen_position.y = mouse_screen_position.y;
+            client_state_->input.mouse_screen_position.x = mouse_screen_position.x;
+            client_state_->input.mouse_screen_position.y = mouse_screen_position.y;
         }
     });
     world_->SetPreWorldUpdateCallback([&]() {
-        client_state_->colliding_polygon_ids.clear();
+        client_state_->debug_render.colliding_polygon_ids.clear();
 
         if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
             network_client_session_->UpdateBeforeWorldTick();
@@ -451,14 +452,14 @@ void Application::Run()
 
         const PlatformInput& input = window_->GetPlatformInput();
         glm::vec2 mouse_position = { input.GetX(), input.GetY() };
-        client_state_->mouse_screen_position.x = mouse_position.x;
-        client_state_->mouse_screen_position.y = mouse_position.y;
+        client_state_->input.mouse_screen_position.x = mouse_position.x;
+        client_state_->input.mouse_screen_position.y = mouse_position.y;
 
-        float ratio_x = client_state_->window_width / client_state_->camera.GetWidth();
-        float ratio_y = client_state_->window_height / client_state_->camera.GetHeight();
+        float ratio_x = client_state_->input.window_width / client_state_->camera.view.GetWidth();
+        float ratio_y = client_state_->input.window_height / client_state_->camera.view.GetHeight();
         mouse_position.x /= ratio_x;
         mouse_position.y /= ratio_y;
-        client_state_->previous_camera_position = client_state_->camera_position;
+        client_state_->camera.previous_position = client_state_->camera.position;
 
         if (client_state_->client_soldier_id.has_value()) {
             std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
@@ -511,20 +512,20 @@ void Application::Run()
                                             client_state_->secondary_weapon_type_choice);
 
                 // TODO: Move camera calculation somewhere
-                client_state_->previous_camera_position = client_state_->camera_position;
+                client_state_->camera.previous_position = client_state_->camera.position;
 
                 glm::vec2 mouse;
                 mouse.x = mouse_position.x;
-                mouse.y = client_state_->camera.GetHeight() -
+                mouse.y = client_state_->camera.view.GetHeight() -
                           mouse_position.y; // TODO: soldier.control.mouse_aim_y expects
                 // top to be 0 and bottom to be game_height
 
                 mouse.y = mouse_position.y;
 
-                float width = client_state_->camera.GetWidth();
-                float height = client_state_->camera.GetHeight();
+                float width = client_state_->camera.view.GetWidth();
+                float height = client_state_->camera.view.GetHeight();
 
-                if (client_state_->smooth_camera) {
+                if (client_state_->camera.smooth) {
                     auto z = 1.0F;
                     glm::vec2 m{ 0.0F, 0.0F };
 
@@ -532,20 +533,20 @@ void Application::Run()
                           ((2.0F * 640.0F / width - 1.0F) + (width - 640.0F) / width * 0.0F / 6.8F);
                     m.y = z * (mouse.y - height / 2.0F) / 7.0F;
 
-                    glm::vec2 cam_v = client_state_->camera_position;
+                    glm::vec2 cam_v = client_state_->camera.position;
                     glm::vec2 p = { world_->GetSoldier(client_soldier_id).particle.position.x,
                                     -world_->GetSoldier(client_soldier_id).particle.position.y };
                     glm::vec2 norm = p - cam_v;
                     glm::vec2 s = norm * 0.14F;
                     cam_v += s;
                     cam_v += m;
-                    client_state_->camera_position = cam_v;
+                    client_state_->camera.position = cam_v;
 
                 } else {
-                    client_state_->camera_position.x =
+                    client_state_->camera.position.x =
                       world_->GetSoldier(client_soldier_id).particle.position.x +
                       (float)(mouse.x - (width / 2));
-                    client_state_->camera_position.y =
+                    client_state_->camera.position.y =
                       -world_->GetSoldier(client_soldier_id).particle.position.y +
                       (float)((mouse.y) - (height / 2));
                 }
@@ -555,7 +556,7 @@ void Application::Run()
                 world_->GetStateManager()->ChangeSoldierMouseMapPosition(client_soldier_id,
                                                                          mouse_map_position);
             } else {
-                client_state_->camera_position = { 0.0F, 0.0F };
+                client_state_->camera.position = { 0.0F, 0.0F };
             }
 
             if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
@@ -573,13 +574,13 @@ void Application::Run()
                 }
             }
         } else {
-            client_state_->camera_position = { 0.0F, 0.0F };
+            client_state_->camera.position = { 0.0F, 0.0F };
         }
     });
     world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {});
     world_->SetPostGameLoopIterationCallback(
       [&](const StateManager& state_manager, double frame_percent, int last_fps) {
-          if (!client_state_->objects_interpolation) {
+          if (!client_state_->network.objects_interpolation) {
               frame_percent = 1.0F;
           }
           render_pipeline_->Render(state_manager,
@@ -601,7 +602,7 @@ void Application::Run()
 
         if (client_state_->client_soldier_id.has_value()) {
             if (*client_state_->client_soldier_id == soldier.id &&
-                client_state_->client_side_prediction) {
+                client_state_->network.client_side_prediction) {
                 return true;
             }
         }
@@ -642,8 +643,8 @@ glm::vec2 Application::GetCurrentMouseMapPosition()
         mouse_map_position = window_->GetCursorScreenPosition();
     }
 
-    float ratio_x = window_size.x / client_state_->camera.GetWidth();
-    float ratio_y = window_size.y / client_state_->camera.GetHeight();
+    float ratio_x = window_size.x / client_state_->camera.view.GetWidth();
+    float ratio_y = window_size.y / client_state_->camera.view.GetHeight();
 
     mouse_map_position.x /= ratio_x;
     mouse_map_position.y /= ratio_y;
@@ -651,17 +652,17 @@ glm::vec2 Application::GetCurrentMouseMapPosition()
     window_size.y /= ratio_y;
 
     mouse_map_position.x =
-      (mouse_map_position.x - (float)window_size.x / 2.0F + client_state_->camera_position.x);
+      (mouse_map_position.x - (float)window_size.x / 2.0F + client_state_->camera.position.x);
     mouse_map_position.y =
-      (mouse_map_position.y - (float)window_size.y / 2.0F - client_state_->camera_position.y);
+      (mouse_map_position.y - (float)window_size.y / 2.0F - client_state_->camera.position.y);
     return mouse_map_position;
 }
 
 void Application::UpdateWindowSize()
 {
     glm::ivec2 window_size = window_->GetWindowSize();
-    client_state_->window_width = (float)window_size.x;
-    client_state_->window_height = (float)window_size.y;
+    client_state_->input.window_width = (float)window_size.x;
+    client_state_->input.window_height = (float)window_size.y;
 }
 
 void Application::RouteInput()

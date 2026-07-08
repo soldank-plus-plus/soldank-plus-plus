@@ -70,7 +70,7 @@ void MapEditorScene::Render(const StateManager& game_state_manager,
                             ClientState& client_state,
                             const PolygonsRenderer& polygons_renderer)
 {
-    const Camera& camera = client_state.camera;
+    const Camera& camera = client_state.camera.view;
     client_state.map_editor_state.polygon_texture_opengl_id =
       polygons_renderer.GetTextureOpenGLID();
 
@@ -188,9 +188,10 @@ void MapEditorScene::Render(const StateManager& game_state_manager,
     }
 
     if (client_state.map_editor_state.is_grid_visible) {
-        grid_renderer_.Render({ client_state.camera.GetWidth(), client_state.camera.GetHeight() },
-                              { client_state.camera.GetX(), client_state.camera.GetY() },
-                              client_state.camera.GetZoom());
+        grid_renderer_.Render(
+          { client_state.camera.view.GetWidth(), client_state.camera.view.GetHeight() },
+          { client_state.camera.view.GetX(), client_state.camera.view.GetY() },
+          client_state.camera.view.GetZoom());
     }
 
     MapEditorUI::Render(game_state_manager, client_state);

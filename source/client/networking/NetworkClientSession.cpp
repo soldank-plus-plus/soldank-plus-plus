@@ -37,7 +37,7 @@ public:
 
     void UpdateBeforeWorldTick()
     {
-        networking_client_.SetLag(client_state_.network_lag);
+        networking_client_.SetLag(client_state_.network.network_lag);
         networking_client_.Update(network_event_dispatcher_);
 
         if ((world_.GetStateManager()->GetGameTick() % 60 == 0)) {
@@ -56,13 +56,13 @@ public:
             .mouse_map_position_y = mouse_map_position.y,
             .control = world_.GetSoldier(soldier_id).control
         };
-        if (client_state_.server_reconciliation) {
-            client_state_.soldier_snapshot_history.emplace_back(input_sequence_id_,
-                                                                world_.GetSoldier(soldier_id));
+        if (client_state_.network.server_reconciliation) {
+            client_state_.network.soldier_snapshot_history.emplace_back(
+              input_sequence_id_, world_.GetSoldier(soldier_id));
         }
         input_sequence_id_++;
-        if (client_state_.server_reconciliation) {
-            client_state_.pending_inputs.push_back(update_soldier_state_packet);
+        if (client_state_.network.server_reconciliation) {
+            client_state_.network.pending_inputs.push_back(update_soldier_state_packet);
         }
         networking_client_.SendNetworkMessage(
           { NetworkEvent::SoldierInput, update_soldier_state_packet }, DeliveryMode::Unreliable);
@@ -77,16 +77,16 @@ public:
 private:
     void SendPingCheck()
     {
-        if (client_state_.ping_timer.IsRunning()) {
-            client_state_.ping_timer.Update();
-            if (client_state_.ping_timer.IsOverThreshold()) {
+        if (client_state_.network.ping_timer.IsRunning()) {
+            client_state_.network.ping_timer.Update();
+            if (client_state_.network.ping_timer.IsOverThreshold()) {
                 networking_client_.SendNetworkMessage({ NetworkEvent::PingCheck },
                                                       DeliveryMode::Unreliable);
             }
             return;
         }
 
-        client_state_.ping_timer.Start();
+        client_state_.network.ping_timer.Start();
         networking_client_.SendNetworkMessage({ NetworkEvent::PingCheck },
                                               DeliveryMode::Unreliable);
     }

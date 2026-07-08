@@ -50,9 +50,9 @@ public:
                 for (int i = game_state_manager.GetConstMap().GetPolygonsCount() - 1; i >= 0; --i) {
                     const auto& polygon = game_state_manager.GetConstMap().GetPolygons().at(i);
 
-                    if (Map::PointInPoly(client_state.mouse_map_position, polygon)) {
+                    if (Map::PointInPoly(client_state.input.mouse_map_position, polygon)) {
                         for (const auto& vertex : polygon.vertices) {
-                            if (Calc::SquareDistance(client_state.mouse_map_position,
+                            if (Calc::SquareDistance(client_state.input.mouse_map_position,
                                                      { vertex.x, vertex.y }) <=
                                 max_square_distance) {
 
@@ -76,7 +76,7 @@ public:
                     const auto& scenery =
                       game_state_manager.GetConstMap().GetSceneryInstances().at(i);
 
-                    if (Map::PointInScenery(client_state.mouse_map_position, scenery)) {
+                    if (Map::PointInScenery(client_state.input.mouse_map_position, scenery)) {
                         client_state.map_editor_state.palette_current_color.at(0) =
                           (float)scenery.color.red / 255.0F;
                         client_state.map_editor_state.palette_current_color.at(1) =

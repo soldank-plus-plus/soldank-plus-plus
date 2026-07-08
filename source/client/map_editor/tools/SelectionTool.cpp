@@ -542,7 +542,7 @@ public:
     bool IsMouseInSpawnPoint(const ClientState& client_state,
                              const glm::vec2& spawn_point_position) const
     {
-        float current_camera_zoom = client_state.camera.GetZoom();
+        float current_camera_zoom = client_state.camera.view.GetZoom();
         return Calc::SquareDistance(spawn_point_position, mouse_map_position_) /
                  current_camera_zoom <=
                64.0F * current_camera_zoom;

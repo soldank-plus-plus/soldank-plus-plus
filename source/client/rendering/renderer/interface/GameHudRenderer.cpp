@@ -25,18 +25,20 @@ public:
         game_state_manager.ForEachSoldier([&](const auto& soldier) {
             if (client_state.client_soldier_id.has_value() &&
                 *client_state.client_soldier_id == soldier.id) {
-                text_renderer_.Render("Health: " + std::to_string((int)soldier.health),
-                                      50.0,
-                                      100.0,
-                                      1.0,
-                                      { 1.0, 1.0, 1.0 },
-                                      { client_state.window_width, client_state.window_height });
-                text_renderer_.Render("Jets: " + std::to_string((int)soldier.jets_count),
-                                      50.0,
-                                      50.0,
-                                      1.0,
-                                      { 1.0, 1.0, 1.0 },
-                                      { client_state.window_width, client_state.window_height });
+                text_renderer_.Render(
+                  "Health: " + std::to_string((int)soldier.health),
+                  50.0,
+                  100.0,
+                  1.0,
+                  { 1.0, 1.0, 1.0 },
+                  { client_state.input.window_width, client_state.input.window_height });
+                text_renderer_.Render(
+                  "Jets: " + std::to_string((int)soldier.jets_count),
+                  50.0,
+                  50.0,
+                  1.0,
+                  { 1.0, 1.0, 1.0 },
+                  { client_state.input.window_width, client_state.input.window_height });
             }
         });
 
@@ -50,18 +52,19 @@ public:
                       100.0,
                       1.0,
                       { 1.0, 1.0, 1.0 },
-                      { client_state.window_width, client_state.window_height });
+                      { client_state.input.window_width, client_state.input.window_height });
                 }
             });
         }
 
         if (game_state_manager.IsGamePaused()) {
-            text_renderer_.Render("Game paused",
-                                  400.0,
-                                  700.0,
-                                  1.0,
-                                  { 0.6, 0.7, 0.4 },
-                                  { client_state.window_width, client_state.window_height });
+            text_renderer_.Render(
+              "Game paused",
+              400.0,
+              700.0,
+              1.0,
+              { 0.6, 0.7, 0.4 },
+              { client_state.input.window_width, client_state.input.window_height });
         }
     }
 

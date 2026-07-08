@@ -261,8 +261,9 @@ void Render(const StateManager& game_state_manager,
             int fps)
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent(client_state.mouse_screen_position.x,
-                        client_state.window_height - client_state.mouse_screen_position.y);
+    io.AddMousePosEvent(client_state.input.mouse_screen_position.x,
+                        client_state.input.window_height -
+                          client_state.input.mouse_screen_position.y);
     io.MouseDrawCursor = io.WantCaptureMouse;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -270,27 +271,28 @@ void Render(const StateManager& game_state_manager,
 
     {
         ImGui::Begin("Network window (Works only when connected to a server)");
-        ImGui::Checkbox("Server reconciliation", &client_state.server_reconciliation);
-        ImGui::Checkbox("Client side prediction", &client_state.client_side_prediction);
-        ImGui::Checkbox("Objects interpolation", &client_state.objects_interpolation);
-        ImGui::Text("Non-acknowledged inputs: %llu", client_state.pending_inputs.size());
-        ImGui::Text("Ping: %hu", client_state.ping_timer.GetLastPingMeasure());
-        ImGui::SliderInt("Fake lag (milliseconds)", &client_state.network_lag, 0, 500);
+        ImGui::Checkbox("Server reconciliation", &client_state.network.server_reconciliation);
+        ImGui::Checkbox("Client side prediction", &client_state.network.client_side_prediction);
+        ImGui::Checkbox("Objects interpolation", &client_state.network.objects_interpolation);
+        ImGui::Text("Non-acknowledged inputs: %llu", client_state.network.pending_inputs.size());
+        ImGui::Text("Ping: %hu", client_state.network.ping_timer.GetLastPingMeasure());
+        ImGui::SliderInt("Fake lag (milliseconds)", &client_state.network.network_lag, 0, 500);
         ImGui::Checkbox("Draw server POV client position",
-                        &client_state.draw_server_pov_client_pos);
+                        &client_state.network.draw_server_pov_client_pos);
         ImGui::End();
     }
 
     {
         ImGui::Begin("Debug window");
-        ImGui::Checkbox("Draw colliding polygons", &client_state.draw_colliding_polygons);
-        ImGui::Checkbox("Draw soldier hitboxes", &client_state.draw_soldier_hitboxes);
-        ImGui::Checkbox("Draw bullet hitboxes", &client_state.draw_bullet_hitboxes);
-        ImGui::Checkbox("Draw item hitboxes", &client_state.draw_item_hitboxes);
-        ImGui::Checkbox("Draw collision sectors", &client_state.draw_sectors);
-        ImGui::Checkbox("Draw map boundaries", &client_state.draw_map_boundaries);
+        ImGui::Checkbox("Draw colliding polygons",
+                        &client_state.debug_render.draw_colliding_polygons);
+        ImGui::Checkbox("Draw soldier hitboxes", &client_state.debug_render.draw_soldier_hitboxes);
+        ImGui::Checkbox("Draw bullet hitboxes", &client_state.debug_render.draw_bullet_hitboxes);
+        ImGui::Checkbox("Draw item hitboxes", &client_state.debug_render.draw_item_hitboxes);
+        ImGui::Checkbox("Draw collision sectors", &client_state.debug_render.draw_sectors);
+        ImGui::Checkbox("Draw map boundaries", &client_state.debug_render.draw_map_boundaries);
 
-        ImGui::Checkbox("Smooth camera", &client_state.smooth_camera);
+        ImGui::Checkbox("Smooth camera", &client_state.camera.smooth);
         ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0F / (float)fps, fps);
         ImGui::Text("Bullets in game: %zu", game_state_manager.GetBulletsCount());
         if (ImGui::Button("/kill")) {

@@ -59,39 +59,42 @@ public:
             client_state.map_editor_state.polygon_tool_wip_polygon_edge->id = 0;
             client_state.map_editor_state.polygon_tool_wip_polygon_edge->polygon_type =
               client_state.map_editor_state.polygon_tool_polygon_type;
-            client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(
-              0) = { .x = mouse_map_position_.x,
-                     .y = mouse_map_position_.y,
-                     .z = 1,
-                     .rhw = 1.0F,
-                     .color = GetCurrentPaletteColor(client_state),
-                     .texture_s =
-                       mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x,
-                     .texture_t =
-                       mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y };
-            client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(
-              1) = { .x = mouse_map_position_.x,
-                     .y = mouse_map_position_.y,
-                     .z = 1,
-                     .rhw = 1.0F,
-                     .color = GetCurrentPaletteColor(client_state),
-                     .texture_s =
-                       mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x,
-                     .texture_t =
-                       mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y };
+            client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(0) = {
+                .x = mouse_map_position_.x,
+                .y = mouse_map_position_.y,
+                .z = 1,
+                .rhw = 1.0F,
+                .color = GetCurrentPaletteColor(client_state),
+                .texture_s = mouse_map_position_.x /
+                             client_state.world_render_options.current_polygon_texture_dimensions.x,
+                .texture_t = mouse_map_position_.y /
+                             client_state.world_render_options.current_polygon_texture_dimensions.y
+            };
+            client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1) = {
+                .x = mouse_map_position_.x,
+                .y = mouse_map_position_.y,
+                .z = 1,
+                .rhw = 1.0F,
+                .color = GetCurrentPaletteColor(client_state),
+                .texture_s = mouse_map_position_.x /
+                             client_state.world_render_options.current_polygon_texture_dimensions.x,
+                .texture_t = mouse_map_position_.y /
+                             client_state.world_render_options.current_polygon_texture_dimensions.y
+            };
         } else if (!client_state.map_editor_state.polygon_tool_wip_polygon) {
             client_state.map_editor_state.polygon_tool_wip_polygon =
               *client_state.map_editor_state.polygon_tool_wip_polygon_edge;
-            client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(
-              2) = { .x = mouse_map_position_.x,
-                     .y = mouse_map_position_.y,
-                     .z = 1,
-                     .rhw = 1.0F,
-                     .color = GetCurrentPaletteColor(client_state),
-                     .texture_s =
-                       mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x,
-                     .texture_t =
-                       mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y };
+            client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2) = {
+                .x = mouse_map_position_.x,
+                .y = mouse_map_position_.y,
+                .z = 1,
+                .rhw = 1.0F,
+                .color = GetCurrentPaletteColor(client_state),
+                .texture_s = mouse_map_position_.x /
+                             client_state.world_render_options.current_polygon_texture_dimensions.x,
+                .texture_t = mouse_map_position_.y /
+                             client_state.world_render_options.current_polygon_texture_dimensions.y
+            };
 
             client_state.map_editor_state.polygon_tool_wip_polygon_edge = std::nullopt;
         }
@@ -121,8 +124,8 @@ public:
                                   const StateManager& game_state_manager) final
     {
         bool alread_snapped = false;
-        float closest_distance =
-          SNAP_TO_VERTICES_DISTANCE * SNAP_TO_VERTICES_DISTANCE * client_state.camera.GetZoom();
+        float closest_distance = SNAP_TO_VERTICES_DISTANCE * SNAP_TO_VERTICES_DISTANCE *
+                                 client_state.camera.view.GetZoom();
         if (client_state.map_editor_state.is_snap_to_vertices_enabled) {
             for (const auto& polygon : game_state_manager.GetConstMap().GetPolygons()) {
                 for (const auto& vertex : polygon.vertices) {
@@ -152,9 +155,11 @@ public:
             client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).y =
               mouse_map_position_.y;
             client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).texture_s =
-              mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x;
+              mouse_map_position_.x /
+              client_state.world_render_options.current_polygon_texture_dimensions.x;
             client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).texture_t =
-              mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y;
+              mouse_map_position_.y /
+              client_state.world_render_options.current_polygon_texture_dimensions.y;
             client_state.map_editor_state.polygon_tool_wip_polygon_edge->vertices.at(1).color =
               GetCurrentPaletteColor(client_state);
         }
@@ -165,9 +170,11 @@ public:
             client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).y =
               mouse_map_position_.y;
             client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).texture_s =
-              mouse_map_position_.x / client_state.current_polygon_texture_dimensions.x;
+              mouse_map_position_.x /
+              client_state.world_render_options.current_polygon_texture_dimensions.x;
             client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).texture_t =
-              mouse_map_position_.y / client_state.current_polygon_texture_dimensions.y;
+              mouse_map_position_.y /
+              client_state.world_render_options.current_polygon_texture_dimensions.y;
             client_state.map_editor_state.polygon_tool_wip_polygon->vertices.at(2).color =
               GetCurrentPaletteColor(client_state);
         }

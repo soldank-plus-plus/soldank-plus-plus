@@ -26,8 +26,8 @@ private:
     NetworkEventHandlerResult HandleNetworkMessageImpl(
       unsigned int /*sender_connection_id*/) override
     {
-        if (client_state_->ping_timer.IsRunning()) {
-            client_state_->ping_timer.Stop();
+        if (client_state_->network.ping_timer.IsRunning()) {
+            client_state_->network.ping_timer.Stop();
         }
 
         return NetworkEventHandlerResult::Success;

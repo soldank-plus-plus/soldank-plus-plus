@@ -73,7 +73,8 @@ private:
             is_soldier_id_me = *client_state_->client_soldier_id == soldier_id;
         }
         if (is_soldier_id_me) {
-            client_state_->soldier_position_server_pov = { soldier_position.x, soldier_position.y };
+            client_state_->network.soldier_position_server_pov = { soldier_position.x,
+                                                                   soldier_position.y };
         }
 
         world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
@@ -85,12 +86,10 @@ private:
                 world_->GetPhysicsEvents().soldier_throws_active_weapon.Notify(soldier);
             }
             soldier.body_animation = world_->GetBodyAnimationState(body_animation_type);
-            AnimationState::EnterParams body_enter_params{ soldier.on_ground,
-                                                           soldier.direction,
-                                                           soldier.particle.GetForce(),
-                                                           soldier.grenade_can_throw,
-                                                           soldier.weapons,
-                                                           soldier.active_weapon };
+            AnimationState::EnterParams body_enter_params{
+                soldier.on_ground,         soldier.direction, soldier.particle.GetForce(),
+                soldier.grenade_can_throw, soldier.weapons,   soldier.active_weapon
+            };
             soldier.body_animation->Enter(body_enter_params);
             soldier.particle.SetForce(body_enter_params.force);
             soldier.grenade_can_throw = body_enter_params.grenade_can_throw;
@@ -104,12 +103,10 @@ private:
                 world_->GetPhysicsEvents().soldier_throws_active_weapon.Notify(soldier);
             }
             soldier.legs_animation = world_->GetLegsAnimationState(legs_animation_type);
-            AnimationState::EnterParams legs_enter_params{ soldier.on_ground,
-                                                           soldier.direction,
-                                                           soldier.particle.GetForce(),
-                                                           soldier.grenade_can_throw,
-                                                           soldier.weapons,
-                                                           soldier.active_weapon };
+            AnimationState::EnterParams legs_enter_params{
+                soldier.on_ground,         soldier.direction, soldier.particle.GetForce(),
+                soldier.grenade_can_throw, soldier.weapons,   soldier.active_weapon
+            };
             soldier.legs_animation->Enter(legs_enter_params);
             soldier.particle.SetForce(legs_enter_params.force);
             soldier.grenade_can_throw = legs_enter_params.grenade_can_throw;
@@ -147,7 +144,7 @@ private:
 
             soldier.active_weapon = active_weapon;
 
-            if (!is_soldier_id_me || !client_state_->client_side_prediction) {
+            if (!is_soldier_id_me || !client_state_->network.client_side_prediction) {
                 RepositionSoldierSkeletonParts(soldier);
 
                 // TODO: Figure out if the below section is needed, I have a hunch that it is not
@@ -159,19 +156,19 @@ private:
             }
         });
 
-        if (client_state_->server_reconciliation && is_soldier_id_me) {
-            for (auto it = client_state_->soldier_snapshot_history.begin();
-                 it != client_state_->soldier_snapshot_history.end();) {
+        if (client_state_->network.server_reconciliation && is_soldier_id_me) {
+            for (auto it = client_state_->network.soldier_snapshot_history.begin();
+                 it != client_state_->network.soldier_snapshot_history.end();) {
                 if (it->first <= last_processed_input_id) {
-                    it = client_state_->soldier_snapshot_history.erase(it);
+                    it = client_state_->network.soldier_snapshot_history.erase(it);
                 } else {
                     break;
                 }
             }
-            for (auto it = client_state_->pending_inputs.begin();
-                 it != client_state_->pending_inputs.end();) {
+            for (auto it = client_state_->network.pending_inputs.begin();
+                 it != client_state_->network.pending_inputs.end();) {
                 if (it->input_sequence_id <= last_processed_input_id) {
-                    it = client_state_->pending_inputs.erase(it);
+                    it = client_state_->network.pending_inputs.erase(it);
                 } else {
                     const auto& player_control = it->control;
                     world_->GetStateManager()->ChangeSoldierControlActionState(
