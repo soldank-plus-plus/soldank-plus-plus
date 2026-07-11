@@ -5,8 +5,9 @@ module;
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <cstdint>
+#include <map>
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 export module Tests.Shared.Core.Physics.SoldierMovementSimulation;
@@ -20,10 +21,7 @@ import Shared.Core.Animations;
 import Shared.Core.Data.IFileReader;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Entities.Soldier;
-import Shared.Core.Entities.Weapon;
-import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Map.PMSEnums;
-import Shared.Core.Types.WeaponType;
 
 import Testing.Framework.Shared.MapBuilder;
 
@@ -92,16 +90,20 @@ private:
       const SoldierExpectedAnimationState& expected_animation_state,
       const glm::vec2& soldier_position_origin);
 
+    void RunPhysicsStep();
     void AddControlToChangeAt(unsigned int tick, const ControlToChange& control_to_change);
 
     void TurnSoldierLeft();
     void TurnSoldierRight();
 
+    static constexpr std::uint8_t SOLDIER_ID = 0;
+    static constexpr float GRAVITY = 0.06F;
+
     std::unique_ptr<Soldank::StateManager> state_manager_;
     Soldank::AnimationDataManager animation_data_manager_;
 
-    std::unordered_map<unsigned int, SoldierExpectedAnimationStates> animations_to_check_at_tick_;
-    std::unordered_map<unsigned int, std::vector<ControlToChange>> controls_to_change_at_tick_;
+    std::map<unsigned int, SoldierExpectedAnimationStates> animations_to_check_at_tick_;
+    std::map<unsigned int, std::vector<ControlToChange>> controls_to_change_at_tick_;
     bool is_soldier_looking_left_ = false;
 };
 } // namespace SoldankTesting
@@ -112,39 +114,43 @@ SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader&
 {
     auto map =
       SoldankTesting::MapBuilder::Empty()
-        ->AddPolygon(
-          { 0.0F, 0.0F }, { 100.0F, 0.0F }, { 50.0F, 50.0F }, Soldank::PMSPolygonType::Normal)
+        ->AddPolygon({ -300.0F, 0.0F },
+                     { 300.0F, 0.0F },
+                     { 300.0F, 60.0F },
+                     Soldank::PMSPolygonType::Normal)
+        ->AddPolygon({ -300.0F, 0.0F },
+                     { 300.0F, 60.0F },
+                     { -300.0F, 60.0F },
+                     Soldank::PMSPolygonType::Normal)
         ->Build();
     animation_data_manager_.LoadAllAnimationDatas(file_reader);
     state_manager_ = std::make_unique<Soldank::StateManager>(
       animation_data_manager_,
       Soldank::ParticleSystem::Load(Soldank::ParticleSystemType::Soldier, 4.5F, file_reader));
     state_manager_->OverrideMap(*map);
-    std::vector<Soldank::Weapon> weapons{
-        { Soldank::WeaponParametersFactory::GetParameters(
-          Soldank::WeaponType::DesertEagles, false, file_reader) },
-        { Soldank::WeaponParametersFactory::GetParameters(
-          Soldank::WeaponType::Knife, false, file_reader) },
-        { Soldank::WeaponParametersFactory::GetParameters(
-          Soldank::WeaponType::FragGrenade, false, file_reader) }
-    };
     state_manager_->CreateSoldier(0);
-    state_manager_->SetSoldierPosition(0, { 0.0F, -29.0F });
+    state_manager_->SpawnSoldier(0, glm::vec2{ 0.0F, -34.0F });
 }
 
 void SoldierMovementSimulation::HoldRight()
 {
-    state_manager_->ChangeSoldierControlActionState(0, Soldank::ControlActionType::MoveRight, true);
+    state_manager_->ChangeSoldierControlActionState(SOLDIER_ID,
+                                                    Soldank::ControlActionType::MoveRight,
+                                                    true);
 }
 
 void SoldierMovementSimulation::HoldLeft()
 {
-    state_manager_->ChangeSoldierControlActionState(0, Soldank::ControlActionType::MoveLeft, true);
+    state_manager_->ChangeSoldierControlActionState(SOLDIER_ID,
+                                                    Soldank::ControlActionType::MoveLeft,
+                                                    true);
 }
 
 void SoldierMovementSimulation::HoldJump()
 {
-    state_manager_->ChangeSoldierControlActionState(0, Soldank::ControlActionType::Jump, true);
+    state_manager_->ChangeSoldierControlActionState(SOLDIER_ID,
+                                                    Soldank::ControlActionType::Jump,
+                                                    true);
 }
 
 void SoldierMovementSimulation::HoldRightAt(unsigned int tick)
@@ -211,51 +217,40 @@ void SoldierMovementSimulation::AddSoldierExpectedAnimationState(
   unsigned int tick,
   const SoldierExpectedAnimationState& soldier_expected_animation_state)
 {
-    if (!animations_to_check_at_tick_.contains(tick)) {
-        animations_to_check_at_tick_[tick] = {};
-    }
-
-    animations_to_check_at_tick_.at(tick).push_back(soldier_expected_animation_state);
+    animations_to_check_at_tick_[tick].push_back(soldier_expected_animation_state);
 }
 
 void SoldierMovementSimulation::RunUntilSoldierOnGround(unsigned int ticks_limit)
 {
-    static float gravity = 0.06F;
-    ticks_limit = 5;
-    unsigned int ticks = 0;
+    static constexpr unsigned int REQUIRED_CONSECUTIVE_GROUNDED_TICKS = 5;
+    unsigned int consecutive_grounded_ticks = 0;
 
-    const auto& current_soldier = state_manager_->GetSoldier(0);
-    while (!current_soldier.on_ground) {
-        std::vector<Soldank::BulletParams> bullet_emitter;
-        Soldank::PhysicsEvents physics_events;
-        state_manager_->TransformSoldier(0, [&](auto& soldier) {
-            Soldank::SoldierPhysics::Update(*state_manager_,
-                                            soldier,
-                                            physics_events,
-                                            animation_data_manager_,
-                                            bullet_emitter,
-                                            gravity);
-        });
-        ++ticks;
-        if (ticks == ticks_limit) {
-            break;
+    for (unsigned int tick = 0; tick < ticks_limit; ++tick) {
+        if (state_manager_->GetSoldier(SOLDIER_ID).on_ground) {
+            ++consecutive_grounded_ticks;
+            if (consecutive_grounded_ticks >= REQUIRED_CONSECUTIVE_GROUNDED_TICKS) {
+                return;
+            }
+        } else {
+            consecutive_grounded_ticks = 0;
         }
+
+        RunPhysicsStep();
     }
+
+    ASSERT_TRUE(state_manager_->GetSoldier(SOLDIER_ID).on_ground)
+      << "Soldier did not reach the ground within " << ticks_limit << " ticks";
 }
 
 void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
 {
-    // TODO: Move this somewhere else
-    static float gravity = 0.06F;
-
-    const auto& current_soldier = state_manager_->GetSoldier(0);
-    glm::vec2 soldier_position_origin = current_soldier.particle.position;
+    glm::vec2 soldier_position_origin = state_manager_->GetSoldier(SOLDIER_ID).particle.position;
     for (unsigned int current_tick = 0; current_tick < ticks_to_run; current_tick++) {
-        if (controls_to_change_at_tick_.contains(current_tick)) {
-            const auto& controls_to_change = controls_to_change_at_tick_.at(current_tick);
-            for (const auto& control_to_change : controls_to_change) {
+        if (auto controls = controls_to_change_at_tick_.find(current_tick);
+            controls != controls_to_change_at_tick_.end()) {
+            for (const auto& control_to_change : controls->second) {
                 state_manager_->ChangeSoldierControlActionState(
-                  current_soldier.id, control_to_change.control_type, control_to_change.new_state);
+                  SOLDIER_ID, control_to_change.control_type, control_to_change.new_state);
             }
         }
         if (is_soldier_looking_left_) {
@@ -264,20 +259,12 @@ void SoldierMovementSimulation::RunFor(unsigned int ticks_to_run)
             TurnSoldierRight();
         }
 
-        std::vector<Soldank::BulletParams> bullet_emitter;
-        Soldank::PhysicsEvents physics_events;
-        state_manager_->TransformSoldier(0, [&](auto& soldier) {
-            Soldank::SoldierPhysics::Update(*state_manager_,
-                                            soldier,
-                                            physics_events,
-                                            animation_data_manager_,
-                                            bullet_emitter,
-                                            gravity);
-        });
+        RunPhysicsStep();
 
-        if (animations_to_check_at_tick_.contains(current_tick)) {
-            CheckSoldierAnimationStates(current_soldier,
-                                        animations_to_check_at_tick_.at(current_tick),
+        if (auto expected_states = animations_to_check_at_tick_.find(current_tick);
+            expected_states != animations_to_check_at_tick_.end()) {
+            CheckSoldierAnimationStates(state_manager_->GetSoldier(SOLDIER_ID),
+                                        expected_states->second,
                                         soldier_position_origin);
         }
     }
@@ -335,20 +322,38 @@ void SoldierMovementSimulation::CheckSoldierAnimationState(
 void SoldierMovementSimulation::AddControlToChangeAt(unsigned int tick,
                                                      const ControlToChange& control_to_change)
 {
-    if (!controls_to_change_at_tick_.contains(tick)) {
-        controls_to_change_at_tick_[tick] = {};
-    }
+    controls_to_change_at_tick_[tick].push_back(control_to_change);
+}
 
-    controls_to_change_at_tick_.at(tick).push_back(control_to_change);
+void SoldierMovementSimulation::RunPhysicsStep()
+{
+    std::vector<Soldank::BulletParams> bullet_emitter;
+    Soldank::PhysicsEvents physics_events;
+    state_manager_->TransformSoldier(SOLDIER_ID, [&](auto& soldier) {
+        Soldank::SoldierPhysics::Update(*state_manager_,
+                                        soldier,
+                                        physics_events,
+                                        animation_data_manager_,
+                                        bullet_emitter,
+                                        GRAVITY);
+    });
 }
 
 void SoldierMovementSimulation::TurnSoldierLeft()
 {
-    state_manager_->ChangeSoldierMouseMapPosition(0, { -6400.0F, 0.0F });
+    state_manager_->TransformSoldier(SOLDIER_ID, [](auto& soldier) {
+        soldier.direction = -1;
+        soldier.old_direction = -1;
+    });
+    state_manager_->ChangeSoldierMouseMapPosition(SOLDIER_ID, { -6400.0F, 0.0F });
 }
 
 void SoldierMovementSimulation::TurnSoldierRight()
 {
-    state_manager_->ChangeSoldierMouseMapPosition(0, { 6400.0F, 0.0F });
+    state_manager_->TransformSoldier(SOLDIER_ID, [](auto& soldier) {
+        soldier.direction = 1;
+        soldier.old_direction = 1;
+    });
+    state_manager_->ChangeSoldierMouseMapPosition(SOLDIER_ID, { 6400.0F, 0.0F });
 }
 } // namespace SoldankTesting
