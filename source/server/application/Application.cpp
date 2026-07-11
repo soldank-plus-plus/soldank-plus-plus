@@ -20,6 +20,7 @@ import Networking.IGameServer;
 import Networking.GameServer;
 import Networking.CoreEventsConnectionNotifier;
 import Networking.LobbyClient;
+import Networking.ServerNetworkHost;
 import Networking.EventHandlers.KillCommandNetworkEventHandler;
 import Networking.EventHandlers.PingCheckNetworkEventHandler;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
@@ -67,8 +68,14 @@ public:
         CoreEventHandler::ObserveAll(world_.get());
         CoreEventsConnectionNotifier::ObserveAll(
           game_server_.get(), world_->GetWorldEvents(), world_->GetPhysicsEvents());
+        network_host_ = std::make_unique<ServerNetworkHost>(game_server_);
         server_runtime_ = std::make_unique<ServerRuntime>(
-          config_, world_, game_server_, lobby_client_, *player_session_manager_, *command_queues_);
+          config_,
+          world_,
+          *network_host_,
+          *lobby_client_,
+          *player_session_manager_,
+          *command_queues_);
     }
 
     ~Application() = default;
@@ -89,6 +96,7 @@ private:
     std::shared_ptr<ServerState> server_state_;
     std::shared_ptr<IScriptingEngine> scripting_engine_;
     std::shared_ptr<LobbyClient> lobby_client_;
+    std::unique_ptr<ServerNetworkHost> network_host_;
     std::unique_ptr<PlayerSessionManager> player_session_manager_;
     std::unique_ptr<ServerCommandQueues> command_queues_;
     std::unique_ptr<ServerRuntime> server_runtime_;

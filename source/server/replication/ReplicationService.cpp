@@ -6,8 +6,7 @@ module;
 
 export module Replication.ReplicationService;
 
-import Networking.IGameServer;
-import Networking.ServerNetworkHost;
+import Runtime.ServerRuntimeServices;
 import Sessions.PlayerSessionManager;
 
 import Shared.Core.Entities.Soldier;
@@ -25,7 +24,7 @@ export namespace Soldank
 class ReplicationService : public SimulationEventSink
 {
 public:
-    ReplicationService(ServerNetworkHost& network_host,
+    ReplicationService(IServerNetworkHost& network_host,
                        const PlayerSessionManager& player_session_manager)
         : network_host_(network_host)
         , player_session_manager_(player_session_manager)
@@ -91,7 +90,7 @@ public:
     }
 
 private:
-    ServerNetworkHost& network_host_;
+    IServerNetworkHost& network_host_;
     const PlayerSessionManager& player_session_manager_;
 };
 } // namespace Soldank

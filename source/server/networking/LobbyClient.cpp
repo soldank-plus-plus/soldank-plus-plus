@@ -15,11 +15,12 @@ export module Networking.LobbyClient;
 
 import Extern.Httplib;
 import Extern.Spdlog;
+import Runtime.ServerRuntimeServices;
 import Shared.Core.Data.FileReader;
 
 export namespace Soldank
 {
-class LobbyClient
+class LobbyClient : public ILobbyRegistrationClient
 {
 public:
     LobbyClient()
@@ -60,7 +61,7 @@ public:
         }
     }
 
-    void Register(const std::string& server_name, std::uint16_t server_port)
+    void Register(const std::string& server_name, std::uint16_t server_port) override
     {
 #ifdef _WIN32
         std::string operating_system = "Windows";

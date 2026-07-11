@@ -9,11 +9,9 @@ module;
 export module Runtime.ServerRuntime;
 
 import Application.ServerConfig;
-import Networking.IGameServer;
-import Networking.ServerNetworkHost;
-import Networking.LobbyClient;
 import Replication.ReplicationService;
 import Runtime.ServerCommandQueues;
+import Runtime.ServerRuntimeServices;
 import Runtime.ServerSimulationEventRouter;
 import Sessions.PlayerSessionManager;
 
@@ -32,17 +30,16 @@ class ServerRuntime
 public:
     ServerRuntime(ServerConfig config,
                   const std::shared_ptr<IWorld>& world,
-                  const std::shared_ptr<IGameServer>& game_server,
-                  const std::shared_ptr<LobbyClient>& lobby_client,
+                  IServerNetworkHost& network_host,
+                  ILobbyRegistrationClient& lobby_client,
                   PlayerSessionManager& player_session_manager,
                   ServerCommandQueues& command_queues)
         : config_(std::move(config))
         , world_(world)
-        , game_server_(game_server)
+        , network_host_(network_host)
         , lobby_client_(lobby_client)
         , player_session_manager_(player_session_manager)
         , command_queues_(command_queues)
-        , network_host_(game_server_)
         , replication_service_(network_host_, player_session_manager_)
     {
         simulation_event_router_.AddSink(replication_service_);
@@ -76,7 +73,7 @@ public:
                   replication_service_.BroadcastTick(*world_->GetStateManager());
 
                   if (world_->GetStateManager()->GetGameTick() % (3600 * 3) == 0) {
-                      lobby_client_->Register(config_.server_name, config_.server_port);
+                      lobby_client_.Register(config_.server_name, config_.server_port);
                   }
               },
             .after_tick =
@@ -101,11 +98,10 @@ public:
 private:
     ServerConfig config_;
     std::shared_ptr<IWorld> world_;
-    std::shared_ptr<IGameServer> game_server_;
-    std::shared_ptr<LobbyClient> lobby_client_;
+    IServerNetworkHost& network_host_;
+    ILobbyRegistrationClient& lobby_client_;
     PlayerSessionManager& player_session_manager_;
     ServerCommandQueues& command_queues_;
-    ServerNetworkHost network_host_;
     ReplicationService replication_service_;
     ServerSimulationEventRouter simulation_event_router_;
 };

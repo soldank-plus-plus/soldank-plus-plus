@@ -12,6 +12,7 @@ set(server_lib_modules
 
     runtime/ServerCommandQueues.cpp
     runtime/ServerRuntime.cpp
+    runtime/ServerRuntimeServices.cpp
     runtime/ServerSimulationEventRouter.cpp
 
     sessions/PlayerSessionManager.cpp
