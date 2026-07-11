@@ -2,10 +2,6 @@ module;
 
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <glad/glad.h>
 
 #include <ft2build.h>
@@ -18,6 +14,7 @@ module;
 
 export module TextRenderer;
 
+import Extern.Glm;
 import Shader;
 
 import Extern.Spdlog;

@@ -2,10 +2,6 @@ module;
 
 #include <glad/glad.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <array>
 #include <string>
 #include <string_view>
@@ -15,6 +11,7 @@ module;
 
 export module Shader;
 
+import Extern.Glm;
 import Extern.Spdlog;
 
 export namespace Soldank

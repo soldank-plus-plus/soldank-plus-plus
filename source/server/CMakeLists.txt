@@ -1,3 +1,8 @@
+set(soldank_server_scripting_modules
+    scripting/IScriptingEngine.cpp
+    scripting/dascript/DaScriptScriptingEngine.cpp
+)
+
 set(server_lib_modules
     application/Application.cpp
     application/ServerBootstrap.cpp
@@ -14,9 +19,6 @@ set(server_lib_modules
     events/ServerEvent.cpp
 
     replication/ReplicationService.cpp
-
-    scripting/IScriptingEngine.cpp
-    scripting/dascript/DaScriptScriptingEngine.cpp
 
     networking/IGameServer.cpp
     networking/ServerNetworkHost.cpp
@@ -42,6 +44,32 @@ if (BUILD_WEBRTC_SERVER_TRANSPORT)
         networking/transport/WebRtcServerTransport.cpp
     )
 endif()
+
+add_library(soldank_server_scripting)
+target_sources(soldank_server_scripting
+    PUBLIC
+        FILE_SET all_soldank_server_scripting_modules TYPE CXX_MODULES FILES
+        ${soldank_server_scripting_modules}
+)
+
+target_compile_definitions(soldank_server_scripting PRIVATE ${SERVER_COMPILE_DEFINITIONS})
+
+if(MSVC)
+  target_compile_options(soldank_server_scripting PRIVATE /W4)
+else()
+  if (BUILD_COMPILE_WITH_COVERAGE)
+    target_compile_options(soldank_server_scripting PRIVATE -Wall -Wextra -Wpedantic -coverage -fprofile-arcs -ftest-coverage)
+    target_link_options(soldank_server_scripting PRIVATE -coverage -fprofile-arcs)
+  else()
+    target_compile_options(soldank_server_scripting PRIVATE -Wall -Wextra -Wpedantic)
+  endif()
+endif()
+
+target_include_directories(soldank_server_scripting PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
+target_link_libraries(soldank_server_scripting PRIVATE Glm)
+target_link_libraries(soldank_server_scripting PRIVATE DaScript)
+target_link_libraries(soldank_server_scripting PRIVATE Spdlog)
+soldank_target_precompile_headers(soldank_server_scripting)
 
 add_library(server_lib)
 target_sources(server_lib
@@ -71,7 +99,7 @@ target_include_directories(server_lib PRIVATE ${CMAKE_SOURCE_DIR}/source/server)
 target_link_libraries(server_lib PRIVATE shared_lib)
 target_link_libraries(server_lib PRIVATE GameNetworkingSockets2)
 target_link_libraries(server_lib PRIVATE Spdlog)
-target_link_libraries(server_lib PRIVATE DaScript)
+target_link_libraries(server_lib PUBLIC soldank_server_scripting)
 target_link_libraries(server_lib PRIVATE SimpleIni)
 target_link_libraries(server_lib PRIVATE Httplib)
 target_link_libraries(server_lib PRIVATE Threads::Threads)

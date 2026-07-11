@@ -1,3 +1,27 @@
+set(soldank_client_rendering_modules
+    rendering/data/Texture.cpp
+    rendering/data/sprites/SoldierPartData.cpp
+    rendering/data/sprites/SpritesManager.cpp
+    rendering/gpu/GpuBuffer.cpp
+    rendering/renderer/BackgroundRenderer.cpp
+    rendering/renderer/BulletRenderer.cpp
+    rendering/renderer/CircleRenderer.cpp
+    rendering/renderer/ItemRenderer.cpp
+    rendering/renderer/LineRenderer.cpp
+    rendering/renderer/PolygonOutlinesRenderer.cpp
+    rendering/renderer/PolygonsRenderer.cpp
+    rendering/renderer/RectangleRenderer.cpp
+    rendering/renderer/Renderer.cpp
+    rendering/renderer/SceneriesRenderer.cpp
+    rendering/renderer/SceneryOutlinesRenderer.cpp
+    rendering/renderer/SoldierRenderer.cpp
+    rendering/renderer/interface/map_editor/GridRenderer.cpp
+    rendering/renderer/interface/map_editor/SingleImageRenderer.cpp
+    rendering/renderer/interface/map_editor/SpawnPointRenderer.cpp
+    rendering/renderer/TextRenderer.cpp
+    rendering/shaders/Shader.cpp
+)
+
 set(client_lib_modules
     stb.cpp
 
@@ -75,36 +99,15 @@ set(client_lib_modules
     rendering/Scene.cpp
     rendering/ClientState.cpp
     rendering/components/Camera.cpp
-    rendering/data/Texture.cpp
-    rendering/data/sprites/SoldierPartData.cpp
-    rendering/data/sprites/SpritesManager.cpp
-    rendering/gpu/GpuBuffer.cpp
-    rendering/renderer/BackgroundRenderer.cpp
-    rendering/renderer/BulletRenderer.cpp
-    rendering/renderer/CircleRenderer.cpp
-    rendering/renderer/ItemRenderer.cpp
-    rendering/renderer/LineRenderer.cpp
-    rendering/renderer/PolygonOutlinesRenderer.cpp
-    rendering/renderer/PolygonsRenderer.cpp
-    rendering/renderer/RectangleRenderer.cpp
-    rendering/renderer/Renderer.cpp
-    rendering/renderer/SceneriesRenderer.cpp
-    rendering/renderer/SceneryOutlinesRenderer.cpp
-    rendering/renderer/SoldierRenderer.cpp
     rendering/renderer/interface/CursorRenderer.cpp
     rendering/renderer/interface/GameHudRenderer.cpp
     rendering/renderer/interface/ImGuiThemes.cpp
     rendering/renderer/interface/debug/DebugUI.cpp
-    rendering/renderer/interface/map_editor/GridRenderer.cpp
     rendering/renderer/interface/map_editor/MapEditorScene.cpp
     rendering/renderer/interface/map_editor/MapEditorState.cpp
     rendering/renderer/interface/map_editor/MapEditorToolDetailsWindow.cpp
     rendering/renderer/interface/map_editor/MapEditorUI.cpp
     rendering/renderer/interface/map_editor/PolygonVertexOutlinesRenderer.cpp
-    rendering/renderer/interface/map_editor/SingleImageRenderer.cpp
-    rendering/renderer/interface/map_editor/SpawnPointRenderer.cpp
-    rendering/renderer/TextRenderer.cpp
-    rendering/shaders/Shader.cpp
 )
 
 if (BUILD_WEBASM_CLIENT_TRANSPORT)
@@ -117,6 +120,49 @@ else()
         networking/interface/NetworkingInterface.cpp
     )
 endif()
+
+add_library(soldank_client_rendering)
+
+target_sources(soldank_client_rendering
+    PUBLIC
+        FILE_SET all_soldank_client_rendering_modules TYPE CXX_MODULES FILES
+        ${soldank_client_rendering_modules}
+)
+
+target_compile_definitions(soldank_client_rendering PUBLIC ${CLIENT_COMPILE_DEFINITIONS})
+if (BUILD_WEBASM_CLIENT_TRANSPORT)
+    target_compile_definitions(soldank_client_rendering PUBLIC SOLDANK_WEBASM_CLIENT_TRANSPORT)
+endif()
+
+if(MSVC)
+  target_compile_options(soldank_client_rendering PRIVATE /W4)
+else()
+  if (BUILD_COMPILE_WITH_COVERAGE)
+    target_compile_options(soldank_client_rendering PRIVATE -Wall -Wextra -Wpedantic -coverage -fprofile-arcs -ftest-coverage)
+    target_link_options(soldank_client_rendering PRIVATE -coverage -fprofile-arcs)
+  else()
+    target_compile_options(soldank_client_rendering PRIVATE -Wall -Wextra -Wpedantic)
+  endif()
+endif()
+
+target_include_directories(soldank_client_rendering PUBLIC ${CMAKE_SOURCE_DIR}/source/client)
+target_include_directories(soldank_client_rendering PRIVATE ${Stb_INCLUDE_DIR})
+if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  target_include_directories(
+    soldank_client_rendering BEFORE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/platform/emscripten
+  )
+endif()
+target_link_libraries(soldank_client_rendering PUBLIC Glm)
+target_link_libraries(soldank_client_rendering PUBLIC shared_lib)
+if (NOT (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten"))
+  target_link_libraries(soldank_client_rendering PUBLIC glad)
+endif()
+target_link_libraries(soldank_client_rendering PUBLIC Freetype::Freetype)
+target_link_libraries(soldank_client_rendering PRIVATE Spdlog)
+target_link_libraries(soldank_client_rendering PRIVATE PNG::PNG)
+target_link_libraries(soldank_client_rendering PRIVATE ZLIB::ZLIB)
+target_link_libraries(soldank_client_rendering PRIVATE BZip2::BZip2)
+soldank_target_precompile_headers(soldank_client_rendering)
 
 add_library(client_lib)
 
@@ -181,6 +227,7 @@ target_link_libraries(client_lib PRIVATE BZip2::BZip2)
 target_link_libraries(client_lib PUBLIC Freetype::Freetype)
 target_link_libraries(client_lib PRIVATE Spdlog)
 target_link_libraries(client_lib PRIVATE imgui::imgui)
+target_link_libraries(client_lib PUBLIC soldank_client_rendering)
 target_link_libraries(client_lib PUBLIC shared_lib)
 if (NOT BUILD_WEBASM_CLIENT_TRANSPORT)
     target_link_libraries(client_lib PRIVATE GameNetworkingSockets2)

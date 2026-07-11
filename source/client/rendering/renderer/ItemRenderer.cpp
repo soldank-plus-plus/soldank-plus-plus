@@ -3,8 +3,6 @@ module;
 #include "rendering/data/sprites/SpriteTypes.hpp"
 #include "rendering/shaders/ShaderSources.hpp"
 
-#include <glm/ext/quaternion_transform.hpp>
-
 #include <glad/glad.h>
 
 #include <numbers>

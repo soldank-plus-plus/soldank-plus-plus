@@ -1,12 +1,4 @@
-set(shared_lib_modules
-    communication/DeliveryMode.cpp
-    communication/NetworkEvent.cpp
-    communication/NetworkEventDispatcher.cpp
-    communication/NetworkMessage.cpp
-    communication/NetworkPackets.cpp
-    communication/PingTimer.cpp
-    communication/ProtocolConversions.cpp
-
+set(soldank_core_modules
     core/IWorld.cpp
     core/World.cpp
     core/WorldEvents.cpp
@@ -67,7 +59,6 @@ set(shared_lib_modules
     core/map/PMSConstants.cpp
     core/map/RuntimeMap.cpp
 
-    core/math/Glm.cpp
     core/math/Calc.cpp
 
     core/physics/BulletPhysics.cpp
@@ -99,31 +90,66 @@ set(shared_lib_modules
     core/utility/VisitHelper.cpp
 )
 
-add_library(shared_lib)
-target_sources(shared_lib
-    PUBLIC
-        FILE_SET all_shared_lib_modules TYPE CXX_MODULES FILES 
-        ${shared_lib_modules}
+set(soldank_protocol_modules
+    communication/DeliveryMode.cpp
+    communication/NetworkEvent.cpp
+    communication/NetworkEventDispatcher.cpp
+    communication/NetworkMessage.cpp
+    communication/NetworkPackets.cpp
+    communication/PingTimer.cpp
+    communication/ProtocolConversions.cpp
 )
 
-target_compile_definitions(shared_lib PUBLIC ${CLIENT_COMPILE_DEFINITIONS} -DNOMINMAX)
+function(configure_shared_module_library target_name)
+    target_compile_definitions(${target_name} PUBLIC ${CLIENT_COMPILE_DEFINITIONS} -DNOMINMAX)
 
-if(MSVC)
-  target_compile_options(shared_lib PRIVATE /W4)
-else()
-  if (BUILD_COMPILE_WITH_COVERAGE)
-    target_compile_options(shared_lib PRIVATE -Wall -Wextra -Wpedantic -coverage -fprofile-arcs -ftest-coverage)
-    target_link_options(shared_lib PRIVATE -coverage -fprofile-arcs)
-  else()
-    target_compile_options(shared_lib PRIVATE -Wall -Wextra -Wpedantic)
-  endif()
-endif()
+    if(MSVC)
+      target_compile_options(${target_name} PRIVATE /W4)
+    else()
+      if (BUILD_COMPILE_WITH_COVERAGE)
+        target_compile_options(
+            ${target_name}
+            PRIVATE
+                -Wall
+                -Wextra
+                -Wpedantic
+                -coverage
+                -fprofile-arcs
+                -ftest-coverage
+        )
+        target_link_options(${target_name} PRIVATE -coverage -fprofile-arcs)
+      else()
+        target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic)
+      endif()
+    endif()
 
-target_include_directories(shared_lib PUBLIC ${SIMPLEINI_INCLUDE_DIRS})
-target_include_directories(shared_lib PUBLIC ${CMAKE_SOURCE_DIR}/source/shared)
+    target_include_directories(${target_name} PUBLIC ${CMAKE_SOURCE_DIR}/source/shared)
+    target_link_libraries(${target_name} PUBLIC Threads::Threads)
 
-target_link_libraries(shared_lib PUBLIC glm::glm)
-target_link_libraries(shared_lib PRIVATE spdlog::spdlog)
-target_link_libraries(shared_lib PUBLIC Threads::Threads)
+    soldank_target_precompile_headers(${target_name})
+endfunction()
 
-soldank_target_precompile_headers(shared_lib)
+add_library(soldank_core)
+target_sources(soldank_core
+    PUBLIC
+        FILE_SET all_soldank_core_modules TYPE CXX_MODULES FILES
+        ${soldank_core_modules}
+)
+
+configure_shared_module_library(soldank_core)
+target_include_directories(soldank_core PUBLIC ${SIMPLEINI_INCLUDE_DIRS})
+target_link_libraries(soldank_core PUBLIC Glm)
+target_link_libraries(soldank_core PRIVATE spdlog::spdlog)
+
+add_library(soldank_protocol)
+target_sources(soldank_protocol
+    PUBLIC
+        FILE_SET all_soldank_protocol_modules TYPE CXX_MODULES FILES
+        ${soldank_protocol_modules}
+)
+
+configure_shared_module_library(soldank_protocol)
+target_link_libraries(soldank_protocol PUBLIC soldank_core)
+
+add_library(shared_lib INTERFACE)
+target_link_libraries(shared_lib INTERFACE soldank_core soldank_protocol)
