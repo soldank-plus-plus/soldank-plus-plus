@@ -134,6 +134,11 @@ target_sources(soldank_core
     PUBLIC
         FILE_SET all_soldank_core_modules TYPE CXX_MODULES FILES
         ${soldank_core_modules}
+    PRIVATE
+        core/map/MapIO.cpp
+        core/map/MapEditing.cpp
+        core/map/MapGeometry.cpp
+        core/map/MapSectors.cpp
 )
 
 configure_shared_module_library(soldank_core)
