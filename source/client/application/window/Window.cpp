@@ -68,8 +68,8 @@ public:
     void SetCursorMode(CursorMode cursor_mode)
     {
         cursor_mode = WindowBackendAdapter::AdjustCursorMode(cursor_mode);
-        glfwSetInputMode(glfw_window_, GLFW_CURSOR, WindowBackendAdapter::ToGlfwCursorMode(
-                                                     cursor_mode));
+        glfwSetInputMode(
+          glfw_window_, GLFW_CURSOR, WindowBackendAdapter::ToGlfwCursorMode(cursor_mode));
         current_cursor_mode_ = cursor_mode;
     }
 
@@ -80,6 +80,15 @@ public:
         glm::dvec2 cursor_position;
         glfwGetCursorPos(glfw_window_, &cursor_position.x, &cursor_position.y);
         return cursor_position;
+    }
+
+    void SetCursorScreenPosition(glm::vec2 cursor_position)
+    {
+        glm::vec2 window_size = GetWindowSize();
+        platform_input_.SetCursorScreenPosition(cursor_position, window_size);
+        if (current_cursor_mode_ != CursorMode::Locked) {
+            glfwSetCursorPos(glfw_window_, cursor_position.x, window_size.y - cursor_position.y);
+        }
     }
 
     void SetTitle(const char* title) const { glfwSetWindowTitle(glfw_window_, title); }

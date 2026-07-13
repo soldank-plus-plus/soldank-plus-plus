@@ -82,6 +82,7 @@ public:
 private:
     glm::vec2 GetCurrentMouseScreenPosition();
     glm::vec2 GetCurrentMouseMapPosition();
+    void MoveKeyboardAimCursor(std::uint8_t soldier_id, float direction);
     void UpdateWindowSize();
     void RouteInput();
     void UpdateInputContext();
@@ -98,7 +99,6 @@ private:
 
     CommandLineParameters::ApplicationMode application_mode_;
     WindowSizeMode window_size_mode_;
-
     int fps_limit_ = 0;
     InputRouter input_router_;
     ClientRuntime client_runtime_;
@@ -280,6 +280,16 @@ void Application::Run()
     input_router_.SetKeyHandler([&](int key, int action) {
         if (action == GLFW_PRESS) {
             client_state_->event_key_pressed.Notify(key);
+
+            bool is_gameplay_active = game_session_.IsGameplayActive(
+              client_runtime_.GetClientMode(), client_runtime_.GetEditorMode());
+            if (is_gameplay_active && client_state_->client_soldier_id.has_value()) {
+                if (key == GLFW_KEY_J) {
+                    MoveKeyboardAimCursor(*client_state_->client_soldier_id, -1.0F);
+                } else if (key == GLFW_KEY_L) {
+                    MoveKeyboardAimCursor(*client_state_->client_soldier_id, 1.0F);
+                }
+            }
         }
 
         if (action == GLFW_RELEASE) {
@@ -494,11 +504,11 @@ void Application::Run()
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id,
                       ControlActionType::UseJets,
-                      input.Button(GLFW_MOUSE_BUTTON_RIGHT));
+                      input.Button(GLFW_MOUSE_BUTTON_RIGHT) || input.Key(GLFW_KEY_K));
                     world_->GetStateManager()->ChangeSoldierControlActionState(
                       client_soldier_id,
                       ControlActionType::Fire,
-                      input.Button(GLFW_MOUSE_BUTTON_LEFT));
+                      input.Button(GLFW_MOUSE_BUTTON_LEFT) || input.Key(GLFW_KEY_I));
 
                     world_->GetStateManager()->SoldierControlApply(
                       client_soldier_id, [&](const Soldier& soldier, Control& control) {
@@ -656,6 +666,24 @@ glm::vec2 Application::GetCurrentMouseMapPosition()
     mouse_map_position.y =
       (mouse_map_position.y - (float)window_size.y / 2.0F - client_state_->camera.position.y);
     return mouse_map_position;
+}
+
+void Application::MoveKeyboardAimCursor(std::uint8_t soldier_id, float direction)
+{
+    constexpr float KEYBOARD_CURSOR_DISTANCE = 150.0F;
+    const glm::vec2& soldier_position = world_->GetSoldier(soldier_id).particle.position;
+    glm::vec2 window_size = window_->GetWindowSize();
+    float ratio_x = window_size.x / client_state_->camera.view.GetWidth();
+    float ratio_y = window_size.y / client_state_->camera.view.GetHeight();
+    glm::vec2 soldier_screen_position = { (soldier_position.x - client_state_->camera.position.x +
+                                           client_state_->camera.view.GetWidth() / 2.0F) *
+                                            ratio_x,
+                                          (soldier_position.y + client_state_->camera.position.y +
+                                           client_state_->camera.view.GetHeight() / 2.0F) *
+                                            ratio_y };
+    soldier_screen_position.y = window_size.y - soldier_screen_position.y;
+    soldier_screen_position.x += direction * KEYBOARD_CURSOR_DISTANCE;
+    window_->SetCursorScreenPosition(soldier_screen_position);
 }
 
 void Application::UpdateWindowSize()

@@ -115,6 +115,12 @@ public:
     double GetDx() const { return dx_; }
     double GetDy() const { return dy_; }
 
+    void SetCursorScreenPosition(glm::vec2 position, glm::vec2 window_size)
+    {
+        x_ = std::clamp(static_cast<double>(position.x), 0.0, static_cast<double>(window_size.x));
+        y_ = std::clamp(static_cast<double>(position.y), 0.0, static_cast<double>(window_size.y));
+    }
+
     InputSnapshot CreateSnapshot(glm::vec2 mouse_screen_position,
                                  glm::vec2 mouse_map_position) const
     {
