@@ -18,3 +18,6 @@ ENDMACRO()
 
 add_subdirectory(testing_frameworks/shared_lib_testing)
 add_subdirectory(shared)
+if (BUILD_CLIENT_ENABLED)
+  add_subdirectory(client)
+endif()

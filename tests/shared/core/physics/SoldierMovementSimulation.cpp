@@ -114,14 +114,10 @@ SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader&
 {
     auto map =
       SoldankTesting::MapBuilder::Empty()
-        ->AddPolygon({ -300.0F, 0.0F },
-                     { 300.0F, 0.0F },
-                     { 300.0F, 60.0F },
-                     Soldank::PMSPolygonType::Normal)
-        ->AddPolygon({ -300.0F, 0.0F },
-                     { 300.0F, 60.0F },
-                     { -300.0F, 60.0F },
-                     Soldank::PMSPolygonType::Normal)
+        ->AddPolygon(
+          { -300.0F, 0.0F }, { 300.0F, 0.0F }, { 300.0F, 60.0F }, Soldank::PMSPolygonType::Normal)
+        ->AddPolygon(
+          { -300.0F, 0.0F }, { 300.0F, 60.0F }, { -300.0F, 60.0F }, Soldank::PMSPolygonType::Normal)
         ->Build();
     animation_data_manager_.LoadAllAnimationDatas(file_reader);
     state_manager_ = std::make_unique<Soldank::StateManager>(
@@ -134,23 +130,20 @@ SoldierMovementSimulation::SoldierMovementSimulation(const Soldank::IFileReader&
 
 void SoldierMovementSimulation::HoldRight()
 {
-    state_manager_->ChangeSoldierControlActionState(SOLDIER_ID,
-                                                    Soldank::ControlActionType::MoveRight,
-                                                    true);
+    state_manager_->ChangeSoldierControlActionState(
+      SOLDIER_ID, Soldank::ControlActionType::MoveRight, true);
 }
 
 void SoldierMovementSimulation::HoldLeft()
 {
-    state_manager_->ChangeSoldierControlActionState(SOLDIER_ID,
-                                                    Soldank::ControlActionType::MoveLeft,
-                                                    true);
+    state_manager_->ChangeSoldierControlActionState(
+      SOLDIER_ID, Soldank::ControlActionType::MoveLeft, true);
 }
 
 void SoldierMovementSimulation::HoldJump()
 {
-    state_manager_->ChangeSoldierControlActionState(SOLDIER_ID,
-                                                    Soldank::ControlActionType::Jump,
-                                                    true);
+    state_manager_->ChangeSoldierControlActionState(
+      SOLDIER_ID, Soldank::ControlActionType::Jump, true);
 }
 
 void SoldierMovementSimulation::HoldRightAt(unsigned int tick)
