@@ -35,7 +35,7 @@ public:
     }
 
     void SaveMap(const std::filesystem::path& map_path,
-                 std::shared_ptr<IFileWriter> file_writer = std::make_shared<FileWriter>())
+                 std::shared_ptr<IFileWriter> file_writer = std::make_shared<FileWriter>()) const
     {
         map_.SaveMap(map_path, std::move(file_writer));
     }

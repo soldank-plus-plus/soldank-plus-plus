@@ -1,7 +1,5 @@
 module;
 
-#include <optional>
-
 export module Shared.Core.Map.RuntimeMap;
 
 import Extern.Glm;
@@ -20,20 +18,8 @@ public:
     {
         RuntimeMap runtime_map;
         runtime_map.map_ = document.GetMap();
-
-        std::optional<glm::vec2> old_first_polygon_vertex;
-        if (!runtime_map.map_.GetPolygons().empty()) {
-            const auto vertex = runtime_map.map_.GetPolygons().at(0).vertices.at(0);
-            old_first_polygon_vertex = glm::vec2{ vertex.x, vertex.y };
-        }
-
+        runtime_map.document_to_runtime_offset_ = runtime_map.map_.NormalizeCoordinatesForRuntime();
         runtime_map.map_.GenerateSectors();
-
-        if (old_first_polygon_vertex.has_value() && !runtime_map.map_.GetPolygons().empty()) {
-            const auto vertex = runtime_map.map_.GetPolygons().at(0).vertices.at(0);
-            runtime_map.document_to_runtime_offset_ =
-              glm::vec2{ vertex.x, vertex.y } - *old_first_polygon_vertex;
-        }
 
         return runtime_map;
     }

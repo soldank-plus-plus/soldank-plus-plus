@@ -8,6 +8,7 @@ module;
 #include <memory>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -29,6 +30,92 @@ import Shared.Core.Map.PMSStructs;
 import Shared.Core.Math.Calc;
 import Shared.Core.Utility.Observable;
 
+namespace
+{
+template<typename Index, typename Value>
+void SortAndValidateInsertions(std::size_t existing_size,
+                               std::vector<std::pair<Index, Value>>& insertions)
+{
+    std::sort(insertions.begin(), insertions.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+
+    const std::size_t final_size = existing_size + insertions.size();
+    for (std::size_t i = 0; i < insertions.size(); ++i) {
+        const std::size_t insertion_index = static_cast<std::size_t>(insertions.at(i).first);
+        if (insertion_index >= final_size) {
+            throw std::out_of_range("Insertion index is outside the resulting collection");
+        }
+        if (i > 0 && insertion_index == static_cast<std::size_t>(insertions.at(i - 1).first)) {
+            throw std::invalid_argument("Insertion indices must be unique");
+        }
+    }
+}
+
+template<typename Index, typename Value>
+std::vector<std::size_t> InsertAtIndices(std::vector<Value>& values,
+                                         std::vector<std::pair<Index, Value>> insertions)
+{
+    SortAndValidateInsertions(values.size(), insertions);
+
+    std::vector<Value> result;
+    result.reserve(values.size() + insertions.size());
+    std::vector<std::size_t> inserted_indices;
+    inserted_indices.reserve(insertions.size());
+    std::size_t old_value_index = 0;
+    std::size_t insertion_index = 0;
+
+    while (result.size() < values.size() + insertions.size()) {
+        if (insertion_index < insertions.size() &&
+            static_cast<std::size_t>(insertions.at(insertion_index).first) == result.size()) {
+            inserted_indices.push_back(result.size());
+            result.push_back(std::move(insertions.at(insertion_index).second));
+            ++insertion_index;
+        } else {
+            result.push_back(std::move(values.at(old_value_index)));
+            ++old_value_index;
+        }
+    }
+
+    values = std::move(result);
+    return inserted_indices;
+}
+
+template<typename Index, typename Value>
+std::vector<Value> RemoveAtIndices(std::vector<Value>& values, std::vector<Index> removal_indices)
+{
+    std::sort(removal_indices.begin(), removal_indices.end());
+    for (std::size_t i = 0; i < removal_indices.size(); ++i) {
+        const std::size_t removal_index = static_cast<std::size_t>(removal_indices.at(i));
+        if (removal_index >= values.size()) {
+            throw std::out_of_range("Removal index is outside the collection");
+        }
+        if (i > 0 && removal_index == static_cast<std::size_t>(removal_indices.at(i - 1))) {
+            throw std::invalid_argument("Removal indices must be unique");
+        }
+    }
+
+    std::vector<Value> remaining_values;
+    remaining_values.reserve(values.size() - removal_indices.size());
+    std::vector<Value> removed_values;
+    removed_values.reserve(removal_indices.size());
+    std::size_t removal_index = 0;
+
+    for (std::size_t value_index = 0; value_index < values.size(); ++value_index) {
+        if (removal_index < removal_indices.size() &&
+            value_index == static_cast<std::size_t>(removal_indices.at(removal_index))) {
+            removed_values.push_back(std::move(values.at(value_index)));
+            ++removal_index;
+        } else {
+            remaining_values.push_back(std::move(values.at(value_index)));
+        }
+    }
+
+    values = std::move(remaining_values);
+    return removed_values;
+}
+} // namespace
+
 namespace Soldank
 {
 PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
@@ -38,14 +125,9 @@ PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 
     new_polygon.id = map_data_.polygons.size();
 
-    SetPolygonVerticesAndPerpendiculars(new_polygon);
-
     map_data_.polygons.push_back(new_polygon);
-
-    UpdateMinMaxPolygonPositions();
-    FixPolygonIds();
-    UpdateBoundaries();
-    are_sectors_generated_ = false;
+    RefreshPolygonDerivedState(PolygonIdPolicy::Rebuild);
+    new_polygon = map_data_.polygons.back();
 
     map_change_events_.added_new_polygon.Notify(new_polygon);
 
@@ -54,34 +136,20 @@ PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 
 void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)
 {
-    std::vector<PMSPolygon> polygons_to_add = polygons;
-    std::sort(polygons_to_add.begin(),
-              polygons_to_add.end(),
-              [](const PMSPolygon& a, const PMSPolygon& b) { return a.id < b.id; });
-
-    for (auto& polygon : polygons_to_add) {
-        SetPolygonVerticesAndPerpendiculars(polygon);
+    std::vector<std::pair<unsigned int, PMSPolygon>> polygon_insertions;
+    polygon_insertions.reserve(polygons.size());
+    for (const auto& polygon : polygons) {
+        polygon_insertions.emplace_back(polygon.id, polygon);
     }
-    std::vector<PMSPolygon> old_polygons = map_data_.polygons;
-    map_data_.polygons.clear();
-    unsigned int old_polygons_id = 0;
-    unsigned int polygons_to_add_id = 0;
-    while (old_polygons_id < old_polygons.size() || polygons_to_add_id < polygons_to_add.size()) {
-        if (polygons_to_add_id < polygons_to_add.size() &&
-            polygons_to_add.at(polygons_to_add_id).id == map_data_.polygons.size()) {
+    const auto inserted_indices =
+      InsertAtIndices(map_data_.polygons, std::move(polygon_insertions));
 
-            map_data_.polygons.push_back(polygons_to_add.at(polygons_to_add_id));
-            ++polygons_to_add_id;
-        } else {
-            map_data_.polygons.push_back(old_polygons.at(old_polygons_id));
-            ++old_polygons_id;
-        }
+    RefreshPolygonDerivedState(PolygonIdPolicy::Rebuild);
+    std::vector<PMSPolygon> polygons_to_add;
+    polygons_to_add.reserve(inserted_indices.size());
+    for (const auto inserted_index : inserted_indices) {
+        polygons_to_add.push_back(map_data_.polygons.at(inserted_index));
     }
-
-    UpdateMinMaxPolygonPositions();
-    FixPolygonIds();
-    UpdateBoundaries();
-    are_sectors_generated_ = false;
 
     map_change_events_.added_new_polygons.Notify(polygons_to_add, map_data_.polygons);
 }
@@ -90,10 +158,7 @@ PMSPolygon Map::RemovePolygonById(unsigned int id)
 {
     PMSPolygon removed_polygon = map_data_.polygons.at(id);
     map_data_.polygons.erase(map_data_.polygons.begin() + id);
-    UpdateMinMaxPolygonPositions();
-    FixPolygonIds();
-    UpdateBoundaries();
-    are_sectors_generated_ = false;
+    RefreshPolygonDerivedState(PolygonIdPolicy::Rebuild);
 
     map_change_events_.removed_polygon.Notify(removed_polygon, map_data_.polygons);
 
@@ -102,41 +167,9 @@ PMSPolygon Map::RemovePolygonById(unsigned int id)
 
 void Map::RemovePolygonsById(const std::vector<unsigned int>& polygon_ids)
 {
-    std::vector<unsigned int> sorted_polygon_ids = polygon_ids;
-    std::sort(sorted_polygon_ids.begin(), sorted_polygon_ids.end());
-    std::vector<PMSPolygon> removed_polygons;
-    removed_polygons.reserve(polygon_ids.size());
-    for (const auto& polygon_id : sorted_polygon_ids) {
-        removed_polygons.push_back(map_data_.polygons.at(polygon_id));
-    }
+    auto removed_polygons = RemoveAtIndices(map_data_.polygons, polygon_ids);
 
-    unsigned int polygon_id = 0;
-    unsigned int removal_id = 0;
-    while (polygon_id + removal_id < map_data_.polygons.size()) {
-        while (removal_id < sorted_polygon_ids.size() &&
-               polygon_id + removal_id == sorted_polygon_ids.at(removal_id)) {
-            ++removal_id;
-        }
-
-        if (polygon_id + removal_id >= map_data_.polygons.size()) {
-            break;
-        }
-
-        if (removal_id > 0) {
-            std::swap(map_data_.polygons[polygon_id], map_data_.polygons[polygon_id + removal_id]);
-        }
-
-        ++polygon_id;
-    }
-
-    for (unsigned i = 0; i < sorted_polygon_ids.size(); ++i) {
-        map_data_.polygons.pop_back();
-    }
-
-    UpdateMinMaxPolygonPositions();
-    FixPolygonIds();
-    UpdateBoundaries();
-    are_sectors_generated_ = false;
+    RefreshPolygonDerivedState(PolygonIdPolicy::Rebuild);
 
     map_change_events_.removed_polygons.Notify(removed_polygons, map_data_.polygons);
 }
@@ -164,10 +197,7 @@ void Map::MovePolygonVerticesById(
           new_position.y;
     }
 
-    UpdateMinMaxPolygonPositions();
-    FixPolygonIds();
-    UpdateBoundaries();
-    are_sectors_generated_ = false;
+    RefreshPolygonDerivedState(PolygonIdPolicy::Preserve);
 
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
@@ -178,10 +208,7 @@ void Map::SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>
         map_data_.polygons.at(polygon_id) = polygon;
     }
 
-    UpdateMinMaxPolygonPositions();
-    FixPolygonIds();
-    UpdateBoundaries();
-    are_sectors_generated_ = false;
+    RefreshPolygonDerivedState(PolygonIdPolicy::Rebuild);
 
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
@@ -205,52 +232,14 @@ PMSSpawnPoint Map::RemoveSpawnPointById(unsigned int id)
 
 void Map::AddSpawnPoints(const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points)
 {
-    std::vector<std::pair<unsigned int, PMSSpawnPoint>> spawn_points_to_add = spawn_points;
-    std::sort(spawn_points_to_add.begin(),
-              spawn_points_to_add.end(),
-              [](const std::pair<unsigned int, PMSSpawnPoint>& a,
-                 const std::pair<unsigned int, PMSSpawnPoint>& b) { return a.first < b.first; });
-
-    std::vector<PMSSpawnPoint> old_spawn_points = map_data_.spawn_points;
-    map_data_.spawn_points.clear();
-    unsigned int old_spawn_point_id = 0;
-    unsigned int spawn_points_to_add_id = 0;
-
-    while (old_spawn_point_id < old_spawn_points.size() ||
-           spawn_points_to_add_id < spawn_points_to_add.size()) {
-
-        if (spawn_points_to_add_id < spawn_points_to_add.size() &&
-            spawn_points_to_add.at(spawn_points_to_add_id).first == map_data_.spawn_points.size()) {
-
-            map_data_.spawn_points.push_back(spawn_points_to_add.at(spawn_points_to_add_id).second);
-            ++spawn_points_to_add_id;
-        } else {
-            map_data_.spawn_points.push_back(old_spawn_points.at(old_spawn_point_id));
-            ++old_spawn_point_id;
-        }
-    }
+    InsertAtIndices(map_data_.spawn_points, spawn_points);
 
     map_change_events_.added_spawn_points.Notify(map_data_.spawn_points);
 }
 
 void Map::RemoveSpawnPointsById(const std::vector<unsigned int>& spawn_point_ids)
 {
-    std::vector<PMSSpawnPoint> old_spawn_points = map_data_.spawn_points;
-    std::vector<unsigned int> spawn_point_ids_to_remove = spawn_point_ids;
-    std::sort(spawn_point_ids_to_remove.begin(), spawn_point_ids_to_remove.end());
-    map_data_.spawn_points.clear();
-    unsigned int removal_id = 0;
-
-    for (unsigned int i = 0; i < old_spawn_points.size(); ++i) {
-        if (removal_id < spawn_point_ids_to_remove.size() &&
-            i == spawn_point_ids_to_remove.at(removal_id)) {
-
-            ++removal_id;
-            continue;
-        }
-
-        map_data_.spawn_points.push_back(old_spawn_points.at(i));
-    }
+    RemoveAtIndices(map_data_.spawn_points, spawn_point_ids);
 
     map_change_events_.removed_spawn_points.Notify(map_data_.spawn_points);
 }
@@ -350,9 +339,7 @@ void Map::AddSceneries(
   const std::vector<std::pair<unsigned int, std::pair<PMSScenery, std::string>>>& sceneries)
 {
     auto sceneries_to_add = sceneries;
-    std::sort(sceneries_to_add.begin(), sceneries_to_add.end(), [](const auto& a, const auto& b) {
-        return a.first < b.first;
-    });
+    SortAndValidateInsertions(map_data_.scenery_instances.size(), sceneries_to_add);
 
     for (auto& scenery_to_add : sceneries_to_add) {
         std::string file_name = scenery_to_add.second.second;
@@ -366,54 +353,31 @@ void Map::AddSceneries(
         }
 
         if (!found) {
-            map_data_.scenery_types.push_back({ .name = file_name });
+            map_data_.scenery_types.push_back({ .name = file_name, .timestamp = {} });
             scenery_to_add.second.first.style = map_data_.scenery_types.size();
             map_change_events_.added_new_scenery_type.Notify(map_data_.scenery_types.back());
         }
     }
 
-    std::vector<PMSScenery> old_sceneries = map_data_.scenery_instances;
-    map_data_.scenery_instances.clear();
-    unsigned int old_scenery_id = 0;
-    unsigned int sceneries_to_add_id = 0;
-
-    while (old_scenery_id < old_sceneries.size() || sceneries_to_add_id < sceneries_to_add.size()) {
-
-        if (sceneries_to_add_id < sceneries_to_add.size() &&
-            sceneries_to_add.at(sceneries_to_add_id).first == map_data_.scenery_instances.size()) {
-
-            map_data_.scenery_instances.push_back(
-              sceneries_to_add.at(sceneries_to_add_id).second.first);
-            ++sceneries_to_add_id;
-        } else {
-            map_data_.scenery_instances.push_back(old_sceneries.at(old_scenery_id));
-            ++old_scenery_id;
-        }
+    std::vector<std::pair<unsigned int, PMSScenery>> scenery_insertions;
+    scenery_insertions.reserve(sceneries_to_add.size());
+    for (auto& scenery_to_add : sceneries_to_add) {
+        scenery_insertions.emplace_back(scenery_to_add.first,
+                                        std::move(scenery_to_add.second.first));
     }
+    InsertAtIndices(map_data_.scenery_instances, std::move(scenery_insertions));
 
     map_change_events_.added_sceneries.Notify(map_data_.scenery_instances);
 }
 
 void Map::RemoveSceneriesById(const std::vector<unsigned int>& scenery_ids)
 {
-    std::vector<PMSScenery> old_sceneries = map_data_.scenery_instances;
-    std::vector<unsigned int> scenery_ids_to_remove = scenery_ids;
-    std::sort(scenery_ids_to_remove.begin(), scenery_ids_to_remove.end());
-    map_data_.scenery_instances.clear();
-    unsigned int removal_id = 0;
+    RemoveAtIndices(map_data_.scenery_instances, scenery_ids);
     std::array<unsigned int, MAX_SCENERIES_COUNT + 10> scenery_type_usage_count{};
     scenery_type_usage_count.fill(0);
 
-    for (unsigned int i = 0; i < old_sceneries.size(); ++i) {
-        if (removal_id < scenery_ids_to_remove.size() &&
-            i == scenery_ids_to_remove.at(removal_id)) {
-
-            ++removal_id;
-            continue;
-        }
-
-        map_data_.scenery_instances.push_back(old_sceneries.at(i));
-        ++scenery_type_usage_count.at(map_data_.scenery_instances.back().style);
+    for (const auto& scenery : map_data_.scenery_instances) {
+        ++scenery_type_usage_count.at(scenery.style);
     }
 
     std::array<unsigned int, MAX_SCENERIES_COUNT + 10> scenery_type_new_style{};

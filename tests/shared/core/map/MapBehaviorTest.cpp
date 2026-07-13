@@ -3,10 +3,12 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -101,6 +103,25 @@ std::shared_ptr<BufferFileWriter> SaveMapToBuffer(Soldank::Map& map)
     auto writer = std::make_shared<BufferFileWriter>();
     map.SaveMap("characterization-map.pms", writer);
     return writer;
+}
+
+bool RayCastHitsPolygon(Soldank::PMSPolygonType polygon_type,
+                        bool player,
+                        bool flag,
+                        bool bullet,
+                        std::uint8_t team_id)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    auto polygon = CreatePolygon(-5.0F);
+    polygon.polygon_type = polygon_type;
+    map.AddNewPolygon(polygon);
+    map.NormalizeCoordinatesForRuntime();
+    map.GenerateSectors();
+
+    float distance = 0.0F;
+    return map.RayCast(
+      { -3.0F, 0.0F }, { 8.0F, 8.0F }, distance, 100.0F, player, flag, bullet, false, team_id);
 }
 } // namespace
 
@@ -223,6 +244,81 @@ TEST(MapBehaviorTest, BatchSpawnPointInsertionAndRemovalPreserveIndexedOrder)
     EXPECT_EQ(map.GetSpawnPoints().at(1).x, 30);
 }
 
+TEST(MapBehaviorTest, BatchSceneryInsertionPreservesIndexedOrderAndRegistersTypes)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewScenery(CreateScenery(10.0F), "tree.png");
+    map.AddNewScenery(CreateScenery(30.0F), "tree.png");
+
+    map.AddSceneries(
+      { { 1, { CreateScenery(20.0F), "tree.png" } }, { 3, { CreateScenery(40.0F), "bush.png" } } });
+
+    ASSERT_EQ(map.GetSceneryInstances().size(), 4);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(0).x, 10.0F);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(1).x, 20.0F);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(2).x, 30.0F);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(3).x, 40.0F);
+    EXPECT_EQ(map.GetSceneryInstances().at(0).style, 1);
+    EXPECT_EQ(map.GetSceneryInstances().at(1).style, 1);
+    EXPECT_EQ(map.GetSceneryInstances().at(2).style, 1);
+    EXPECT_EQ(map.GetSceneryInstances().at(3).style, 2);
+    ASSERT_EQ(map.GetSceneryTypes().size(), 2);
+    EXPECT_EQ(map.GetSceneryTypes().at(0).name, "tree.png");
+    EXPECT_EQ(map.GetSceneryTypes().at(1).name, "bush.png");
+}
+
+TEST(MapBehaviorTest, BatchInsertionsRejectInvalidIndicesWithoutMutation)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewPolygon(CreatePolygon(0.0F));
+    map.AddNewSpawnPoint(CreateSpawnPoint(10));
+    map.AddNewScenery(CreateScenery(10.0F), "tree.png");
+
+    EXPECT_THROW(map.AddPolygons({ CreatePolygon(10.0F, 1), CreatePolygon(20.0F, 1) }),
+                 std::invalid_argument);
+    EXPECT_THROW(map.AddSpawnPoints({ { 2, CreateSpawnPoint(20) } }), std::out_of_range);
+    EXPECT_THROW(map.AddSceneries({ { 2, { CreateScenery(20.0F), "bush.png" } } }),
+                 std::out_of_range);
+
+    ASSERT_EQ(map.GetPolygons().size(), 1);
+    EXPECT_FLOAT_EQ(map.GetPolygons().at(0).vertices.at(0).x, 0.0F);
+    ASSERT_EQ(map.GetSpawnPoints().size(), 1);
+    EXPECT_EQ(map.GetSpawnPoints().at(0).x, 10);
+    ASSERT_EQ(map.GetSceneryInstances().size(), 1);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(0).x, 10.0F);
+    ASSERT_EQ(map.GetSceneryTypes().size(), 1);
+    EXPECT_EQ(map.GetSceneryTypes().at(0).name, "tree.png");
+}
+
+TEST(MapBehaviorTest, BatchRemovalsRejectInvalidIndicesWithoutMutation)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewPolygon(CreatePolygon(0.0F));
+    map.AddNewPolygon(CreatePolygon(10.0F));
+    map.AddNewSpawnPoint(CreateSpawnPoint(10));
+    map.AddNewSpawnPoint(CreateSpawnPoint(20));
+    map.AddNewScenery(CreateScenery(10.0F), "tree.png");
+    map.AddNewScenery(CreateScenery(20.0F), "bush.png");
+
+    EXPECT_THROW(map.RemovePolygonsById({ 0, 0 }), std::invalid_argument);
+    EXPECT_THROW(map.RemoveSpawnPointsById({ 2 }), std::out_of_range);
+    EXPECT_THROW(map.RemoveSceneriesById({ 0, 2 }), std::out_of_range);
+
+    ASSERT_EQ(map.GetPolygons().size(), 2);
+    EXPECT_FLOAT_EQ(map.GetPolygons().at(0).vertices.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(map.GetPolygons().at(1).vertices.at(0).x, 10.0F);
+    ASSERT_EQ(map.GetSpawnPoints().size(), 2);
+    EXPECT_EQ(map.GetSpawnPoints().at(0).x, 10);
+    EXPECT_EQ(map.GetSpawnPoints().at(1).x, 20);
+    ASSERT_EQ(map.GetSceneryInstances().size(), 2);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(0).x, 10.0F);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(1).x, 20.0F);
+    ASSERT_EQ(map.GetSceneryTypes().size(), 2);
+}
+
 TEST(MapBehaviorTest, RemovingLastSceneryOfATypeCompactsRemainingStyles)
 {
     Soldank::Map map;
@@ -248,7 +344,7 @@ TEST(MapBehaviorTest, RemovingLastSceneryOfATypeCompactsRemainingStyles)
     EXPECT_EQ(map.GetSceneryInstances().at(0).style, 1);
 }
 
-TEST(MapBehaviorTest, AddingPolygonEmitsTwoBoundaryEventsAndOnePolygonEvent)
+TEST(MapBehaviorTest, AddingPolygonEmitsOneBoundaryEventAndOnePolygonEvent)
 {
     Soldank::Map map;
     map.CreateEmptyMap();
@@ -263,10 +359,35 @@ TEST(MapBehaviorTest, AddingPolygonEmitsTwoBoundaryEventsAndOnePolygonEvent)
 
     map.AddNewPolygon(CreatePolygon(100.0F));
 
-    // This records the current duplicate boundary notification behavior. A later cleanup can
-    // intentionally change this expectation to one event.
-    EXPECT_EQ(boundary_event_count, 2);
+    EXPECT_EQ(boundary_event_count, 1);
     EXPECT_EQ(polygon_event_count, 1);
+}
+
+TEST(MapBehaviorTest, MovingPolygonVertexRecalculatesPerpendicularsAndNotifiesOnce)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewPolygon(CreatePolygon(0.0F));
+    unsigned int boundary_event_count = 0;
+    unsigned int modified_polygon_event_count = 0;
+    map.GetMapChangeEvents().changed_background_color.AddObserver(
+      [&boundary_event_count](const Soldank::PMSColor&,
+                              const Soldank::PMSColor&,
+                              std::span<const float, 4>) { ++boundary_event_count; });
+    map.GetMapChangeEvents().modified_polygons.AddObserver(
+      [&modified_polygon_event_count](const std::vector<Soldank::PMSPolygon>&) {
+          ++modified_polygon_event_count;
+      });
+
+    map.MovePolygonVerticesById({ { { 0, 1 }, { 20.0F, 0.0F } } });
+
+    const auto& polygon = map.GetPolygons().at(0);
+    EXPECT_FLOAT_EQ(polygon.perpendiculars.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(polygon.perpendiculars.at(0).y, 1.0F);
+    EXPECT_NEAR(polygon.perpendiculars.at(1).x, -0.4472136F, 0.000001F);
+    EXPECT_NEAR(polygon.perpendiculars.at(1).y, -0.8944272F, 0.000001F);
+    EXPECT_EQ(boundary_event_count, 1);
+    EXPECT_EQ(modified_polygon_event_count, 1);
 }
 
 TEST(MapBehaviorTest, GeometryQueriesDistinguishClearlyInsideAndOutsidePoints)
@@ -285,7 +406,7 @@ TEST(MapBehaviorTest, GeometryQueriesDistinguishClearlyInsideAndOutsidePoints)
       Soldank::Map::LineInPoly({ -5.0F, 20.0F }, { 15.0F, 20.0F }, polygon, intersection));
 }
 
-TEST(MapBehaviorTest, SavingDirtyMapCurrentlyRecentersEditablePolygonCoordinates)
+TEST(MapBehaviorTest, SavingMapDoesNotMutateEditableCoordinates)
 {
     Soldank::Map map;
     map.CreateEmptyMap();
@@ -296,9 +417,97 @@ TEST(MapBehaviorTest, SavingDirtyMapCurrentlyRecentersEditablePolygonCoordinates
 
     EXPECT_FALSE(writer->GetData().empty());
     EXPECT_FLOAT_EQ(x_before_save, 100.0F);
-    // Polygon min/max values are currently initialized to zero, so a map entirely in positive
-    // coordinates is centered against the origin instead of its polygon-only bounds.
-    EXPECT_FLOAT_EQ(map.GetPolygons().at(0).vertices.at(0).x, 45.0F);
+    EXPECT_FLOAT_EQ(map.GetPolygons().at(0).vertices.at(0).x, x_before_save);
+}
+
+TEST(MapBehaviorTest, LoadingTruncatedMapFailsWithoutReplacingExistingState)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewPolygon(CreatePolygon(10.0F));
+    const BufferFileReader reader(std::string(sizeof(int), '\0'));
+
+    EXPECT_THROW(map.LoadMap("truncated.pms", reader), std::runtime_error);
+
+    ASSERT_EQ(map.GetPolygons().size(), 1);
+    EXPECT_FLOAT_EQ(map.GetPolygons().at(0).vertices.at(0).x, 10.0F);
+}
+
+TEST(MapBehaviorTest, LoadingOverlongFixedStringFailsWithoutReplacingExistingState)
+{
+    Soldank::Map source_map;
+    source_map.CreateEmptyMap();
+    auto serialized_map = SaveMapToBuffer(source_map)->GetData();
+    serialized_map.at(sizeof(int)) = static_cast<char>(Soldank::DESCRIPTION_MAX_LENGTH + 1);
+    const BufferFileReader reader(std::move(serialized_map));
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewSpawnPoint(CreateSpawnPoint(10));
+
+    EXPECT_THROW(map.LoadMap("overlong-description.pms", reader), std::runtime_error);
+
+    ASSERT_EQ(map.GetSpawnPoints().size(), 1);
+    EXPECT_EQ(map.GetSpawnPoints().at(0).x, 10);
+}
+
+TEST(MapBehaviorTest, SavingOverlongFixedStringIsRejected)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.SetDescription(std::string(Soldank::DESCRIPTION_MAX_LENGTH + 1, 'x'));
+
+    EXPECT_THROW(SaveMapToBuffer(map), std::length_error);
+}
+
+TEST(MapBehaviorTest, RuntimeNormalizationTranslatesEveryPositionedCollection)
+{
+    Soldank::MapData map_data;
+    map_data.polygons.push_back(CreatePolygon(100.0F));
+    map_data.scenery_instances.push_back(CreateScenery(120.0F));
+    map_data.colliders.push_back({ .active = 1, .x = 130.0F, .y = 140.0F, .radius = 5.0F });
+    map_data.spawn_points.push_back(CreateSpawnPoint(150));
+    Soldank::PMSWayPoint way_point{};
+    way_point.x = 160;
+    way_point.y = 170;
+    map_data.way_points.push_back(way_point);
+    Soldank::Map map(std::move(map_data));
+
+    const auto offset = map.NormalizeCoordinatesForRuntime();
+
+    EXPECT_NE(offset, glm::vec2(0.0F, 0.0F));
+    EXPECT_FLOAT_EQ(map.GetPolygons().at(0).vertices.at(0).x, 100.0F + offset.x);
+    EXPECT_FLOAT_EQ(map.GetSceneryInstances().at(0).x, 120.0F + offset.x);
+    EXPECT_FLOAT_EQ(map.GetColliders().at(0).x, 130.0F + offset.x);
+    EXPECT_EQ(map.GetSpawnPoints().at(0).x, 150 + static_cast<int>(offset.x));
+    EXPECT_EQ(map.GetWayPoints().at(0).x, 160 + static_cast<int>(offset.x));
+}
+
+TEST(MapBehaviorTest, SectorGenerationDoesNotTranslateMapCoordinates)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewPolygon(CreatePolygon(100.0F));
+    const auto vertex_before = map.GetPolygons().at(0).vertices.at(0);
+
+    map.GenerateSectors();
+
+    const auto vertex_after = map.GetPolygons().at(0).vertices.at(0);
+    EXPECT_FLOAT_EQ(vertex_after.x, vertex_before.x);
+    EXPECT_FLOAT_EQ(vertex_after.y, vertex_before.y);
+}
+
+TEST(MapBehaviorTest, RayCastAppliesNamedCollisionPolicy)
+{
+    EXPECT_TRUE(RayCastHitsPolygon(Soldank::PMSPolygonType::AlphaPlayers, true, false, false, 1));
+    EXPECT_FALSE(RayCastHitsPolygon(Soldank::PMSPolygonType::AlphaPlayers, true, false, false, 2));
+    EXPECT_FALSE(RayCastHitsPolygon(Soldank::PMSPolygonType::AlphaPlayers, false, false, true, 1));
+    EXPECT_TRUE(
+      RayCastHitsPolygon(Soldank::PMSPolygonType::OnlyBulletsCollide, false, false, true, 0));
+    EXPECT_FALSE(
+      RayCastHitsPolygon(Soldank::PMSPolygonType::OnlyBulletsCollide, true, false, false, 0));
+    EXPECT_TRUE(RayCastHitsPolygon(Soldank::PMSPolygonType::FlaggerCollides, true, true, false, 0));
+    EXPECT_FALSE(
+      RayCastHitsPolygon(Soldank::PMSPolygonType::FlaggerCollides, true, false, false, 0));
 }
 
 TEST(MapBehaviorTest, LoadingSameMapTwiceReplacesWayPoints)

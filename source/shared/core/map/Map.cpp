@@ -106,7 +106,7 @@ public:
                  const IFileReader& file_reader = FileReader());
 
     void SaveMap(const std::filesystem::path& map_path,
-                 std::shared_ptr<IFileWriter> file_writer = std::make_shared<FileWriter>());
+                 std::shared_ptr<IFileWriter> file_writer = std::make_shared<FileWriter>()) const;
 
     static bool PointInPoly(glm::vec2 p, PMSPolygon poly);
 
@@ -298,6 +298,8 @@ public:
 
     void GenerateSectors();
 
+    glm::vec2 NormalizeCoordinatesForRuntime();
+
     glm::vec2 GetCenter() const { return { map_data_.center_x, map_data_.center_y }; }
 
     enum MapBoundary
@@ -309,22 +311,14 @@ public:
     };
 
 private:
+    enum class PolygonIdPolicy
+    {
+        Preserve,
+        Rebuild
+    };
+
     MapData map_data_;
     MapChangeEvents map_change_events_;
-
-    template<typename DataType>
-    static void ReadFromBuffer(std::stringstream& buffer, DataType& variable_to_save_data);
-
-    static void ReadStringFromBuffer(std::stringstream& buffer,
-                                     std::string& string_to_save_data,
-                                     unsigned int max_string_size);
-
-    template<typename DataType>
-    static void AppendToFileWriter(std::shared_ptr<IFileWriter>& file_writer, const DataType& data);
-
-    static void AppendStringToFileWriter(std::shared_ptr<IFileWriter>& file_writer,
-                                         const std::string& data,
-                                         unsigned int max_string_size);
 
     void ReadPolygonsFromBuffer(std::stringstream& buffer);
 
@@ -340,21 +334,21 @@ private:
 
     void ReadWayPointsFromBuffer(std::stringstream& buffer);
 
-    void AppendPolygonsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendPolygonsToFileWriter(std::shared_ptr<IFileWriter>& file_writer) const;
 
-    void AppendSectorsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSectorsToFileWriter(std::shared_ptr<IFileWriter>& file_writer) const;
 
-    void AppendSceneryInstancesToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSceneryInstancesToFileWriter(std::shared_ptr<IFileWriter>& file_writer) const;
 
-    void AppendSceneryTypesToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSceneryTypesToFileWriter(std::shared_ptr<IFileWriter>& file_writer) const;
 
-    void AppendCollidersToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendCollidersToFileWriter(std::shared_ptr<IFileWriter>& file_writer) const;
 
-    void AppendSpawnPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendSpawnPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer) const;
 
-    void AppendWayPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer);
+    void AppendWayPointsToFileWriter(std::shared_ptr<IFileWriter>& file_writer) const;
 
-    void UpdateBoundaries();
+    void UpdateBoundaries(bool should_notify = true);
 
     bool IsPolygonInSector(unsigned short polygon_index,
                            float sector_x,
@@ -363,11 +357,13 @@ private:
 
     static void SetPolygonVerticesAndPerpendiculars(PMSPolygon& polygon);
 
+    void RefreshPolygonDerivedState(PolygonIdPolicy polygon_id_policy);
+
+    void NormalizePolygonsAndPerpendiculars();
+
     void FixPolygonIds();
 
-    void UpdateMinMaxPolygonPositions(const PMSPolygon& polygon, bool should_notify = true);
-
-    void UpdateMinMaxPolygonPositions();
+    void RecalculatePolygonBounds();
 
     bool are_sectors_generated_{};
 };
