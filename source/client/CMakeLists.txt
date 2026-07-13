@@ -32,6 +32,7 @@ set(client_lib_modules
     application/window/WindowBackendAdapter.cpp
     application/input/InputRouter.cpp
     application/input/InputSnapshot.cpp
+    application/input/ApplicationInputController.cpp
     application/input/PlatformInput.cpp
     application/input/PlayerInput.cpp
     application/platform/ClientTransportStartup.cpp
@@ -40,6 +41,7 @@ set(client_lib_modules
     editor/EditorSession.cpp
     editor/PlayTestSession.cpp
     gameplay/GameSession.cpp
+    gameplay/PlayerController.cpp
 
     map_editor/MapEditor.cpp
     map_editor/EditorAssetBrowser.cpp
