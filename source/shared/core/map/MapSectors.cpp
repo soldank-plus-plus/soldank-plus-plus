@@ -254,10 +254,19 @@ void Map::FixPolygonIds()
 
 void Map::RecalculatePolygonBounds()
 {
-    map_data_.polygons_min_x = 0.0F;
-    map_data_.polygons_max_x = 0.0F;
-    map_data_.polygons_min_y = 0.0F;
-    map_data_.polygons_max_y = 0.0F;
+    if (map_data_.polygons.empty()) {
+        map_data_.polygons_min_x = 0.0F;
+        map_data_.polygons_max_x = 0.0F;
+        map_data_.polygons_min_y = 0.0F;
+        map_data_.polygons_max_y = 0.0F;
+        return;
+    }
+
+    const auto& first_vertex = map_data_.polygons.front().vertices.front();
+    map_data_.polygons_min_x = first_vertex.x;
+    map_data_.polygons_max_x = first_vertex.x;
+    map_data_.polygons_min_y = first_vertex.y;
+    map_data_.polygons_max_y = first_vertex.y;
 
     for (const auto& polygon : map_data_.polygons) {
         for (const auto& vertex : polygon.vertices) {
