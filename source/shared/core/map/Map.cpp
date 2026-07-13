@@ -40,36 +40,36 @@ export namespace Soldank
 {
 struct MapData
 {
-    std::array<float, 4> boundaries_xy;
-    float polygons_min_x;
-    float polygons_max_x;
-    float polygons_min_y;
-    float polygons_max_y;
-    float width;
-    float height;
-    float center_x;
-    float center_y;
+    std::array<float, 4> boundaries_xy{};
+    float polygons_min_x{};
+    float polygons_max_x{};
+    float polygons_min_y{};
+    float polygons_max_y{};
+    float width{};
+    float height{};
+    float center_x{};
+    float center_y{};
 
-    int version;
+    int version{ MAP_VERSION };
 
-    std::optional<std::string> name;
+    std::optional<std::string> name{ std::nullopt };
     std::string description;
     std::string texture_name;
 
     PMSColor background_top_color;
     PMSColor background_bottom_color;
 
-    int jet_count;
-    unsigned char grenades_count;
-    unsigned char medikits_count;
-    PMSWeatherType weather_type;
-    PMSStepType step_type;
-    int random_id;
+    int jet_count{};
+    unsigned char grenades_count{};
+    unsigned char medikits_count{};
+    PMSWeatherType weather_type{ PMSWeatherType::None };
+    PMSStepType step_type{ PMSStepType::HardGround };
+    int random_id{};
 
     std::vector<PMSPolygon> polygons;
 
-    int sectors_size;
-    int sectors_count;
+    int sectors_size{};
+    int sectors_count{ (SECTORS_COUNT - 1) / 2 };
 
     std::vector<std::vector<PMSSector>> sectors_poly;
     std::vector<PMSScenery> scenery_instances;
@@ -114,6 +114,9 @@ public:
 
     void CreateEmptyMap()
     {
+        map_data_ = MapData{};
+        are_sectors_generated_ = false;
+
         map_data_.boundaries_xy[TopBoundary] = -MAP_BOUNDARY;
         map_data_.boundaries_xy[BottomBoundary] = MAP_BOUNDARY;
         map_data_.boundaries_xy[LeftBoundary] = -MAP_BOUNDARY;
@@ -1478,6 +1481,7 @@ private:
     {
         int way_points_count = 0;
         ReadFromBuffer(buffer, way_points_count);
+        map_data_.way_points.clear();
         for (int i = 0; i < way_points_count; i++) {
             map_data_.way_points.push_back({});
             ReadFromBuffer(buffer, map_data_.way_points.back());
