@@ -46,6 +46,7 @@ class Scene
 {
 public:
     Scene(const std::shared_ptr<StateManager>& game_state, ClientState& client_state);
+    ~Scene();
 
     void Render(const StateManager& game_state_manager,
                 ClientState& client_state,
@@ -121,6 +122,8 @@ Scene::Scene(const std::shared_ptr<StateManager>& game_state, ClientState& clien
 
     SetupImGuiTheme();
 }
+
+Scene::~Scene() {}
 
 void Scene::Render(const StateManager& game_state_manager,
                    ClientState& client_state,

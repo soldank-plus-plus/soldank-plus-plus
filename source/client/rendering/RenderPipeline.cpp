@@ -19,6 +19,7 @@ public:
         : scene_(game_state, client_state)
     {
     }
+    ~RenderPipeline();
 
     void Render(const StateManager& game_state_manager,
                 ClientState& client_state,
@@ -42,4 +43,9 @@ public:
 private:
     Scene scene_;
 };
+} // namespace Soldank
+
+namespace Soldank
+{
+RenderPipeline::~RenderPipeline() {}
 } // namespace Soldank

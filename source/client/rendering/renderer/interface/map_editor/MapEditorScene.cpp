@@ -31,6 +31,7 @@ class MapEditorScene
 {
 public:
     MapEditorScene(ClientState& client_state, StateManager& game_state_manager);
+    ~MapEditorScene();
 
     void Render(const StateManager& game_state_manager,
                 ClientState& client_state,
@@ -65,6 +66,8 @@ MapEditorScene::MapEditorScene(ClientState& client_state, StateManager& game_sta
     client_state.map_editor_state.event_scenery_texture_changed.AddObserver(
       [this](const std::string& file_name) { single_image_renderer_.SetTexture(file_name); });
 }
+
+MapEditorScene::~MapEditorScene() {}
 
 void MapEditorScene::Render(const StateManager& game_state_manager,
                             ClientState& client_state,
