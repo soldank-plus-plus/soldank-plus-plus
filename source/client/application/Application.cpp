@@ -65,6 +65,7 @@ export namespace Soldank
 class Application
 {
 public:
+    Application(int argc, const char* argv[]);
     Application(const std::vector<const char*>& cli_parameters);
     ~Application();
 
@@ -99,6 +100,11 @@ private:
 
 namespace Soldank
 {
+Application::Application(int argc, const char* argv[])
+    : Application(std::vector<const char*>(argv, argv + argc))
+{
+}
+
 Application::Application(const std::vector<const char*>& cli_parameters)
 {
     Spdlog::set_level(Spdlog::level::debug);

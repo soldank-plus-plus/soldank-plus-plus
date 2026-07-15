@@ -106,7 +106,7 @@ bool MapEditorConfig::SavePalette(const std::filesystem::path& file_path,
     Toml::Table palette;
     palette.insert("colors", std::move(colors));
     Toml::Table config;
-    config.insert("version", 1);
+    config.insert("version", std::int64_t{1});
     config.insert("palette", std::move(palette));
 
     std::ofstream config_file(file_path, std::ios::out | std::ios::trunc);
