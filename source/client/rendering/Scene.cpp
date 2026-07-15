@@ -388,7 +388,9 @@ void Scene::RenderSoldiers(const StateManager& game_state_manager,
     if (client_state.client_soldier_id.has_value()) {
         unsigned int client_soldier_id = *client_state.client_soldier_id;
         game_state_manager.ForSoldier(client_soldier_id, [&](const auto& soldier) {
-            soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
+            if (soldier.active) {
+                soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
+            }
         });
     }
 }

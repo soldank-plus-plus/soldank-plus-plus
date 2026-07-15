@@ -27,15 +27,15 @@ public:
     {
         editor_map_snapshot_ = world.GetStateManager()->GetConstMap();
 
-        if (client_state.client_soldier_id.has_value()) {
-            std::uint8_t client_soldier_id = *client_state.client_soldier_id;
-            bool is_soldier_active = world.GetStateManager()->GetSoldier(client_soldier_id).active;
-            bool is_soldier_alive =
-              !world.GetStateManager()->GetSoldier(client_soldier_id).dead_meat;
+        if (!client_state.client_soldier_id.has_value() ||
+            !world.GetStateManager()->GetSoldier(*client_state.client_soldier_id).active) {
+            const auto& soldier = world.CreateSoldier();
+            client_state.client_soldier_id = soldier.id;
+        }
 
-            if (!is_soldier_active || !is_soldier_alive) {
-                world.SpawnSoldier(*client_state.client_soldier_id);
-            }
+        std::uint8_t client_soldier_id = *client_state.client_soldier_id;
+        if (world.GetStateManager()->GetSoldier(client_soldier_id).dead_meat) {
+            world.SpawnSoldier(client_soldier_id);
         }
 
         client_state.camera.view.ResetZoom();

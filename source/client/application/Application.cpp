@@ -437,8 +437,7 @@ void Application::Run()
         return application_mode_ != CommandLineParameters::ApplicationMode::Online;
     });
 
-    if (application_mode_ == CommandLineParameters::ApplicationMode::Local ||
-        application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
+    if (application_mode_ == CommandLineParameters::ApplicationMode::Local) {
         const auto& soldier = world_->CreateSoldier();
         client_state_->client_soldier_id = soldier.id;
     }
