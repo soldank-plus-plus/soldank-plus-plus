@@ -470,6 +470,45 @@ TEST_F(MapEditorToolsTest, SelectionToolSkipsMissingObjectTypesWhileCycling)
     EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.front().first, 0U);
 }
 
+TEST_F(MapEditorToolsTest, SelectionToolRemovesOverlappingObjectsInReverseTypeOrder)
+{
+    state_manager_.GetMap().AddNewPolygon(MakePolygon());
+    PMSScenery scenery{};
+    scenery.width = 10;
+    scenery.height = 10;
+    scenery.scale_x = 1.0F;
+    scenery.scale_y = 1.0F;
+    scenery.active = true;
+    state_manager_.GetMap().AddNewScenery(scenery, "x.png");
+    PMSSpawnPoint spawn_point{};
+    spawn_point.x = 1;
+    spawn_point.y = 1;
+    state_manager_.GetMap().AddNewSpawnPoint(spawn_point);
+    const auto soldier_id = state_manager_.CreateSoldier(1U).id;
+    state_manager_.TransformSoldier(
+      soldier_id, [](auto& soldier) { soldier.particle.position = { 1.0F, 1.0F }; });
+    client_state_.map_editor_state.selected_polygon_vertices = { { 0U, 0b111 } };
+    client_state_.map_editor_state.selected_scenery_ids = { 0U };
+    client_state_.map_editor_state.selected_spawn_point_ids = { 0U };
+    client_state_.map_editor_state.selected_soldier_ids = { soldier_id };
+    SelectionTool tool;
+    tool.OnSelect(client_state_, state_manager_);
+    tool.OnMouseMapPositionChange(client_state_, {}, { 1.0F, 1.0F }, state_manager_);
+    tool.OnModifierKey3Pressed(client_state_);
+
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_TRUE(client_state_.map_editor_state.selected_soldier_ids.empty());
+    EXPECT_EQ(client_state_.map_editor_state.selected_spawn_point_ids.size(), 1U);
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_TRUE(client_state_.map_editor_state.selected_spawn_point_ids.empty());
+    EXPECT_EQ(client_state_.map_editor_state.selected_scenery_ids.size(), 1U);
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_TRUE(client_state_.map_editor_state.selected_scenery_ids.empty());
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.size(), 1U);
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_TRUE(client_state_.map_editor_state.selected_polygon_vertices.empty());
+}
+
 TEST_F(MapEditorToolsTest, SelectionToolSelectsAndRemovesSceneryAndPolygon)
 {
     PMSScenery scenery{};
