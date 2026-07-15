@@ -75,7 +75,7 @@ BackgroundRenderer::BackgroundRenderer(Map& map)
       });
 }
 
-BackgroundRenderer::~BackgroundRenderer() = default;
+BackgroundRenderer::~BackgroundRenderer() {}
 
 void BackgroundRenderer::Render(glm::mat4 transform)
 {

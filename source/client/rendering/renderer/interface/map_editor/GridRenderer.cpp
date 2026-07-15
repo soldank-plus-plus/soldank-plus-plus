@@ -64,7 +64,7 @@ GridRenderer::GridRenderer()
     vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_STATIC_DRAW);
 }
 
-GridRenderer::~GridRenderer() = default;
+GridRenderer::~GridRenderer() {}
 
 void GridRenderer::Render(glm::vec2 window_dimensions, glm::vec2 view_position, float view_zoom)
 {

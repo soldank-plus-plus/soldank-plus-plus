@@ -107,7 +107,7 @@ PolygonVertexOutlinesRenderer::PolygonVertexOutlinesRenderer(ClientState& client
       });
 }
 
-PolygonVertexOutlinesRenderer::~PolygonVertexOutlinesRenderer() = default;
+PolygonVertexOutlinesRenderer::~PolygonVertexOutlinesRenderer() {}
 
 void PolygonVertexOutlinesRenderer::Render(glm::mat4 transform)
 {

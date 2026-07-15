@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <bitset>
 #include <filesystem>
 #include <fstream>

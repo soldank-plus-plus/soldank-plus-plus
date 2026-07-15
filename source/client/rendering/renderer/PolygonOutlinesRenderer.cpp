@@ -87,7 +87,7 @@ PolygonOutlinesRenderer::PolygonOutlinesRenderer(Map& map, glm::vec4 color)
       });
 }
 
-PolygonOutlinesRenderer::~PolygonOutlinesRenderer() = default;
+PolygonOutlinesRenderer::~PolygonOutlinesRenderer() {}
 
 void PolygonOutlinesRenderer::Render(glm::mat4 transform, unsigned int polygon_id)
 {

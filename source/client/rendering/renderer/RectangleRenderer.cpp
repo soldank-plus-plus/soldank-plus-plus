@@ -76,7 +76,7 @@ RectangleRenderer::RectangleRenderer()
     vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_STATIC_DRAW);
 }
 
-RectangleRenderer::~RectangleRenderer() = default;
+RectangleRenderer::~RectangleRenderer() {}
 
 void RectangleRenderer::Render(const glm::mat4& transform,
                                const glm::vec2& position,

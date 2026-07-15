@@ -19,7 +19,6 @@ import Shared.Core.Map.Map;
 import Shared.Core.Map.PMSConstants;
 import Shared.Core.Map.PMSStructs;
 
-
 export namespace Soldank
 {
 class SceneryOutlinesRenderer
@@ -95,7 +94,7 @@ SceneryOutlinesRenderer::SceneryOutlinesRenderer(Map& map, glm::vec4 color)
       });
 }
 
-SceneryOutlinesRenderer::~SceneryOutlinesRenderer() = default;
+SceneryOutlinesRenderer::~SceneryOutlinesRenderer() {}
 
 void SceneryOutlinesRenderer::Render(glm::mat4 transform, unsigned int scenery_id)
 {

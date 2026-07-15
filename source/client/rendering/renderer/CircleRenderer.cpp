@@ -54,7 +54,7 @@ CircleRenderer::CircleRenderer()
     vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 }
 
-CircleRenderer::~CircleRenderer() = default;
+CircleRenderer::~CircleRenderer() {}
 
 void CircleRenderer::Render(glm::mat4 transform,
                             glm::vec2 position,

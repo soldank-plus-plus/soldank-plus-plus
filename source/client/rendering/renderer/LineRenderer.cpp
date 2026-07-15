@@ -57,7 +57,7 @@ LineRenderer::LineRenderer()
     vbo_ = GpuBuffer::CreateArrayBuffer(vertices, GL_DYNAMIC_DRAW);
 }
 
-LineRenderer::~LineRenderer() = default;
+LineRenderer::~LineRenderer() {}
 
 void LineRenderer::Render(glm::mat4 transform,
                           glm::vec2 p1,
