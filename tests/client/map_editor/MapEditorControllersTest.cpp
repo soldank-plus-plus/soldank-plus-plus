@@ -28,6 +28,7 @@ import MapEditor.EditorUiOptions;
 import MapEditor.EditorViewportController;
 
 import Shared.Core.Animations;
+import Shared.Core.Map.PMSConstants;
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.State.StateManager;
@@ -265,6 +266,13 @@ TEST_F(MapEditorControllersTest, DocumentAndMapPropertiesUpdateStateAndMap)
     EXPECT_EQ(map.GetMedikitsCount(), 5);
     EXPECT_EQ(map.GetJetCount(), 320);
     EXPECT_EQ(map.GetTextureName(), "stone.png");
+
+    EXPECT_EQ(client_state_.map_editor_state.map_description_input.size(),
+              DESCRIPTION_MAX_LENGTH + 1U);
+    const std::string maximum_description(DESCRIPTION_MAX_LENGTH, 'x');
+    client_state_.map_editor_state.event_set_map_description.Notify(maximum_description);
+    EXPECT_NO_THROW(state_manager_.GetMap().SaveMap("maximum-description.pms"));
+    std::filesystem::remove("maximum-description.pms");
 }
 
 TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking)

@@ -7,6 +7,7 @@ module;
 #include <array>
 #include <filesystem>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -766,16 +767,17 @@ void RenderMapSettingsModal(const StateManager& game_state_manager, ClientState&
 
         constexpr std::string_view DRAG_INT_TOOLTIP =
           "Drag left or right to change.\n\nDouble-click to input text manually.";
-        client_state.map_editor_state.map_description_input =
-          game_state_manager.GetConstMap().GetDescription();
-        client_state.map_editor_state.map_description_input += (char)0;
+        auto& description_input = client_state.map_editor_state.map_description_input;
+        description_input.fill(0);
+        const std::string map_description = game_state_manager.GetConstMap().GetDescription();
+        std::ranges::copy(map_description | std::views::take(DESCRIPTION_MAX_LENGTH),
+                          description_input.begin());
         ImGui::SeparatorText("Description");
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        if (ImGui::InputText("##DescriptionInput",
-                             client_state.map_editor_state.map_description_input.data(),
-                             DESCRIPTION_MAX_LENGTH)) {
+        if (ImGui::InputText(
+              "##DescriptionInput", description_input.data(), description_input.size())) {
             client_state.map_editor_state.event_set_map_description.Notify(
-              client_state.map_editor_state.map_description_input);
+              std::string(description_input.data()));
         }
 
         RenderMapSettingsWeatherAndStep(game_state_manager, client_state);
