@@ -1,6 +1,8 @@
 module;
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -145,5 +147,15 @@ std::span<const std::string_view> GetSupportedImageExtensions()
         ".bmp", ".jpg", ".jpeg", ".gif", ".png",
     };
     return EXTENSIONS;
+}
+
+int AlphaToOpacityPercent(float alpha)
+{
+    return std::clamp(static_cast<int>(std::lround(alpha * 100.0F)), 0, 100);
+}
+
+float OpacityPercentToAlpha(int opacity_percent)
+{
+    return static_cast<float>(std::clamp(opacity_percent, 0, 100)) / 100.0F;
 }
 } // namespace Soldank::EditorUiOptions

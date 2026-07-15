@@ -304,6 +304,20 @@ void RenderPaletteWindow(ClientState& client_state, ImGuiWindowFlags default_win
                         ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB |
                           ImGuiColorEditFlags_DisplayHex | ImGuiColorEditFlags_NoSidePreview);
 
+    int opacity_percent = EditorUiOptions::AlphaToOpacityPercent(
+      client_state.map_editor_state.palette_current_color.at(3));
+    ImGui::SetNextItemWidth(palette_width);
+    if (ImGui::DragInt("##PaletteOpacityPercent",
+                       &opacity_percent,
+                       1.0F,
+                       0,
+                       100,
+                       "Opacity: %d%%",
+                       ImGuiSliderFlags_AlwaysClamp)) {
+        client_state.map_editor_state.palette_current_color.at(3) =
+          EditorUiOptions::OpacityPercentToAlpha(opacity_percent);
+    }
+
     ImVec2 cell_padding(0.0F, 0.0F);
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, cell_padding);
     if (ImGui::BeginTable("PaletteSavedColorsTable",

@@ -217,6 +217,14 @@ TEST_F(MapEditorControllersTest, UiOptionsAndAssetBrowserReturnCompleteSortedCho
     EXPECT_EQ(EditorUiOptions::GetStepOptions().size(), 3U);
     EXPECT_EQ(EditorUiOptions::GetJetFuelOptions().size(), 8U);
     EXPECT_EQ(EditorUiOptions::GetSupportedImageExtensions().size(), 5U);
+    EXPECT_EQ(EditorUiOptions::AlphaToOpacityPercent(0.0F), 0);
+    EXPECT_EQ(EditorUiOptions::AlphaToOpacityPercent(0.495F), 50);
+    EXPECT_EQ(EditorUiOptions::AlphaToOpacityPercent(1.0F), 100);
+    EXPECT_EQ(EditorUiOptions::AlphaToOpacityPercent(2.0F), 100);
+    EXPECT_FLOAT_EQ(EditorUiOptions::OpacityPercentToAlpha(0), 0.0F);
+    EXPECT_FLOAT_EQ(EditorUiOptions::OpacityPercentToAlpha(50), 0.5F);
+    EXPECT_FLOAT_EQ(EditorUiOptions::OpacityPercentToAlpha(100), 1.0F);
+    EXPECT_FLOAT_EQ(EditorUiOptions::OpacityPercentToAlpha(-1), 0.0F);
 
     std::filesystem::create_directories("textures/subdirectory");
     std::filesystem::create_directories("scenery-gfx");
