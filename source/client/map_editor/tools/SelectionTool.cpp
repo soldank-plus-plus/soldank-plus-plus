@@ -89,7 +89,10 @@ public:
     {
     }
 
-    void OnSceneRightMouseButtonClick(ClientState& /*client_state*/) final {}
+    void OnSceneRightMouseButtonClick(ClientState& client_state) final
+    {
+        client_state.map_editor_state.should_open_selection_context_menu = true;
+    }
 
     void OnSceneRightMouseButtonRelease() final {}
 

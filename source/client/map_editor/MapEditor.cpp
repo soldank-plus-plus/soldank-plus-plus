@@ -79,6 +79,8 @@ private:
     void UndoLastAction(ClientState& client_state, StateManager& game_state_manager);
     void RedoUndoneAction(ClientState& client_state, StateManager& game_state_manager);
     void RemoveCurrentSelection(ClientState& client_state, StateManager& game_state_manager);
+    void CopySelection(ClientState& client_state, const StateManager& game_state_manager);
+    void PasteSelection(ClientState& client_state, StateManager& game_state_manager);
 
     void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
                                           ClientState& client_state,
@@ -223,6 +225,14 @@ MapEditor::MapEditor(ClientState& client_state,
     client_state.map_editor_state.event_pressed_redo.AddObserver(
       [this, &client_state, &game_state_manager]() {
           RedoUndoneAction(client_state, game_state_manager);
+      });
+    client_state.map_editor_state.event_pressed_copy.AddObserver(
+      [this, &client_state, &game_state_manager]() {
+          CopySelection(client_state, game_state_manager);
+      });
+    client_state.map_editor_state.event_pressed_paste.AddObserver(
+      [this, &client_state, &game_state_manager]() {
+          PasteSelection(client_state, game_state_manager);
       });
 
     for (int i = 0; auto& saved_color : client_state.map_editor_state.palette_saved_colors) {
@@ -451,54 +461,13 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
     is_anything_selected |= !client_state.map_editor_state.selected_spawn_point_ids.empty();
 
     if (shortcut_controller_.IsCopyShortcut(key) && is_anything_selected) {
-        // TODO: make use of system's clipboard
-        copied_polygons_.clear();
-        copied_sceneries_.clear();
-        copied_spawn_points_.clear();
-
-        for (const auto& [selected_polygon_id, selected_vertices] :
-             client_state.map_editor_state.selected_polygon_vertices) {
-            if (!selected_vertices.all()) {
-                continue;
-            }
-
-            copied_polygons_.push_back(
-              game_state_manager.GetConstMap().GetPolygons().at(selected_polygon_id));
-        }
-
-        for (const auto& selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
-            const auto& scenery =
-              game_state_manager.GetConstMap().GetSceneryInstances().at(selected_scenery_id);
-            copied_sceneries_.push_back({ selected_scenery_id,
-                                          { scenery,
-                                            game_state_manager.GetConstMap()
-                                              .GetSceneryTypes()
-                                              .at(scenery.style - 1)
-                                              .name } });
-        }
-
-        for (const auto& selected_spawn_point_id :
-             client_state.map_editor_state.selected_spawn_point_ids) {
-            copied_spawn_points_.emplace_back(
-              selected_spawn_point_id,
-              game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id));
-        }
-
+        CopySelection(client_state, game_state_manager);
         return;
     }
 
     if (shortcut_controller_.IsPasteShortcut(key)) {
-        if (!copied_polygons_.empty() || !copied_sceneries_.empty() ||
-            !copied_spawn_points_.empty()) {
-
-            std::unique_ptr<AddObjectsMapEditorAction> add_copied_objects_action =
-              std::make_unique<AddObjectsMapEditorAction>(
-                copied_polygons_, copied_sceneries_, copied_spawn_points_);
-            ExecuteNewAction(
-              client_state, game_state_manager, std::move(add_copied_objects_action));
-
-            return;
-        }
+        PasteSelection(client_state, game_state_manager);
+        return;
     }
 
     if (key == GLFW_KEY_LEFT_SHIFT) {
@@ -514,6 +483,52 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
     if (key == GLFW_KEY_DELETE) {
         RemoveCurrentSelection(client_state, game_state_manager);
     }
+}
+
+void MapEditor::CopySelection(ClientState& client_state, const StateManager& game_state_manager)
+{
+    // TODO: make use of system's clipboard
+    copied_polygons_.clear();
+    copied_sceneries_.clear();
+    copied_spawn_points_.clear();
+
+    for (const auto& [selected_polygon_id, selected_vertices] :
+         client_state.map_editor_state.selected_polygon_vertices) {
+        if (!selected_vertices.all()) {
+            continue;
+        }
+
+        copied_polygons_.push_back(
+          game_state_manager.GetConstMap().GetPolygons().at(selected_polygon_id));
+    }
+
+    for (const auto& selected_scenery_id : client_state.map_editor_state.selected_scenery_ids) {
+        const auto& scenery =
+          game_state_manager.GetConstMap().GetSceneryInstances().at(selected_scenery_id);
+        copied_sceneries_.push_back(
+          { selected_scenery_id,
+            { scenery,
+              game_state_manager.GetConstMap().GetSceneryTypes().at(scenery.style - 1).name } });
+    }
+
+    for (const auto& selected_spawn_point_id :
+         client_state.map_editor_state.selected_spawn_point_ids) {
+        copied_spawn_points_.emplace_back(
+          selected_spawn_point_id,
+          game_state_manager.GetConstMap().GetSpawnPoints().at(selected_spawn_point_id));
+    }
+}
+
+void MapEditor::PasteSelection(ClientState& client_state, StateManager& game_state_manager)
+{
+    if (copied_polygons_.empty() && copied_sceneries_.empty() && copied_spawn_points_.empty()) {
+        return;
+    }
+
+    std::unique_ptr<AddObjectsMapEditorAction> add_copied_objects_action =
+      std::make_unique<AddObjectsMapEditorAction>(
+        copied_polygons_, copied_sceneries_, copied_spawn_points_);
+    ExecuteNewAction(client_state, game_state_manager, std::move(add_copied_objects_action));
 }
 
 void MapEditor::OnKeyReleased(int key, ClientState& client_state)

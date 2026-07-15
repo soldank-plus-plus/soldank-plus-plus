@@ -59,6 +59,8 @@ struct MapEditorState
     Observable<> event_pressed_play;
     Observable<> event_pressed_undo;
     Observable<> event_pressed_redo;
+    Observable<> event_pressed_copy;
+    Observable<> event_pressed_paste;
     Observable<const PMSPolygon&, const std::bitset<3>&> event_polygon_selected;
     Observable<const std::string&> event_scenery_texture_changed;
     Observable<PMSSpawnPointType> event_selected_spawn_points_type_changed;
@@ -125,6 +127,7 @@ struct MapEditorState
 
     bool should_open_map_settings_modal = false;
     bool should_open_save_as_modal = false;
+    bool should_open_selection_context_menu = false;
 
     bool draw_wireframe = false;
 

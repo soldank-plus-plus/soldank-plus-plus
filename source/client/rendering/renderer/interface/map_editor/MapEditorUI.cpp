@@ -478,6 +478,30 @@ void RenderPolygonTypePopup(ClientState& client_state)
     }
 }
 
+void RenderSelectionContextMenu(ClientState& client_state)
+{
+    if (client_state.map_editor_state.should_open_selection_context_menu) {
+        ImGui::OpenPopup("SelectionContextMenu");
+        client_state.map_editor_state.should_open_selection_context_menu = false;
+    }
+
+    if (ImGui::BeginPopup("SelectionContextMenu")) {
+        client_state.map_editor_state.is_modal_or_popup_open = true;
+        const bool has_copyable_selection =
+          !client_state.map_editor_state.selected_polygon_vertices.empty() ||
+          !client_state.map_editor_state.selected_scenery_ids.empty() ||
+          !client_state.map_editor_state.selected_spawn_point_ids.empty();
+
+        if (ImGui::MenuItem("Copy", "CTRL+C", false, has_copyable_selection)) {
+            client_state.map_editor_state.event_pressed_copy.Notify();
+        }
+        if (ImGui::MenuItem("Paste", "CTRL+V")) {
+            client_state.map_editor_state.event_pressed_paste.Notify();
+        }
+        ImGui::EndPopup();
+    }
+}
+
 void RenderSceneryPickerPopup(ClientState& client_state)
 {
     if (client_state.map_editor_state.should_open_scenery_picker_popup) {
@@ -838,6 +862,7 @@ void Render(const StateManager& game_state_manager, ClientState& client_state)
     RenderSpawnPointPopup(client_state);
     RenderPolygonTypePopup(client_state);
     RenderSceneryPickerPopup(client_state);
+    RenderSelectionContextMenu(client_state);
 
     EndFrame();
 }
