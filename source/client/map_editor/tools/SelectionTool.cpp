@@ -3,6 +3,7 @@ module;
 #include <algorithm>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 export module SelectionTool;
 
@@ -124,6 +125,8 @@ public:
     void SelectNextSingleObject(ClientState& client_state, const StateManager& game_state_manager)
     {
         const auto& map = game_state_manager.GetConstMap();
+        const std::vector<unsigned int> active_soldier_ids =
+          GetActiveSoldierIds(game_state_manager);
 
         unsigned int start_index = 0;
         unsigned int selected_polygons_count =
@@ -177,12 +180,10 @@ public:
                   client_state.map_editor_state.selected_soldier_ids.at(0);
                 game_state_manager.ForSoldier(selected_soldier_id, [&](const auto& soldier) {
                     if (IsMouseInSoldier(soldier.particle.position)) {
-                        // If we have only one scenery selected and we still click inside of it then
-                        // we want to "rotate" through objects
-
-                        // selected_soldier_id is soldier.id which starts from 1 instead of 0 that's
-                        // why we don't do +1 here
-                        start_index = selected_soldier_id;
+                        const auto selected_soldier_iterator =
+                          std::ranges::find(active_soldier_ids, selected_soldier_id);
+                        start_index = static_cast<unsigned int>(
+                          std::distance(active_soldier_ids.begin(), selected_soldier_iterator) + 1);
                         next_object_type_to_select = NextObjectTypeToSelect::Soldier;
                     }
                 });
@@ -195,7 +196,7 @@ public:
         client_state.map_editor_state.selected_soldier_ids.clear();
 
         if (map.GetPolygonsCount() == 0 && map.GetSceneryInstances().empty() &&
-            map.GetSpawnPoints().empty()) {
+            map.GetSpawnPoints().empty() && active_soldier_ids.empty()) {
             return;
         }
 
@@ -229,7 +230,7 @@ public:
         }
 
         if (next_object_type_to_select == NextObjectTypeToSelect::Soldier &&
-            start_index >= game_state_manager.GetSoldiersCount()) {
+            start_index >= active_soldier_ids.size()) {
 
             start_index = 0;
             next_object_type_to_select =
@@ -246,6 +247,8 @@ public:
     {
         unsigned int current_index = start_index;
         const auto& map = game_state_manager.GetConstMap();
+        const std::vector<unsigned int> active_soldier_ids =
+          GetActiveSoldierIds(game_state_manager);
         unsigned int polygon_candidates_count = 0;
         unsigned int scenery_candidates_count = 0;
         unsigned int spawn_point_candidates_count = 0;
@@ -254,7 +257,7 @@ public:
         while (polygon_candidates_count < map.GetPolygonsCount() ||
                scenery_candidates_count < map.GetSceneryInstances().size() ||
                spawn_point_candidates_count < map.GetSpawnPoints().size() ||
-               soldier_candidates_count < game_state_manager.GetSoldiersCount()) {
+               soldier_candidates_count < active_soldier_ids.size()) {
 
             switch (next_object_type_to_select) {
                 case NextObjectTypeToSelect::Polygon: {
@@ -289,12 +292,18 @@ public:
                     break;
                 }
                 case NextObjectTypeToSelect::Soldier: {
-                    game_state_manager.ForSoldier(current_index, [&](const auto& soldier) {
-                        if (IsMouseInSoldier(soldier.particle.position)) {
-                            client_state.map_editor_state.selected_soldier_ids.push_back(
-                              soldier.id);
-                        }
-                    });
+                    bool selected_soldier = false;
+                    game_state_manager.ForSoldier(
+                      active_soldier_ids.at(current_index), [&](const auto& soldier) {
+                          if (IsMouseInSoldier(soldier.particle.position)) {
+                              client_state.map_editor_state.selected_soldier_ids.push_back(
+                                soldier.id);
+                              selected_soldier = true;
+                          }
+                      });
+                    if (selected_soldier) {
+                        return;
+                    }
                     break;
                 }
             }
@@ -331,7 +340,7 @@ public:
                 }
                 case NextObjectTypeToSelect::Soldier: {
                     ++soldier_candidates_count;
-                    if (current_index == game_state_manager.GetSoldiersCount()) {
+                    if (current_index == active_soldier_ids.size()) {
                         current_index = 0;
                         next_object_type_to_select =
                           GetNextObjectTypeToSelect(next_object_type_to_select, game_state_manager);
@@ -622,7 +631,7 @@ public:
                 break;
             }
             case NextObjectTypeToSelect::Soldier: {
-                if (game_state_manager.GetSoldiersCount() == 0) {
+                if (GetActiveSoldierIds(game_state_manager).empty()) {
                     should_repeat = true;
                 }
                 break;
@@ -634,6 +643,14 @@ public:
         }
 
         return new_object_type_to_select;
+    }
+
+    static std::vector<unsigned int> GetActiveSoldierIds(const StateManager& game_state_manager)
+    {
+        std::vector<unsigned int> soldier_ids;
+        game_state_manager.ForEachSoldier(
+          [&soldier_ids](const auto& soldier) { soldier_ids.push_back(soldier.id); });
+        return soldier_ids;
     }
 
     glm::vec2 mouse_map_position_;

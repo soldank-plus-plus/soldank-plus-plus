@@ -362,6 +362,114 @@ TEST_F(MapEditorToolsTest, SelectionToolPromotesPartialPolygonAndCyclesOverlappi
     EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.at(0).first, 0U);
 }
 
+TEST_F(MapEditorToolsTest, SelectionToolCyclesOverlappingSpawnPoints)
+{
+    PMSSpawnPoint spawn_point{};
+    spawn_point.x = 10;
+    spawn_point.y = 10;
+    state_manager_.GetMap().AddNewSpawnPoint(spawn_point);
+    state_manager_.GetMap().AddNewSpawnPoint(spawn_point);
+    SelectionTool tool;
+    tool.OnSelect(client_state_, state_manager_);
+    tool.OnMouseMapPositionChange(client_state_, {}, { 10.0F, 10.0F }, state_manager_);
+
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_spawn_point_ids,
+              std::vector<unsigned int>{ 0U });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_spawn_point_ids,
+              std::vector<unsigned int>{ 1U });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_spawn_point_ids,
+              std::vector<unsigned int>{ 0U });
+}
+
+TEST_F(MapEditorToolsTest, SelectionToolCyclesOverlappingSoldiers)
+{
+    PMSPolygon polygon = MakePolygon();
+    for (auto& vertex : polygon.vertices) {
+        vertex.x += 100.0F;
+        vertex.y += 100.0F;
+    }
+    state_manager_.GetMap().AddNewPolygon(polygon);
+    const auto first_soldier_id = state_manager_.CreateSoldier(1U).id;
+    const auto second_soldier_id = state_manager_.CreateSoldier(2U).id;
+    state_manager_.TransformSoldier(
+      first_soldier_id, [](auto& soldier) { soldier.particle.position = { 10.0F, 10.0F }; });
+    state_manager_.TransformSoldier(
+      second_soldier_id, [](auto& soldier) { soldier.particle.position = { 10.0F, 10.0F }; });
+    SelectionTool tool;
+    tool.OnSelect(client_state_, state_manager_);
+    tool.OnMouseMapPositionChange(client_state_, {}, { 10.0F, 10.0F }, state_manager_);
+
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_soldier_ids,
+              std::vector<unsigned int>{ first_soldier_id });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_soldier_ids,
+              std::vector<unsigned int>{ second_soldier_id });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_soldier_ids,
+              std::vector<unsigned int>{ first_soldier_id });
+}
+
+TEST_F(MapEditorToolsTest, SelectionToolCyclesEveryOverlappingObjectType)
+{
+    state_manager_.GetMap().AddNewPolygon(MakePolygon());
+    PMSScenery scenery{};
+    scenery.width = 10;
+    scenery.height = 10;
+    scenery.scale_x = 1.0F;
+    scenery.scale_y = 1.0F;
+    scenery.active = true;
+    state_manager_.GetMap().AddNewScenery(scenery, "x.png");
+    PMSSpawnPoint spawn_point{};
+    spawn_point.x = 1;
+    spawn_point.y = 1;
+    state_manager_.GetMap().AddNewSpawnPoint(spawn_point);
+    const auto soldier_id = state_manager_.CreateSoldier(1U).id;
+    state_manager_.TransformSoldier(
+      soldier_id, [](auto& soldier) { soldier.particle.position = { 1.0F, 1.0F }; });
+    SelectionTool tool;
+    tool.OnSelect(client_state_, state_manager_);
+    tool.OnMouseMapPositionChange(client_state_, {}, { 1.0F, 1.0F }, state_manager_);
+
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    ASSERT_EQ(client_state_.map_editor_state.selected_polygon_vertices.size(), 1U);
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_scenery_ids, std::vector<unsigned int>{ 0U });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_spawn_point_ids,
+              std::vector<unsigned int>{ 0U });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_soldier_ids,
+              std::vector<unsigned int>{ soldier_id });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    ASSERT_EQ(client_state_.map_editor_state.selected_polygon_vertices.size(), 1U);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.front().first, 0U);
+}
+
+TEST_F(MapEditorToolsTest, SelectionToolSkipsMissingObjectTypesWhileCycling)
+{
+    state_manager_.GetMap().AddNewPolygon(MakePolygon());
+    PMSSpawnPoint spawn_point{};
+    spawn_point.x = 1;
+    spawn_point.y = 1;
+    state_manager_.GetMap().AddNewSpawnPoint(spawn_point);
+    SelectionTool tool;
+    tool.OnSelect(client_state_, state_manager_);
+    tool.OnMouseMapPositionChange(client_state_, {}, { 1.0F, 1.0F }, state_manager_);
+
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    ASSERT_EQ(client_state_.map_editor_state.selected_polygon_vertices.size(), 1U);
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    EXPECT_EQ(client_state_.map_editor_state.selected_spawn_point_ids,
+              std::vector<unsigned int>{ 0U });
+    tool.OnSceneLeftMouseButtonClick(client_state_, state_manager_);
+    ASSERT_EQ(client_state_.map_editor_state.selected_polygon_vertices.size(), 1U);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.front().first, 0U);
+}
+
 TEST_F(MapEditorToolsTest, SelectionToolSelectsAndRemovesSceneryAndPolygon)
 {
     PMSScenery scenery{};
