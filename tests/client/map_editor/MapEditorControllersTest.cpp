@@ -17,6 +17,7 @@ import ClientState;
 import MapEditor;
 import MapEditorAction;
 import MapEditorState;
+import MapEditor.Config;
 import MapEditor.EditorAssetBrowser;
 import MapEditor.EditorCommandHistory;
 import MapEditor.EditorDocument;
@@ -370,5 +371,38 @@ TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking
     client_state_.map_editor_state.is_modal_or_popup_open = true;
     client_state_.event_key_pressed.Notify(GLFW_KEY_DELETE);
     client_state_.event_mouse_wheel_scrolled_up.Notify();
+}
+
+TEST_F(MapEditorControllersTest, MapEditorConfigSavesAndLoadsPaletteColors)
+{
+    const std::filesystem::path config_path = "map-editor-palette-test.toml";
+    const std::array<glm::vec4, 2> saved_colors{
+        glm::vec4(1.0F, 128.0F / 255.0F, 0.0F, 64.0F / 255.0F),
+        glm::vec4(0.0F, 64.0F / 255.0F, 1.0F, 1.0F),
+    };
+
+    ASSERT_TRUE(MapEditorConfig::SavePalette(config_path, saved_colors));
+
+    std::array<glm::vec4, 2> loaded_colors{};
+    ASSERT_TRUE(MapEditorConfig::LoadPalette(config_path, loaded_colors));
+    EXPECT_EQ(loaded_colors, saved_colors);
+
+    std::filesystem::remove(config_path);
+}
+
+TEST_F(MapEditorControllersTest, MapEditorConfigRejectsInvalidPaletteWithoutChangingColors)
+{
+    const std::filesystem::path config_path = "invalid-map-editor-palette-test.toml";
+    {
+        std::ofstream config_file(config_path);
+        config_file << "[palette]\ncolors = [[256, 0, 0, 255]]\n";
+    }
+    std::array<glm::vec4, 1> colors{ glm::vec4(0.25F, 0.5F, 0.75F, 1.0F) };
+    const auto original_colors = colors;
+
+    EXPECT_FALSE(MapEditorConfig::LoadPalette(config_path, colors));
+    EXPECT_EQ(colors, original_colors);
+
+    std::filesystem::remove(config_path);
 }
 } // namespace

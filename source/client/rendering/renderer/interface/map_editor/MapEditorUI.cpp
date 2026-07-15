@@ -356,6 +356,7 @@ void RenderPaletteWindow(ClientState& client_state, ImGuiWindowFlags default_win
                 saved_color.y = client_state.map_editor_state.palette_current_color.at(1);
                 saved_color.z = client_state.map_editor_state.palette_current_color.at(2);
                 saved_color.w = client_state.map_editor_state.palette_current_color.at(3);
+                client_state.map_editor_state.event_palette_saved_colors_changed.Notify();
             }
             ++i;
         }

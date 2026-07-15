@@ -66,6 +66,7 @@ struct MapEditorState
     Observable<float> event_selected_polygons_bounciness_changed;
     Observable<PMSPolygonType> event_selected_polygons_type_changed;
     Observable<> event_pixel_color_under_cursor_requested;
+    Observable<> event_palette_saved_colors_changed;
 
     Observable<const std::string&> event_save_map;
     Observable<const std::string&> event_set_map_name;

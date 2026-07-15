@@ -6,6 +6,7 @@ module;
 #include <string>
 #include <utility>
 #include <functional>
+#include <filesystem>
 #include <optional>
 #include <vector>
 
@@ -16,6 +17,7 @@ import Extern.Glm;
 import Tool;
 import MapEditorAction;
 import MapEditor.EditorCommandHistory;
+import MapEditor.Config;
 import MapEditor.EditorDocument;
 import MapEditor.EditorEventRouter;
 import MapEditor.EditorMapProperties;
@@ -39,7 +41,9 @@ export namespace Soldank
 class MapEditor
 {
 public:
-    MapEditor(ClientState& client_state, StateManager& game_state_manager);
+    MapEditor(ClientState& client_state,
+              StateManager& game_state_manager,
+              std::filesystem::path config_file_path = "map_editor.toml");
 
     void Lock();
     void Unlock();
@@ -96,6 +100,7 @@ private:
     std::unique_ptr<EditorToolController> tool_controller_;
     EditorShortcutController shortcut_controller_;
     EditorViewportController viewport_controller_;
+    std::filesystem::path config_file_path_;
 
     bool locked_;
 
@@ -107,9 +112,12 @@ private:
 
 namespace Soldank
 {
-MapEditor::MapEditor(ClientState& client_state, StateManager& game_state_manager)
+MapEditor::MapEditor(ClientState& client_state,
+                     StateManager& game_state_manager,
+                     std::filesystem::path config_file_path)
     : document_(client_state, game_state_manager)
     , map_properties_(client_state.map_editor_state, game_state_manager)
+    , config_file_path_(std::move(config_file_path))
     , locked_(false)
 {
     add_new_map_editor_action_ =
@@ -226,6 +234,14 @@ MapEditor::MapEditor(ClientState& client_state, StateManager& game_state_manager
         }
         ++i;
     }
+
+    MapEditorConfig::LoadPalette(config_file_path_,
+                                 client_state.map_editor_state.palette_saved_colors);
+    client_state.map_editor_state.event_palette_saved_colors_changed.AddObserver(
+      [this, &client_state]() {
+          MapEditorConfig::SavePalette(config_file_path_,
+                                       client_state.map_editor_state.palette_saved_colors);
+      });
 
     client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(
       [this, &client_state, &game_state_manager](PMSSpawnPointType new_spawn_point_type) {

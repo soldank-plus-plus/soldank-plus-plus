@@ -44,6 +44,7 @@ set(client_lib_modules
     gameplay/PlayerController.cpp
 
     map_editor/MapEditor.cpp
+    map_editor/MapEditorConfig.cpp
     map_editor/EditorAssetBrowser.cpp
     map_editor/EditorCommandHistory.cpp
     map_editor/EditorDocument.cpp
@@ -220,6 +221,7 @@ if (NOT (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripte
 endif()
 target_link_libraries(client_lib PUBLIC Glm)
 target_link_libraries(client_lib PRIVATE SimpleIni)
+target_link_libraries(client_lib PRIVATE TomlPlusPlus)
 
 # TODO: check if PNG, ZLIB and BZip2 are needed for linking here
 target_link_libraries(client_lib PRIVATE PNG::PNG)
