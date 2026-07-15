@@ -10,6 +10,7 @@
         "libpng",
         "simpleini",
         "spdlog",
+        "tomlplusplus",
         "glm",
         "cxxopts",
         "glfw3",

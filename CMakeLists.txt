@@ -182,6 +182,7 @@ endfunction()
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_package(spdlog CONFIG REQUIRED)
+find_package(tomlplusplus CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
