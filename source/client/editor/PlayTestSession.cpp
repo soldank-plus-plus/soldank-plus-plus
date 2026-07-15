@@ -1,8 +1,6 @@
 module;
 
 #include <cstdint>
-#include <optional>
-
 export module Editor.PlayTestSession;
 
 import Extern.Glm;
@@ -12,7 +10,6 @@ import MapEditor;
 import ClientState;
 
 import Shared.Core.IWorld;
-import Shared.Core.Map.Map;
 import Shared.Core.Map.RuntimeMap;
 import Shared.Core.State.StateManager;
 
@@ -25,8 +22,6 @@ public:
 
     void Start(ClientState& client_state, IWorld& world, Window& window, MapEditor& map_editor)
     {
-        editor_map_snapshot_ = world.GetStateManager()->GetConstMap();
-
         if (!client_state.client_soldier_id.has_value() ||
             !world.GetStateManager()->GetSoldier(*client_state.client_soldier_id).active) {
             const auto& soldier = world.CreateSoldier();
@@ -40,7 +35,11 @@ public:
 
         client_state.camera.view.ResetZoom();
         world.GetStateManager()->UnPauseGame();
-        BuildRuntimeMapAndMoveSoldiers(world);
+        if (!is_map_normalized_for_runtime_) {
+            BuildRuntimeMapAndMoveSoldiers(world);
+            is_map_normalized_for_runtime_ = true;
+        }
+        world.GetStateManager()->GetMap().GenerateSectors();
         window.SetCursorMode(CursorMode::Locked);
         map_editor.Lock();
         is_active_ = true;
@@ -49,10 +48,6 @@ public:
     void Stop(ClientState& /*client_state*/, IWorld& world, Window& window, MapEditor& map_editor)
     {
         world.GetStateManager()->PauseGame();
-        if (editor_map_snapshot_.has_value()) {
-            world.GetStateManager()->OverrideMap(*editor_map_snapshot_);
-            editor_map_snapshot_.reset();
-        }
         window.SetCursorMode(CursorMode::Normal);
         map_editor.Unlock();
         is_active_ = false;
@@ -70,6 +65,6 @@ private:
     }
 
     bool is_active_ = false;
-    std::optional<Map> editor_map_snapshot_;
+    bool is_map_normalized_for_runtime_ = false;
 };
 } // namespace Soldank

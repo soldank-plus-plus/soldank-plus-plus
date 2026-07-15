@@ -1,6 +1,7 @@
 module;
 
 #include <array>
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -136,6 +137,8 @@ public:
     MapChangeEvents& GetMapChangeEvents() { return map_change_events_; }
 
     PMSPolygon AddNewPolygon(const PMSPolygon& polygon);
+
+    void ReplaceContents(const Map& source_map);
 
     void AddPolygons(const std::vector<PMSPolygon>& polygons);
 
@@ -288,6 +291,15 @@ public:
     int GetSectorsSize() const { return map_data_.sectors_size; }
 
     int GetSectorsCount() const { return map_data_.sectors_count; }
+
+    glm::ivec2 GetSectorIndex(glm::vec2 position) const
+    {
+        const glm::vec2 center = GetCenter();
+        return { static_cast<int>(std::round((position.x - center.x) / map_data_.sectors_size)) +
+                   map_data_.sectors_count,
+                 static_cast<int>(std::round((position.y - center.y) / map_data_.sectors_size)) +
+                   map_data_.sectors_count };
+    }
 
     const PMSSector& GetSector(unsigned int x, unsigned int y) const
     {

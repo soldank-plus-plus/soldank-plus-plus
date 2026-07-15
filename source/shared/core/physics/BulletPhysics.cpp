@@ -336,8 +336,9 @@ static std::optional<std::pair<glm::vec2, unsigned int>> CheckMapCollision(Bulle
     for (float i = 0; i <= steps; i++) {
         auto xy = Calc::Lerp(a, b, i / steps);
 
-        auto rx = ((int)std::round((xy.x / (float)map.GetSectorsSize()))) + 25;
-        auto ry = ((int)std::round((xy.y / (float)map.GetSectorsSize()))) + 25;
+        const glm::ivec2 sector_index = map.GetSectorIndex(xy);
+        auto rx = sector_index.x;
+        auto ry = sector_index.y;
 
         if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
             (ry < map.GetSectorsCount() + 25)) {

@@ -2,7 +2,10 @@
 
 #include "core/math/Glm.hpp"
 
+#include <vector>
+
 import Shared.Core.Map.MapDocument;
+import Shared.Core.Map.Map;
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Map.RuntimeMap;
@@ -42,4 +45,39 @@ TEST(MapDocumentRuntimeMapTest, BuildRuntimeMapDoesNotMutateDocument)
     EXPECT_NE(runtime_vertex.y, document_vertex_before.y);
     EXPECT_EQ(runtime_map.GetMap().GetSectorsCount(), 25);
     EXPECT_NE(runtime_map.GetDocumentToRuntimeOffset(), glm::vec2(0.0F, 0.0F));
+}
+
+TEST(MapDocumentRuntimeMapTest, ReplacingMapContentsNotifiesPolygonObservers)
+{
+    Soldank::Map source_map;
+    source_map.CreateEmptyMap();
+    source_map.AddNewPolygon(CreateTestPolygon());
+
+    Soldank::Map destination_map;
+    destination_map.CreateEmptyMap();
+
+    int notifications = 0;
+    destination_map.GetMapChangeEvents().modified_polygons.AddObserver(
+      [&notifications](const std::vector<Soldank::PMSPolygon>& polygons) {
+          ++notifications;
+          ASSERT_EQ(polygons.size(), 1U);
+          EXPECT_FLOAT_EQ(polygons.at(0).vertices.at(0).x, 100.0F);
+          EXPECT_FLOAT_EQ(polygons.at(0).vertices.at(0).y, 100.0F);
+      });
+
+    destination_map.ReplaceContents(source_map);
+
+    EXPECT_EQ(notifications, 1);
+}
+
+TEST(MapDocumentRuntimeMapTest, CollisionTestUsesTheCurrentMapCenterForSectorLookup)
+{
+    Soldank::Map map;
+    map.CreateEmptyMap();
+    map.AddNewPolygon(CreateTestPolygon());
+    map.GenerateSectors();
+
+    glm::vec2 perpendicular;
+
+    EXPECT_TRUE(map.CollisionTest({ 125.0F, 125.0F }, perpendicular));
 }

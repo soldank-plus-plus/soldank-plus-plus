@@ -209,8 +209,9 @@ glm::vec2 Map::ClosestPerpendicular(int j, glm::vec2 pos, float* d, int* n) cons
 
 bool Map::CollisionTest(glm::vec2 pos, glm::vec2& perp_vec, bool is_flag) const
 {
-    auto rx = ((int)std::round((pos.x / (float)GetSectorsSize()))) + 25;
-    auto ry = ((int)std::round((pos.y / (float)GetSectorsSize()))) + 25;
+    const glm::ivec2 sector_index = GetSectorIndex(pos);
+    auto rx = sector_index.x;
+    auto ry = sector_index.y;
     if ((rx > 0) && (rx < GetSectorsCount() + 25) && (ry > 0) && (ry < GetSectorsCount() + 25)) {
         for (unsigned short polygon_id : GetSector(rx, ry).polygons) {
             auto poly = GetPolygons().at(polygon_id - 1);

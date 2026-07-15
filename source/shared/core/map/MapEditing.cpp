@@ -134,6 +134,19 @@ PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
     return new_polygon;
 }
 
+void Map::ReplaceContents(const Map& source_map)
+{
+    map_data_ = source_map.map_data_;
+    are_sectors_generated_ = source_map.are_sectors_generated_;
+
+    map_change_events_.changed_background_color.Notify(
+      map_data_.background_top_color, map_data_.background_bottom_color, GetBoundaries());
+    map_change_events_.changed_texture_name.Notify(map_data_.texture_name);
+    map_change_events_.modified_polygons.Notify(map_data_.polygons);
+    map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
+    map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
+}
+
 void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)
 {
     std::vector<std::pair<unsigned int, PMSPolygon>> polygon_insertions;

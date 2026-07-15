@@ -537,8 +537,9 @@ bool CheckMapCollision(Soldier& soldier,
                        const PhysicsEvents& physics_events)
 {
     auto pos = glm::vec2(x, y) + soldier.particle.velocity_;
-    auto rx = ((int)std::round((pos.x / (float)map.GetSectorsSize()))) + 25;
-    auto ry = ((int)std::round((pos.y / (float)map.GetSectorsSize()))) + 25;
+    const glm::ivec2 sector_index = map.GetSectorIndex(pos);
+    auto rx = sector_index.x;
+    auto ry = sector_index.y;
 
     if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
         (ry < map.GetSectorsCount() + 25)) {
@@ -680,8 +681,9 @@ bool CheckMapVerticesCollision(Soldier& soldier,
                                const PhysicsEvents& physics_events)
 {
     auto pos = glm::vec2(x, y);
-    auto rx = ((int)std::round(pos.x / (float)map.GetSectorsSize())) + 25;
-    auto ry = ((int)std::round(pos.y / (float)map.GetSectorsSize())) + 25;
+    const glm::ivec2 sector_index = map.GetSectorIndex(pos);
+    auto rx = sector_index.x;
+    auto ry = sector_index.y;
 
     if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
         (ry < map.GetSectorsCount() + 25)) {
@@ -735,8 +737,9 @@ bool CheckRadiusMapCollision(Soldier& soldier,
     for (int _z = 0; _z < det_acc; _z++) {
         s_pos += step;
 
-        auto rx = ((int)std::round(s_pos.x / (float)map.GetSectorsSize())) + 25;
-        auto ry = ((int)std::round(s_pos.y / (float)map.GetSectorsSize())) + 25;
+        const glm::ivec2 sector_index = map.GetSectorIndex(s_pos);
+        auto rx = sector_index.x;
+        auto ry = sector_index.y;
 
         if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
             (ry < map.GetSectorsCount() + 25)) {
@@ -811,8 +814,9 @@ bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i,
 {
     auto result = false;
     auto pos = glm::vec2(x - 1.0f, y + 4.0f);
-    auto rx = ((int)std::round(pos.x / (float)map.GetSectorsSize())) + 25;
-    auto ry = ((int)std::round(pos.y / (float)map.GetSectorsSize())) + 25;
+    const glm::ivec2 sector_index = map.GetSectorIndex(pos);
+    auto rx = sector_index.x;
+    auto ry = sector_index.y;
 
     if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
         (ry < map.GetSectorsCount() + 25)) {
@@ -835,8 +839,9 @@ bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i,
 
     if (result) {
         auto pos = glm::vec2(x, y + 1.0);
-        auto rx = ((int)std::round(pos.x / (float)map.GetSectorsSize())) + 25;
-        auto ry = ((int)std::round(pos.y / (float)map.GetSectorsSize())) + 25;
+        const glm::ivec2 sector_index = map.GetSectorIndex(pos);
+        auto rx = sector_index.x;
+        auto ry = sector_index.y;
 
         if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
             (ry < map.GetSectorsCount() + 25)) {

@@ -244,8 +244,9 @@ bool CheckMapCollision(Item& item,
                        const PhysicsEvents& physics_events)
 {
     glm::vec2 pos = { x, y - 0.5F }; // TODO: this looks wrong
-    auto rx = ((int)std::round((pos.x / (float)map.GetSectorsSize()))) + 25;
-    auto ry = ((int)std::round((pos.y / (float)map.GetSectorsSize()))) + 25;
+    const glm::ivec2 sector_index = map.GetSectorIndex(pos);
+    auto rx = sector_index.x;
+    auto ry = sector_index.y;
     if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
         (ry < map.GetSectorsCount() + 25)) {
         // TODO

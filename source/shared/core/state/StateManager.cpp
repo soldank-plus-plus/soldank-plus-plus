@@ -42,9 +42,12 @@ public:
 
     Map& GetMap() { return state_.map; } // TODO: Change this to const
     const Map& GetConstMap() const { return state_.map; }
-    void OverrideMap(const Map& map) { state_.map = map; }
+    void OverrideMap(const Map& map) { state_.map.ReplaceContents(map); }
     MapDocument CreateMapDocumentSnapshot() const { return MapDocument::FromMap(state_.map); }
-    void ApplyMapDocument(const MapDocument& map_document) { state_.map = map_document.GetMap(); }
+    void ApplyMapDocument(const MapDocument& map_document)
+    {
+        state_.map.ReplaceContents(map_document.GetMap());
+    }
     void CreateEmptyMapDocument()
     {
         MapDocument map_document;
@@ -61,7 +64,10 @@ public:
     {
         return RuntimeMap::BuildFromDocument(CreateMapDocumentSnapshot());
     }
-    void ApplyRuntimeMap(const RuntimeMap& runtime_map) { state_.map = runtime_map.GetMap(); }
+    void ApplyRuntimeMap(const RuntimeMap& runtime_map)
+    {
+        state_.map.ReplaceContents(runtime_map.GetMap());
+    }
 
     void ChangeSoldierControlActionState(std::uint8_t soldier_id,
                                          ControlActionType control_action_type,
