@@ -8,6 +8,9 @@ target_sources(TomlPlusPlus
 
 if(MSVC)
     target_compile_options(TomlPlusPlus PRIVATE /W4)
+    # Work around an MSVC parser bug triggered by toml++'s conditional noexcept
+    # expressions. This definition must also reach targets importing this module.
+    target_compile_definitions(TomlPlusPlus PUBLIC TOML_DISABLE_NOEXCEPT_NOEXCEPT)
 else()
     target_compile_options(TomlPlusPlus PRIVATE -Wall -Wextra -Wpedantic)
 endif()
