@@ -952,6 +952,21 @@ void RenderSettingsModal(ClientState& client_state)
                   client_state.map_editor_state.pending_ui_scale;
                 client_state.map_editor_state.event_ui_scale_changed.Notify();
             }
+
+            ImGui::Separator();
+            if (ImGui::Button("Reset default settings",
+                              { ImGui::GetContentRegionAvail().x, 0.0F })) {
+                client_state.map_editor_state.ui_scale = 1.0F;
+                client_state.map_editor_state.pending_ui_scale = 1.0F;
+                client_state.map_editor_state.play_mode_shortcut_key = GLFW_KEY_F5;
+                client_state.map_editor_state.tool_shortcut_keys = {
+                    GLFW_KEY_A, GLFW_KEY_Q, GLFW_KEY_S, GLFW_KEY_W, GLFW_KEY_D, GLFW_KEY_E,
+                    GLFW_KEY_F, GLFW_KEY_R, GLFW_KEY_G, GLFW_KEY_T, GLFW_KEY_H
+                };
+                client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
+                client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                client_state.map_editor_state.event_ui_scale_changed.Notify();
+            }
         } else {
             ImGui::SeparatorText("Play test");
             const std::string shortcut_name =
