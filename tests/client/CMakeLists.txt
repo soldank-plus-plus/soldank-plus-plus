@@ -39,3 +39,8 @@ endfunction()
 AddMapEditorTest(MapEditorActionsTest map_editor/MapEditorActionsTest.cpp)
 AddMapEditorTest(MapEditorToolsTest map_editor/MapEditorToolsTest.cpp)
 AddMapEditorTest(MapEditorControllersTest map_editor/MapEditorControllersTest.cpp)
+
+add_executable(ShortcutTest application/input/ShortcutTest.cpp)
+target_link_libraries(ShortcutTest PRIVATE client_lib)
+AddTestOptionsAndLibraries(ShortcutTest)
+add_test(NAME ShortcutTest COMMAND ShortcutTest)
