@@ -35,12 +35,14 @@ public:
                              std::span<glm::vec4> palette_colors,
                              int& play_mode_shortcut_key,
                              float& ui_scale,
-                             std::span<int> tool_shortcut_keys);
+                             std::span<int> tool_shortcut_keys,
+                             std::span<int> menu_shortcut_keys = {});
     static bool SaveSettings(const std::filesystem::path& file_path,
                              std::span<const glm::vec4> palette_colors,
                              int play_mode_shortcut_key,
                              float ui_scale,
-                             std::span<const int> tool_shortcut_keys);
+                             std::span<const int> tool_shortcut_keys,
+                             std::span<const int> menu_shortcut_keys = {});
 };
 } // namespace Soldank
 
@@ -161,7 +163,8 @@ bool MapEditorConfig::LoadSettings(const std::filesystem::path& file_path,
                                    std::span<glm::vec4> palette_colors,
                                    int& play_mode_shortcut_key,
                                    float& ui_scale,
-                                   std::span<int> tool_shortcut_keys)
+                                   std::span<int> tool_shortcut_keys,
+                                   std::span<int> menu_shortcut_keys)
 {
     const bool palette_loaded = LoadPalette(file_path, palette_colors);
     if (!std::filesystem::exists(file_path)) {
@@ -208,6 +211,14 @@ bool MapEditorConfig::LoadSettings(const std::filesystem::path& file_path,
             }
             tool_shortcut_keys[tool_index] = loaded_tool_shortcut;
         }
+        for (std::size_t menu_index = 0; menu_index < menu_shortcut_keys.size(); ++menu_index) {
+            const auto menu_shortcut =
+              config["shortcuts"]["menu"][GetShortcutDefinitions()[menu_index + 12].config_key]
+                .value<std::int64_t>();
+            if (menu_shortcut && IsShortcutKeyOrUnassigned(static_cast<int>(*menu_shortcut))) {
+                menu_shortcut_keys[menu_index] = static_cast<int>(*menu_shortcut);
+            }
+        }
     } catch (const std::exception& exception) {
         Spdlog::warn(
           "Could not load map editor settings '{}': {}", file_path.string(), exception.what());
@@ -220,7 +231,8 @@ bool MapEditorConfig::SaveSettings(const std::filesystem::path& file_path,
                                    std::span<const glm::vec4> palette_colors,
                                    int play_mode_shortcut_key,
                                    float ui_scale,
-                                   std::span<const int> tool_shortcut_keys)
+                                   std::span<const int> tool_shortcut_keys,
+                                   std::span<const int> menu_shortcut_keys)
 {
     if (!IsShortcutKeyOrUnassigned(play_mode_shortcut_key)) {
         Spdlog::warn("Could not save an invalid play mode shortcut: {}", play_mode_shortcut_key);
@@ -254,6 +266,12 @@ bool MapEditorConfig::SaveSettings(const std::filesystem::path& file_path,
                               static_cast<std::int64_t>(tool_shortcut_keys[tool_index]));
     }
     shortcuts.insert("tools", std::move(tool_shortcuts));
+    Toml::Table menu_shortcuts;
+    for (std::size_t menu_index = 0; menu_index < menu_shortcut_keys.size(); ++menu_index) {
+        menu_shortcuts.insert(GetShortcutDefinitions()[menu_index + 12].config_key,
+                              static_cast<std::int64_t>(menu_shortcut_keys[menu_index]));
+    }
+    shortcuts.insert("menu", std::move(menu_shortcuts));
     Toml::Table general;
     general.insert("ui_scale", static_cast<double>(ui_scale));
     Toml::Table config;

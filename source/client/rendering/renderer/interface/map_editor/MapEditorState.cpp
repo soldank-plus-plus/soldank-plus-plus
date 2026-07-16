@@ -147,9 +147,11 @@ struct MapEditorState
     bool should_open_settings_modal = false;
     bool is_play_mode_shortcut_capture_active = false;
     int tool_shortcut_capture_index = -1;
+    int shortcut_capture_binding_index = -1;
     int shortcut_capture_modifiers = 0;
     ShortcutSelection selected_shortcut = ShortcutSelection::None;
     int selected_tool_shortcut_index = -1;
+    int selected_shortcut_binding_index = -1;
     bool should_open_save_as_modal = false;
     bool should_open_selection_context_menu = false;
 
@@ -183,6 +185,14 @@ struct MapEditorState
     std::span<const int, 11> GetToolShortcuts() const
     {
         return std::span<const int, 11>(shortcut_bindings.data() + 1, 11);
+    }
+    std::span<int> GetMenuShortcuts()
+    {
+        return { shortcut_bindings.data() + 12, SHORTCUT_COUNT - 12 };
+    }
+    std::span<const int> GetMenuShortcuts() const
+    {
+        return { shortcut_bindings.data() + 12, SHORTCUT_COUNT - 12 };
     }
 
     glm::vec4 last_requested_pixel_color;

@@ -208,6 +208,21 @@ MapEditor::MapEditor(ClientState& client_state,
     client_state.event_key_pressed.AddObserver(
       [this, &client_state, &game_state_manager](int key, int modifiers) {
           shortcut_controller_.OnKeyPressed(key);
+          const int shortcut_capture_binding_index =
+            client_state.map_editor_state.shortcut_capture_binding_index;
+          if (shortcut_capture_binding_index >= 0) {
+              if (IsShortcutModifierKey(key)) {
+                  client_state.map_editor_state.shortcut_capture_modifiers = modifiers;
+                  return;
+              }
+              client_state.map_editor_state.shortcut_bindings.at(
+                static_cast<std::size_t>(shortcut_capture_binding_index)) =
+                key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : EncodeShortcut(key, modifiers);
+              client_state.map_editor_state.shortcut_capture_binding_index = -1;
+              client_state.map_editor_state.shortcut_capture_modifiers = 0;
+              client_state.map_editor_state.event_shortcuts_changed.Notify();
+              return;
+          }
           const int tool_capture_index = client_state.map_editor_state.tool_shortcut_capture_index;
           if (tool_capture_index >= 0) {
               if (IsShortcutModifierKey(key)) {
@@ -240,7 +255,8 @@ MapEditor::MapEditor(ClientState& client_state,
           }
       });
     client_state.event_key_released.AddObserver([this, &client_state](int key, int modifiers) {
-        if (client_state.map_editor_state.tool_shortcut_capture_index >= 0 ||
+        if (client_state.map_editor_state.shortcut_capture_binding_index >= 0 ||
+            client_state.map_editor_state.tool_shortcut_capture_index >= 0 ||
             client_state.map_editor_state.is_play_mode_shortcut_capture_active) {
             client_state.map_editor_state.shortcut_capture_modifiers = modifiers;
         }
@@ -287,7 +303,8 @@ MapEditor::MapEditor(ClientState& client_state,
                                   client_state.map_editor_state.palette_saved_colors,
                                   client_state.map_editor_state.GetPlayModeShortcut(),
                                   client_state.map_editor_state.ui_scale,
-                                  client_state.map_editor_state.GetToolShortcuts());
+                                  client_state.map_editor_state.GetToolShortcuts(),
+                                  client_state.map_editor_state.GetMenuShortcuts());
     client_state.map_editor_state.pending_ui_scale = client_state.map_editor_state.ui_scale;
     client_state.map_editor_state.event_palette_saved_colors_changed.AddObserver(
       [this, &client_state]() {
@@ -295,21 +312,24 @@ MapEditor::MapEditor(ClientState& client_state,
                                         client_state.map_editor_state.palette_saved_colors,
                                         client_state.map_editor_state.GetPlayModeShortcut(),
                                         client_state.map_editor_state.ui_scale,
-                                        client_state.map_editor_state.GetToolShortcuts());
+                                        client_state.map_editor_state.GetToolShortcuts(),
+                                        client_state.map_editor_state.GetMenuShortcuts());
       });
     client_state.map_editor_state.event_shortcuts_changed.AddObserver([this, &client_state]() {
         MapEditorConfig::SaveSettings(config_file_path_,
                                       client_state.map_editor_state.palette_saved_colors,
                                       client_state.map_editor_state.GetPlayModeShortcut(),
                                       client_state.map_editor_state.ui_scale,
-                                      client_state.map_editor_state.GetToolShortcuts());
+                                      client_state.map_editor_state.GetToolShortcuts(),
+                                      client_state.map_editor_state.GetMenuShortcuts());
     });
     client_state.map_editor_state.event_ui_scale_changed.AddObserver([this, &client_state]() {
         MapEditorConfig::SaveSettings(config_file_path_,
                                       client_state.map_editor_state.palette_saved_colors,
                                       client_state.map_editor_state.GetPlayModeShortcut(),
                                       client_state.map_editor_state.ui_scale,
-                                      client_state.map_editor_state.GetToolShortcuts());
+                                      client_state.map_editor_state.GetToolShortcuts(),
+                                      client_state.map_editor_state.GetMenuShortcuts());
     });
 
     client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(
@@ -482,27 +502,56 @@ void MapEditor::OnKeyPressed(int key,
         return;
     }
 
-    if (shortcut_controller_.IsSaveShortcut(key)) {
+    const auto& shortcuts = client_state.map_editor_state.shortcut_bindings;
+    if (MatchesShortcut(key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSave))) {
         document_.SaveCurrentMapOrOpenSaveAs();
 
         return;
     }
 
-    if (shortcut_controller_.IsRedoShortcut(key)) {
+    if (MatchesShortcut(key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorRedo))) {
         RedoUndoneAction(client_state, game_state_manager);
 
         return;
     }
 
-    if (shortcut_controller_.IsUndoShortcut(key)) {
+    if (MatchesShortcut(key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorUndo))) {
         UndoLastAction(client_state, game_state_manager);
 
         return;
     }
 
-    if (shortcut_controller_.IsMapSettingsShortcut(key)) {
+    if (MatchesShortcut(key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorMapSettings))) {
         document_.OpenMapSettings();
 
+        return;
+    }
+
+    if (MatchesShortcut(key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSettings))) {
+        client_state.map_editor_state.should_open_settings_modal = true;
+        return;
+    }
+    if (MatchesShortcut(key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSnapToGrid))) {
+        client_state.map_editor_state.is_snap_to_grid_enabled =
+          !client_state.map_editor_state.is_snap_to_grid_enabled;
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSnapToVertices))) {
+        client_state.map_editor_state.is_snap_to_vertices_enabled =
+          !client_state.map_editor_state.is_snap_to_vertices_enabled;
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorShowAllWindows)) ||
+        MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorHideAllWindows))) {
+        const bool show = MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorShowAllWindows));
+        client_state.map_editor_state.is_tools_window_visible = show;
+        client_state.map_editor_state.is_properties_window_visible = show;
+        client_state.map_editor_state.is_display_window_visible = show;
+        client_state.map_editor_state.is_palette_window_visible = show;
         return;
     }
 

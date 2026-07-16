@@ -115,7 +115,11 @@ void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& clie
     }
 
     if (ImGui::BeginMenu("File")) {
-        if (ImGui::MenuItem("Save", "CTRL+S")) {
+        if (ImGui::MenuItem(
+              "Save",
+              GetShortcutName(GetShortcut(client_state.map_editor_state.shortcut_bindings,
+                                          ShortcutId::MapEditorSave))
+                .c_str())) {
             if (game_state_manager.GetConstMap().GetName()) {
                 client_state.map_editor_state.event_save_map.Notify(
                   "maps/" + *game_state_manager.GetConstMap().GetName());
@@ -125,22 +129,40 @@ void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& clie
             }
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Settings...")) {
+        if (ImGui::MenuItem(
+              "Settings...",
+              GetShortcutName(GetShortcut(client_state.map_editor_state.shortcut_bindings,
+                                          ShortcutId::MapEditorSettings))
+                .c_str())) {
             client_state.map_editor_state.should_open_settings_modal = true;
         }
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Edit")) {
         if (ImGui::MenuItem(
-              "Undo", "CTRL+Z", false, client_state.map_editor_state.is_undo_enabled)) {
+              "Undo",
+              GetShortcutName(GetShortcut(client_state.map_editor_state.shortcut_bindings,
+                                          ShortcutId::MapEditorUndo))
+                .c_str(),
+              false,
+              client_state.map_editor_state.is_undo_enabled)) {
             client_state.map_editor_state.event_pressed_undo.Notify();
         }
         if (ImGui::MenuItem(
-              "Redo", "CTRL+SHIFT+Z", false, client_state.map_editor_state.is_redo_enabled)) {
+              "Redo",
+              GetShortcutName(GetShortcut(client_state.map_editor_state.shortcut_bindings,
+                                          ShortcutId::MapEditorRedo))
+                .c_str(),
+              false,
+              client_state.map_editor_state.is_redo_enabled)) {
             client_state.map_editor_state.event_pressed_redo.Notify();
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Map settings...", "CTRL+M")) {
+        if (ImGui::MenuItem(
+              "Map settings...",
+              GetShortcutName(GetShortcut(client_state.map_editor_state.shortcut_bindings,
+                                          ShortcutId::MapEditorMapSettings))
+                .c_str())) {
             client_state.map_editor_state.should_open_map_settings_modal = true;
         }
         ImGui::EndMenu();
@@ -1023,17 +1045,61 @@ void RenderSettingsModal(ClientState& client_state)
                 }
                 ImGui::EndTable();
             }
+
+            std::string_view previous_category;
+            for (std::size_t shortcut_index = 12; shortcut_index < shortcut_definitions.size();
+                 ++shortcut_index) {
+                const auto& definition = shortcut_definitions[shortcut_index];
+                if (definition.category != previous_category) {
+                    ImGui::SeparatorText(definition.category.data());
+                    previous_category = definition.category;
+                }
+                const bool is_capturing =
+                  client_state.map_editor_state.shortcut_capture_binding_index ==
+                  static_cast<int>(shortcut_index);
+                const std::string shortcut_name =
+                  is_capturing ? GetShortcutModifierPrefix(
+                                   client_state.map_editor_state.shortcut_capture_modifiers) +
+                                   "Press a key..."
+                               : GetShortcutName(
+                                   client_state.map_editor_state.shortcut_bindings[shortcut_index]);
+                if (ImGui::BeginTable(
+                      definition.config_key.data(), 2, ImGuiTableFlags_SizingStretchProp)) {
+                    ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.55F);
+                    ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthStretch, 0.45F);
+                    if (RenderShortcutItem(
+                          definition.name.data(),
+                          shortcut_name,
+                          client_state.map_editor_state.selected_shortcut_binding_index ==
+                            static_cast<int>(shortcut_index))) {
+                        client_state.map_editor_state.selected_shortcut_binding_index =
+                          static_cast<int>(shortcut_index);
+                        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                            client_state.map_editor_state.shortcut_capture_binding_index =
+                              static_cast<int>(shortcut_index);
+                            client_state.map_editor_state.shortcut_capture_modifiers = 0;
+                        }
+                    }
+                    ImGui::EndTable();
+                }
+            }
         }
         ImGui::EndChild();
 
         if (is_shortcuts_section) {
             const bool has_shortcut_selection =
-              client_state.map_editor_state.selected_shortcut != ShortcutSelection::None;
+              client_state.map_editor_state.selected_shortcut != ShortcutSelection::None ||
+              client_state.map_editor_state.selected_shortcut_binding_index >= 0;
             ImGui::BeginDisabled(!has_shortcut_selection);
             if (ImGui::Button("Remove selected shortcut",
                               { ImGui::GetContentRegionAvail().x, 0.0F })) {
-                if (client_state.map_editor_state.selected_shortcut ==
-                    ShortcutSelection::PlayMode) {
+                if (client_state.map_editor_state.selected_shortcut_binding_index >= 0) {
+                    client_state.map_editor_state.shortcut_bindings.at(static_cast<std::size_t>(
+                      client_state.map_editor_state.selected_shortcut_binding_index)) =
+                      GLFW_KEY_UNKNOWN;
+                    client_state.map_editor_state.event_shortcuts_changed.Notify();
+                } else if (client_state.map_editor_state.selected_shortcut ==
+                           ShortcutSelection::PlayMode) {
                     client_state.map_editor_state.GetPlayModeShortcut() = GLFW_KEY_UNKNOWN;
                     client_state.map_editor_state.event_shortcuts_changed.Notify();
                 } else {
@@ -1044,9 +1110,11 @@ void RenderSettingsModal(ClientState& client_state)
                 }
                 client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
                 client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                client_state.map_editor_state.shortcut_capture_binding_index = -1;
                 client_state.map_editor_state.shortcut_capture_modifiers = 0;
                 client_state.map_editor_state.selected_shortcut = ShortcutSelection::None;
                 client_state.map_editor_state.selected_tool_shortcut_index = -1;
+                client_state.map_editor_state.selected_shortcut_binding_index = -1;
             }
             ImGui::EndDisabled();
         }
