@@ -77,6 +77,9 @@ public:
                 client_state_.event_key_released.Notify(key);
             }
         });
+        input_router_.SetGlobalKeyPredicate([this](int) {
+            return client_state_.map_editor_state.is_play_mode_shortcut_capture_active;
+        });
 
         input_router_.SetMouseScreenMoveHandler(
           [this](glm::vec2 last_mouse_position, glm::vec2 new_mouse_position) {

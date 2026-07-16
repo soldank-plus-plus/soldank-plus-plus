@@ -202,6 +202,13 @@ MapEditor::MapEditor(ClientState& client_state,
     });
 
     client_state.event_key_pressed.AddObserver([this, &client_state, &game_state_manager](int key) {
+        if (client_state.map_editor_state.is_play_mode_shortcut_capture_active) {
+            client_state.map_editor_state.play_mode_shortcut_key = key;
+            client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
+            client_state.map_editor_state.event_play_mode_shortcut_changed.Notify();
+            return;
+        }
+
         if (!client_state.map_editor_state.is_modal_or_popup_open) {
             OnKeyPressed(key, client_state, game_state_manager);
         }
@@ -245,12 +252,20 @@ MapEditor::MapEditor(ClientState& client_state,
         ++i;
     }
 
-    MapEditorConfig::LoadPalette(config_file_path_,
-                                 client_state.map_editor_state.palette_saved_colors);
+    MapEditorConfig::LoadSettings(config_file_path_,
+                                  client_state.map_editor_state.palette_saved_colors,
+                                  client_state.map_editor_state.play_mode_shortcut_key);
     client_state.map_editor_state.event_palette_saved_colors_changed.AddObserver(
       [this, &client_state]() {
-          MapEditorConfig::SavePalette(config_file_path_,
-                                       client_state.map_editor_state.palette_saved_colors);
+          MapEditorConfig::SaveSettings(config_file_path_,
+                                        client_state.map_editor_state.palette_saved_colors,
+                                        client_state.map_editor_state.play_mode_shortcut_key);
+      });
+    client_state.map_editor_state.event_play_mode_shortcut_changed.AddObserver(
+      [this, &client_state]() {
+          MapEditorConfig::SaveSettings(config_file_path_,
+                                        client_state.map_editor_state.palette_saved_colors,
+                                        client_state.map_editor_state.play_mode_shortcut_key);
       });
 
     client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(

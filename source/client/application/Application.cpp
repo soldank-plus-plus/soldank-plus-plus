@@ -324,8 +324,9 @@ void Application::Run()
     });
 
     client_state_->event_key_pressed.AddObserver([&](int key) {
-        if (key == GLFW_KEY_F5 &&
-            application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
+        if (key == client_state_->map_editor_state.play_mode_shortcut_key &&
+            application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
+            !client_state_->map_editor_state.is_modal_or_popup_open) {
             if (editor_session_) {
                 editor_session_->TogglePlayTest();
                 client_runtime_.SetEditorMode(editor_session_->GetEditorMode());

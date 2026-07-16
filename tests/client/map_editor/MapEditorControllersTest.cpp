@@ -390,6 +390,22 @@ TEST_F(MapEditorControllersTest, MapEditorConfigSavesAndLoadsPaletteColors)
     std::filesystem::remove(config_path);
 }
 
+TEST_F(MapEditorControllersTest, MapEditorConfigSavesAndLoadsPlayModeShortcut)
+{
+    const std::filesystem::path config_path = "map-editor-settings-test.toml";
+    const std::array<glm::vec4, 1> saved_colors{ glm::vec4(1.0F) };
+
+    ASSERT_TRUE(MapEditorConfig::SaveSettings(config_path, saved_colors, GLFW_KEY_P));
+
+    std::array<glm::vec4, 1> loaded_colors{};
+    int play_mode_shortcut_key = GLFW_KEY_F5;
+    ASSERT_TRUE(MapEditorConfig::LoadSettings(config_path, loaded_colors, play_mode_shortcut_key));
+    EXPECT_EQ(loaded_colors, saved_colors);
+    EXPECT_EQ(play_mode_shortcut_key, GLFW_KEY_P);
+
+    std::filesystem::remove(config_path);
+}
+
 TEST_F(MapEditorControllersTest, MapEditorConfigRejectsInvalidPaletteWithoutChangingColors)
 {
     const std::filesystem::path config_path = "invalid-map-editor-palette-test.toml";

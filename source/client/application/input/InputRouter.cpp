@@ -16,6 +16,7 @@ class InputRouter
 {
 public:
     using KeyHandler = std::function<void(int, int)>;
+    using GlobalKeyPredicate = std::function<bool(int)>;
     using MouseButtonHandler = std::function<void(int, int)>;
     using MouseMoveHandler = std::function<void(glm::vec2, glm::vec2)>;
     using MouseScrollHandler = std::function<void(float)>;
@@ -25,6 +26,10 @@ public:
     InputContext GetActiveContext() const { return active_context_; }
 
     void SetKeyHandler(KeyHandler handler) { key_handler_ = std::move(handler); }
+    void SetGlobalKeyPredicate(GlobalKeyPredicate predicate)
+    {
+        global_key_predicate_ = std::move(predicate);
+    }
     void SetMouseButtonHandler(MouseButtonHandler handler)
     {
         mouse_button_handler_ = std::move(handler);
@@ -83,10 +88,14 @@ public:
     }
 
 private:
-    static bool IsGlobalKey(int key) { return key == GLFW_KEY_F5; }
+    bool IsGlobalKey(int key) const
+    {
+        return global_key_predicate_ != nullptr && global_key_predicate_(key);
+    }
 
     InputContext active_context_ = InputContext::Gameplay;
     KeyHandler key_handler_;
+    GlobalKeyPredicate global_key_predicate_;
     MouseButtonHandler mouse_button_handler_;
     MouseMoveHandler mouse_screen_move_handler_;
     MouseMoveHandler mouse_map_move_handler_;

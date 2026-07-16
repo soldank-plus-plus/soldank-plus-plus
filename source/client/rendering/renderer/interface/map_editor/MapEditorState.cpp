@@ -1,5 +1,7 @@
 module;
 
+#include <GLFW/glfw3.h>
+
 #include <string>
 #include <optional>
 #include <bitset>
@@ -69,6 +71,7 @@ struct MapEditorState
     Observable<PMSPolygonType> event_selected_polygons_type_changed;
     Observable<> event_pixel_color_under_cursor_requested;
     Observable<> event_palette_saved_colors_changed;
+    Observable<> event_play_mode_shortcut_changed;
 
     Observable<const std::string&> event_save_map;
     Observable<const std::string&> event_set_map_name;
@@ -126,10 +129,14 @@ struct MapEditorState
     std::array<char, SCENERY_NAME_MAX_LENGTH> scenery_search_filter{};
 
     bool should_open_map_settings_modal = false;
+    bool should_open_settings_modal = false;
+    bool is_play_mode_shortcut_capture_active = false;
     bool should_open_save_as_modal = false;
     bool should_open_selection_context_menu = false;
 
     bool draw_wireframe = false;
+
+    int play_mode_shortcut_key = GLFW_KEY_F5;
 
     glm::vec4 last_requested_pixel_color;
 

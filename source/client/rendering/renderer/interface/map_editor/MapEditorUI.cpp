@@ -1,5 +1,7 @@
 module;
 
+#include <GLFW/glfw3.h>
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -61,6 +63,34 @@ void EndFrame()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+std::string GetShortcutName(int key)
+{
+    if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
+        return std::string(1, static_cast<char>('A' + key - GLFW_KEY_A));
+    }
+    if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
+        return std::string(1, static_cast<char>('0' + key - GLFW_KEY_0));
+    }
+    if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F12) {
+        return "F" + std::to_string(key - GLFW_KEY_F1 + 1);
+    }
+
+    switch (key) {
+        case GLFW_KEY_SPACE:
+            return "Space";
+        case GLFW_KEY_ENTER:
+            return "Enter";
+        case GLFW_KEY_TAB:
+            return "Tab";
+        case GLFW_KEY_ESCAPE:
+            return "Escape";
+        case GLFW_KEY_BACKSPACE:
+            return "Backspace";
+        default:
+            return "Key " + std::to_string(key);
+    }
+}
+
 void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& client_state)
 {
     if (!ImGui::BeginMainMenuBar()) {
@@ -76,6 +106,10 @@ void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& clie
             } else {
                 client_state.map_editor_state.should_open_save_as_modal = true;
             }
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Settings...")) {
+            client_state.map_editor_state.should_open_settings_modal = true;
         }
         ImGui::EndMenu();
     }
@@ -95,7 +129,9 @@ void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& clie
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Run")) {
-        if (ImGui::MenuItem("Play", "F5")) {
+        const std::string play_mode_shortcut =
+          GetShortcutName(client_state.map_editor_state.play_mode_shortcut_key);
+        if (ImGui::MenuItem("Play", play_mode_shortcut.c_str())) {
             client_state.map_editor_state.event_pressed_play.Notify();
         }
         ImGui::EndMenu();
@@ -837,6 +873,49 @@ void RenderMapSettingsModal(const StateManager& game_state_manager, ClientState&
     }
 }
 
+void RenderSettingsModal(ClientState& client_state)
+{
+    if (client_state.map_editor_state.should_open_settings_modal) {
+        client_state.map_editor_state.should_open_settings_modal = false;
+        ImGui::OpenPopup("Settings");
+    }
+
+    ImGui::SetNextWindowSize({ 480.0F, 250.0F }, ImGuiCond_Appearing);
+    if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_NoResize)) {
+        client_state.map_editor_state.is_modal_or_popup_open = true;
+
+        ImGui::BeginChild("Settings navigation", { 130.0F, 170.0F }, true);
+        ImGui::Selectable("Shortcuts", true);
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+
+        ImGui::BeginChild("Settings content", { 310.0F, 170.0F }, true);
+        ImGui::SeparatorText("Shortcuts");
+        const std::string shortcut_name =
+          client_state.map_editor_state.is_play_mode_shortcut_capture_active
+            ? "Press a key..."
+            : GetShortcutName(client_state.map_editor_state.play_mode_shortcut_key);
+        const std::string shortcut_item = "Switch to play mode\t" + shortcut_name;
+        if (ImGui::Selectable(
+              shortcut_item.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick) &&
+            ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
+        }
+        ImGui::EndChild();
+
+        ImGui::Separator();
+        float close_button_width =
+          ImGui::CalcTextSize("CLOSE").x + ImGui::GetStyle().FramePadding.x * 2.F;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
+                             close_button_width);
+        if (ImGui::Button("CLOSE")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
 void Render(const StateManager& game_state_manager, ClientState& client_state)
 {
     BeginFrame(client_state);
@@ -846,6 +925,7 @@ void Render(const StateManager& game_state_manager, ClientState& client_state)
         RenderMainMenuBar(game_state_manager, client_state);
         RenderSaveAsModal(game_state_manager, client_state);
         RenderMapSettingsModal(game_state_manager, client_state);
+        RenderSettingsModal(client_state);
     }
 
     RenderToolsWindow(client_state, default_window_flags);
