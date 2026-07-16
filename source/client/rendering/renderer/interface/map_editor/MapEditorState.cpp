@@ -78,6 +78,7 @@ struct MapEditorState
     Observable<> event_pixel_color_under_cursor_requested;
     Observable<> event_palette_saved_colors_changed;
     Observable<> event_play_mode_shortcut_changed;
+    Observable<> event_tool_shortcuts_changed;
     Observable<> event_ui_scale_changed;
 
     Observable<const std::string&> event_save_map;
@@ -138,12 +139,16 @@ struct MapEditorState
     bool should_open_map_settings_modal = false;
     bool should_open_settings_modal = false;
     bool is_play_mode_shortcut_capture_active = false;
+    int tool_shortcut_capture_index = -1;
     bool should_open_save_as_modal = false;
     bool should_open_selection_context_menu = false;
 
     bool draw_wireframe = false;
 
     int play_mode_shortcut_key = GLFW_KEY_F5;
+    std::array<int, 11> tool_shortcut_keys{ GLFW_KEY_A, GLFW_KEY_Q, GLFW_KEY_S, GLFW_KEY_W,
+                                            GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F, GLFW_KEY_R,
+                                            GLFW_KEY_G, GLFW_KEY_T, GLFW_KEY_H };
     float ui_scale = 1.0F;
     float pending_ui_scale = 1.0F;
     SettingsSection selected_settings_section = SettingsSection::General;

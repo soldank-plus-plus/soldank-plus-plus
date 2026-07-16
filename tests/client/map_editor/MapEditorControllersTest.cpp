@@ -152,10 +152,13 @@ TEST_F(MapEditorControllersTest, ShortcutControllerRecognizesModifiersAndEveryTo
     const std::vector<int> tool_keys = { GLFW_KEY_A, GLFW_KEY_Q, GLFW_KEY_S, GLFW_KEY_W,
                                          GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F, GLFW_KEY_R,
                                          GLFW_KEY_G, GLFW_KEY_T, GLFW_KEY_H };
+    const std::array<int, 11> tool_shortcut_keys{ GLFW_KEY_A, GLFW_KEY_Q, GLFW_KEY_S, GLFW_KEY_W,
+                                                  GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F, GLFW_KEY_R,
+                                                  GLFW_KEY_G, GLFW_KEY_T, GLFW_KEY_H };
     for (int key : tool_keys) {
-        EXPECT_TRUE(shortcuts.GetToolForKey(key));
+        EXPECT_TRUE(shortcuts.GetToolForKey(key, tool_shortcut_keys));
     }
-    EXPECT_FALSE(shortcuts.GetToolForKey(GLFW_KEY_ESCAPE));
+    EXPECT_FALSE(shortcuts.GetToolForKey(GLFW_KEY_ESCAPE, tool_shortcut_keys));
     shortcuts.OnKeyReleased(GLFW_KEY_LEFT_SHIFT);
     shortcuts.OnKeyReleased(GLFW_KEY_LEFT_CONTROL);
     EXPECT_FALSE(shortcuts.IsUndoShortcut(GLFW_KEY_Z));
@@ -395,16 +398,23 @@ TEST_F(MapEditorControllersTest, MapEditorConfigSavesAndLoadsPlayModeShortcut)
     const std::filesystem::path config_path = "map-editor-settings-test.toml";
     const std::array<glm::vec4, 1> saved_colors{ glm::vec4(1.0F) };
 
-    ASSERT_TRUE(MapEditorConfig::SaveSettings(config_path, saved_colors, GLFW_KEY_P, 1.5F));
+    const std::array<int, 11> saved_tool_shortcuts{ GLFW_KEY_1, GLFW_KEY_2,    GLFW_KEY_3,
+                                                    GLFW_KEY_4, GLFW_KEY_5,    GLFW_KEY_6,
+                                                    GLFW_KEY_7, GLFW_KEY_8,    GLFW_KEY_9,
+                                                    GLFW_KEY_0, GLFW_KEY_MINUS };
+    ASSERT_TRUE(MapEditorConfig::SaveSettings(
+      config_path, saved_colors, GLFW_KEY_P, 1.5F, saved_tool_shortcuts));
 
     std::array<glm::vec4, 1> loaded_colors{};
     int play_mode_shortcut_key = GLFW_KEY_F5;
     float ui_scale = 1.0F;
-    ASSERT_TRUE(
-      MapEditorConfig::LoadSettings(config_path, loaded_colors, play_mode_shortcut_key, ui_scale));
+    std::array<int, 11> loaded_tool_shortcuts{};
+    ASSERT_TRUE(MapEditorConfig::LoadSettings(
+      config_path, loaded_colors, play_mode_shortcut_key, ui_scale, loaded_tool_shortcuts));
     EXPECT_EQ(loaded_colors, saved_colors);
     EXPECT_EQ(play_mode_shortcut_key, GLFW_KEY_P);
     EXPECT_FLOAT_EQ(ui_scale, 1.5F);
+    EXPECT_EQ(loaded_tool_shortcuts, saved_tool_shortcuts);
 
     std::filesystem::remove(config_path);
 }

@@ -78,7 +78,8 @@ public:
             }
         });
         input_router_.SetGlobalKeyPredicate([this](int) {
-            return client_state_.map_editor_state.is_play_mode_shortcut_capture_active;
+            return client_state_.map_editor_state.is_play_mode_shortcut_capture_active ||
+                   client_state_.map_editor_state.tool_shortcut_capture_index >= 0;
         });
 
         input_router_.SetMouseScreenMoveHandler(

@@ -25,17 +25,17 @@ struct JetFuelOption
 std::span<const std::pair<std::string_view, ToolType>> GetToolOptions()
 {
     static constexpr std::array<std::pair<std::string_view, ToolType>, 11> OPTIONS = {
-        { { "Transform tool (A)", ToolType::Transform },
-          { "Polygon tool (Q)", ToolType::Polygon },
-          { "Vertex selection tool (S)", ToolType::VertexSelection },
-          { "Selection tool (W)", ToolType::Selection },
-          { "Vertex color tool (D)", ToolType::VertexColor },
-          { "Color tool (E)", ToolType::Color },
-          { "Texture tool (F)", ToolType::Texture },
-          { "Scenery tool (R)", ToolType::Scenery },
-          { "Waypoint tool (G)", ToolType::Waypoint },
-          { "Spawnpoint tool (T)", ToolType::Spawnpoint },
-          { "Color picker tool (H)", ToolType::ColorPicker } }
+        { { "Transform tool", ToolType::Transform },
+          { "Polygon tool", ToolType::Polygon },
+          { "Vertex selection tool", ToolType::VertexSelection },
+          { "Selection tool", ToolType::Selection },
+          { "Vertex color tool", ToolType::VertexColor },
+          { "Color tool", ToolType::Color },
+          { "Texture tool", ToolType::Texture },
+          { "Scenery tool", ToolType::Scenery },
+          { "Waypoint tool", ToolType::Waypoint },
+          { "Spawnpoint tool", ToolType::Spawnpoint },
+          { "Color picker tool", ToolType::ColorPicker } }
     };
     return OPTIONS;
 }

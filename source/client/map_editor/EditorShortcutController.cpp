@@ -3,6 +3,7 @@ module;
 #include <GLFW/glfw3.h>
 
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -30,20 +31,11 @@ public:
 
     bool IsPasteShortcut(int key) const { return is_holding_left_ctrl_ && key == GLFW_KEY_V; }
 
-    std::optional<ToolType> GetToolForKey(int key) const
+    std::optional<ToolType> GetToolForKey(int key, std::span<const int> tool_shortcut_keys) const
     {
-        static const std::vector<std::pair<int, ToolType>> key_to_tool_type_map = {
-            { GLFW_KEY_A, ToolType::Transform },       { GLFW_KEY_Q, ToolType::Polygon },
-            { GLFW_KEY_S, ToolType::VertexSelection }, { GLFW_KEY_W, ToolType::Selection },
-            { GLFW_KEY_D, ToolType::VertexColor },     { GLFW_KEY_E, ToolType::Color },
-            { GLFW_KEY_F, ToolType::Texture },         { GLFW_KEY_R, ToolType::Scenery },
-            { GLFW_KEY_G, ToolType::Waypoint },        { GLFW_KEY_T, ToolType::Spawnpoint },
-            { GLFW_KEY_H, ToolType::ColorPicker },
-        };
-
-        for (const auto& [tool_key, tool_type] : key_to_tool_type_map) {
-            if (key == tool_key) {
-                return tool_type;
+        for (std::size_t tool_index = 0; tool_index < tool_shortcut_keys.size(); ++tool_index) {
+            if (key == tool_shortcut_keys[tool_index]) {
+                return static_cast<ToolType>(tool_index);
             }
         }
         return std::nullopt;
