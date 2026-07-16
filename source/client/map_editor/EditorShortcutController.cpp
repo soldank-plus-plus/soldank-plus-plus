@@ -31,10 +31,12 @@ public:
 
     bool IsPasteShortcut(int key) const { return is_holding_left_ctrl_ && key == GLFW_KEY_V; }
 
-    std::optional<ToolType> GetToolForKey(int key, std::span<const int> tool_shortcut_keys) const
+    std::optional<ToolType> GetToolForKey(int key,
+                                          int modifiers,
+                                          std::span<const int> tool_shortcut_keys) const
     {
         for (std::size_t tool_index = 0; tool_index < tool_shortcut_keys.size(); ++tool_index) {
-            if (key == tool_shortcut_keys[tool_index]) {
+            if (EncodeShortcut(key, modifiers) == tool_shortcut_keys[tool_index]) {
                 return static_cast<ToolType>(tool_index);
             }
         }

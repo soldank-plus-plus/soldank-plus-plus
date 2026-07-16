@@ -156,9 +156,17 @@ TEST_F(MapEditorControllersTest, ShortcutControllerRecognizesModifiersAndEveryTo
                                                   GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F, GLFW_KEY_R,
                                                   GLFW_KEY_G, GLFW_KEY_T, GLFW_KEY_H };
     for (int key : tool_keys) {
-        EXPECT_TRUE(shortcuts.GetToolForKey(key, tool_shortcut_keys));
+        EXPECT_TRUE(shortcuts.GetToolForKey(key, 0, tool_shortcut_keys));
     }
-    EXPECT_FALSE(shortcuts.GetToolForKey(GLFW_KEY_ESCAPE, tool_shortcut_keys));
+    std::array<int, 11> modified_tool_shortcut_keys = tool_shortcut_keys;
+    modified_tool_shortcut_keys.front() =
+      EncodeShortcut(GLFW_KEY_C, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT);
+    EXPECT_EQ(shortcuts.GetToolForKey(
+                GLFW_KEY_C, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT, modified_tool_shortcut_keys),
+              ToolType::Transform);
+    EXPECT_FALSE(
+      shortcuts.GetToolForKey(GLFW_KEY_C, GLFW_MOD_CONTROL, modified_tool_shortcut_keys));
+    EXPECT_FALSE(shortcuts.GetToolForKey(GLFW_KEY_ESCAPE, 0, tool_shortcut_keys));
     shortcuts.OnKeyReleased(GLFW_KEY_LEFT_SHIFT);
     shortcuts.OnKeyReleased(GLFW_KEY_LEFT_CONTROL);
     EXPECT_FALSE(shortcuts.IsUndoShortcut(GLFW_KEY_Z));
@@ -294,7 +302,7 @@ TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking
     EXPECT_EQ(client_state_.map_editor_state.palette_saved_colors.front(),
               glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
 
-    client_state_.event_key_pressed.Notify(GLFW_KEY_Q);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_Q, 0);
     EXPECT_EQ(client_state_.map_editor_state.selected_tool, ToolType::Polygon);
     client_state_.event_mouse_map_position_changed.Notify(glm::vec2{}, glm::vec2(0.0F, 0.0F));
     client_state_.event_left_mouse_button_clicked.Notify();
@@ -326,18 +334,18 @@ TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking
     EXPECT_EQ(state_manager_.GetConstMap().GetSceneryInstances().at(0).level, 2);
     EXPECT_EQ(state_manager_.GetConstMap().GetSpawnPoints().at(0).type, PMSSpawnPointType::Alpha);
 
-    client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT_CONTROL);
-    client_state_.event_key_pressed.Notify(GLFW_KEY_C);
-    client_state_.event_key_pressed.Notify(GLFW_KEY_V);
-    client_state_.event_key_released.Notify(GLFW_KEY_LEFT_CONTROL);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT_CONTROL, GLFW_MOD_CONTROL);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_C, GLFW_MOD_CONTROL);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_V, GLFW_MOD_CONTROL);
+    client_state_.event_key_released.Notify(GLFW_KEY_LEFT_CONTROL, 0);
     EXPECT_EQ(state_manager_.GetConstMap().GetPolygonsCount(), 2U);
     EXPECT_EQ(state_manager_.GetConstMap().GetSceneryInstances().size(), 2U);
     EXPECT_EQ(state_manager_.GetConstMap().GetSpawnPoints().size(), 2U);
 
-    client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT_CONTROL);
-    client_state_.event_key_pressed.Notify(GLFW_KEY_M);
-    client_state_.event_key_pressed.Notify(GLFW_KEY_S);
-    client_state_.event_key_released.Notify(GLFW_KEY_LEFT_CONTROL);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT_CONTROL, GLFW_MOD_CONTROL);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_M, GLFW_MOD_CONTROL);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_S, GLFW_MOD_CONTROL);
+    client_state_.event_key_released.Notify(GLFW_KEY_LEFT_CONTROL, 0);
     EXPECT_TRUE(client_state_.map_editor_state.should_open_map_settings_modal);
     EXPECT_TRUE(client_state_.map_editor_state.should_open_save_as_modal);
 
@@ -363,7 +371,7 @@ TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking
     client_state_.event_mouse_wheel_scrolled_down.Notify();
     client_state_.event_mouse_screen_position_changed.Notify(glm::vec2{}, glm::vec2{});
     client_state_.event_mouse_map_position_changed.Notify(glm::vec2{}, glm::vec2{});
-    client_state_.event_key_pressed.Notify(GLFW_KEY_DELETE);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_DELETE, 0);
     EXPECT_EQ(state_manager_.GetConstMap().GetPolygonsCount(), polygon_count);
     editor.Unlock();
 
@@ -372,7 +380,7 @@ TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking
     client_state_.event_right_mouse_button_clicked.Notify();
     client_state_.event_middle_mouse_button_clicked.Notify();
     client_state_.map_editor_state.is_modal_or_popup_open = true;
-    client_state_.event_key_pressed.Notify(GLFW_KEY_DELETE);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_DELETE, 0);
     client_state_.event_mouse_wheel_scrolled_up.Notify();
 }
 
@@ -398,12 +406,23 @@ TEST_F(MapEditorControllersTest, MapEditorConfigSavesAndLoadsPlayModeShortcut)
     const std::filesystem::path config_path = "map-editor-settings-test.toml";
     const std::array<glm::vec4, 1> saved_colors{ glm::vec4(1.0F) };
 
-    const std::array<int, 11> saved_tool_shortcuts{ GLFW_KEY_1, GLFW_KEY_2,    GLFW_KEY_3,
-                                                    GLFW_KEY_4, GLFW_KEY_5,    GLFW_KEY_6,
-                                                    GLFW_KEY_7, GLFW_KEY_8,    GLFW_KEY_9,
-                                                    GLFW_KEY_0, GLFW_KEY_MINUS };
-    ASSERT_TRUE(MapEditorConfig::SaveSettings(
-      config_path, saved_colors, GLFW_KEY_P, 1.5F, saved_tool_shortcuts));
+    const std::array<int, 11> saved_tool_shortcuts{ EncodeShortcut(GLFW_KEY_1, GLFW_MOD_CONTROL),
+                                                    GLFW_KEY_2,
+                                                    GLFW_KEY_3,
+                                                    GLFW_KEY_4,
+                                                    GLFW_KEY_5,
+                                                    GLFW_KEY_6,
+                                                    GLFW_KEY_7,
+                                                    GLFW_KEY_8,
+                                                    GLFW_KEY_9,
+                                                    GLFW_KEY_0,
+                                                    GLFW_KEY_MINUS };
+    ASSERT_TRUE(
+      MapEditorConfig::SaveSettings(config_path,
+                                    saved_colors,
+                                    EncodeShortcut(GLFW_KEY_P, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT),
+                                    1.5F,
+                                    saved_tool_shortcuts));
 
     std::array<glm::vec4, 1> loaded_colors{};
     int play_mode_shortcut_key = GLFW_KEY_F5;
@@ -412,7 +431,8 @@ TEST_F(MapEditorControllersTest, MapEditorConfigSavesAndLoadsPlayModeShortcut)
     ASSERT_TRUE(MapEditorConfig::LoadSettings(
       config_path, loaded_colors, play_mode_shortcut_key, ui_scale, loaded_tool_shortcuts));
     EXPECT_EQ(loaded_colors, saved_colors);
-    EXPECT_EQ(play_mode_shortcut_key, GLFW_KEY_P);
+    EXPECT_EQ(play_mode_shortcut_key,
+              EncodeShortcut(GLFW_KEY_P, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT));
     EXPECT_FLOAT_EQ(ui_scale, 1.5F);
     EXPECT_EQ(loaded_tool_shortcuts, saved_tool_shortcuts);
 

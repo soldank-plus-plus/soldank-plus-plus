@@ -70,7 +70,10 @@ private:
                                   glm::vec2 new_mouse_position,
                                   const StateManager& game_state_manager);
 
-    void OnKeyPressed(int key, ClientState& client_state, StateManager& game_state_manager);
+    void OnKeyPressed(int key,
+                      int modifiers,
+                      ClientState& client_state,
+                      StateManager& game_state_manager);
     void OnKeyReleased(int key, ClientState& client_state);
 
     void ExecuteNewAction(ClientState& client_state,
@@ -201,28 +204,46 @@ MapEditor::MapEditor(ClientState& client_state,
         }
     });
 
-    client_state.event_key_pressed.AddObserver([this, &client_state, &game_state_manager](int key) {
-        const int tool_capture_index = client_state.map_editor_state.tool_shortcut_capture_index;
-        if (tool_capture_index >= 0) {
-            client_state.map_editor_state.tool_shortcut_keys.at(static_cast<std::size_t>(
-              tool_capture_index)) = key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : key;
-            client_state.map_editor_state.tool_shortcut_capture_index = -1;
-            client_state.map_editor_state.event_tool_shortcuts_changed.Notify();
-            return;
-        }
-        if (client_state.map_editor_state.is_play_mode_shortcut_capture_active) {
-            client_state.map_editor_state.play_mode_shortcut_key =
-              key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : key;
-            client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
-            client_state.map_editor_state.event_play_mode_shortcut_changed.Notify();
-            return;
-        }
+    client_state.event_key_pressed.AddObserver(
+      [this, &client_state, &game_state_manager](int key, int modifiers) {
+          shortcut_controller_.OnKeyPressed(key);
+          const int tool_capture_index = client_state.map_editor_state.tool_shortcut_capture_index;
+          if (tool_capture_index >= 0) {
+              if (IsShortcutModifierKey(key)) {
+                  client_state.map_editor_state.shortcut_capture_modifiers = modifiers;
+                  return;
+              }
+              client_state.map_editor_state.tool_shortcut_keys.at(
+                static_cast<std::size_t>(tool_capture_index)) =
+                key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : EncodeShortcut(key, modifiers);
+              client_state.map_editor_state.tool_shortcut_capture_index = -1;
+              client_state.map_editor_state.shortcut_capture_modifiers = 0;
+              client_state.map_editor_state.event_tool_shortcuts_changed.Notify();
+              return;
+          }
+          if (client_state.map_editor_state.is_play_mode_shortcut_capture_active) {
+              if (IsShortcutModifierKey(key)) {
+                  client_state.map_editor_state.shortcut_capture_modifiers = modifiers;
+                  return;
+              }
+              client_state.map_editor_state.play_mode_shortcut_key =
+                key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : EncodeShortcut(key, modifiers);
+              client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
+              client_state.map_editor_state.shortcut_capture_modifiers = 0;
+              client_state.map_editor_state.event_play_mode_shortcut_changed.Notify();
+              return;
+          }
 
-        if (!client_state.map_editor_state.is_modal_or_popup_open) {
-            OnKeyPressed(key, client_state, game_state_manager);
+          if (!client_state.map_editor_state.is_modal_or_popup_open) {
+              OnKeyPressed(key, modifiers, client_state, game_state_manager);
+          }
+      });
+    client_state.event_key_released.AddObserver([this, &client_state](int key, int modifiers) {
+        if (client_state.map_editor_state.tool_shortcut_capture_index >= 0 ||
+            client_state.map_editor_state.is_play_mode_shortcut_capture_active) {
+            client_state.map_editor_state.shortcut_capture_modifiers = modifiers;
         }
-    });
-    client_state.event_key_released.AddObserver([this, &client_state](int key) {
+        shortcut_controller_.OnKeyReleased(key);
         if (!client_state.map_editor_state.is_modal_or_popup_open) {
             OnKeyReleased(key, client_state);
         }
@@ -459,13 +480,14 @@ void MapEditor::OnMouseMapPositionChange(ClientState& client_state,
       client_state, last_mouse_position, new_mouse_position, game_state_manager);
 }
 
-void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& game_state_manager)
+void MapEditor::OnKeyPressed(int key,
+                             int modifiers,
+                             ClientState& client_state,
+                             StateManager& game_state_manager)
 {
     if (locked_) {
         return;
     }
-
-    shortcut_controller_.OnKeyPressed(key);
 
     if (shortcut_controller_.IsSaveShortcut(key)) {
         document_.SaveCurrentMapOrOpenSaveAs();
@@ -492,7 +514,7 @@ void MapEditor::OnKeyPressed(int key, ClientState& client_state, StateManager& g
     }
 
     if (std::optional<ToolType> tool_type = shortcut_controller_.GetToolForKey(
-          key, client_state.map_editor_state.tool_shortcut_keys)) {
+          key, modifiers, client_state.map_editor_state.tool_shortcut_keys)) {
         if (client_state.map_editor_state.selected_tool != *tool_type) {
             client_state.map_editor_state.event_selected_new_tool.Notify(*tool_type);
         }

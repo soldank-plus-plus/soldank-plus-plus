@@ -15,7 +15,7 @@ export namespace Soldank
 class InputRouter
 {
 public:
-    using KeyHandler = std::function<void(int, int)>;
+    using KeyHandler = std::function<void(int, int, int)>;
     using GlobalKeyPredicate = std::function<bool(int)>;
     using MouseButtonHandler = std::function<void(int, int)>;
     using MouseMoveHandler = std::function<void(glm::vec2, glm::vec2)>;
@@ -72,7 +72,7 @@ public:
         if (key_handler_) {
             for (const auto& key_change : input.key_changes) {
                 if (!ui_captured || IsGlobalKey(key_change.key)) {
-                    key_handler_(key_change.key, key_change.action);
+                    key_handler_(key_change.key, key_change.action, key_change.modifiers);
                 }
             }
         }

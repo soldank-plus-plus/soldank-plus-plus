@@ -49,6 +49,36 @@ enum class ShortcutSelection
     Tool
 };
 
+constexpr int SHORTCUT_MODIFIER_MASK =
+  GLFW_MOD_CONTROL | GLFW_MOD_SHIFT | GLFW_MOD_ALT | GLFW_MOD_SUPER;
+constexpr int SHORTCUT_MODIFIER_SHIFT = 16;
+
+constexpr int EncodeShortcut(int key, int modifiers)
+{
+    return key == GLFW_KEY_UNKNOWN
+             ? GLFW_KEY_UNKNOWN
+             : key | ((modifiers & SHORTCUT_MODIFIER_MASK) << SHORTCUT_MODIFIER_SHIFT);
+}
+
+constexpr int GetShortcutKey(int shortcut)
+{
+    return shortcut == GLFW_KEY_UNKNOWN ? GLFW_KEY_UNKNOWN : shortcut & 0xFFFF;
+}
+
+constexpr int GetShortcutModifiers(int shortcut)
+{
+    return shortcut == GLFW_KEY_UNKNOWN
+             ? 0
+             : (shortcut >> SHORTCUT_MODIFIER_SHIFT) & SHORTCUT_MODIFIER_MASK;
+}
+
+constexpr bool IsShortcutModifierKey(int key)
+{
+    return key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL ||
+           key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT || key == GLFW_KEY_LEFT_ALT ||
+           key == GLFW_KEY_RIGHT_ALT || key == GLFW_KEY_LEFT_SUPER || key == GLFW_KEY_RIGHT_SUPER;
+}
+
 struct MapEditorState
 {
     ToolType selected_tool = ToolType::Selection;
@@ -147,6 +177,7 @@ struct MapEditorState
     bool should_open_settings_modal = false;
     bool is_play_mode_shortcut_capture_active = false;
     int tool_shortcut_capture_index = -1;
+    int shortcut_capture_modifiers = 0;
     ShortcutSelection selected_shortcut = ShortcutSelection::None;
     int selected_tool_shortcut_index = -1;
     bool should_open_save_as_modal = false;

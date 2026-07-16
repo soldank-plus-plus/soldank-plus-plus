@@ -12,6 +12,7 @@ struct KeyStateChange
 {
     int key;
     int action;
+    int modifiers;
 };
 
 struct MouseButtonStateChange

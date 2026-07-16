@@ -120,8 +120,8 @@ struct ClientState
     Observable<> event_middle_mouse_button_released;
     Observable<> event_mouse_wheel_scrolled_up;
     Observable<> event_mouse_wheel_scrolled_down;
-    Observable<int> event_key_pressed;
-    Observable<int> event_key_released;
+    Observable<int, int> event_key_pressed;
+    Observable<int, int> event_key_released;
 
     Observable<unsigned int> event_respawn_soldier_requested;
     Observable<unsigned int> event_respawn_player_at_spawn_point_requested;

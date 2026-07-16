@@ -183,10 +183,10 @@ public:
               window->ResizeCallback(glfw_window, width, height);
           });
         glfwSetKeyCallback(
-          glfw_window_, [](GLFWwindow* glfw_window, int key, int /*scancode*/, int action,
-                           int /*mods*/) {
+          glfw_window_,
+          [](GLFWwindow* glfw_window, int key, int /*scancode*/, int action, int modifiers) {
               auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
-              window->GetPlatformInput().OnKey(key, action);
+              window->GetPlatformInput().OnKey(key, action, modifiers);
           });
         glfwSetCursorPosCallback(glfw_window_, [](GLFWwindow* glfw_window, double x, double y) {
             auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));

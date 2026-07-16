@@ -17,13 +17,13 @@ export namespace Soldank
 class PlatformInput
 {
 public:
-    void OnKey(int key, int action)
+    void OnKey(int key, int action, int modifiers)
     {
         if (!IsValidKey(key)) {
             return;
         }
 
-        key_changes_.push_back({ .key = key, .action = action });
+        key_changes_.push_back({ .key = key, .action = action, .modifiers = modifiers });
         if (action == GLFW_RELEASE) {
             keys_.at(key) = false;
             keys_released_.at(key) = true;

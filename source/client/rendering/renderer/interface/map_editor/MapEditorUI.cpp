@@ -81,34 +81,55 @@ void EndFrame()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-std::string GetShortcutName(int key)
+std::string GetShortcutModifierPrefix(int modifiers)
 {
-    if (key == GLFW_KEY_UNKNOWN) {
+    std::string shortcut_name;
+    if ((modifiers & GLFW_MOD_CONTROL) != 0) {
+        shortcut_name += "Ctrl + ";
+    }
+    if ((modifiers & GLFW_MOD_SHIFT) != 0) {
+        shortcut_name += "Shift + ";
+    }
+    if ((modifiers & GLFW_MOD_ALT) != 0) {
+        shortcut_name += "Alt + ";
+    }
+    if ((modifiers & GLFW_MOD_SUPER) != 0) {
+        shortcut_name += "Windows + ";
+    }
+    return shortcut_name;
+}
+
+std::string GetShortcutName(int shortcut)
+{
+    if (shortcut == GLFW_KEY_UNKNOWN) {
         return "";
     }
+
+    const int key = GetShortcutKey(shortcut);
+    const std::string modifier_prefix = GetShortcutModifierPrefix(GetShortcutModifiers(shortcut));
     if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
-        return std::string(1, static_cast<char>('A' + key - GLFW_KEY_A));
+        return modifier_prefix + std::string(1, static_cast<char>('A' + key - GLFW_KEY_A));
     }
     if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
-        return std::string(1, static_cast<char>('0' + key - GLFW_KEY_0));
+        return modifier_prefix + std::string(1, static_cast<char>('0' + key - GLFW_KEY_0));
     }
     if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F12) {
-        return "F" + std::to_string(key - GLFW_KEY_F1 + 1);
+        return modifier_prefix + "F" + std::to_string(key - GLFW_KEY_F1 + 1);
     }
 
     switch (key) {
         case GLFW_KEY_SPACE:
-            return "Space";
+            return modifier_prefix + "Space";
         case GLFW_KEY_ENTER:
-            return "Enter";
+            return modifier_prefix + "Enter";
         case GLFW_KEY_TAB:
-            return "Tab";
+            return modifier_prefix + "Tab";
         case GLFW_KEY_ESCAPE:
-            return "Escape";
+            return modifier_prefix + "Escape";
         case GLFW_KEY_BACKSPACE:
-            return "Backspace";
+            return modifier_prefix + "Backspace";
         default:
-            return "Key " + std::to_string(key);
+            return modifier_prefix + "Key " + std::to_string(key);
     }
 }
 
@@ -979,13 +1000,16 @@ void RenderSettingsModal(ClientState& client_state)
                 };
                 client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
                 client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                client_state.map_editor_state.shortcut_capture_modifiers = 0;
                 client_state.map_editor_state.event_ui_scale_changed.Notify();
             }
         } else {
             ImGui::SeparatorText("Play test");
             const std::string shortcut_name =
               client_state.map_editor_state.is_play_mode_shortcut_capture_active
-                ? "Press a key..."
+                ? GetShortcutModifierPrefix(
+                    client_state.map_editor_state.shortcut_capture_modifiers) +
+                    "Press a key..."
                 : GetShortcutName(client_state.map_editor_state.play_mode_shortcut_key);
             if (ImGui::BeginTable("PlayTestShortcuts", 2, ImGuiTableFlags_SizingStretchProp)) {
                 ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.75F);
@@ -999,6 +1023,7 @@ void RenderSettingsModal(ClientState& client_state)
                     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                         client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
                         client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                        client_state.map_editor_state.shortcut_capture_modifiers = 0;
                     }
                 }
                 ImGui::EndTable();
@@ -1020,7 +1045,9 @@ void RenderSettingsModal(ClientState& client_state)
                       static_cast<int>(tool_index);
                     const std::string tool_shortcut_name =
                       is_capturing
-                        ? "Press a key..."
+                        ? GetShortcutModifierPrefix(
+                            client_state.map_editor_state.shortcut_capture_modifiers) +
+                            "Press a key..."
                         : GetShortcutName(
                             client_state.map_editor_state.tool_shortcut_keys[tool_index]);
                     if (RenderShortcutItem(
@@ -1038,6 +1065,7 @@ void RenderSettingsModal(ClientState& client_state)
                               false;
                             client_state.map_editor_state.tool_shortcut_capture_index =
                               static_cast<int>(tool_index);
+                            client_state.map_editor_state.shortcut_capture_modifiers = 0;
                         }
                     }
                 }
@@ -1064,6 +1092,7 @@ void RenderSettingsModal(ClientState& client_state)
                 }
                 client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
                 client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                client_state.map_editor_state.shortcut_capture_modifiers = 0;
                 client_state.map_editor_state.selected_shortcut = ShortcutSelection::None;
                 client_state.map_editor_state.selected_tool_shortcut_index = -1;
             }

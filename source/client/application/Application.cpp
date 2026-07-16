@@ -27,6 +27,7 @@ import Editor.EditorSession;
 import Scene;
 import RenderPipeline;
 import MapEditor;
+import MapEditorState;
 import ClientState;
 
 import Networking.NetworkingClient;
@@ -323,8 +324,9 @@ void Application::Run()
         }
     });
 
-    client_state_->event_key_pressed.AddObserver([&](int key) {
-        if (key == client_state_->map_editor_state.play_mode_shortcut_key &&
+    client_state_->event_key_pressed.AddObserver([&](int key, int modifiers) {
+        if (EncodeShortcut(key, modifiers) ==
+              client_state_->map_editor_state.play_mode_shortcut_key &&
             application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
             !client_state_->map_editor_state.is_modal_or_popup_open) {
             if (editor_session_) {

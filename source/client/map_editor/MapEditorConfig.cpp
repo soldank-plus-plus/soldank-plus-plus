@@ -19,6 +19,8 @@ import Extern.Glm;
 import Extern.Spdlog;
 import Extern.TomlPlusPlus;
 
+import MapEditorState;
+
 export namespace Soldank
 {
 class MapEditorConfig
@@ -61,7 +63,14 @@ bool IsShortcutKey(int key)
 
 bool IsShortcutKeyOrUnassigned(int key)
 {
-    return key == GLFW_KEY_UNKNOWN || IsShortcutKey(key);
+    if (key == GLFW_KEY_UNKNOWN) {
+        return true;
+    }
+
+    const int shortcut_key = GetShortcutKey(key);
+    const int shortcut_modifiers = GetShortcutModifiers(key);
+    return IsShortcutKey(shortcut_key) && !IsShortcutModifierKey(shortcut_key) &&
+           key == EncodeShortcut(shortcut_key, shortcut_modifiers);
 }
 
 bool IsUiScaleValid(float ui_scale)

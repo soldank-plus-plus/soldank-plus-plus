@@ -62,9 +62,9 @@ public:
             }
         });
 
-        input_router_.SetKeyHandler([this](int key, int action) {
+        input_router_.SetKeyHandler([this](int key, int action, int modifiers) {
             if (action == GLFW_PRESS) {
-                client_state_.event_key_pressed.Notify(key);
+                client_state_.event_key_pressed.Notify(key, modifiers);
                 if (IsGameplayActive() && client_state_.client_soldier_id.has_value()) {
                     if (key == GLFW_KEY_J) {
                         MoveKeyboardAimCursor(*client_state_.client_soldier_id, -1.0F);
@@ -74,7 +74,7 @@ public:
                 }
             }
             if (action == GLFW_RELEASE) {
-                client_state_.event_key_released.Notify(key);
+                client_state_.event_key_released.Notify(key, modifiers);
             }
         });
         input_router_.SetGlobalKeyPredicate([this](int) {
