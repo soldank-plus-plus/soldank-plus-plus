@@ -254,19 +254,29 @@ MapEditor::MapEditor(ClientState& client_state,
 
     MapEditorConfig::LoadSettings(config_file_path_,
                                   client_state.map_editor_state.palette_saved_colors,
-                                  client_state.map_editor_state.play_mode_shortcut_key);
+                                  client_state.map_editor_state.play_mode_shortcut_key,
+                                  client_state.map_editor_state.ui_scale);
+    client_state.map_editor_state.pending_ui_scale = client_state.map_editor_state.ui_scale;
     client_state.map_editor_state.event_palette_saved_colors_changed.AddObserver(
       [this, &client_state]() {
           MapEditorConfig::SaveSettings(config_file_path_,
                                         client_state.map_editor_state.palette_saved_colors,
-                                        client_state.map_editor_state.play_mode_shortcut_key);
+                                        client_state.map_editor_state.play_mode_shortcut_key,
+                                        client_state.map_editor_state.ui_scale);
       });
     client_state.map_editor_state.event_play_mode_shortcut_changed.AddObserver(
       [this, &client_state]() {
           MapEditorConfig::SaveSettings(config_file_path_,
                                         client_state.map_editor_state.palette_saved_colors,
-                                        client_state.map_editor_state.play_mode_shortcut_key);
+                                        client_state.map_editor_state.play_mode_shortcut_key,
+                                        client_state.map_editor_state.ui_scale);
       });
+    client_state.map_editor_state.event_ui_scale_changed.AddObserver([this, &client_state]() {
+        MapEditorConfig::SaveSettings(config_file_path_,
+                                      client_state.map_editor_state.palette_saved_colors,
+                                      client_state.map_editor_state.play_mode_shortcut_key,
+                                      client_state.map_editor_state.ui_scale);
+    });
 
     client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(
       [this, &client_state, &game_state_manager](PMSSpawnPointType new_spawn_point_type) {

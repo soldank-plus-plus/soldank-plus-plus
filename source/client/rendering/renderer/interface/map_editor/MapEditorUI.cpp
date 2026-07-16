@@ -43,12 +43,30 @@ ImGuiWindowFlags GetDefaultWindowFlags()
            ImGuiWindowFlags_NoCollapse;
 }
 
+void ApplyUiScale(float ui_scale)
+{
+    static const ImGuiStyle DEFAULT_STYLE = ImGui::GetStyle();
+    static float applied_ui_scale = 0.0F;
+
+    if (applied_ui_scale == ui_scale) {
+        return;
+    }
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    style = DEFAULT_STYLE;
+    style.ScaleAllSizes(ui_scale);
+    ImGui::GetIO().FontGlobalScale = ui_scale;
+    applied_ui_scale = ui_scale;
+}
+
 void BeginFrame(ClientState& client_state)
 {
+    ApplyUiScale(client_state.map_editor_state.ui_scale);
+
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent(client_state.input.mouse_screen_position.x,
                         client_state.input.mouse_screen_position.y);
-    io.MouseDrawCursor = io.WantCaptureMouse;
+    io.MouseDrawCursor = false;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -329,7 +347,7 @@ void RenderPaletteWindow(ClientState& client_state, ImGuiWindowFlags default_win
         return;
     }
 
-    float palette_width = 204.0F;
+    const float palette_width = 204.0F * client_state.map_editor_state.ui_scale;
     int table_column_count = 12;
 
     ImGui::Begin("Palette", nullptr, default_window_flags);
@@ -877,30 +895,57 @@ void RenderSettingsModal(ClientState& client_state)
 {
     if (client_state.map_editor_state.should_open_settings_modal) {
         client_state.map_editor_state.should_open_settings_modal = false;
+        client_state.map_editor_state.selected_settings_section = SettingsSection::General;
+        client_state.map_editor_state.pending_ui_scale = client_state.map_editor_state.ui_scale;
         ImGui::OpenPopup("Settings");
     }
 
-    ImGui::SetNextWindowSize({ 480.0F, 250.0F }, ImGuiCond_Appearing);
+    const float ui_scale = client_state.map_editor_state.ui_scale;
+    ImGui::SetNextWindowSize({ 480.0F * ui_scale, 250.0F * ui_scale }, ImGuiCond_Always);
     if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_NoResize)) {
         client_state.map_editor_state.is_modal_or_popup_open = true;
 
-        ImGui::BeginChild("Settings navigation", { 130.0F, 170.0F }, true);
-        ImGui::Selectable("Shortcuts", true);
+        ImGui::BeginChild("Settings navigation", { 130.0F * ui_scale, 170.0F * ui_scale }, true);
+        if (ImGui::Selectable("General",
+                              client_state.map_editor_state.selected_settings_section ==
+                                SettingsSection::General)) {
+            client_state.map_editor_state.selected_settings_section = SettingsSection::General;
+        }
+        if (ImGui::Selectable("Shortcuts",
+                              client_state.map_editor_state.selected_settings_section ==
+                                SettingsSection::Shortcuts)) {
+            client_state.map_editor_state.selected_settings_section = SettingsSection::Shortcuts;
+        }
         ImGui::EndChild();
 
         ImGui::SameLine();
 
-        ImGui::BeginChild("Settings content", { 310.0F, 170.0F }, true);
-        ImGui::SeparatorText("Shortcuts");
-        const std::string shortcut_name =
-          client_state.map_editor_state.is_play_mode_shortcut_capture_active
-            ? "Press a key..."
-            : GetShortcutName(client_state.map_editor_state.play_mode_shortcut_key);
-        const std::string shortcut_item = "Switch to play mode\t" + shortcut_name;
-        if (ImGui::Selectable(
-              shortcut_item.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick) &&
-            ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-            client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
+        ImGui::BeginChild("Settings content", { 310.0F * ui_scale, 170.0F * ui_scale }, true);
+        if (client_state.map_editor_state.selected_settings_section == SettingsSection::General) {
+            ImGui::SeparatorText("General");
+            float ui_scale_percent = client_state.map_editor_state.pending_ui_scale * 100.0F;
+            if (ImGui::SliderFloat("UI scale", &ui_scale_percent, 50.0F, 200.0F, "%.0f%%")) {
+                client_state.map_editor_state.pending_ui_scale = ui_scale_percent / 100.0F;
+            }
+            if (ImGui::IsItemDeactivatedAfterEdit() &&
+                client_state.map_editor_state.ui_scale !=
+                  client_state.map_editor_state.pending_ui_scale) {
+                client_state.map_editor_state.ui_scale =
+                  client_state.map_editor_state.pending_ui_scale;
+                client_state.map_editor_state.event_ui_scale_changed.Notify();
+            }
+        } else {
+            ImGui::SeparatorText("Shortcuts");
+            const std::string shortcut_name =
+              client_state.map_editor_state.is_play_mode_shortcut_capture_active
+                ? "Press a key..."
+                : GetShortcutName(client_state.map_editor_state.play_mode_shortcut_key);
+            const std::string shortcut_item = "Switch to play mode\t" + shortcut_name;
+            if (ImGui::Selectable(
+                  shortcut_item.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick) &&
+                ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
+            }
         }
         ImGui::EndChild();
 

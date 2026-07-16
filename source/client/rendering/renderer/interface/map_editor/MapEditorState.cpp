@@ -36,6 +36,12 @@ enum class ToolType
     ColorPicker
 };
 
+enum class SettingsSection
+{
+    General,
+    Shortcuts
+};
+
 struct MapEditorState
 {
     ToolType selected_tool = ToolType::Selection;
@@ -72,6 +78,7 @@ struct MapEditorState
     Observable<> event_pixel_color_under_cursor_requested;
     Observable<> event_palette_saved_colors_changed;
     Observable<> event_play_mode_shortcut_changed;
+    Observable<> event_ui_scale_changed;
 
     Observable<const std::string&> event_save_map;
     Observable<const std::string&> event_set_map_name;
@@ -137,6 +144,9 @@ struct MapEditorState
     bool draw_wireframe = false;
 
     int play_mode_shortcut_key = GLFW_KEY_F5;
+    float ui_scale = 1.0F;
+    float pending_ui_scale = 1.0F;
+    SettingsSection selected_settings_section = SettingsSection::General;
 
     glm::vec4 last_requested_pixel_color;
 
