@@ -182,7 +182,6 @@ endfunction()
 
 find_path(SIMPLEINI_INCLUDE_DIRS "ConvertUTF.c")
 find_package(spdlog CONFIG REQUIRED)
-find_package(tomlplusplus CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -217,6 +216,13 @@ if (BUILD_SERVER_ENABLED)
 endif()
 
 include(cmake/CPM.cmake)
+
+# TODO: Switch back to vcpkg when a release includes TOML_DISABLE_NOEXCEPT_NOEXCEPT.
+CPMAddPackage(
+    NAME tomlplusplus
+    GITHUB_REPOSITORY marzer/tomlplusplus
+    GIT_TAG a43ad3787293f4a46b1d70c0924b5a25d10e79fc
+)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
