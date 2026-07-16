@@ -204,14 +204,15 @@ MapEditor::MapEditor(ClientState& client_state,
     client_state.event_key_pressed.AddObserver([this, &client_state, &game_state_manager](int key) {
         const int tool_capture_index = client_state.map_editor_state.tool_shortcut_capture_index;
         if (tool_capture_index >= 0) {
-            client_state.map_editor_state.tool_shortcut_keys.at(
-              static_cast<std::size_t>(tool_capture_index)) = key;
+            client_state.map_editor_state.tool_shortcut_keys.at(static_cast<std::size_t>(
+              tool_capture_index)) = key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : key;
             client_state.map_editor_state.tool_shortcut_capture_index = -1;
             client_state.map_editor_state.event_tool_shortcuts_changed.Notify();
             return;
         }
         if (client_state.map_editor_state.is_play_mode_shortcut_capture_active) {
-            client_state.map_editor_state.play_mode_shortcut_key = key;
+            client_state.map_editor_state.play_mode_shortcut_key =
+              key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : key;
             client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
             client_state.map_editor_state.event_play_mode_shortcut_changed.Notify();
             return;

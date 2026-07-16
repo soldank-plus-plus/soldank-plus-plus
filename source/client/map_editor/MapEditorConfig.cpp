@@ -59,6 +59,11 @@ bool IsShortcutKey(int key)
     return key >= GLFW_KEY_SPACE && key <= GLFW_KEY_LAST;
 }
 
+bool IsShortcutKeyOrUnassigned(int key)
+{
+    return key == GLFW_KEY_UNKNOWN || IsShortcutKey(key);
+}
+
 bool IsUiScaleValid(float ui_scale)
 {
     return ui_scale >= MIN_UI_SCALE && ui_scale <= MAX_UI_SCALE;
@@ -162,7 +167,7 @@ bool MapEditorConfig::LoadSettings(const std::filesystem::path& file_path,
         const auto shortcut_key = config["shortcuts"]["play_mode_key"].value<std::int64_t>();
         if (shortcut_key) {
             const int loaded_shortcut_key = static_cast<int>(*shortcut_key);
-            if (!IsShortcutKey(loaded_shortcut_key)) {
+            if (!IsShortcutKeyOrUnassigned(loaded_shortcut_key)) {
                 Spdlog::warn("Map editor config contains an invalid play mode shortcut: {}",
                              file_path.string());
             } else {
@@ -189,7 +194,7 @@ bool MapEditorConfig::LoadSettings(const std::filesystem::path& file_path,
             }
 
             const int loaded_tool_shortcut = static_cast<int>(*tool_shortcut);
-            if (!IsShortcutKey(loaded_tool_shortcut)) {
+            if (!IsShortcutKeyOrUnassigned(loaded_tool_shortcut)) {
                 Spdlog::warn("Map editor config contains an invalid tool shortcut: {}",
                              file_path.string());
                 continue;
@@ -210,7 +215,7 @@ bool MapEditorConfig::SaveSettings(const std::filesystem::path& file_path,
                                    float ui_scale,
                                    std::span<const int> tool_shortcut_keys)
 {
-    if (!IsShortcutKey(play_mode_shortcut_key)) {
+    if (!IsShortcutKeyOrUnassigned(play_mode_shortcut_key)) {
         Spdlog::warn("Could not save an invalid play mode shortcut: {}", play_mode_shortcut_key);
         return false;
     }
@@ -218,7 +223,7 @@ bool MapEditorConfig::SaveSettings(const std::filesystem::path& file_path,
         Spdlog::warn("Could not save an invalid UI scale: {}", ui_scale);
         return false;
     }
-    if (!std::ranges::all_of(tool_shortcut_keys, IsShortcutKey)) {
+    if (!std::ranges::all_of(tool_shortcut_keys, IsShortcutKeyOrUnassigned)) {
         Spdlog::warn("Could not save invalid tool shortcuts");
         return false;
     }

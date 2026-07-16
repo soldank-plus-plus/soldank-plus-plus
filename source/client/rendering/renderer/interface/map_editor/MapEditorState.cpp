@@ -42,6 +42,13 @@ enum class SettingsSection
     Shortcuts
 };
 
+enum class ShortcutSelection
+{
+    None,
+    PlayMode,
+    Tool
+};
+
 struct MapEditorState
 {
     ToolType selected_tool = ToolType::Selection;
@@ -140,6 +147,8 @@ struct MapEditorState
     bool should_open_settings_modal = false;
     bool is_play_mode_shortcut_capture_active = false;
     int tool_shortcut_capture_index = -1;
+    ShortcutSelection selected_shortcut = ShortcutSelection::None;
+    int selected_tool_shortcut_index = -1;
     bool should_open_save_as_modal = false;
     bool should_open_selection_context_menu = false;
 

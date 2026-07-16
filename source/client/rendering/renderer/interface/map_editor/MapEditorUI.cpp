@@ -83,6 +83,9 @@ void EndFrame()
 
 std::string GetShortcutName(int key)
 {
+    if (key == GLFW_KEY_UNKNOWN) {
+        return "";
+    }
     if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
         return std::string(1, static_cast<char>('A' + key - GLFW_KEY_A));
     }
@@ -109,17 +112,19 @@ std::string GetShortcutName(int key)
     }
 }
 
-bool RenderShortcutItem(const char* name, const std::string& shortcut)
+bool RenderShortcutItem(const char* name, const std::string& shortcut, bool is_selected)
 {
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
-    const bool was_selected = ImGui::Selectable(
-      name, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_SpanAllColumns);
+    const bool was_selected = ImGui::Selectable(name,
+                                                is_selected,
+                                                ImGuiSelectableFlags_AllowDoubleClick |
+                                                  ImGuiSelectableFlags_SpanAllColumns);
     ImGui::TableSetColumnIndex(1);
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
                          ImGui::CalcTextSize(shortcut.c_str()).x);
     ImGui::TextUnformatted(shortcut.c_str());
-    return was_selected && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+    return was_selected;
 }
 
 void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& client_state)
@@ -284,11 +289,12 @@ void RenderToolsWindow(ClientState& client_state, ImGuiWindowFlags default_windo
     ImGui::Begin("Tools", nullptr, default_window_flags);
 
     for (const auto& tool_option : EditorUiOptions::GetToolOptions()) {
-        const std::string tool_label =
-          std::string(tool_option.first) + " (" +
+        const std::string shortcut_name =
           GetShortcutName(client_state.map_editor_state.tool_shortcut_keys.at(
-            static_cast<std::size_t>(tool_option.second))) +
-          ")";
+            static_cast<std::size_t>(tool_option.second)));
+        const std::string tool_label =
+          shortcut_name.empty() ? std::string(tool_option.first)
+                                : std::string(tool_option.first) + " (" + shortcut_name + ")";
         if (std::ranges::contains(EditorUiOptions::GetDisabledToolTypes(), tool_option.second)) {
             ImGui::Selectable(tool_label.c_str(),
                               client_state.map_editor_state.selected_tool == tool_option.second,
@@ -914,16 +920,23 @@ void RenderSettingsModal(ClientState& client_state)
     if (client_state.map_editor_state.should_open_settings_modal) {
         client_state.map_editor_state.should_open_settings_modal = false;
         client_state.map_editor_state.selected_settings_section = SettingsSection::General;
+        client_state.map_editor_state.selected_shortcut = ShortcutSelection::None;
+        client_state.map_editor_state.selected_tool_shortcut_index = -1;
         client_state.map_editor_state.pending_ui_scale = client_state.map_editor_state.ui_scale;
         ImGui::OpenPopup("Settings");
     }
 
     const float ui_scale = client_state.map_editor_state.ui_scale;
-    ImGui::SetNextWindowSize({ 480.0F * ui_scale, 250.0F * ui_scale }, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({ 480.0F * ui_scale, 275.0F * ui_scale }, ImGuiCond_Always);
     if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_NoResize)) {
         client_state.map_editor_state.is_modal_or_popup_open = true;
 
-        ImGui::BeginChild("Settings navigation", { 130.0F * ui_scale, 170.0F * ui_scale }, true);
+        const bool is_shortcuts_section =
+          client_state.map_editor_state.selected_settings_section == SettingsSection::Shortcuts;
+        const float settings_content_height = 170.0F * ui_scale;
+        const float navigation_height =
+          settings_content_height + ImGui::GetFrameHeightWithSpacing();
+        ImGui::BeginChild("Settings navigation", { 130.0F * ui_scale, navigation_height }, true);
         if (ImGui::Selectable("General",
                               client_state.map_editor_state.selected_settings_section ==
                                 SettingsSection::General)) {
@@ -938,7 +951,8 @@ void RenderSettingsModal(ClientState& client_state)
 
         ImGui::SameLine();
 
-        ImGui::BeginChild("Settings content", { 310.0F * ui_scale, 170.0F * ui_scale }, true);
+        ImGui::BeginGroup();
+        ImGui::BeginChild("Settings content", { 310.0F * ui_scale, settings_content_height }, true);
         if (client_state.map_editor_state.selected_settings_section == SettingsSection::General) {
             ImGui::SeparatorText("General");
             float ui_scale_percent = client_state.map_editor_state.pending_ui_scale * 100.0F;
@@ -976,9 +990,16 @@ void RenderSettingsModal(ClientState& client_state)
             if (ImGui::BeginTable("PlayTestShortcuts", 2, ImGuiTableFlags_SizingStretchProp)) {
                 ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.75F);
                 ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthStretch, 0.25F);
-                if (RenderShortcutItem("Switch to play mode", shortcut_name)) {
-                    client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
-                    client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                if (RenderShortcutItem("Switch to play mode",
+                                       shortcut_name,
+                                       client_state.map_editor_state.selected_shortcut ==
+                                         ShortcutSelection::PlayMode)) {
+                    client_state.map_editor_state.selected_shortcut = ShortcutSelection::PlayMode;
+                    client_state.map_editor_state.selected_tool_shortcut_index = -1;
+                    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                        client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
+                        client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                    }
                 }
                 ImGui::EndTable();
             }
@@ -1002,16 +1023,53 @@ void RenderSettingsModal(ClientState& client_state)
                         ? "Press a key..."
                         : GetShortcutName(
                             client_state.map_editor_state.tool_shortcut_keys[tool_index]);
-                    if (RenderShortcutItem(TOOL_NAMES[tool_index], tool_shortcut_name)) {
-                        client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
-                        client_state.map_editor_state.tool_shortcut_capture_index =
+                    if (RenderShortcutItem(
+                          TOOL_NAMES[tool_index],
+                          tool_shortcut_name,
+                          client_state.map_editor_state.selected_shortcut ==
+                              ShortcutSelection::Tool &&
+                            client_state.map_editor_state.selected_tool_shortcut_index ==
+                              static_cast<int>(tool_index))) {
+                        client_state.map_editor_state.selected_shortcut = ShortcutSelection::Tool;
+                        client_state.map_editor_state.selected_tool_shortcut_index =
                           static_cast<int>(tool_index);
+                        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                            client_state.map_editor_state.is_play_mode_shortcut_capture_active =
+                              false;
+                            client_state.map_editor_state.tool_shortcut_capture_index =
+                              static_cast<int>(tool_index);
+                        }
                     }
                 }
                 ImGui::EndTable();
             }
         }
         ImGui::EndChild();
+
+        if (is_shortcuts_section) {
+            const bool has_shortcut_selection =
+              client_state.map_editor_state.selected_shortcut != ShortcutSelection::None;
+            ImGui::BeginDisabled(!has_shortcut_selection);
+            if (ImGui::Button("Remove selected shortcut",
+                              { ImGui::GetContentRegionAvail().x, 0.0F })) {
+                if (client_state.map_editor_state.selected_shortcut ==
+                    ShortcutSelection::PlayMode) {
+                    client_state.map_editor_state.play_mode_shortcut_key = GLFW_KEY_UNKNOWN;
+                    client_state.map_editor_state.event_play_mode_shortcut_changed.Notify();
+                } else {
+                    client_state.map_editor_state.tool_shortcut_keys.at(static_cast<std::size_t>(
+                      client_state.map_editor_state.selected_tool_shortcut_index)) =
+                      GLFW_KEY_UNKNOWN;
+                    client_state.map_editor_state.event_tool_shortcuts_changed.Notify();
+                }
+                client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
+                client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                client_state.map_editor_state.selected_shortcut = ShortcutSelection::None;
+                client_state.map_editor_state.selected_tool_shortcut_index = -1;
+            }
+            ImGui::EndDisabled();
+        }
+        ImGui::EndGroup();
 
         ImGui::Separator();
         float close_button_width =
