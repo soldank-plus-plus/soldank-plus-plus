@@ -20,6 +20,7 @@ import Extern.Spdlog;
 import Extern.TomlPlusPlus;
 
 import MapEditorState;
+import Application.Input.Shortcut;
 
 export namespace Soldank
 {
@@ -51,10 +52,6 @@ constexpr std::int64_t MIN_COLOR_CHANNEL = 0;
 constexpr std::int64_t MAX_COLOR_CHANNEL = 255;
 constexpr float MIN_UI_SCALE = 0.5F;
 constexpr float MAX_UI_SCALE = 2.0F;
-constexpr std::array<const char*, 11> TOOL_SHORTCUT_NAMES{
-    "transform", "polygon", "vertex_selection", "selection",  "vertex_color", "color",
-    "texture",   "scenery", "waypoint",         "spawnpoint", "color_picker"
-};
 
 bool IsShortcutKey(int key)
 {
@@ -197,7 +194,8 @@ bool MapEditorConfig::LoadSettings(const std::filesystem::path& file_path,
 
         for (std::size_t tool_index = 0; tool_index < tool_shortcut_keys.size(); ++tool_index) {
             const auto tool_shortcut =
-              config["shortcuts"]["tools"][TOOL_SHORTCUT_NAMES[tool_index]].value<std::int64_t>();
+              config["shortcuts"]["tools"][GetShortcutDefinitions()[tool_index + 1].config_key]
+                .value<std::int64_t>();
             if (!tool_shortcut) {
                 continue;
             }
@@ -252,7 +250,7 @@ bool MapEditorConfig::SaveSettings(const std::filesystem::path& file_path,
     shortcuts.insert("play_mode_key", static_cast<std::int64_t>(play_mode_shortcut_key));
     Toml::Table tool_shortcuts;
     for (std::size_t tool_index = 0; tool_index < tool_shortcut_keys.size(); ++tool_index) {
-        tool_shortcuts.insert(TOOL_SHORTCUT_NAMES[tool_index],
+        tool_shortcuts.insert(GetShortcutDefinitions()[tool_index + 1].config_key,
                               static_cast<std::int64_t>(tool_shortcut_keys[tool_index]));
     }
     shortcuts.insert("tools", std::move(tool_shortcuts));

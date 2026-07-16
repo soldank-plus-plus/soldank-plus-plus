@@ -14,6 +14,7 @@
 #include <vector>
 
 import ClientState;
+import Application.Input.Shortcut;
 import MapEditor;
 import MapEditorAction;
 import MapEditorState;

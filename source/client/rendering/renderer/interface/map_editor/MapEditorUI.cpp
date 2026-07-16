@@ -22,6 +22,7 @@ import MapEditor.EditorAssetBrowser;
 import MapEditor.EditorUiOptions;
 import MapEditorToolDetailsWindow;
 import MapEditorState;
+import Application.Input.Shortcut;
 
 import Shared.Core.State.StateManager;
 import Shared.Core.Map.PMSConstants;
@@ -83,54 +84,12 @@ void EndFrame()
 
 std::string GetShortcutModifierPrefix(int modifiers)
 {
-    std::string shortcut_name;
-    if ((modifiers & GLFW_MOD_CONTROL) != 0) {
-        shortcut_name += "Ctrl + ";
-    }
-    if ((modifiers & GLFW_MOD_SHIFT) != 0) {
-        shortcut_name += "Shift + ";
-    }
-    if ((modifiers & GLFW_MOD_ALT) != 0) {
-        shortcut_name += "Alt + ";
-    }
-    if ((modifiers & GLFW_MOD_SUPER) != 0) {
-        shortcut_name += "Windows + ";
-    }
-    return shortcut_name;
+    return Soldank::GetShortcutModifierPrefix(modifiers);
 }
 
 std::string GetShortcutName(int shortcut)
 {
-    if (shortcut == GLFW_KEY_UNKNOWN) {
-        return "";
-    }
-
-    const int key = GetShortcutKey(shortcut);
-    const std::string modifier_prefix = GetShortcutModifierPrefix(GetShortcutModifiers(shortcut));
-    if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
-        return modifier_prefix + std::string(1, static_cast<char>('A' + key - GLFW_KEY_A));
-    }
-    if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
-        return modifier_prefix + std::string(1, static_cast<char>('0' + key - GLFW_KEY_0));
-    }
-    if (key >= GLFW_KEY_F1 && key <= GLFW_KEY_F12) {
-        return modifier_prefix + "F" + std::to_string(key - GLFW_KEY_F1 + 1);
-    }
-
-    switch (key) {
-        case GLFW_KEY_SPACE:
-            return modifier_prefix + "Space";
-        case GLFW_KEY_ENTER:
-            return modifier_prefix + "Enter";
-        case GLFW_KEY_TAB:
-            return modifier_prefix + "Tab";
-        case GLFW_KEY_ESCAPE:
-            return modifier_prefix + "Escape";
-        case GLFW_KEY_BACKSPACE:
-            return modifier_prefix + "Backspace";
-        default:
-            return modifier_prefix + "Key " + std::to_string(key);
-    }
+    return Soldank::GetShortcutDisplayName(shortcut);
 }
 
 bool RenderShortcutItem(const char* name, const std::string& shortcut, bool is_selected)
@@ -142,8 +101,9 @@ bool RenderShortcutItem(const char* name, const std::string& shortcut, bool is_s
                                                 ImGuiSelectableFlags_AllowDoubleClick |
                                                   ImGuiSelectableFlags_SpanAllColumns);
     ImGui::TableSetColumnIndex(1);
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
-                         ImGui::CalcTextSize(shortcut.c_str()).x);
+    const float shortcut_width = ImGui::CalcTextSize(shortcut.c_str()).x;
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() +
+                         std::max(0.0F, ImGui::GetContentRegionAvail().x - shortcut_width));
     ImGui::TextUnformatted(shortcut.c_str());
     return was_selected;
 }
@@ -187,7 +147,7 @@ void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& clie
     }
     if (ImGui::BeginMenu("Run")) {
         const std::string play_mode_shortcut =
-          GetShortcutName(client_state.map_editor_state.play_mode_shortcut_key);
+          GetShortcutName(client_state.map_editor_state.GetPlayModeShortcut());
         if (ImGui::MenuItem("Play", play_mode_shortcut.c_str())) {
             client_state.map_editor_state.event_pressed_play.Notify();
         }
@@ -311,7 +271,7 @@ void RenderToolsWindow(ClientState& client_state, ImGuiWindowFlags default_windo
 
     for (const auto& tool_option : EditorUiOptions::GetToolOptions()) {
         const std::string shortcut_name =
-          GetShortcutName(client_state.map_editor_state.tool_shortcut_keys.at(
+          GetShortcutName(client_state.map_editor_state.GetToolShortcut(
             static_cast<std::size_t>(tool_option.second)));
         const std::string tool_label =
           shortcut_name.empty() ? std::string(tool_option.first)
@@ -993,28 +953,25 @@ void RenderSettingsModal(ClientState& client_state)
                               { ImGui::GetContentRegionAvail().x, 0.0F })) {
                 client_state.map_editor_state.ui_scale = 1.0F;
                 client_state.map_editor_state.pending_ui_scale = 1.0F;
-                client_state.map_editor_state.play_mode_shortcut_key = GLFW_KEY_F5;
-                client_state.map_editor_state.tool_shortcut_keys = {
-                    GLFW_KEY_A, GLFW_KEY_Q, GLFW_KEY_S, GLFW_KEY_W, GLFW_KEY_D, GLFW_KEY_E,
-                    GLFW_KEY_F, GLFW_KEY_R, GLFW_KEY_G, GLFW_KEY_T, GLFW_KEY_H
-                };
+                client_state.map_editor_state.shortcut_bindings = GetDefaultShortcutBindings();
                 client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
                 client_state.map_editor_state.tool_shortcut_capture_index = -1;
                 client_state.map_editor_state.shortcut_capture_modifiers = 0;
                 client_state.map_editor_state.event_ui_scale_changed.Notify();
             }
         } else {
-            ImGui::SeparatorText("Play test");
+            const auto& shortcut_definitions = GetShortcutDefinitions();
+            ImGui::SeparatorText(shortcut_definitions.front().category.data());
             const std::string shortcut_name =
               client_state.map_editor_state.is_play_mode_shortcut_capture_active
                 ? GetShortcutModifierPrefix(
                     client_state.map_editor_state.shortcut_capture_modifiers) +
                     "Press a key..."
-                : GetShortcutName(client_state.map_editor_state.play_mode_shortcut_key);
+                : GetShortcutName(client_state.map_editor_state.GetPlayModeShortcut());
             if (ImGui::BeginTable("PlayTestShortcuts", 2, ImGuiTableFlags_SizingStretchProp)) {
-                ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.75F);
-                ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthStretch, 0.25F);
-                if (RenderShortcutItem("Switch to play mode",
+                ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.55F);
+                ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthStretch, 0.45F);
+                if (RenderShortcutItem(shortcut_definitions.front().name.data(),
                                        shortcut_name,
                                        client_state.map_editor_state.selected_shortcut ==
                                          ShortcutSelection::PlayMode)) {
@@ -1029,29 +986,24 @@ void RenderSettingsModal(ClientState& client_state)
                 ImGui::EndTable();
             }
 
-            ImGui::SeparatorText("Tools");
-            constexpr std::array<const char*, 11> TOOL_NAMES{
-                "Transform", "Polygon", "Vertex selection", "Selection",   "Vertex color", "Color",
-                "Texture",   "Scenery", "Waypoint",         "Spawn point", "Color picker"
-            };
+            ImGui::SeparatorText(shortcut_definitions.at(1).category.data());
             if (ImGui::BeginTable("ToolShortcuts", 2, ImGuiTableFlags_SizingStretchProp)) {
-                ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.75F);
-                ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthStretch, 0.25F);
+                ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.55F);
+                ImGui::TableSetupColumn("Shortcut", ImGuiTableColumnFlags_WidthStretch, 0.45F);
                 for (std::size_t tool_index = 0;
-                     tool_index < client_state.map_editor_state.tool_shortcut_keys.size();
+                     tool_index < client_state.map_editor_state.GetToolShortcuts().size();
                      ++tool_index) {
                     const bool is_capturing =
                       client_state.map_editor_state.tool_shortcut_capture_index ==
                       static_cast<int>(tool_index);
                     const std::string tool_shortcut_name =
-                      is_capturing
-                        ? GetShortcutModifierPrefix(
-                            client_state.map_editor_state.shortcut_capture_modifiers) +
-                            "Press a key..."
-                        : GetShortcutName(
-                            client_state.map_editor_state.tool_shortcut_keys[tool_index]);
+                      is_capturing ? GetShortcutModifierPrefix(
+                                       client_state.map_editor_state.shortcut_capture_modifiers) +
+                                       "Press a key..."
+                                   : GetShortcutName(
+                                       client_state.map_editor_state.GetToolShortcut(tool_index));
                     if (RenderShortcutItem(
-                          TOOL_NAMES[tool_index],
+                          shortcut_definitions.at(tool_index + 1).name.data(),
                           tool_shortcut_name,
                           client_state.map_editor_state.selected_shortcut ==
                               ShortcutSelection::Tool &&
@@ -1082,13 +1034,13 @@ void RenderSettingsModal(ClientState& client_state)
                               { ImGui::GetContentRegionAvail().x, 0.0F })) {
                 if (client_state.map_editor_state.selected_shortcut ==
                     ShortcutSelection::PlayMode) {
-                    client_state.map_editor_state.play_mode_shortcut_key = GLFW_KEY_UNKNOWN;
-                    client_state.map_editor_state.event_play_mode_shortcut_changed.Notify();
+                    client_state.map_editor_state.GetPlayModeShortcut() = GLFW_KEY_UNKNOWN;
+                    client_state.map_editor_state.event_shortcuts_changed.Notify();
                 } else {
-                    client_state.map_editor_state.tool_shortcut_keys.at(static_cast<std::size_t>(
+                    client_state.map_editor_state.GetToolShortcut(static_cast<std::size_t>(
                       client_state.map_editor_state.selected_tool_shortcut_index)) =
                       GLFW_KEY_UNKNOWN;
-                    client_state.map_editor_state.event_tool_shortcuts_changed.Notify();
+                    client_state.map_editor_state.event_shortcuts_changed.Notify();
                 }
                 client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
                 client_state.map_editor_state.tool_shortcut_capture_index = -1;

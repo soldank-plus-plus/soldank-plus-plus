@@ -32,6 +32,7 @@ set(client_lib_modules
     application/window/WindowBackendAdapter.cpp
     application/input/InputRouter.cpp
     application/input/InputSnapshot.cpp
+    application/input/Shortcut.cpp
     application/input/ApplicationInputController.cpp
     application/input/PlatformInput.cpp
     application/input/PlayerInput.cpp

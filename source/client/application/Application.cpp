@@ -17,6 +17,7 @@ import Application.CLI.CommandLineParameters;
 import Application.ClientModes;
 import Application.Window;
 import Application.Input.ApplicationInputController;
+import Application.Input.Shortcut;
 import Application.Input.PlatformInput;
 import Application.Platform.ClientTransportStartup;
 import Application.Platform.WebAssemblyStartupAdapter;
@@ -326,7 +327,7 @@ void Application::Run()
 
     client_state_->event_key_pressed.AddObserver([&](int key, int modifiers) {
         if (EncodeShortcut(key, modifiers) ==
-              client_state_->map_editor_state.play_mode_shortcut_key &&
+              client_state_->map_editor_state.GetPlayModeShortcut() &&
             application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
             !client_state_->map_editor_state.is_modal_or_popup_open) {
             if (editor_session_) {

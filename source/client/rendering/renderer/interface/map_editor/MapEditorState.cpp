@@ -1,9 +1,8 @@
 module;
 
-#include <GLFW/glfw3.h>
-
 #include <string>
 #include <optional>
+#include <span>
 #include <bitset>
 #include <array>
 #include <utility>
@@ -12,6 +11,8 @@ module;
 export module MapEditorState;
 
 import Extern.Glm;
+
+import Application.Input.Shortcut;
 
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSConstants;
@@ -49,36 +50,6 @@ enum class ShortcutSelection
     Tool
 };
 
-constexpr int SHORTCUT_MODIFIER_MASK =
-  GLFW_MOD_CONTROL | GLFW_MOD_SHIFT | GLFW_MOD_ALT | GLFW_MOD_SUPER;
-constexpr int SHORTCUT_MODIFIER_SHIFT = 16;
-
-constexpr int EncodeShortcut(int key, int modifiers)
-{
-    return key == GLFW_KEY_UNKNOWN
-             ? GLFW_KEY_UNKNOWN
-             : key | ((modifiers & SHORTCUT_MODIFIER_MASK) << SHORTCUT_MODIFIER_SHIFT);
-}
-
-constexpr int GetShortcutKey(int shortcut)
-{
-    return shortcut == GLFW_KEY_UNKNOWN ? GLFW_KEY_UNKNOWN : shortcut & 0xFFFF;
-}
-
-constexpr int GetShortcutModifiers(int shortcut)
-{
-    return shortcut == GLFW_KEY_UNKNOWN
-             ? 0
-             : (shortcut >> SHORTCUT_MODIFIER_SHIFT) & SHORTCUT_MODIFIER_MASK;
-}
-
-constexpr bool IsShortcutModifierKey(int key)
-{
-    return key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL ||
-           key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT || key == GLFW_KEY_LEFT_ALT ||
-           key == GLFW_KEY_RIGHT_ALT || key == GLFW_KEY_LEFT_SUPER || key == GLFW_KEY_RIGHT_SUPER;
-}
-
 struct MapEditorState
 {
     ToolType selected_tool = ToolType::Selection;
@@ -114,8 +85,7 @@ struct MapEditorState
     Observable<PMSPolygonType> event_selected_polygons_type_changed;
     Observable<> event_pixel_color_under_cursor_requested;
     Observable<> event_palette_saved_colors_changed;
-    Observable<> event_play_mode_shortcut_changed;
-    Observable<> event_tool_shortcuts_changed;
+    Observable<> event_shortcuts_changed;
     Observable<> event_ui_scale_changed;
 
     Observable<const std::string&> event_save_map;
@@ -185,13 +155,35 @@ struct MapEditorState
 
     bool draw_wireframe = false;
 
-    int play_mode_shortcut_key = GLFW_KEY_F5;
-    std::array<int, 11> tool_shortcut_keys{ GLFW_KEY_A, GLFW_KEY_Q, GLFW_KEY_S, GLFW_KEY_W,
-                                            GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F, GLFW_KEY_R,
-                                            GLFW_KEY_G, GLFW_KEY_T, GLFW_KEY_H };
+    ShortcutBindings shortcut_bindings = GetDefaultShortcutBindings();
     float ui_scale = 1.0F;
     float pending_ui_scale = 1.0F;
     SettingsSection selected_settings_section = SettingsSection::General;
+
+    int& GetPlayModeShortcut()
+    {
+        return shortcut_bindings.at(GetShortcutIndex(ShortcutId::MapEditorPlayMode));
+    }
+    const int& GetPlayModeShortcut() const
+    {
+        return shortcut_bindings.at(GetShortcutIndex(ShortcutId::MapEditorPlayMode));
+    }
+    int& GetToolShortcut(std::size_t tool_index)
+    {
+        return shortcut_bindings.at(GetShortcutIndex(GetToolShortcutId(tool_index)));
+    }
+    const int& GetToolShortcut(std::size_t tool_index) const
+    {
+        return shortcut_bindings.at(GetShortcutIndex(GetToolShortcutId(tool_index)));
+    }
+    std::span<int, 11> GetToolShortcuts()
+    {
+        return std::span<int, 11>(shortcut_bindings.data() + 1, 11);
+    }
+    std::span<const int, 11> GetToolShortcuts() const
+    {
+        return std::span<const int, 11>(shortcut_bindings.data() + 1, 11);
+    }
 
     glm::vec4 last_requested_pixel_color;
 

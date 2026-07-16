@@ -26,6 +26,7 @@ import MapEditor.EditorToolController;
 import MapEditor.EditorViewportController;
 import ClientState;
 import MapEditorState;
+import Application.Input.Shortcut;
 import AddObjectsMapEditorAction;
 import RemoveSelectionMapEditorAction;
 import TransformPolygonsMapEditorAction;
@@ -213,12 +214,12 @@ MapEditor::MapEditor(ClientState& client_state,
                   client_state.map_editor_state.shortcut_capture_modifiers = modifiers;
                   return;
               }
-              client_state.map_editor_state.tool_shortcut_keys.at(
+              client_state.map_editor_state.GetToolShortcut(
                 static_cast<std::size_t>(tool_capture_index)) =
                 key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : EncodeShortcut(key, modifiers);
               client_state.map_editor_state.tool_shortcut_capture_index = -1;
               client_state.map_editor_state.shortcut_capture_modifiers = 0;
-              client_state.map_editor_state.event_tool_shortcuts_changed.Notify();
+              client_state.map_editor_state.event_shortcuts_changed.Notify();
               return;
           }
           if (client_state.map_editor_state.is_play_mode_shortcut_capture_active) {
@@ -226,11 +227,11 @@ MapEditor::MapEditor(ClientState& client_state,
                   client_state.map_editor_state.shortcut_capture_modifiers = modifiers;
                   return;
               }
-              client_state.map_editor_state.play_mode_shortcut_key =
+              client_state.map_editor_state.GetPlayModeShortcut() =
                 key == GLFW_KEY_ESCAPE ? GLFW_KEY_UNKNOWN : EncodeShortcut(key, modifiers);
               client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
               client_state.map_editor_state.shortcut_capture_modifiers = 0;
-              client_state.map_editor_state.event_play_mode_shortcut_changed.Notify();
+              client_state.map_editor_state.event_shortcuts_changed.Notify();
               return;
           }
 
@@ -284,39 +285,31 @@ MapEditor::MapEditor(ClientState& client_state,
 
     MapEditorConfig::LoadSettings(config_file_path_,
                                   client_state.map_editor_state.palette_saved_colors,
-                                  client_state.map_editor_state.play_mode_shortcut_key,
+                                  client_state.map_editor_state.GetPlayModeShortcut(),
                                   client_state.map_editor_state.ui_scale,
-                                  client_state.map_editor_state.tool_shortcut_keys);
+                                  client_state.map_editor_state.GetToolShortcuts());
     client_state.map_editor_state.pending_ui_scale = client_state.map_editor_state.ui_scale;
     client_state.map_editor_state.event_palette_saved_colors_changed.AddObserver(
       [this, &client_state]() {
           MapEditorConfig::SaveSettings(config_file_path_,
                                         client_state.map_editor_state.palette_saved_colors,
-                                        client_state.map_editor_state.play_mode_shortcut_key,
+                                        client_state.map_editor_state.GetPlayModeShortcut(),
                                         client_state.map_editor_state.ui_scale,
-                                        client_state.map_editor_state.tool_shortcut_keys);
+                                        client_state.map_editor_state.GetToolShortcuts());
       });
-    client_state.map_editor_state.event_play_mode_shortcut_changed.AddObserver(
-      [this, &client_state]() {
-          MapEditorConfig::SaveSettings(config_file_path_,
-                                        client_state.map_editor_state.palette_saved_colors,
-                                        client_state.map_editor_state.play_mode_shortcut_key,
-                                        client_state.map_editor_state.ui_scale,
-                                        client_state.map_editor_state.tool_shortcut_keys);
-      });
+    client_state.map_editor_state.event_shortcuts_changed.AddObserver([this, &client_state]() {
+        MapEditorConfig::SaveSettings(config_file_path_,
+                                      client_state.map_editor_state.palette_saved_colors,
+                                      client_state.map_editor_state.GetPlayModeShortcut(),
+                                      client_state.map_editor_state.ui_scale,
+                                      client_state.map_editor_state.GetToolShortcuts());
+    });
     client_state.map_editor_state.event_ui_scale_changed.AddObserver([this, &client_state]() {
         MapEditorConfig::SaveSettings(config_file_path_,
                                       client_state.map_editor_state.palette_saved_colors,
-                                      client_state.map_editor_state.play_mode_shortcut_key,
+                                      client_state.map_editor_state.GetPlayModeShortcut(),
                                       client_state.map_editor_state.ui_scale,
-                                      client_state.map_editor_state.tool_shortcut_keys);
-    });
-    client_state.map_editor_state.event_tool_shortcuts_changed.AddObserver([this, &client_state]() {
-        MapEditorConfig::SaveSettings(config_file_path_,
-                                      client_state.map_editor_state.palette_saved_colors,
-                                      client_state.map_editor_state.play_mode_shortcut_key,
-                                      client_state.map_editor_state.ui_scale,
-                                      client_state.map_editor_state.tool_shortcut_keys);
+                                      client_state.map_editor_state.GetToolShortcuts());
     });
 
     client_state.map_editor_state.event_selected_spawn_points_type_changed.AddObserver(
@@ -514,7 +507,7 @@ void MapEditor::OnKeyPressed(int key,
     }
 
     if (std::optional<ToolType> tool_type = shortcut_controller_.GetToolForKey(
-          key, modifiers, client_state.map_editor_state.tool_shortcut_keys)) {
+          key, modifiers, client_state.map_editor_state.GetToolShortcuts())) {
         if (client_state.map_editor_state.selected_tool != *tool_type) {
             client_state.map_editor_state.event_selected_new_tool.Notify(*tool_type);
         }

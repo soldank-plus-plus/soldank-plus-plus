@@ -10,6 +10,7 @@ module;
 export module MapEditor.EditorShortcutController;
 
 import MapEditorState;
+import Application.Input.Shortcut;
 
 export namespace Soldank
 {
