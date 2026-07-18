@@ -42,6 +42,10 @@ enum class ShortcutId : std::size_t
     MapEditorSelectionBringForward,
     MapEditorSelectionSendBackward,
     MapEditorSelectionSendToBack,
+    MapEditorSelectionMoveLeft,
+    MapEditorSelectionMoveRight,
+    MapEditorSelectionMoveUp,
+    MapEditorSelectionMoveDown,
     Count
 };
 
@@ -195,6 +199,22 @@ inline const std::array<ShortcutDefinition, SHORTCUT_COUNT>& GetShortcutDefiniti
         "Send To Back",
         "send_to_back",
         GLFW_KEY_UNKNOWN },
+      { ShortcutId::MapEditorSelectionMoveLeft,
+        "Selection",
+        "Move Left",
+        "move_left",
+        GLFW_KEY_LEFT },
+      { ShortcutId::MapEditorSelectionMoveRight,
+        "Selection",
+        "Move Right",
+        "move_right",
+        GLFW_KEY_RIGHT },
+      { ShortcutId::MapEditorSelectionMoveUp, "Selection", "Move Up", "move_up", GLFW_KEY_UP },
+      { ShortcutId::MapEditorSelectionMoveDown,
+        "Selection",
+        "Move Down",
+        "move_down",
+        GLFW_KEY_DOWN },
     } };
     return DEFINITIONS;
 }
@@ -241,6 +261,14 @@ inline std::string GetShortcutDisplayName(int shortcut)
         return prefix + "Escape";
     if (key == GLFW_KEY_BACKSPACE)
         return prefix + "Backspace";
+    if (key == GLFW_KEY_LEFT)
+        return prefix + "Left";
+    if (key == GLFW_KEY_RIGHT)
+        return prefix + "Right";
+    if (key == GLFW_KEY_UP)
+        return prefix + "Up";
+    if (key == GLFW_KEY_DOWN)
+        return prefix + "Down";
     return prefix + "Key " + std::to_string(key);
 }
 } // namespace Soldank

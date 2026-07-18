@@ -612,21 +612,25 @@ void MapEditor::OnKeyPressed(int key,
         return;
     }
 
-    switch (key) {
-        case GLFW_KEY_LEFT:
-            MoveCurrentSelection({ -1.0F, 0.0F }, client_state, game_state_manager);
-            return;
-        case GLFW_KEY_RIGHT:
-            MoveCurrentSelection({ 1.0F, 0.0F }, client_state, game_state_manager);
-            return;
-        case GLFW_KEY_UP:
-            MoveCurrentSelection({ 0.0F, -1.0F }, client_state, game_state_manager);
-            return;
-        case GLFW_KEY_DOWN:
-            MoveCurrentSelection({ 0.0F, 1.0F }, client_state, game_state_manager);
-            return;
-        default:
-            break;
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionMoveLeft))) {
+        MoveCurrentSelection({ -1.0F, 0.0F }, client_state, game_state_manager);
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionMoveRight))) {
+        MoveCurrentSelection({ 1.0F, 0.0F }, client_state, game_state_manager);
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionMoveUp))) {
+        MoveCurrentSelection({ 0.0F, -1.0F }, client_state, game_state_manager);
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionMoveDown))) {
+        MoveCurrentSelection({ 0.0F, 1.0F }, client_state, game_state_manager);
+        return;
     }
 
     if (key == GLFW_KEY_LEFT_SHIFT) {

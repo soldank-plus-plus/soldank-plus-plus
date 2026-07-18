@@ -46,6 +46,7 @@ TEST(ShortcutTest, FormatsShortcutsAndModifierCaptureText)
     EXPECT_EQ(GetShortcutDisplayName(EncodeShortcut(GLFW_KEY_C, GLFW_MOD_CONTROL | GLFW_MOD_SHIFT)),
               "Ctrl + Shift + C");
     EXPECT_EQ(GetShortcutDisplayName(GLFW_KEY_UNKNOWN), "");
+    EXPECT_EQ(GetShortcutDisplayName(GLFW_KEY_LEFT), "Left");
     EXPECT_EQ(GetShortcutModifierPrefix(GLFW_MOD_ALT | GLFW_MOD_SUPER), "Alt + Windows + ");
 }
 

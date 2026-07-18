@@ -347,6 +347,13 @@ TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking
     client_state_.event_key_pressed.Notify(GLFW_KEY_DOWN, 0);
     EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, 0.0F);
     EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).y, 0.0F);
+    SetShortcut(client_state_.map_editor_state.shortcut_bindings,
+                ShortcutId::MapEditorSelectionMoveLeft,
+                GLFW_KEY_J);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT, 0);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, 0.0F);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_J, 0);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, -1.0F);
 
     client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT_CONTROL, GLFW_MOD_CONTROL);
     client_state_.event_key_pressed.Notify(GLFW_KEY_C, GLFW_MOD_CONTROL);
