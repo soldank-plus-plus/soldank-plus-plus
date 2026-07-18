@@ -28,6 +28,7 @@ import ClientState;
 import MapEditorState;
 import Application.Input.Shortcut;
 import AddObjectsMapEditorAction;
+import MoveSelectionMapEditorAction;
 import ReorderSelectionMapEditorAction;
 import RemoveSelectionMapEditorAction;
 import TransformPolygonsMapEditorAction;
@@ -89,6 +90,9 @@ private:
     void ReorderSelection(SelectionLayerOrder layer_order,
                           ClientState& client_state,
                           StateManager& game_state_manager);
+    void MoveCurrentSelection(glm::vec2 move_offset,
+                              ClientState& client_state,
+                              StateManager& game_state_manager);
 
     void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
                                           ClientState& client_state,
@@ -608,6 +612,23 @@ void MapEditor::OnKeyPressed(int key,
         return;
     }
 
+    switch (key) {
+        case GLFW_KEY_LEFT:
+            MoveCurrentSelection({ -1.0F, 0.0F }, client_state, game_state_manager);
+            return;
+        case GLFW_KEY_RIGHT:
+            MoveCurrentSelection({ 1.0F, 0.0F }, client_state, game_state_manager);
+            return;
+        case GLFW_KEY_UP:
+            MoveCurrentSelection({ 0.0F, -1.0F }, client_state, game_state_manager);
+            return;
+        case GLFW_KEY_DOWN:
+            MoveCurrentSelection({ 0.0F, 1.0F }, client_state, game_state_manager);
+            return;
+        default:
+            break;
+    }
+
     if (key == GLFW_KEY_LEFT_SHIFT) {
         tool_controller_->ActiveTool().OnModifierKey1Pressed(client_state);
     }
@@ -731,6 +752,65 @@ void MapEditor::ReorderSelection(SelectionLayerOrder layer_order,
     auto reorder_selection_action = std::make_unique<ReorderSelectionMapEditorAction>(
       client_state, game_state_manager, layer_order);
     ExecuteNewAction(client_state, game_state_manager, std::move(reorder_selection_action));
+}
+
+void MapEditor::MoveCurrentSelection(glm::vec2 move_offset,
+                                     ClientState& client_state,
+                                     StateManager& game_state_manager)
+{
+    const auto& map_editor_state = client_state.map_editor_state;
+    if (map_editor_state.selected_polygon_vertices.empty() &&
+        map_editor_state.selected_scenery_ids.empty() &&
+        map_editor_state.selected_spawn_point_ids.empty() &&
+        map_editor_state.selected_soldier_ids.empty()) {
+        return;
+    }
+
+    std::vector<std::pair<std::pair<unsigned int, unsigned int>, glm::vec2>>
+      polygon_vertices_with_position;
+    for (const auto& [polygon_id, selected_vertices] : map_editor_state.selected_polygon_vertices) {
+        const auto& polygon = game_state_manager.GetConstMap().GetPolygons().at(polygon_id);
+        for (unsigned int vertex_index = 0; vertex_index < 3; ++vertex_index) {
+            if (selected_vertices[vertex_index]) {
+                polygon_vertices_with_position.emplace_back(
+                  std::pair{ polygon_id, vertex_index },
+                  glm::vec2{ polygon.vertices.at(vertex_index).x,
+                             polygon.vertices.at(vertex_index).y });
+            }
+        }
+    }
+
+    std::vector<std::pair<unsigned int, glm::vec2>> scenery_ids_with_position;
+    scenery_ids_with_position.reserve(map_editor_state.selected_scenery_ids.size());
+    for (unsigned int scenery_id : map_editor_state.selected_scenery_ids) {
+        const auto& scenery = game_state_manager.GetConstMap().GetSceneryInstances().at(scenery_id);
+        scenery_ids_with_position.emplace_back(scenery_id, glm::vec2{ scenery.x, scenery.y });
+    }
+
+    std::vector<std::pair<unsigned int, glm::ivec2>> spawn_point_ids_with_position;
+    spawn_point_ids_with_position.reserve(map_editor_state.selected_spawn_point_ids.size());
+    for (unsigned int spawn_point_id : map_editor_state.selected_spawn_point_ids) {
+        const auto& spawn_point =
+          game_state_manager.GetConstMap().GetSpawnPoints().at(spawn_point_id);
+        spawn_point_ids_with_position.emplace_back(spawn_point_id,
+                                                   glm::ivec2{ spawn_point.x, spawn_point.y });
+    }
+
+    std::vector<std::pair<unsigned int, glm::vec2>> soldier_positions;
+    soldier_positions.reserve(map_editor_state.selected_soldier_ids.size());
+    for (unsigned int soldier_id : map_editor_state.selected_soldier_ids) {
+        game_state_manager.ForSoldier(soldier_id, [&](const auto& soldier) {
+            soldier_positions.emplace_back(soldier_id, soldier.particle.position);
+        });
+    }
+
+    auto move_selection_action =
+      std::make_unique<MoveSelectionMapEditorAction>(polygon_vertices_with_position,
+                                                     scenery_ids_with_position,
+                                                     spawn_point_ids_with_position,
+                                                     soldier_positions);
+    move_selection_action->SetMoveOffset(move_offset);
+    ExecuteNewAction(client_state, game_state_manager, std::move(move_selection_action));
 }
 
 void MapEditor::OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,

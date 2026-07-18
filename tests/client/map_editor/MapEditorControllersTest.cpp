@@ -335,6 +335,19 @@ TEST_F(MapEditorControllersTest, MapEditorRoutesInputActionsPropertiesAndLocking
     EXPECT_EQ(state_manager_.GetConstMap().GetSceneryInstances().at(0).level, 2);
     EXPECT_EQ(state_manager_.GetConstMap().GetSpawnPoints().at(0).type, PMSSpawnPointType::Alpha);
 
+    client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT, 0);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, -1.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetSceneryInstances().at(scenery_id).x, -1.0F);
+    EXPECT_EQ(state_manager_.GetConstMap().GetSpawnPoints().at(spawn_id).x, -1);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_UP, 0);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).y, -1.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetSceneryInstances().at(scenery_id).y, -1.0F);
+    EXPECT_EQ(state_manager_.GetConstMap().GetSpawnPoints().at(spawn_id).y, -1);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_RIGHT, 0);
+    client_state_.event_key_pressed.Notify(GLFW_KEY_DOWN, 0);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).y, 0.0F);
+
     client_state_.event_key_pressed.Notify(GLFW_KEY_LEFT_CONTROL, GLFW_MOD_CONTROL);
     client_state_.event_key_pressed.Notify(GLFW_KEY_C, GLFW_MOD_CONTROL);
     client_state_.event_key_pressed.Notify(GLFW_KEY_V, GLFW_MOD_CONTROL);
