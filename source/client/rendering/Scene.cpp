@@ -32,6 +32,7 @@ import BulletRenderer;
 import LineRenderer;
 import CircleRenderer;
 import MapEditorScene;
+import MapEditorUI;
 
 import Shared.Core.State.StateManager;
 import Shared.Core.Entities.Item;
@@ -142,6 +143,7 @@ void Scene::RenderGame(const StateManager& game_state_manager,
     RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
     game_hud_renderer_.Render(game_state_manager, client_state);
     RenderDebugMouseAim(game_state_manager, client_state);
+    MapEditorUI::RenderPlayTestEscapeMenu(client_state);
 }
 
 void Scene::RenderEditor(const StateManager& game_state_manager,

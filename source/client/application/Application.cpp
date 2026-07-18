@@ -324,8 +324,18 @@ void Application::Run()
             client_runtime_.SetEditorMode(editor_session_->GetEditorMode());
         }
     });
+    client_state_->map_editor_state.event_close_application_requested.AddObserver(
+      [this]() { window_->Close(); });
 
     client_state_->event_key_pressed.AddObserver([&](int key, int modifiers) {
+        if (key == GLFW_KEY_ESCAPE &&
+            game_session_.IsGameplayActive(client_runtime_.GetClientMode(),
+                                           client_runtime_.GetEditorMode())) {
+            bool& is_menu_open = client_state_->map_editor_state.is_play_test_escape_menu_open;
+            is_menu_open = !is_menu_open;
+            window_->SetCursorMode(is_menu_open ? CursorMode::Normal : CursorMode::Locked);
+            return;
+        }
         if (EncodeShortcut(key, modifiers) ==
               client_state_->map_editor_state.GetPlayModeShortcut() &&
             application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
@@ -353,9 +363,6 @@ void Application::Run()
         input_controller_->Route();
 
         const PlatformInput& input = window_->GetPlatformInput();
-        if (input.KeyWentDown(GLFW_KEY_ESCAPE)) {
-            window_->Close();
-        }
         input_controller_->UpdateWindowSize();
 
         glm::vec2 mouse_screen_position = input_controller_->GetMouseScreenPosition();

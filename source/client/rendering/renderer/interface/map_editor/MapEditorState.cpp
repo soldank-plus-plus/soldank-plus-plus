@@ -73,6 +73,7 @@ struct MapEditorState
 
     Observable<ToolType> event_selected_new_tool;
     Observable<> event_pressed_play;
+    Observable<> event_close_application_requested;
     Observable<> event_pressed_undo;
     Observable<> event_pressed_redo;
     Observable<> event_pressed_copy;
@@ -145,6 +146,7 @@ struct MapEditorState
 
     bool should_open_map_settings_modal = false;
     bool should_open_settings_modal = false;
+    bool is_play_test_escape_menu_open = false;
     bool is_play_mode_shortcut_capture_active = false;
     int tool_shortcut_capture_index = -1;
     int shortcut_capture_binding_index = -1;

@@ -23,6 +23,11 @@ public:
 
     void SetActiveContext(InputContext context) { active_context_ = context; }
 
+    void SetKeyboardCaptured(bool is_keyboard_captured)
+    {
+        is_keyboard_captured_ = is_keyboard_captured;
+    }
+
     InputContext GetActiveContext() const { return active_context_; }
 
     void SetKeyHandler(KeyHandler handler) { key_handler_ = std::move(handler); }
@@ -71,7 +76,7 @@ public:
 
         if (key_handler_) {
             for (const auto& key_change : input.key_changes) {
-                if (!ui_captured || IsGlobalKey(key_change.key)) {
+                if (!is_keyboard_captured_ || IsGlobalKey(key_change.key)) {
                     key_handler_(key_change.key, key_change.action, key_change.modifiers);
                 }
             }
@@ -94,6 +99,7 @@ private:
     }
 
     InputContext active_context_ = InputContext::Gameplay;
+    bool is_keyboard_captured_ = false;
     KeyHandler key_handler_;
     GlobalKeyPredicate global_key_predicate_;
     MouseButtonHandler mouse_button_handler_;

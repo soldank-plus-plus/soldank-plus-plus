@@ -26,6 +26,7 @@ void Render(const StateManager& game_state_manager,
             double frame_percent,
             int fps);
 bool GetWantCaptureMouse();
+bool GetWantTextInput();
 } // namespace Soldank::DebugUI
 
 namespace Soldank::DebugUI
@@ -501,5 +502,11 @@ bool GetWantCaptureMouse()
 {
     ImGuiIO& io = ImGui::GetIO();
     return io.WantCaptureMouse;
+}
+
+bool GetWantTextInput()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantTextInput;
 }
 } // namespace Soldank::DebugUI

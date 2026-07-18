@@ -77,9 +77,11 @@ public:
                 client_state_.event_key_released.Notify(key, modifiers);
             }
         });
-        input_router_.SetGlobalKeyPredicate([this](int) {
+        input_router_.SetGlobalKeyPredicate([this](int key) {
             return client_state_.map_editor_state.is_play_mode_shortcut_capture_active ||
-                   client_state_.map_editor_state.tool_shortcut_capture_index >= 0;
+                   client_state_.map_editor_state.tool_shortcut_capture_index >= 0 ||
+                   (key == GLFW_KEY_ESCAPE &&
+                    client_state_.map_editor_state.is_play_test_escape_menu_open);
         });
 
         input_router_.SetMouseScreenMoveHandler(
@@ -131,6 +133,8 @@ public:
                               client_state_.map_editor_state.is_mouse_hovering_over_ui ||
                               client_state_.map_editor_state.is_modal_or_popup_open;
         input_router_.SetActiveContext(client_runtime_.GetInputContext(is_ui_captured));
+        input_router_.SetKeyboardCaptured(DebugUI::GetWantTextInput() ||
+                                          client_state_.map_editor_state.is_modal_or_popup_open);
     }
 
     void UpdateWindowSize()

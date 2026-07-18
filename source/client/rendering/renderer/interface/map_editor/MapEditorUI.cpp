@@ -33,7 +33,8 @@ import Shared.Core.Map.Map;
 export namespace Soldank::MapEditorUI
 {
 void Render(const StateManager& game_state_manager, ClientState& client_state);
-}
+void RenderPlayTestEscapeMenu(ClientState& client_state);
+} // namespace Soldank::MapEditorUI
 
 namespace Soldank::MapEditorUI
 {
@@ -60,13 +61,15 @@ void ApplyUiScale(float ui_scale)
     applied_ui_scale = ui_scale;
 }
 
-void BeginFrame(ClientState& client_state)
+void BeginFrame(ClientState& client_state, bool is_gameplay_menu = false)
 {
     ApplyUiScale(client_state.map_editor_state.ui_scale);
 
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent(client_state.input.mouse_screen_position.x,
-                        client_state.input.mouse_screen_position.y);
+    const float mouse_y = is_gameplay_menu ? client_state.input.window_height -
+                                               client_state.input.mouse_screen_position.y
+                                           : client_state.input.mouse_screen_position.y;
+    io.AddMousePosEvent(client_state.input.mouse_screen_position.x, mouse_y);
     io.MouseDrawCursor = false;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -216,6 +219,13 @@ void RenderMainMenuBar(const StateManager& game_state_manager, ClientState& clie
               !client_state.map_editor_state.is_palette_window_visible;
         }
         ImGui::EndMenu();
+    }
+    const float close_button_width =
+      ImGui::CalcTextSize("X").x + ImGui::GetStyle().FramePadding.x * 2.0F;
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth() - close_button_width -
+                         ImGui::GetStyle().WindowPadding.x);
+    if (ImGui::Button("X")) {
+        client_state.map_editor_state.event_close_application_requested.Notify();
     }
     ImGui::EndMainMenuBar();
 }
@@ -1160,6 +1170,30 @@ void Render(const StateManager& game_state_manager, ClientState& client_state)
     RenderSceneryPickerPopup(client_state);
     RenderSelectionContextMenu(client_state);
 
+    EndFrame();
+}
+
+void RenderPlayTestEscapeMenu(ClientState& client_state)
+{
+    BeginFrame(client_state, true);
+    if (client_state.map_editor_state.is_play_test_escape_menu_open) {
+        ImGui::OpenPopup("Main menu");
+    }
+
+    ImGui::SetNextWindowSize({ 220.0F, 100.0F }, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(
+      ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, { 0.5F, 0.5F });
+    if (ImGui::BeginPopupModal("Main menu", nullptr, ImGuiWindowFlags_NoResize)) {
+        if (client_state.map_editor_state.is_play_test_escape_menu_open) {
+            client_state.map_editor_state.is_modal_or_popup_open = true;
+            if (ImGui::Button("Exit game", { ImGui::GetContentRegionAvail().x, 0.0F })) {
+                client_state.map_editor_state.event_close_application_requested.Notify();
+            }
+        } else {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
     EndFrame();
 }
 } // namespace Soldank::MapEditorUI
