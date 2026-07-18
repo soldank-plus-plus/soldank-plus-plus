@@ -583,6 +583,24 @@ void RenderSelectionContextMenu(ClientState& client_state)
           !client_state.map_editor_state.selected_scenery_ids.empty() ||
           !client_state.map_editor_state.selected_spawn_point_ids.empty();
 
+        if (ImGui::MenuItem("Bring To Front", nullptr, false, has_copyable_selection)) {
+            client_state.map_editor_state.event_selection_layer_order_changed.Notify(
+              SelectionLayerOrder::BringToFront);
+        }
+        if (ImGui::MenuItem("Bring Forward", nullptr, false, has_copyable_selection)) {
+            client_state.map_editor_state.event_selection_layer_order_changed.Notify(
+              SelectionLayerOrder::BringForward);
+        }
+        if (ImGui::MenuItem("Send Backward", nullptr, false, has_copyable_selection)) {
+            client_state.map_editor_state.event_selection_layer_order_changed.Notify(
+              SelectionLayerOrder::SendBackward);
+        }
+        if (ImGui::MenuItem("Send To Back", nullptr, false, has_copyable_selection)) {
+            client_state.map_editor_state.event_selection_layer_order_changed.Notify(
+              SelectionLayerOrder::SendToBack);
+        }
+        ImGui::Separator();
+
         if (ImGui::MenuItem("Copy", "CTRL+C", false, has_copyable_selection)) {
             client_state.map_editor_state.event_pressed_copy.Notify();
         }
@@ -1009,6 +1027,7 @@ void RenderSettingsModal(ClientState& client_state)
                                          ShortcutSelection::PlayMode)) {
                     client_state.map_editor_state.selected_shortcut = ShortcutSelection::PlayMode;
                     client_state.map_editor_state.selected_tool_shortcut_index = -1;
+                    client_state.map_editor_state.selected_shortcut_binding_index = -1;
                     if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                         client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
                         client_state.map_editor_state.tool_shortcut_capture_index = -1;
@@ -1044,6 +1063,7 @@ void RenderSettingsModal(ClientState& client_state)
                         client_state.map_editor_state.selected_shortcut = ShortcutSelection::Tool;
                         client_state.map_editor_state.selected_tool_shortcut_index =
                           static_cast<int>(tool_index);
+                        client_state.map_editor_state.selected_shortcut_binding_index = -1;
                         if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                             client_state.map_editor_state.is_play_mode_shortcut_capture_active =
                               false;
@@ -1084,6 +1104,8 @@ void RenderSettingsModal(ClientState& client_state)
                             static_cast<int>(shortcut_index))) {
                         client_state.map_editor_state.selected_shortcut_binding_index =
                           static_cast<int>(shortcut_index);
+                        client_state.map_editor_state.selected_shortcut = ShortcutSelection::None;
+                        client_state.map_editor_state.selected_tool_shortcut_index = -1;
                         if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                             client_state.map_editor_state.shortcut_capture_binding_index =
                               static_cast<int>(shortcut_index);
@@ -1101,8 +1123,27 @@ void RenderSettingsModal(ClientState& client_state)
               client_state.map_editor_state.selected_shortcut != ShortcutSelection::None ||
               client_state.map_editor_state.selected_shortcut_binding_index >= 0;
             ImGui::BeginDisabled(!has_shortcut_selection);
-            if (ImGui::Button("Remove selected shortcut",
-                              { ImGui::GetContentRegionAvail().x, 0.0F })) {
+            const float shortcuts_button_width =
+              (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) / 2.0F;
+            if (ImGui::Button("Assign shortcut", { shortcuts_button_width, 0.0F })) {
+                client_state.map_editor_state.shortcut_capture_binding_index =
+                  client_state.map_editor_state.selected_shortcut_binding_index;
+                client_state.map_editor_state.tool_shortcut_capture_index = -1;
+                client_state.map_editor_state.is_play_mode_shortcut_capture_active = false;
+
+                if (client_state.map_editor_state.selected_shortcut_binding_index < 0) {
+                    if (client_state.map_editor_state.selected_shortcut ==
+                        ShortcutSelection::PlayMode) {
+                        client_state.map_editor_state.is_play_mode_shortcut_capture_active = true;
+                    } else {
+                        client_state.map_editor_state.tool_shortcut_capture_index =
+                          client_state.map_editor_state.selected_tool_shortcut_index;
+                    }
+                }
+                client_state.map_editor_state.shortcut_capture_modifiers = 0;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Remove shortcut", { shortcuts_button_width, 0.0F })) {
                 if (client_state.map_editor_state.selected_shortcut_binding_index >= 0) {
                     client_state.map_editor_state.shortcut_bindings.at(static_cast<std::size_t>(
                       client_state.map_editor_state.selected_shortcut_binding_index)) =

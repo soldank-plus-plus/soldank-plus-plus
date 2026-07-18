@@ -226,6 +226,13 @@ void Map::SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
 }
 
+void Map::ReplacePolygons(std::vector<PMSPolygon> polygons)
+{
+    map_data_.polygons = std::move(polygons);
+    RefreshPolygonDerivedState(PolygonIdPolicy::Rebuild);
+    map_change_events_.modified_polygons.Notify(map_data_.polygons);
+}
+
 unsigned int Map::AddNewSpawnPoint(const PMSSpawnPoint& spawn_point)
 {
     map_data_.spawn_points.push_back(spawn_point);
@@ -275,6 +282,12 @@ void Map::SetSpawnPointsById(
         map_data_.spawn_points.at(spawn_point_id) = spawn_point;
     }
 
+    map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
+}
+
+void Map::ReplaceSpawnPoints(std::vector<PMSSpawnPoint> spawn_points)
+{
+    map_data_.spawn_points = std::move(spawn_points);
     map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
 }
 
@@ -456,6 +469,12 @@ void Map::SetSceneriesById(const std::vector<std::pair<unsigned int, PMSScenery>
         map_data_.scenery_instances.at(scenery_id) = scenery;
     }
 
+    map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
+}
+
+void Map::ReplaceSceneries(std::vector<PMSScenery> sceneries)
+{
+    map_data_.scenery_instances = std::move(sceneries);
     map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
 }
 } // namespace Soldank

@@ -28,6 +28,7 @@ import ClientState;
 import MapEditorState;
 import Application.Input.Shortcut;
 import AddObjectsMapEditorAction;
+import ReorderSelectionMapEditorAction;
 import RemoveSelectionMapEditorAction;
 import TransformPolygonsMapEditorAction;
 import TransformSceneriesMapEditorAction;
@@ -85,6 +86,9 @@ private:
     void RemoveCurrentSelection(ClientState& client_state, StateManager& game_state_manager);
     void CopySelection(ClientState& client_state, const StateManager& game_state_manager);
     void PasteSelection(ClientState& client_state, StateManager& game_state_manager);
+    void ReorderSelection(SelectionLayerOrder layer_order,
+                          ClientState& client_state,
+                          StateManager& game_state_manager);
 
     void OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,
                                           ClientState& client_state,
@@ -287,6 +291,10 @@ MapEditor::MapEditor(ClientState& client_state,
     client_state.map_editor_state.event_pressed_paste.AddObserver(
       [this, &client_state, &game_state_manager]() {
           PasteSelection(client_state, game_state_manager);
+      });
+    client_state.map_editor_state.event_selection_layer_order_changed.AddObserver(
+      [this, &client_state, &game_state_manager](SelectionLayerOrder layer_order) {
+          ReorderSelection(layer_order, client_state, game_state_manager);
       });
 
     for (int i = 0; auto& saved_color : client_state.map_editor_state.palette_saved_colors) {
@@ -543,6 +551,26 @@ void MapEditor::OnKeyPressed(int key,
         return;
     }
     if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionBringToFront))) {
+        ReorderSelection(SelectionLayerOrder::BringToFront, client_state, game_state_manager);
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionBringForward))) {
+        ReorderSelection(SelectionLayerOrder::BringForward, client_state, game_state_manager);
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionSendBackward))) {
+        ReorderSelection(SelectionLayerOrder::SendBackward, client_state, game_state_manager);
+        return;
+    }
+    if (MatchesShortcut(
+          key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorSelectionSendToBack))) {
+        ReorderSelection(SelectionLayerOrder::SendToBack, client_state, game_state_manager);
+        return;
+    }
+    if (MatchesShortcut(
           key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorShowAllWindows)) ||
         MatchesShortcut(
           key, modifiers, GetShortcut(shortcuts, ShortcutId::MapEditorHideAllWindows))) {
@@ -694,6 +722,15 @@ void MapEditor::RemoveCurrentSelection(ClientState& client_state, StateManager& 
     std::unique_ptr<RemoveSelectionMapEditorAction> remove_selection_action =
       std::make_unique<RemoveSelectionMapEditorAction>(client_state, game_state_manager);
     ExecuteNewAction(client_state, game_state_manager, std::move(remove_selection_action));
+}
+
+void MapEditor::ReorderSelection(SelectionLayerOrder layer_order,
+                                 ClientState& client_state,
+                                 StateManager& game_state_manager)
+{
+    auto reorder_selection_action = std::make_unique<ReorderSelectionMapEditorAction>(
+      client_state, game_state_manager, layer_order);
+    ExecuteNewAction(client_state, game_state_manager, std::move(reorder_selection_action));
 }
 
 void MapEditor::OnChangeSelectedSpawnPointsTypes(PMSSpawnPointType new_spawn_point_type,

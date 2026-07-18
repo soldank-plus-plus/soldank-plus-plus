@@ -38,6 +38,10 @@ enum class ShortcutId : std::size_t
     MapEditorTogglePropertiesWindow,
     MapEditorToggleDisplayWindow,
     MapEditorTogglePaletteWindow,
+    MapEditorSelectionBringToFront,
+    MapEditorSelectionBringForward,
+    MapEditorSelectionSendBackward,
+    MapEditorSelectionSendToBack,
     Count
 };
 
@@ -170,6 +174,26 @@ inline const std::array<ShortcutDefinition, SHORTCUT_COUNT>& GetShortcutDefiniti
         "Windows",
         "Toggle Palette",
         "toggle_palette",
+        GLFW_KEY_UNKNOWN },
+      { ShortcutId::MapEditorSelectionBringToFront,
+        "Selection",
+        "Bring To Front",
+        "bring_to_front",
+        GLFW_KEY_UNKNOWN },
+      { ShortcutId::MapEditorSelectionBringForward,
+        "Selection",
+        "Bring Forward",
+        "bring_forward",
+        GLFW_KEY_UNKNOWN },
+      { ShortcutId::MapEditorSelectionSendBackward,
+        "Selection",
+        "Send Backward",
+        "send_backward",
+        GLFW_KEY_UNKNOWN },
+      { ShortcutId::MapEditorSelectionSendToBack,
+        "Selection",
+        "Send To Back",
+        "send_to_back",
         GLFW_KEY_UNKNOWN },
     } };
     return DEFINITIONS;

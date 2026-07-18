@@ -62,6 +62,7 @@ set(client_lib_modules
     map_editor/actions/AddSpawnPointMapEditorAction.cpp
     map_editor/actions/ColorObjectsMapEditorAction.cpp
     map_editor/actions/MoveSelectionMapEditorAction.cpp
+    map_editor/actions/ReorderSelectionMapEditorAction.cpp
     map_editor/actions/RemoveSelectionMapEditorAction.cpp
     map_editor/actions/RotateSelectionMapEditorAction.cpp
     map_editor/actions/ScaleSelectionMapEditorAction.cpp

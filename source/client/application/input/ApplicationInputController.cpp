@@ -80,6 +80,7 @@ public:
         input_router_.SetGlobalKeyPredicate([this](int key) {
             return client_state_.map_editor_state.is_play_mode_shortcut_capture_active ||
                    client_state_.map_editor_state.tool_shortcut_capture_index >= 0 ||
+                   client_state_.map_editor_state.shortcut_capture_binding_index >= 0 ||
                    (key == GLFW_KEY_ESCAPE &&
                     client_state_.map_editor_state.is_play_test_escape_menu_open);
         });

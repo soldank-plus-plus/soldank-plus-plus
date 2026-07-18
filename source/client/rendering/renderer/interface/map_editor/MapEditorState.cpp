@@ -37,6 +37,14 @@ enum class ToolType
     ColorPicker
 };
 
+enum class SelectionLayerOrder
+{
+    BringToFront,
+    BringForward,
+    SendBackward,
+    SendToBack,
+};
+
 enum class SettingsSection
 {
     General,
@@ -78,6 +86,7 @@ struct MapEditorState
     Observable<> event_pressed_redo;
     Observable<> event_pressed_copy;
     Observable<> event_pressed_paste;
+    Observable<SelectionLayerOrder> event_selection_layer_order_changed;
     Observable<const PMSPolygon&, const std::bitset<3>&> event_polygon_selected;
     Observable<const std::string&> event_scenery_texture_changed;
     Observable<PMSSpawnPointType> event_selected_spawn_points_type_changed;

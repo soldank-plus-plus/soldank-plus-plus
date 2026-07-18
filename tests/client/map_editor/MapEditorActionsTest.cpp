@@ -15,6 +15,8 @@ import AddSpawnPointMapEditorAction;
 import ClientState;
 import ColorObjectsMapEditorAction;
 import MoveSelectionMapEditorAction;
+import MapEditorState;
+import ReorderSelectionMapEditorAction;
 import RemoveSelectionMapEditorAction;
 import RotateSelectionMapEditorAction;
 import ScaleSelectionMapEditorAction;
@@ -224,6 +226,95 @@ TEST_F(MapEditorActionsTest, TransformActionsApplyFunctionsAndRestoreOriginals)
     EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, 0.0F);
     EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetSceneryInstances().at(0).x, 0.0F);
     EXPECT_EQ(state_manager_.GetConstMap().GetSpawnPoints().at(0).x, 0);
+}
+
+TEST_F(MapEditorActionsTest, ReorderSelectionMovesEachObjectTypeAndPreservesSelectedOrder)
+{
+    for (unsigned int index = 0; index < 4; ++index) {
+        state_manager_.GetMap().AddNewPolygon(MakePolygon(static_cast<float>(index)));
+
+        PMSScenery scenery{};
+        scenery.x = static_cast<float>(index);
+        state_manager_.GetMap().AddNewScenery(scenery, "tree.png");
+
+        PMSSpawnPoint spawn_point{};
+        spawn_point.x = static_cast<int>(index);
+        state_manager_.GetMap().AddNewSpawnPoint(spawn_point);
+    }
+    client_state_.map_editor_state.selected_polygon_vertices = { { 1U, 0b111 }, { 3U, 0b111 } };
+    client_state_.map_editor_state.selected_scenery_ids = { 1U, 3U };
+    client_state_.map_editor_state.selected_spawn_point_ids = { 1U, 3U };
+
+    ReorderSelectionMapEditorAction action(
+      client_state_, state_manager_, SelectionLayerOrder::BringToFront);
+    ASSERT_TRUE(action.CanExecute(client_state_, state_manager_));
+    action.Execute(client_state_, state_manager_);
+
+    const auto& polygons = state_manager_.GetConstMap().GetPolygons();
+    const auto& sceneries = state_manager_.GetConstMap().GetSceneryInstances();
+    const auto& spawn_points = state_manager_.GetConstMap().GetSpawnPoints();
+    EXPECT_FLOAT_EQ(polygons.at(0).vertices.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(polygons.at(1).vertices.at(0).x, 2.0F);
+    EXPECT_FLOAT_EQ(polygons.at(2).vertices.at(0).x, 1.0F);
+    EXPECT_FLOAT_EQ(polygons.at(3).vertices.at(0).x, 3.0F);
+    EXPECT_FLOAT_EQ(sceneries.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(sceneries.at(1).x, 2.0F);
+    EXPECT_EQ(spawn_points.at(0).x, 0);
+    EXPECT_EQ(spawn_points.at(1).x, 2);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.at(0).first, 2U);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.at(1).first, 3U);
+    EXPECT_EQ(client_state_.map_editor_state.selected_scenery_ids, (std::vector{ 2U, 3U }));
+    EXPECT_EQ(client_state_.map_editor_state.selected_spawn_point_ids, (std::vector{ 2U, 3U }));
+
+    action.Undo(client_state_, state_manager_);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, 0.0F);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.at(0).first, 1U);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.at(1).first, 3U);
+}
+
+TEST_F(MapEditorActionsTest, ReorderSelectionMovesByOneWithoutReversingSelection)
+{
+    for (unsigned int index = 0; index < 4; ++index) {
+        state_manager_.GetMap().AddNewPolygon(MakePolygon(static_cast<float>(index)));
+    }
+    client_state_.map_editor_state.selected_polygon_vertices = { { 1U, 0b111 }, { 3U, 0b111 } };
+
+    ReorderSelectionMapEditorAction forward_action(
+      client_state_, state_manager_, SelectionLayerOrder::BringForward);
+    forward_action.Execute(client_state_, state_manager_);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(1).vertices.at(0).x, 2.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(2).vertices.at(0).x, 1.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(3).vertices.at(0).x, 3.0F);
+
+    forward_action.Undo(client_state_, state_manager_);
+    ReorderSelectionMapEditorAction backward_action(
+      client_state_, state_manager_, SelectionLayerOrder::SendBackward);
+    backward_action.Execute(client_state_, state_manager_);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(0).vertices.at(0).x, 1.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(1).vertices.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(2).vertices.at(0).x, 3.0F);
+    EXPECT_FLOAT_EQ(state_manager_.GetConstMap().GetPolygons().at(3).vertices.at(0).x, 2.0F);
+}
+
+TEST_F(MapEditorActionsTest, ReorderSelectionSendsSelectionToBackWithoutReversingIt)
+{
+    for (unsigned int index = 0; index < 4; ++index) {
+        state_manager_.GetMap().AddNewPolygon(MakePolygon(static_cast<float>(index)));
+    }
+    client_state_.map_editor_state.selected_polygon_vertices = { { 2U, 0b111 }, { 3U, 0b111 } };
+
+    ReorderSelectionMapEditorAction action(
+      client_state_, state_manager_, SelectionLayerOrder::SendToBack);
+    action.Execute(client_state_, state_manager_);
+
+    const auto& polygons = state_manager_.GetConstMap().GetPolygons();
+    EXPECT_FLOAT_EQ(polygons.at(0).vertices.at(0).x, 2.0F);
+    EXPECT_FLOAT_EQ(polygons.at(1).vertices.at(0).x, 3.0F);
+    EXPECT_FLOAT_EQ(polygons.at(2).vertices.at(0).x, 0.0F);
+    EXPECT_FLOAT_EQ(polygons.at(3).vertices.at(0).x, 1.0F);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.at(0).first, 0U);
+    EXPECT_EQ(client_state_.map_editor_state.selected_polygon_vertices.at(1).first, 1U);
 }
 
 TEST_F(MapEditorActionsTest, RemoveSelectionIgnoresPartialPolygonsAndRestoresRemovedObjects)

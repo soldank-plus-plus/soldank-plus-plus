@@ -156,6 +156,8 @@ public:
 
     void SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>& polygons);
 
+    void ReplacePolygons(std::vector<PMSPolygon> polygons);
+
     unsigned int AddNewSpawnPoint(const PMSSpawnPoint& spawn_point);
 
     PMSSpawnPoint RemoveSpawnPointById(unsigned int id);
@@ -169,6 +171,8 @@ public:
 
     void SetSpawnPointsById(
       const std::vector<std::pair<unsigned int, PMSSpawnPoint>>& spawn_points);
+
+    void ReplaceSpawnPoints(std::vector<PMSSpawnPoint> spawn_points);
 
     unsigned int AddNewScenery(const PMSScenery& scenery, const std::string& file_name);
 
@@ -186,6 +190,8 @@ public:
       const std::vector<std::pair<unsigned int, glm::vec2>>& scenery_ids_with_new_position);
 
     void SetSceneriesById(const std::vector<std::pair<unsigned int, PMSScenery>>& sceneries);
+
+    void ReplaceSceneries(std::vector<PMSScenery> sceneries);
 
     static std::array<glm::vec2, 4> GetSceneryVertexPositions(const PMSScenery& scenery);
 
