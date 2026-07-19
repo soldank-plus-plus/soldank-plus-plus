@@ -13,14 +13,18 @@ export module Application;
 
 import Extern.Glm;
 
+#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+import Application.Platform.WebAssemblyStartupAdapter;
+#else
 import Application.CLI.CommandLineParameters;
+#endif
 import Application.ClientModes;
+import Application.LaunchParameters;
 import Application.Window;
 import Application.Input.ApplicationInputController;
 import Application.Input.Shortcut;
 import Application.Input.PlatformInput;
 import Application.Platform.ClientTransportStartup;
-import Application.Platform.WebAssemblyStartupAdapter;
 import Runtime.ClientRuntime;
 import Gameplay.GameSession;
 import Gameplay.PlayerController;
@@ -60,8 +64,6 @@ import Shared.Networking.NetworkEvent;
 import Shared.Networking.DeliveryMode;
 
 import Extern.Spdlog;
-import Extern.SimpleIni;
-
 export namespace Soldank
 {
 class Application
@@ -91,7 +93,7 @@ private:
     std::unique_ptr<ApplicationInputController> input_controller_;
     std::unique_ptr<PlayerController> player_controller_;
 
-    CommandLineParameters::ApplicationMode application_mode_;
+    ApplicationMode application_mode_;
     WindowSizeMode window_size_mode_;
     int fps_limit_ = 0;
     ClientRuntime client_runtime_;
@@ -111,56 +113,22 @@ Application::Application(const std::vector<const char*>& cli_parameters)
 {
     Spdlog::set_level(Spdlog::level::debug);
 
-    SimpleIni::CSimpleIniA ini_config;
-    SimpleIni::SI_Error rc = ini_config.LoadFile("debug_config.ini");
-    std::string server_ip;
-    int server_port = 0;
-    if (rc < 0) {
-        Spdlog::warn("INI File could not be loaded: debug_config.ini");
-        application_mode_ = CommandLineParameters::ApplicationMode::Local;
-    } else {
-        application_mode_ = ini_config.GetBoolValue("Network", "Online")
-                              ? CommandLineParameters::ApplicationMode::Online
-                              : CommandLineParameters::ApplicationMode::Local;
-        if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
-            Spdlog::info("Online = true");
-            const auto* ip = ini_config.GetValue("Network", "Server_IP");
-            int port = ini_config.GetLongValue("Network", "Server_Port");
-            if (ip == nullptr || port == 0) {
-                Spdlog::warn("Server_IP or Server_Port not set, setting is_online to false");
-                application_mode_ = CommandLineParameters::ApplicationMode::Local;
-            } else {
-                server_ip = ip;
-                server_port = port;
-                Spdlog::debug("Server_ip = {} server_port = {}", server_ip, server_port);
-            }
-        } else {
-            Spdlog::info("Online = false");
-        }
-    }
-
-    CommandLineParameters::ParsedValues parsed_cli_parameters =
-      CommandLineParameters::Parse(cli_parameters);
-    if (!parsed_cli_parameters.is_parsing_successful) {
+    std::unique_ptr<ILaunchParameters> launch_parameters;
+#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+    launch_parameters = std::make_unique<WebAssemblyStartupAdapter>();
+#else
+    launch_parameters = std::make_unique<CommandLineParameters>(cli_parameters);
+#endif
+    const ParsedLaunchParameters parsed_launch_parameters = launch_parameters->Parse();
+    if (!parsed_launch_parameters.is_parsing_successful) {
         exit(1);
     }
 
-    if (auto url_server_endpoint = WebAssemblyStartupAdapter::GetServerEndpointFromUrl()) {
-        application_mode_ = CommandLineParameters::ApplicationMode::Online;
-        server_ip = url_server_endpoint->ip;
-        server_port = url_server_endpoint->port;
-        Spdlog::info("Using server endpoint from URL: {}:{}", server_ip, server_port);
-    }
-
-    window_size_mode_ = parsed_cli_parameters.window_size_mode;
-    fps_limit_ = parsed_cli_parameters.fps_limit;
+    application_mode_ = parsed_launch_parameters.application_mode;
+    window_size_mode_ = parsed_launch_parameters.window_size_mode;
+    fps_limit_ = parsed_launch_parameters.fps_limit;
 
     std::string map_path;
-
-    // If specified then override the application mode that was set from the INI file
-    if (parsed_cli_parameters.application_mode != CommandLineParameters::ApplicationMode::Default) {
-        application_mode_ = parsed_cli_parameters.application_mode;
-    }
 
     window_ = std::make_unique<Window>();
     world_ = std::make_shared<World>();
@@ -170,33 +138,23 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     player_controller_ =
       std::make_unique<PlayerController>(*world_, *window_, client_state_, *input_controller_);
     client_state_->debug_render.is_game_debug_interface_enabled =
-      parsed_cli_parameters.is_debug_ui_enabled;
+      parsed_launch_parameters.is_debug_ui_enabled;
 
     switch (application_mode_) {
-        case CommandLineParameters::ApplicationMode::Default: {
-            Spdlog::critical("Application mode = Default. That should have never happened.");
-            std::unreachable();
-            break;
-        }
-        case CommandLineParameters::ApplicationMode::Local: {
+        case ApplicationMode::Local: {
             Spdlog::info("Application mode = Local");
             client_runtime_.SetClientMode(ClientMode::LocalGame);
             map_path = "maps/ctf_Ash.pms";
             break;
         }
-        case CommandLineParameters::ApplicationMode::Online: {
-            if (parsed_cli_parameters.application_mode !=
-                CommandLineParameters::ApplicationMode::Default) {
-                server_ip = parsed_cli_parameters.join_server_ip;
-                server_port = parsed_cli_parameters.join_server_port;
-            }
+        case ApplicationMode::Online: {
             client_runtime_.SetClientMode(ClientMode::OnlineGame);
             map_path = "maps/ctf_Ash.pms";
             client_state_->network.draw_server_pov_client_pos = true;
             Spdlog::info("Application mode = Online");
             break;
         }
-        case CommandLineParameters::ApplicationMode::MapEditor: {
+        case ApplicationMode::MapEditor: {
             client_runtime_.SetClientMode(ClientMode::MapEditor);
             client_runtime_.SetEditorMode(EditorMode::Edit);
             map_editor_ = std::make_unique<MapEditor>(*client_state_, *world_->GetStateManager());
@@ -205,8 +163,8 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         }
     }
 
-    if (parsed_cli_parameters.map) {
-        map_path = "maps/" + *parsed_cli_parameters.map + ".pms";
+    if (parsed_launch_parameters.map) {
+        map_path = "maps/" + *parsed_launch_parameters.map + ".pms";
     }
     Spdlog::debug("{} Map: {}", map_path.empty(), map_path);
 
@@ -216,7 +174,10 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         world_->GetStateManager()->LoadMapDocument(map_path);
     }
 
-    if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
+    if (application_mode_ == ApplicationMode::Online) {
+        const ServerEndpoint& server_endpoint = *parsed_launch_parameters.server_endpoint;
+        const std::string& server_ip = server_endpoint.ip;
+        const std::uint16_t server_port = server_endpoint.port;
         Spdlog::info("Connecting to {}:{}", server_ip, server_port);
         std::vector<std::shared_ptr<INetworkEventHandler>> network_event_handlers{
             std::make_shared<AssignPlayerIdNetworkEventHandler>(world_, client_state_),
@@ -246,7 +207,7 @@ Application::~Application()
     window_.reset(nullptr);
     networking_client_.reset(nullptr);
 
-    if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
+    if (application_mode_ == ApplicationMode::Online) {
         client_transport_startup_.Shutdown();
     }
 }
@@ -311,7 +272,7 @@ void Application::Run()
     window_->RegisterOnFocusGainObserver([&]() { world_->SetFPSLimit(fps_limit_); });
     window_->RegisterOnFocusLossObserver([&]() { world_->SetFPSLimit(60); });
 
-    if (application_mode_ == CommandLineParameters::ApplicationMode::MapEditor) {
+    if (application_mode_ == ApplicationMode::MapEditor) {
         window_->SetCursorMode(CursorMode::Normal);
         world_->GetStateManager()->PauseGame();
         editor_session_ =
@@ -338,7 +299,7 @@ void Application::Run()
         }
         if (EncodeShortcut(key, modifiers) ==
               client_state_->map_editor_state.GetPlayModeShortcut() &&
-            application_mode_ == CommandLineParameters::ApplicationMode::MapEditor &&
+            application_mode_ == ApplicationMode::MapEditor &&
             !client_state_->map_editor_state.is_modal_or_popup_open) {
             if (editor_session_) {
                 editor_session_->TogglePlayTest();
@@ -392,7 +353,7 @@ void Application::Run()
     world_->SetPreWorldUpdateCallback([&]() {
         client_state_->debug_render.colliding_polygon_ids.clear();
 
-        if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
+        if (application_mode_ == ApplicationMode::Online) {
             network_client_session_->UpdateBeforeWorldTick();
         }
 
@@ -400,7 +361,7 @@ void Application::Run()
             std::uint8_t client_soldier_id = *client_state_->client_soldier_id;
             player_controller_->Update(client_soldier_id);
 
-            if (application_mode_ == CommandLineParameters::ApplicationMode::Online) {
+            if (application_mode_ == ApplicationMode::Online) {
                 glm::vec2 mouse_map_position = input_controller_->GetMouseMapPosition();
                 network_client_session_->SendSoldierInput(client_soldier_id, mouse_map_position);
 
@@ -437,7 +398,7 @@ void Application::Run()
       });
 
     world_->SetPreSoldierUpdateCallback([&](const Soldier& soldier) {
-        if (application_mode_ != CommandLineParameters::ApplicationMode::Online) {
+        if (application_mode_ != ApplicationMode::Online) {
             return true;
         }
 
@@ -451,15 +412,15 @@ void Application::Run()
         return false;
     });
     world_->SetPreProjectileSpawnCallback([&](const BulletParams& /*bullet_params*/) {
-        return application_mode_ != CommandLineParameters::ApplicationMode::Online;
+        return application_mode_ != ApplicationMode::Online;
     });
 
-    if (application_mode_ == CommandLineParameters::ApplicationMode::Local) {
+    if (application_mode_ == ApplicationMode::Local) {
         const auto& soldier = world_->CreateSoldier();
         client_state_->client_soldier_id = soldier.id;
     }
 
-    if (application_mode_ == CommandLineParameters::ApplicationMode::Local) {
+    if (application_mode_ == ApplicationMode::Local) {
         world_->SpawnSoldier(*client_state_->client_soldier_id);
     }
 

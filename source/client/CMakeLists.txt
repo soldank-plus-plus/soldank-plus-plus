@@ -27,6 +27,7 @@ set(client_lib_modules
 
     application/Application.cpp
     application/ClientModes.cpp
+    application/LaunchParameters.cpp
     application/cli/CommandLineParameters.cpp
     application/window/Window.cpp
     application/window/WindowBackendAdapter.cpp
@@ -222,7 +223,6 @@ if (NOT (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripte
   target_link_libraries(client_lib PUBLIC glad)
 endif()
 target_link_libraries(client_lib PUBLIC Glm)
-target_link_libraries(client_lib PRIVATE SimpleIni)
 target_link_libraries(client_lib PRIVATE TomlPlusPlus)
 
 # TODO: check if PNG, ZLIB and BZip2 are needed for linking here
@@ -329,7 +329,6 @@ if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     endforeach()
 
     foreach(asset_file
-        debug_config.ini
         play-regular.ttf
         weapons.ini
         weapons_realistic.ini
