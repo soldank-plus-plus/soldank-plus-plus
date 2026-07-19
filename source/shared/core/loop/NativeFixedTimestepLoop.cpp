@@ -1,6 +1,5 @@
 module;
 
-#include <algorithm>
 #include <chrono>
 #include <functional>
 #include <thread>
@@ -24,7 +23,7 @@ public:
     }
 
 private:
-    using Clock = std::chrono::system_clock;
+    using Clock = std::chrono::steady_clock;
 
     void LimitFrameRate(int fps_limit)
     {
@@ -33,19 +32,10 @@ private:
             return;
         }
 
-        std::chrono::duration<double> render_time_delta = Clock::now() - last_render_time_;
-        const double render_time_limit = 1.0 / static_cast<double>(fps_limit);
-
-        while (render_time_delta.count() <= render_time_limit) {
-            const double time_to_wait_seconds = render_time_limit - render_time_delta.count();
-            const int time_to_wait_ms =
-              std::max(0, static_cast<int>(1000.0 * time_to_wait_seconds - 0.2));
-
-            std::this_thread::yield();
-            std::this_thread::sleep_for(std::chrono::milliseconds(time_to_wait_ms));
-
-            render_time_delta = Clock::now() - last_render_time_;
-        }
+        const auto frame_duration = std::chrono::duration_cast<Clock::duration>(
+          std::chrono::duration<double>{ 1.0 / static_cast<double>(fps_limit) });
+        const Clock::time_point next_frame_time = last_render_time_ + frame_duration;
+        std::this_thread::sleep_until(next_frame_time);
 
         last_render_time_ = Clock::now();
     }

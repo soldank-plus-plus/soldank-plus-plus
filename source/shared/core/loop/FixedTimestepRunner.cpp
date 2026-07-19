@@ -83,7 +83,7 @@ public:
     unsigned int GetGameTick() const { return game_tick_; }
 
 private:
-    using Clock = std::chrono::system_clock;
+    using Clock = std::chrono::steady_clock;
     static constexpr double FIXED_TIMESTEP_SECONDS = 1.0 / 60.0;
 
     void AccumulateElapsedTime()

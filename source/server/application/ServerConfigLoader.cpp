@@ -1,5 +1,6 @@
 module;
 
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -37,6 +38,14 @@ public:
             throw std::runtime_error("server name is missing");
         }
         config.server_name = server_name_cstr;
+
+        const long fps_limit =
+          ini_config.GetLongValue("NETWORK", "FPS_Limit", config.fps_limit);
+        if (fps_limit <= 0 || fps_limit > std::numeric_limits<int>::max()) {
+            Spdlog::warn("Invalid FPS_Limit: {}. Using default: {}", fps_limit, config.fps_limit);
+        } else {
+            config.fps_limit = static_cast<int>(fps_limit);
+        }
 
         return config;
     }
