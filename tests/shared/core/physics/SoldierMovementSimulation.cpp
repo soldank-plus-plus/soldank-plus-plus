@@ -4,7 +4,6 @@ module;
 
 #include <gtest/gtest.h>
 
-#include <cmath>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -319,12 +318,8 @@ void SoldierMovementSimulation::CheckSoldierAnimationState(
     float expected_position_diff_from_origin_y =
       expected_animation_state.expected_position_diff_from_origin.y;
 
-    // I think there are some issues with inaccuracy of float so we are rounding so much...
-    // TODO: Look if we can fix it somehow and make it more accurate...
-    EXPECT_LE(std::abs(soldier_position_diff_from_origin_x - expected_position_diff_from_origin_x),
-              1.5);
-    EXPECT_LE(std::abs(soldier_position_diff_from_origin_y - expected_position_diff_from_origin_y),
-              1.5);
+    EXPECT_NEAR(soldier_position_diff_from_origin_x, expected_position_diff_from_origin_x, 0.01F);
+    EXPECT_NEAR(soldier_position_diff_from_origin_y, expected_position_diff_from_origin_y, 0.01F);
 }
 
 void SoldierMovementSimulation::AddControlToChangeAt(unsigned int tick,
