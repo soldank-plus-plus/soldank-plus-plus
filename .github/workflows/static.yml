@@ -29,6 +29,8 @@ env:
   CCACHE_BASEDIR: ${{ github.workspace }}
   CCACHE_COMPILERCHECK: content
   CCACHE_MAXSIZE: 1G
+  CC: clang
+  CXX: clang++
 
 jobs:
   # Single deploy job since we're just deploying
@@ -45,9 +47,13 @@ jobs:
         run: mkdir -p .vcpkg-bincache .vcpkg-downloads .cpm-cache .ccache
 
       - name: Install vcpkg
+        id: vcpkg
         run: |
+          vcpkg_commit="$(jq -r '."builtin-baseline"' vcpkg.json)"
           git clone https://github.com/microsoft/vcpkg
+          git -C vcpkg checkout "$vcpkg_commit"
           ./vcpkg/bootstrap-vcpkg.sh
+          echo "commit=$vcpkg_commit" >> "$GITHUB_OUTPUT"
 
       - name: Restore vcpkg downloads cache
         id: vcpkg-downloads-cache
@@ -57,15 +63,6 @@ jobs:
           key: vcpkg-downloads-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
             vcpkg-downloads-${{ runner.os }}-
-
-      - name: Restore vcpkg binary cache
-        id: vcpkg-binary-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: .vcpkg-bincache
-          key: vcpkg-bincache-${{ runner.os }}-ubuntu26-clang-v1-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
-          restore-keys: |
-            vcpkg-bincache-${{ runner.os }}-ubuntu26-clang-v1-
 
       - name: Restore compiler cache
         id: ccache-cache
@@ -94,6 +91,23 @@ jobs:
           clang++ --version
           llvm-cov --version
 
+      - name: Compute vcpkg toolchain fingerprint
+        id: vcpkg-toolchain
+        run: |
+          compiler_hash="$(sha256sum "$(command -v clang++)" | cut -d ' ' -f 1)"
+          toolchain_versions="$(dpkg-query -W -f='${Package}=${Version}\n' clang libc6-dev libstdc++-15-dev)"
+          fingerprint="$(printf '%s\n%s\n' "$compiler_hash" "$toolchain_versions" | sha256sum | cut -d ' ' -f 1)"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+
+      - name: Restore vcpkg binary cache
+        id: vcpkg-binary-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .vcpkg-bincache
+          key: vcpkg-bincache-${{ runner.os }}-v2-${{ steps.vcpkg.outputs.commit }}-${{ steps.vcpkg-toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.sha }}
+          restore-keys: |
+            vcpkg-bincache-${{ runner.os }}-v2-${{ steps.vcpkg.outputs.commit }}-${{ steps.vcpkg-toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
+
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
@@ -116,7 +130,7 @@ jobs:
         continue-on-error: true
         with:
           path: .vcpkg-bincache
-          key: vcpkg-bincache-${{ runner.os }}-ubuntu26-clang-v1-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-bincache-${{ runner.os }}-v2-${{ steps.vcpkg.outputs.commit }}-${{ steps.vcpkg-toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.sha }}
 
       - name: Save CPM source cache
         if: steps.cpm-cache.outputs.cache-hit != 'true'

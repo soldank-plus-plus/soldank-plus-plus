@@ -32,9 +32,13 @@ jobs:
         run: New-Item -ItemType Directory -Force .vcpkg-bincache, .vcpkg-downloads, .sccache
 
       - name: Install vcpkg
+        id: vcpkg
         run: |
+          $vcpkgCommit = (Get-Content vcpkg.json | ConvertFrom-Json).'builtin-baseline'
           git clone https://github.com/microsoft/vcpkg
+          git -C vcpkg checkout $vcpkgCommit
           .\vcpkg\bootstrap-vcpkg.bat
+          "commit=$vcpkgCommit" >> $env:GITHUB_OUTPUT
 
       - name: Restore vcpkg downloads cache
         id: vcpkg-downloads-cache
@@ -44,15 +48,6 @@ jobs:
           key: vcpkg-downloads-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
             vcpkg-downloads-${{ runner.os }}-
-
-      - name: Restore vcpkg binary cache
-        id: vcpkg-binary-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: .vcpkg-bincache
-          key: vcpkg-bincache-${{ runner.os }}-windows2022-msvc-v1-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
-          restore-keys: |
-            vcpkg-bincache-${{ runner.os }}-windows2022-msvc-v1-
 
       - name: Restore compiler cache
         id: sccache-cache
@@ -81,6 +76,24 @@ jobs:
         with:
           arch: x64
 
+      - name: Compute vcpkg toolchain fingerprint
+        id: vcpkg-toolchain
+        run: |
+          $compilerPath = (Get-Command cl.exe).Source
+          $compilerHash = (Get-FileHash $compilerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $toolchainIdentity = "$compilerHash-$env:VCToolsVersion-$env:WindowsSDKVersion"
+          $fingerprint = $toolchainIdentity -replace '[^A-Za-z0-9_.-]', '_'
+          "fingerprint=$fingerprint" >> $env:GITHUB_OUTPUT
+
+      - name: Restore vcpkg binary cache
+        id: vcpkg-binary-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .vcpkg-bincache
+          key: vcpkg-bincache-${{ runner.os }}-v2-${{ steps.vcpkg.outputs.commit }}-${{ steps.vcpkg-toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.sha }}
+          restore-keys: |
+            vcpkg-bincache-${{ runner.os }}-v2-${{ steps.vcpkg.outputs.commit }}-${{ steps.vcpkg-toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-
+
       - name: Configure
         run: cmake --preset msvc-ninja-debug-all
 
@@ -98,7 +111,7 @@ jobs:
         continue-on-error: true
         with:
           path: .vcpkg-bincache
-          key: vcpkg-bincache-${{ runner.os }}-windows2022-msvc-v1-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-bincache-${{ runner.os }}-v2-${{ steps.vcpkg.outputs.commit }}-${{ steps.vcpkg-toolchain.outputs.fingerprint }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}-${{ github.sha }}
 
       - name: Build
         run: cmake --build --preset msvc-ninja-debug-all --parallel
