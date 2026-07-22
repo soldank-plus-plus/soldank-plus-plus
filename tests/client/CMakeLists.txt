@@ -60,4 +60,15 @@ if (BUILD_SERVER_ENABLED)
   target_link_libraries(NetworkedInputSimulationTest PRIVATE client_lib server_lib)
   AddTestOptionsAndLibraries(NetworkedInputSimulationTest)
   add_test(NAME NetworkedInputSimulationTest COMMAND NetworkedInputSimulationTest)
+
+  add_executable(FullClientServerReconciliationTest
+    networking/FullClientServerReconciliationTest.cpp)
+  target_link_libraries(FullClientServerReconciliationTest
+    PRIVATE client_lib server_lib shared_lib_testing_framework)
+  AddTestOptionsAndLibraries(FullClientServerReconciliationTest)
+  add_dependencies(FullClientServerReconciliationTest MapEditorTestData)
+  add_test(NAME FullClientServerReconciliationTest COMMAND FullClientServerReconciliationTest)
+  set_tests_properties(FullClientServerReconciliationTest PROPERTIES
+    WORKING_DIRECTORY "${MAP_EDITOR_TEST_DATA_DIR}"
+  )
 endif()
