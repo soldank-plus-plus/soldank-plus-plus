@@ -265,233 +265,270 @@ void Render(const StateManager& game_state_manager,
     io.AddMousePosEvent(client_state.input.mouse_screen_position.x,
                         client_state.input.window_height -
                           client_state.input.mouse_screen_position.y);
-    io.MouseDrawCursor = io.WantCaptureMouse;
+    io.MouseDrawCursor = false;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    {
-        ImGui::Begin("Network window (Works only when connected to a server)");
-        ImGui::Checkbox("Server reconciliation", &client_state.network.server_reconciliation);
-        ImGui::Checkbox("Client side prediction", &client_state.network.client_side_prediction);
-        ImGui::Checkbox("Objects interpolation", &client_state.network.objects_interpolation);
-        ImGui::Text("Non-acknowledged inputs: %llu", client_state.network.pending_inputs.size());
-        ImGui::Text("Ping: %hu", client_state.network.ping_timer.GetLastPingMeasure());
-        ImGui::SliderInt("Fake lag (milliseconds)", &client_state.network.network_lag, 0, 500);
-        ImGui::Checkbox("Draw server POV client position",
-                        &client_state.network.draw_server_pov_client_pos);
-        ImGui::End();
-    }
-
-    {
-        ImGui::Begin("Debug window");
-        ImGui::Checkbox("Draw colliding polygons",
-                        &client_state.debug_render.draw_colliding_polygons);
-        ImGui::Checkbox("Draw soldier hitboxes", &client_state.debug_render.draw_soldier_hitboxes);
-        ImGui::Checkbox("Draw bullet hitboxes", &client_state.debug_render.draw_bullet_hitboxes);
-        ImGui::Checkbox("Draw item hitboxes", &client_state.debug_render.draw_item_hitboxes);
-        ImGui::Checkbox("Draw collision sectors", &client_state.debug_render.draw_sectors);
-        ImGui::Checkbox("Draw map boundaries", &client_state.debug_render.draw_map_boundaries);
-
-        ImGui::Checkbox("Smooth camera", &client_state.camera.smooth);
-        ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0F / (float)fps, fps);
-        ImGui::Text("Bullets in game: %zu", game_state_manager.GetBulletsCount());
-        if (ImGui::Button("/kill")) {
-            client_state.kill_button_just_pressed = true;
+    if (client_state.debug_render.is_game_debug_interface_enabled) {
+        {
+            ImGui::Begin("Network window (Works only when connected to a server)");
+            ImGui::Checkbox("Server reconciliation", &client_state.network.server_reconciliation);
+            ImGui::Checkbox("Client side prediction", &client_state.network.client_side_prediction);
+            ImGui::Checkbox("Objects interpolation", &client_state.network.objects_interpolation);
+            ImGui::Text("Non-acknowledged inputs: %zu", client_state.network.pending_inputs.size());
+            ImGui::Text("Ping: %hu", client_state.network.ping_timer.GetLastPingMeasure());
+            ImGui::Text("Input delay: target %u, active %u, resyncs %u",
+                        client_state.network.target_input_delay_ticks,
+                        client_state.network.active_input_delay_ticks,
+                        client_state.network.input_timeline_resync_count);
+            ImGui::SliderInt("Fake lag (milliseconds)", &client_state.network.network_lag, 0, 500);
+            ImGui::Checkbox("Draw server POV client position",
+                            &client_state.network.draw_server_pov_client_pos);
+#ifndef NDEBUG
+            ImGui::Text("Local correction: %.3f (max %.3f, count %u)",
+                        client_state.network.last_local_correction_distance,
+                        client_state.network.maximum_local_correction_distance,
+                        client_state.network.local_correction_count);
+#endif
+            ImGui::End();
         }
-        if (client_state.client_soldier_id.has_value()) {
-            game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                if (*client_state.client_soldier_id == soldier.id) {
-                    ImGui::Text("Player ID: %d", soldier.id);
-                    ImGui::Text("Position: %.3f, %.3f",
-                                soldier.particle.position.x,
-                                soldier.particle.position.y);
 
-                    auto rx = ((int)((soldier.particle.position.x /
-                                      (float)game_state_manager.GetConstMap().GetSectorsSize()))) +
-                              25;
-                    auto ry = ((int)((soldier.particle.position.y /
-                                      (float)game_state_manager.GetConstMap().GetSectorsSize()))) +
-                              25;
+        {
+            ImGui::Begin("Debug window");
+            ImGui::Checkbox("Draw colliding polygons",
+                            &client_state.debug_render.draw_colliding_polygons);
+            ImGui::Checkbox("Draw soldier hitboxes",
+                            &client_state.debug_render.draw_soldier_hitboxes);
+            ImGui::Checkbox("Draw bullet hitboxes",
+                            &client_state.debug_render.draw_bullet_hitboxes);
+            ImGui::Checkbox("Draw item hitboxes", &client_state.debug_render.draw_item_hitboxes);
+            ImGui::Checkbox("Draw collision sectors", &client_state.debug_render.draw_sectors);
+            ImGui::Checkbox("Draw map boundaries", &client_state.debug_render.draw_map_boundaries);
 
-                    ImGui::Text("Sector: %d, %d", rx, ry);
-                    if (soldier.active && soldier.on_ground) {
-                        ImGui::Text("SOLDIER IS ON GROUND");
+            ImGui::Checkbox("Smooth camera", &client_state.camera.smooth);
+            ImGui::Text("Application average %.3f ms/frame (%d FPS)", 1000.0F / (float)fps, fps);
+            ImGui::Text("Bullets in game: %zu", game_state_manager.GetBulletsCount());
+            if (ImGui::Button("/kill")) {
+                client_state.kill_button_just_pressed = true;
+            }
+            if (client_state.client_soldier_id.has_value()) {
+                game_state_manager.ForEachSoldier([&](const auto& soldier) {
+                    if (*client_state.client_soldier_id == soldier.id) {
+                        ImGui::Text("Player ID: %d", soldier.id);
+                        ImGui::Text("Position: %.3f, %.3f",
+                                    soldier.particle.position.x,
+                                    soldier.particle.position.y);
+
+                        auto rx =
+                          ((int)((soldier.particle.position.x /
+                                  (float)game_state_manager.GetConstMap().GetSectorsSize()))) +
+                          25;
+                        auto ry =
+                          ((int)((soldier.particle.position.y /
+                                  (float)game_state_manager.GetConstMap().GetSectorsSize()))) +
+                          25;
+
+                        ImGui::Text("Sector: %d, %d", rx, ry);
+                        if (soldier.active && soldier.on_ground) {
+                            ImGui::Text("SOLDIER IS ON GROUND");
+                        }
+                    }
+                });
+            }
+            ImGui::End();
+        }
+
+        {
+            ImGui::Begin("Weapons");
+
+            ImGui::SeparatorText("Primary weapon");
+            static std::vector<std::pair<std::string, WeaponType>> primary_weapons = {
+                { "Desert Eagles", WeaponType::DesertEagles },
+                { "HK MP5", WeaponType::MP5 },
+                { "Ak-74", WeaponType::Ak74 },
+                { "Steyr AUG", WeaponType::SteyrAUG },
+                { "Spas-12", WeaponType::Spas12 },
+                { "Ruger 77", WeaponType::Ruger77 },
+                { "M79", WeaponType::M79 },
+                { "Barret M82A1", WeaponType::Barrett },
+                { "FN Minimi", WeaponType::Minimi },
+                { "XM214 Minigun", WeaponType::Minigun },
+            };
+            for (const auto& weapon_data : primary_weapons) {
+                if (ImGui::Selectable(weapon_data.first.c_str(),
+                                      client_state.primary_weapon_type_choice ==
+                                        weapon_data.second)) {
+                    client_state.primary_weapon_type_choice = weapon_data.second;
+                }
+            }
+
+            ImGui::NewLine();
+            ImGui::SeparatorText("Secondary weapon");
+            static std::vector<std::pair<std::string, WeaponType>> secondary_weapons = {
+                { "USSOCOM", WeaponType::USSOCOM },
+                { "Combat Knife", WeaponType::Knife },
+                { "Chainsaw", WeaponType::Chainsaw },
+                { "M72 LAW", WeaponType::LAW }
+            };
+            for (const auto& weapon_data : secondary_weapons) {
+                if (ImGui::Selectable(weapon_data.first.c_str(),
+                                      client_state.secondary_weapon_type_choice ==
+                                        weapon_data.second)) {
+                    client_state.secondary_weapon_type_choice = weapon_data.second;
+                }
+            }
+            ImGui::End();
+        }
+
+        {
+            // This is only temporary to create movement simulation tests
+            ImGui::Begin("Animation Logs");
+
+            static bool recording_started = false;
+            static std::vector<AnimationRecording> recorded_animations;
+            static AnimationRecording last_added_body_animation;
+            static AnimationRecording last_added_legs_animation;
+            static unsigned int game_tick_when_started_recording;
+            static Control last_control;
+            static std::vector<ActionRecording> recorded_actions;
+            if (ImGui::Button(recording_started ? "Stop Recording" : "Start Recording")) {
+                if (!recording_started) {
+                    recorded_animations.clear();
+                    recorded_actions.clear();
+                    game_tick_when_started_recording = game_state_manager.GetGameTick();
+
+                    if (client_state.client_soldier_id.has_value()) {
+                        game_state_manager.ForEachSoldier([&](const auto& soldier) {
+                            if (*client_state.client_soldier_id == soldier.id) {
+                                recorded_animations.push_back(
+                                  { .is_legs = false,
+                                    .game_tick = game_state_manager.GetGameTick(),
+                                    .animation_type = soldier.body_animation->GetType(),
+                                    .frame = soldier.body_animation->GetFrame(),
+                                    .speed = soldier.body_animation->GetSpeed(),
+                                    .soldier_looking_left = soldier.direction == -1,
+                                    .soldier_position = soldier.particle.position });
+                                last_added_body_animation = recorded_animations.back();
+                                recorded_animations.push_back(
+                                  { .is_legs = true,
+                                    .game_tick = game_state_manager.GetGameTick(),
+                                    .animation_type = soldier.legs_animation->GetType(),
+                                    .frame = soldier.legs_animation->GetFrame(),
+                                    .speed = soldier.legs_animation->GetSpeed(),
+                                    .soldier_looking_left = soldier.direction == -1,
+                                    .soldier_position = soldier.particle.position });
+                                last_added_legs_animation = recorded_animations.back();
+
+                                last_control = soldier.control;
+
+                                AddControlActionTypes(soldier.control,
+                                                      recorded_actions,
+                                                      game_state_manager.GetGameTick());
+                            }
+                        });
                     }
                 }
-            });
-        }
-        ImGui::End();
-    }
-
-    {
-        ImGui::Begin("Weapons");
-
-        ImGui::SeparatorText("Primary weapon");
-        static std::vector<std::pair<std::string, WeaponType>> primary_weapons = {
-            { "Desert Eagles", WeaponType::DesertEagles },
-            { "HK MP5", WeaponType::MP5 },
-            { "Ak-74", WeaponType::Ak74 },
-            { "Steyr AUG", WeaponType::SteyrAUG },
-            { "Spas-12", WeaponType::Spas12 },
-            { "Ruger 77", WeaponType::Ruger77 },
-            { "M79", WeaponType::M79 },
-            { "Barret M82A1", WeaponType::Barrett },
-            { "FN Minimi", WeaponType::Minimi },
-            { "XM214 Minigun", WeaponType::Minigun },
-        };
-        for (const auto& weapon_data : primary_weapons) {
-            if (ImGui::Selectable(weapon_data.first.c_str(),
-                                  client_state.primary_weapon_type_choice == weapon_data.second)) {
-                client_state.primary_weapon_type_choice = weapon_data.second;
+                recording_started = !recording_started;
             }
-        }
 
-        ImGui::NewLine();
-        ImGui::SeparatorText("Secondary weapon");
-        static std::vector<std::pair<std::string, WeaponType>> secondary_weapons = {
-            { "USSOCOM", WeaponType::USSOCOM },
-            { "Combat Knife", WeaponType::Knife },
-            { "Chainsaw", WeaponType::Chainsaw },
-            { "M72 LAW", WeaponType::LAW }
-        };
-        for (const auto& weapon_data : secondary_weapons) {
-            if (ImGui::Selectable(weapon_data.first.c_str(),
-                                  client_state.secondary_weapon_type_choice ==
-                                    weapon_data.second)) {
-                client_state.secondary_weapon_type_choice = weapon_data.second;
-            }
-        }
-        ImGui::End();
-    }
-
-    {
-        // This is only temporary to create movement simulation tests
-        ImGui::Begin("Animation Logs");
-
-        static bool recording_started = false;
-        static std::vector<AnimationRecording> recorded_animations;
-        static AnimationRecording last_added_body_animation;
-        static AnimationRecording last_added_legs_animation;
-        static unsigned int game_tick_when_started_recording;
-        static Control last_control;
-        static std::vector<ActionRecording> recorded_actions;
-        if (ImGui::Button(recording_started ? "Stop Recording" : "Start Recording")) {
-            if (!recording_started) {
-                recorded_animations.clear();
-                recorded_actions.clear();
-                game_tick_when_started_recording = game_state_manager.GetGameTick();
-
+            if (recording_started) {
                 if (client_state.client_soldier_id.has_value()) {
                     game_state_manager.ForEachSoldier([&](const auto& soldier) {
                         if (*client_state.client_soldier_id == soldier.id) {
-                            recorded_animations.push_back(
-                              { .is_legs = false,
-                                .game_tick = game_state_manager.GetGameTick(),
-                                .animation_type = soldier.body_animation->GetType(),
-                                .frame = soldier.body_animation->GetFrame(),
-                                .speed = soldier.body_animation->GetSpeed(),
-                                .soldier_looking_left = soldier.direction == -1,
-                                .soldier_position = soldier.particle.position });
-                            last_added_body_animation = recorded_animations.back();
-                            recorded_animations.push_back(
-                              { .is_legs = true,
-                                .game_tick = game_state_manager.GetGameTick(),
-                                .animation_type = soldier.legs_animation->GetType(),
-                                .frame = soldier.legs_animation->GetFrame(),
-                                .speed = soldier.legs_animation->GetSpeed(),
-                                .soldier_looking_left = soldier.direction == -1,
-                                .soldier_position = soldier.particle.position });
-                            last_added_legs_animation = recorded_animations.back();
+                            if (last_added_legs_animation.animation_type !=
+                                soldier.legs_animation->GetType()) {
+                                recorded_animations.push_back(
+                                  { .is_legs = true,
+                                    .game_tick = game_state_manager.GetGameTick(),
+                                    .animation_type = soldier.legs_animation->GetType(),
+                                    .frame = soldier.legs_animation->GetFrame(),
+                                    .speed = soldier.legs_animation->GetSpeed(),
+                                    .soldier_looking_left = soldier.direction == -1,
+                                    .soldier_position = soldier.particle.position });
+                                last_added_legs_animation = recorded_animations.back();
+                            }
+                            if (last_added_body_animation.animation_type !=
+                                soldier.body_animation->GetType()) {
+                                recorded_animations.push_back(
+                                  { .is_legs = false,
+                                    .game_tick = game_state_manager.GetGameTick(),
+                                    .animation_type = soldier.body_animation->GetType(),
+                                    .frame = soldier.body_animation->GetFrame(),
+                                    .speed = soldier.body_animation->GetSpeed(),
+                                    .soldier_looking_left = soldier.direction == -1,
+                                    .soldier_position = soldier.particle.position });
+                                last_added_body_animation = recorded_animations.back();
+                            }
 
-                            last_control = soldier.control;
-
-                            AddControlActionTypes(
-                              soldier.control, recorded_actions, game_state_manager.GetGameTick());
+                            AddControlActionTypesIfChanged(last_control,
+                                                           soldier.control,
+                                                           recorded_actions,
+                                                           game_state_manager.GetGameTick());
                         }
                     });
                 }
             }
-            recording_started = !recording_started;
-        }
 
-        if (recording_started) {
-            if (client_state.client_soldier_id.has_value()) {
-                game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                    if (*client_state.client_soldier_id == soldier.id) {
-                        if (last_added_legs_animation.animation_type !=
-                            soldier.legs_animation->GetType()) {
-                            recorded_animations.push_back(
-                              { .is_legs = true,
-                                .game_tick = game_state_manager.GetGameTick(),
-                                .animation_type = soldier.legs_animation->GetType(),
-                                .frame = soldier.legs_animation->GetFrame(),
-                                .speed = soldier.legs_animation->GetSpeed(),
-                                .soldier_looking_left = soldier.direction == -1,
-                                .soldier_position = soldier.particle.position });
-                            last_added_legs_animation = recorded_animations.back();
-                        }
-                        if (last_added_body_animation.animation_type !=
-                            soldier.body_animation->GetType()) {
-                            recorded_animations.push_back(
-                              { .is_legs = false,
-                                .game_tick = game_state_manager.GetGameTick(),
-                                .animation_type = soldier.body_animation->GetType(),
-                                .frame = soldier.body_animation->GetFrame(),
-                                .speed = soldier.body_animation->GetSpeed(),
-                                .soldier_looking_left = soldier.direction == -1,
-                                .soldier_position = soldier.particle.position });
-                            last_added_body_animation = recorded_animations.back();
-                        }
+            ImGui::Separator();
 
-                        AddControlActionTypesIfChanged(last_control,
-                                                       soldier.control,
-                                                       recorded_actions,
-                                                       game_state_manager.GetGameTick());
-                    }
-                });
+            for (const auto& animation_recording : recorded_animations) {
+                ImGui::Text("%6d - %s %15s %2d %d %s %.4f %.4f",
+                            animation_recording.game_tick - game_tick_when_started_recording,
+                            animation_recording.is_legs ? "legs" : "body",
+                            AnimationTypeToString(animation_recording.animation_type).c_str(),
+                            animation_recording.frame,
+                            animation_recording.speed,
+                            animation_recording.soldier_looking_left ? "<" : ">",
+                            // Difference between the start point and current record
+                            animation_recording.soldier_position.x -
+                              recorded_animations.at(0).soldier_position.x,
+                            animation_recording.soldier_position.y -
+                              recorded_animations.at(0).soldier_position.y);
+            }
+
+            ImGui::End();
+
+            ImGui::Begin("Actions Log");
+
+            for (const auto& action : recorded_actions) {
+                ImGui::Text("%6d - %10s %s",
+                            action.game_tick - game_tick_when_started_recording,
+                            ControlActionTypeToString(action.action_type).c_str(),
+                            action.state ? "true" : "false");
+            }
+
+            ImGui::End();
+
+            if (recording_started) {
+                if (client_state.client_soldier_id.has_value()) {
+                    game_state_manager.ForEachSoldier([&](const auto& soldier) {
+                        if (*client_state.client_soldier_id == soldier.id) {
+                            last_control = soldier.control;
+                        }
+                    });
+                }
             }
         }
+    }
 
-        ImGui::Separator();
+    if (client_state.map_editor_state.is_play_test_escape_menu_open) {
+        ImGui::OpenPopup("Main menu");
+    }
 
-        for (const auto& animation_recording : recorded_animations) {
-            ImGui::Text("%6d - %s %15s %2d %d %s %.4f %.4f",
-                        animation_recording.game_tick - game_tick_when_started_recording,
-                        animation_recording.is_legs ? "legs" : "body",
-                        AnimationTypeToString(animation_recording.animation_type).c_str(),
-                        animation_recording.frame,
-                        animation_recording.speed,
-                        animation_recording.soldier_looking_left ? "<" : ">",
-                        // Difference between the start point and current record
-                        animation_recording.soldier_position.x -
-                          recorded_animations.at(0).soldier_position.x,
-                        animation_recording.soldier_position.y -
-                          recorded_animations.at(0).soldier_position.y);
-        }
-
-        ImGui::End();
-
-        ImGui::Begin("Actions Log");
-
-        for (const auto& action : recorded_actions) {
-            ImGui::Text("%6d - %10s %s",
-                        action.game_tick - game_tick_when_started_recording,
-                        ControlActionTypeToString(action.action_type).c_str(),
-                        action.state ? "true" : "false");
-        }
-
-        ImGui::End();
-
-        if (recording_started) {
-            if (client_state.client_soldier_id.has_value()) {
-                game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                    if (*client_state.client_soldier_id == soldier.id) {
-                        last_control = soldier.control;
-                    }
-                });
+    ImGui::SetNextWindowSize({ 220.0F, 100.0F }, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(
+      ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, { 0.5F, 0.5F });
+    if (ImGui::BeginPopupModal("Main menu", nullptr, ImGuiWindowFlags_NoResize)) {
+        if (client_state.map_editor_state.is_play_test_escape_menu_open) {
+            client_state.map_editor_state.is_modal_or_popup_open = true;
+            if (ImGui::Button("Exit game", { ImGui::GetContentRegionAvail().x, 0.0F })) {
+                client_state.map_editor_state.event_close_application_requested.Notify();
             }
+        } else {
+            ImGui::CloseCurrentPopup();
         }
+        ImGui::EndPopup();
     }
 
     ImGui::Render();

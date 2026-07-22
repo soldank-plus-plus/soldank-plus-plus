@@ -35,7 +35,7 @@ public:
     {
         state_manager.ForEachSoldier([&](const auto& soldier) {
             SoldierStatePacket packet{
-                .game_tick = state_manager.GetGameTick(),
+                .server_tick = state_manager.GetGameTick(),
                 .player_id = soldier.id,
                 .position_x = soldier.particle.position.x,
                 .position_y = soldier.particle.position.y,
@@ -64,8 +64,7 @@ public:
                 .using_jets = soldier.control.jets,
                 .jets_count = soldier.jets_count,
                 .active_weapon = soldier.active_weapon,
-                .last_processed_input_id =
-                  player_session_manager_.GetLastProcessedInputId(soldier.id),
+                .last_applied_input_id = player_session_manager_.GetLastAppliedInputId(soldier.id),
             };
             network_host_.SendNetworkMessageToAll({ NetworkEvent::SoldierState, packet });
         });

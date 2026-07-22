@@ -81,8 +81,7 @@ public:
             return client_state_.map_editor_state.is_play_mode_shortcut_capture_active ||
                    client_state_.map_editor_state.tool_shortcut_capture_index >= 0 ||
                    client_state_.map_editor_state.shortcut_capture_binding_index >= 0 ||
-                   (key == GLFW_KEY_ESCAPE &&
-                    client_state_.map_editor_state.is_play_test_escape_menu_open);
+                   key == GLFW_KEY_ESCAPE;
         });
 
         input_router_.SetMouseScreenMoveHandler(
@@ -130,9 +129,12 @@ public:
 
     void UpdateContext()
     {
-        bool is_ui_captured = DebugUI::GetWantCaptureMouse() ||
-                              client_state_.map_editor_state.is_mouse_hovering_over_ui ||
-                              client_state_.map_editor_state.is_modal_or_popup_open;
+        const bool is_ui_captured = DebugUI::GetWantCaptureMouse() ||
+                                    client_state_.map_editor_state.is_mouse_hovering_over_ui ||
+                                    client_state_.map_editor_state.is_modal_or_popup_open;
+        if (IsGameplayActive()) {
+            UpdateCursorMode(is_ui_captured ? CursorMode::Normal : CursorMode::Locked);
+        }
         input_router_.SetActiveContext(client_runtime_.GetInputContext(is_ui_captured));
         input_router_.SetKeyboardCaptured(DebugUI::GetWantTextInput() ||
                                           client_state_.map_editor_state.is_modal_or_popup_open);
@@ -181,6 +183,21 @@ private:
     {
         return game_session_.IsGameplayActive(client_runtime_.GetClientMode(),
                                               client_runtime_.GetEditorMode());
+    }
+
+    void UpdateCursorMode(CursorMode cursor_mode)
+    {
+        if (window_.GetCursorMode() == cursor_mode) {
+            return;
+        }
+
+        const PlatformInput& platform_input = window_.GetPlatformInput();
+        const glm::vec2 cursor_position = { static_cast<float>(platform_input.GetX()),
+                                            static_cast<float>(platform_input.GetY()) };
+        window_.SetCursorMode(cursor_mode);
+        if (cursor_mode == CursorMode::Normal) {
+            window_.SetCursorScreenPosition(cursor_position);
+        }
     }
 
     void MoveKeyboardAimCursor(std::uint8_t soldier_id, float direction)

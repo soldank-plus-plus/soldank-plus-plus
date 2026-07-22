@@ -77,6 +77,7 @@ set(soldank_core_modules
     core/simulation/SimulationCommandQueue.cpp
     core/simulation/SimulationEvents.cpp
     core/simulation/SimulationEventSink.cpp
+    core/simulation/PlayerInputApplication.cpp
     core/simulation/WorldTick.cpp
 
     core/types/BulletType.cpp
@@ -87,6 +88,7 @@ set(soldank_core_modules
 
     core/utility/Getline.cpp
     core/utility/Observable.cpp
+    core/utility/SerialNumber.cpp
     core/utility/VisitHelper.cpp
 )
 

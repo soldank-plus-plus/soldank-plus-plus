@@ -84,6 +84,8 @@ set(client_lib_modules
     map_editor/tools/WaypointTool.cpp
 
     networking/IConnection.cpp
+    networking/InputApplicationTimeline.cpp
+    networking/ReconciliationTimeline.cpp
     networking/NetworkingClient.cpp
     networking/INetworkingClient.cpp
     networking/NetworkClientSession.cpp

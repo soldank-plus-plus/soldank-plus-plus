@@ -149,6 +149,11 @@ public:
         , body_animation_count_(soldier.body_animation->GetCount())
         , legs_animation_count_(soldier.legs_animation->GetCount())
         , on_ground_(soldier.on_ground)
+        , on_ground_for_law_(soldier.on_ground_for_law)
+        , on_ground_last_frame_(soldier.on_ground_last_frame)
+        , on_ground_permanent_(soldier.on_ground_permanent)
+        , direction_(soldier.direction)
+        , old_direction_(soldier.old_direction)
         , control_(soldier.control)
         , position_(soldier.particle.position)
         , old_position_(soldier.particle.old_position)
@@ -157,8 +162,34 @@ public:
         , stance_(soldier.stance)
         , velocity_(soldier.particle.GetVelocity())
         , force_(soldier.particle.GetForce())
+        , grenade_can_throw_(soldier.grenade_can_throw)
     {
     }
+
+    AnimationType GetBodyAnimationType() const { return body_animation_type_; }
+    AnimationType GetLegsAnimationType() const { return legs_animation_type_; }
+    std::uint32_t GetBodyAnimationFrame() const { return body_animation_frame_; }
+    std::uint32_t GetLegsAnimationFrame() const { return legs_animation_frame_; }
+    std::int32_t GetBodyAnimationSpeed() const { return body_animation_speed_; }
+    std::int32_t GetLegsAnimationSpeed() const { return legs_animation_speed_; }
+    std::int32_t GetBodyAnimationCount() const { return body_animation_count_; }
+    std::int32_t GetLegsAnimationCount() const { return legs_animation_count_; }
+    const glm::vec2& GetPosition() const { return position_; }
+    const glm::vec2& GetOldPosition() const { return old_position_; }
+    const glm::vec2& GetVelocity() const { return velocity_; }
+    const glm::vec2& GetForce() const { return force_; }
+    bool IsOnGround() const { return on_ground_; }
+    bool IsOnGroundForLaw() const { return on_ground_for_law_; }
+    bool WasOnGroundLastFrame() const { return on_ground_last_frame_; }
+    bool IsOnGroundPermanent() const { return on_ground_permanent_; }
+    std::int8_t GetDirection() const { return direction_; }
+    std::int8_t GetOldDirection() const { return old_direction_; }
+    std::uint8_t GetStance() const { return stance_; }
+    std::int32_t GetJetsCount() const { return jets_count_; }
+    std::int32_t GetPreviousJetsCount() const { return jets_count_prev_; }
+    bool IsUsingJets() const { return control_.jets; }
+    const Control& GetControl() const { return control_; }
+    bool CanThrowGrenade() const { return grenade_can_throw_; }
 
     void CompareAndLog(const Soldier& other_soldier)
     {
@@ -297,6 +328,12 @@ private:
     std::int32_t legs_animation_count_;
 
     bool on_ground_;
+    bool on_ground_for_law_;
+    bool on_ground_last_frame_;
+    bool on_ground_permanent_;
+
+    std::int8_t direction_;
+    std::int8_t old_direction_;
 
     Control control_;
 
@@ -310,5 +347,7 @@ private:
 
     glm::vec2 velocity_;
     glm::vec2 force_;
+
+    bool grenade_can_throw_;
 };
 } // namespace Soldank

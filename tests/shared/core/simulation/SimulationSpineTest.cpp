@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <limits>
 #include <variant>
 
 import Shared.Core.Entities.Bullet;
@@ -12,10 +13,25 @@ import Shared.Core.Simulation.SimulationEvents;
 import Shared.Core.Types.BulletType;
 import Shared.Core.Types.TeamType;
 import Shared.Core.Types.WeaponType;
+import Shared.Core.Utility.SerialNumber;
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.ProtocolConversions;
 
 using namespace Soldank;
+
+TEST(SimulationSpineTest, ComparesSerialNumbersAcrossWraparound)
+{
+    constexpr std::uint32_t MAX_TICK = std::numeric_limits<std::uint32_t>::max();
+
+    EXPECT_TRUE(IsSerialNumberNewer(0, MAX_TICK));
+    EXPECT_TRUE(IsSerialNumberNewer(1, MAX_TICK));
+    EXPECT_TRUE(IsSerialNumberOlder(MAX_TICK, 0));
+    EXPECT_EQ(SerialNumberForwardDistance(MAX_TICK, 1), 2U);
+    EXPECT_EQ(SerialNumberSignedDistance(MAX_TICK, 1), 2);
+    EXPECT_EQ(SerialNumberSignedDistance(1, MAX_TICK), -2);
+    EXPECT_EQ(AddSerialNumberOffset(MAX_TICK, 2), 1U);
+    EXPECT_EQ(AddSerialNumberOffset(1, -2), MAX_TICK);
+}
 
 TEST(SimulationSpineTest, DrainsQueuedSimulationCommandsInOrder)
 {
@@ -35,7 +51,8 @@ TEST(SimulationSpineTest, ConvertsSoldierInputPacketToPlayerInputCommand)
 {
     SoldierInputPacket packet{
         .input_sequence_id = 11,
-        .game_tick = 22,
+        .client_tick = 22,
+        .apply_server_tick = 25,
         .position_x = 1.0F,
         .position_y = 2.0F,
         .mouse_map_position_x = 3.0F,
@@ -49,7 +66,8 @@ TEST(SimulationSpineTest, ConvertsSoldierInputPacketToPlayerInputCommand)
 
     ASSERT_EQ(command.soldier_id, 9);
     ASSERT_EQ(command.input_sequence_id, 11U);
-    ASSERT_EQ(command.tick, 22U);
+    ASSERT_EQ(command.client_tick, 22U);
+    ASSERT_EQ(command.apply_server_tick, 25U);
     ASSERT_TRUE(command.control.left);
     ASSERT_TRUE(command.control.fire);
     ASSERT_EQ(command.mouse_map_position.x, 3.0F);
@@ -59,17 +77,18 @@ TEST(SimulationSpineTest, ConvertsSoldierInputPacketToPlayerInputCommand)
 TEST(SimulationSpineTest, ConvertsProjectileSpawnEventToPacket)
 {
     ProjectileSpawnedEvent event{
-        .bullet_params = BulletParams{
-          .style = BulletType::FragGrenade,
-          .weapon = WeaponType::FragGrenade,
-          .position = { 10.0F, 20.0F },
-          .velocity = { 30.0F, 40.0F },
-          .timeout = 50,
-          .hit_multiply = 1.5F,
-          .team = TeamType::Alpha,
-          .owner_id = 6,
-          .push = 0.0F,
-        },
+        .bullet_params =
+          BulletParams{
+            .style = BulletType::FragGrenade,
+            .weapon = WeaponType::FragGrenade,
+            .position = { 10.0F, 20.0F },
+            .velocity = { 30.0F, 40.0F },
+            .timeout = 50,
+            .hit_multiply = 1.5F,
+            .team = TeamType::Alpha,
+            .owner_id = 6,
+            .push = 0.0F,
+          },
     };
 
     auto packet = ProtocolConversions::ToProjectileSpawnPacket(3, event);

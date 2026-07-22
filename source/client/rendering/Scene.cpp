@@ -143,7 +143,6 @@ void Scene::RenderGame(const StateManager& game_state_manager,
     RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
     game_hud_renderer_.Render(game_state_manager, client_state);
     RenderDebugMouseAim(game_state_manager, client_state);
-    MapEditorUI::RenderPlayTestEscapeMenu(client_state);
 }
 
 void Scene::RenderEditor(const StateManager& game_state_manager,
@@ -326,9 +325,7 @@ void Scene::RenderDebugOverlay(const StateManager& game_state_manager,
                                double frame_percent,
                                int fps)
 {
-    if (client_state.debug_render.is_game_debug_interface_enabled) {
-        DebugUI::Render(game_state_manager, client_state, frame_percent, fps);
-    }
+    DebugUI::Render(game_state_manager, client_state, frame_percent, fps);
     if (!DebugUI::GetWantCaptureMouse()) {
         cursor_renderer_.Render(
           { client_state.input.mouse_screen_position.x,

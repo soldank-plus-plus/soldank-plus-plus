@@ -41,9 +41,8 @@ private:
     {
         unsigned int input_sequence_id = soldier_input_packet.input_sequence_id;
         unsigned int soldier_id = game_server_->GetSoldierIdFromConnectionId(sender_connection_id);
-        PlayerInputCommand player_input_command =
-          ProtocolConversions::ToPlayerInputCommand(
-            static_cast<std::uint8_t>(soldier_id), soldier_input_packet);
+        PlayerInputCommand player_input_command = ProtocolConversions::ToPlayerInputCommand(
+          static_cast<std::uint8_t>(soldier_id), soldier_input_packet);
 
         // TODO: validate arguments
         // Spdlog::info("{} Soldier pos from client: {} {}",
@@ -56,9 +55,9 @@ private:
             return NetworkEventHandlerResult::Failure;
         }
 
-        player_session_manager_.MarkInputProcessed(static_cast<std::uint8_t>(soldier_id),
-                                                   input_sequence_id);
-        command_queues_.EnqueuePlayerInput(player_input_command);
+        player_session_manager_.MarkInputReceived(static_cast<std::uint8_t>(soldier_id),
+                                                  input_sequence_id);
+        command_queues_.StorePendingPlayerInput(player_input_command);
 
         return NetworkEventHandlerResult::Success;
     }

@@ -16,7 +16,10 @@ export namespace Soldank
 struct SoldierInputPacket
 {
     std::uint32_t input_sequence_id;
-    std::uint32_t game_tick;
+    // Client simulation tick at which this control state was predicted.
+    std::uint32_t client_tick;
+    // Authoritative server tick at which the control state must be simulated.
+    std::uint32_t apply_server_tick;
     float position_x;
     float position_y;
     float mouse_map_position_x;
@@ -28,7 +31,8 @@ struct SoldierInputPacket
 #pragma pack(push, 1)
 struct SoldierStatePacket
 {
-    std::uint32_t game_tick;
+    // Authoritative server simulation tick represented by this snapshot.
+    std::uint32_t server_tick;
     std::uint8_t player_id;
     float position_x;
     float position_y;
@@ -57,7 +61,7 @@ struct SoldierStatePacket
     bool using_jets;
     std::int32_t jets_count;
     std::uint8_t active_weapon;
-    std::uint32_t last_processed_input_id;
+    std::uint32_t last_applied_input_id;
 };
 #pragma pack(pop)
 

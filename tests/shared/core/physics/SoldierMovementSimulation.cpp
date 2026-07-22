@@ -16,6 +16,8 @@ import Shared.Core.Physics.SoldierPhysics;
 import Shared.Core.State.StateManager;
 import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.Physics.Particles;
+import Shared.Core.Simulation.PlayerInputApplication;
+import Shared.Core.Simulation.SimulationCommands;
 import Shared.Core.State.Control;
 import Shared.Core.Animations;
 import Shared.Core.Data.IFileReader;
@@ -68,6 +70,9 @@ public:
 
     void LookLeft();
     void LookRight();
+
+    void ApplyPlayerInput(const Soldank::PlayerInputCommand& command);
+    const Soldank::Control& GetSoldierControl() const;
 
     void AddSoldierExpectedAnimationState(
       unsigned int tick,
@@ -174,6 +179,16 @@ void SoldierMovementSimulation::LookRight()
 {
     is_soldier_looking_left_ = false;
     TurnSoldierRight();
+}
+
+void SoldierMovementSimulation::ApplyPlayerInput(const Soldank::PlayerInputCommand& command)
+{
+    Soldank::ApplyPlayerInputCommand(*state_manager_, command);
+}
+
+const Soldank::Control& SoldierMovementSimulation::GetSoldierControl() const
+{
+    return state_manager_->GetSoldier(SOLDIER_ID).control;
 }
 
 void SoldierMovementSimulation::HoldJetsAt(unsigned int tick)

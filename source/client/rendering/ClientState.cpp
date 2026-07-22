@@ -44,14 +44,37 @@ struct ClientNetworkState
 {
     glm::vec2 soldier_position_server_pov;
 
+    struct PredictedSoldierSnapshot
+    {
+        std::uint32_t input_sequence_id;
+        std::uint32_t client_tick;
+        std::uint32_t apply_server_tick;
+        SoldierSnapshot soldier_snapshot;
+    };
+
+    // Network delivery history is pruned by acknowledged input sequence ID.
     std::list<SoldierInputPacket> pending_inputs;
-    std::list<std::pair<std::uint32_t, SoldierSnapshot>> soldier_snapshot_history;
+    // Simulation replay history is pruned independently by application server tick.
+    std::list<SoldierInputPacket> prediction_inputs;
+    std::list<PredictedSoldierSnapshot> soldier_snapshot_history;
     bool server_reconciliation = true;
     bool client_side_prediction = true;
     bool objects_interpolation = true;
     bool draw_server_pov_client_pos;
 
+    std::optional<std::int64_t> server_tick_offset;
+    std::uint32_t target_input_delay_ticks = 5;
+    std::uint32_t active_input_delay_ticks = 0;
+    std::uint32_t input_timeline_resync_count = 0;
+    std::optional<std::uint32_t> reconciliation_resume_server_tick;
+
     int network_lag;
+
+#ifndef NDEBUG
+    float last_local_correction_distance = 0.0F;
+    float maximum_local_correction_distance = 0.0F;
+    unsigned int local_correction_count = 0;
+#endif
 
     PingTimer ping_timer;
 };

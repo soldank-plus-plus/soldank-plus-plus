@@ -527,6 +527,7 @@ void Update(StateManager& state_manager,
     if (soldier.particle.velocity_.y < -PhysicsConstants::MAX_VELOCITY) {
         soldier.particle.velocity_.y = -PhysicsConstants::MAX_VELOCITY;
     }
+
 }
 
 bool CheckMapCollision(Soldier& soldier,

@@ -15,7 +15,9 @@ import Tests.Shared.Core.Physics.SoldierMovementSimulation;
 import Testing.Framework.Shared.MapBuilder;
 
 import Shared.Core.Physics.SoldierPhysics;
+import Shared.Core.Simulation.SimulationCommands;
 import Shared.Core.State.StateManager;
+import Shared.Core.State.Control;
 import Shared.Core.Animations;
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
@@ -49,6 +51,67 @@ public:
         return buffer.str();
     }
 };
+
+TEST(MovementTest, AppliesCompletePlayerInputControlState)
+{
+    SoldankTesting::SoldierMovementSimulation simulation{ FileReaderForTestsWorkingDirectory() };
+    const Soldank::Control input_control{
+        .left = true,
+        .right = false,
+        .up = true,
+        .down = false,
+        .fire = true,
+        .jets = false,
+        .change = true,
+        .throw_grenade = false,
+        .drop = true,
+        .reload = true,
+        .prone = false,
+        .flag_throw = true,
+        .mouse_aim_x = -100,
+        .mouse_aim_y = -200,
+        .mouse_dist = 321,
+        .was_running_left = true,
+        .was_jumping = false,
+        .was_throwing_weapon = true,
+        .was_changing_weapon = false,
+        .was_throwing_grenade = true,
+        .was_reloading_weapon = true,
+    };
+    const Soldank::PlayerInputCommand command{
+        .soldier_id = 0,
+        .input_sequence_id = 1,
+        .client_tick = 2,
+        .apply_server_tick = 3,
+        .control = input_control,
+        .mouse_map_position = { 123.0F, 456.0F },
+    };
+
+    simulation.ApplyPlayerInput(command);
+
+    const Soldank::Control& applied_control = simulation.GetSoldierControl();
+    EXPECT_EQ(applied_control.left, input_control.left);
+    EXPECT_EQ(applied_control.right, input_control.right);
+    EXPECT_EQ(applied_control.up, input_control.up);
+    EXPECT_EQ(applied_control.down, input_control.down);
+    EXPECT_EQ(applied_control.fire, input_control.fire);
+    EXPECT_EQ(applied_control.jets, input_control.jets);
+    EXPECT_EQ(applied_control.change, input_control.change);
+    EXPECT_EQ(applied_control.throw_grenade, input_control.throw_grenade);
+    EXPECT_EQ(applied_control.drop, input_control.drop);
+    EXPECT_EQ(applied_control.reload, input_control.reload);
+    EXPECT_EQ(applied_control.prone, input_control.prone);
+    EXPECT_EQ(applied_control.flag_throw, input_control.flag_throw);
+    EXPECT_EQ(applied_control.mouse_aim_x, 123);
+    EXPECT_EQ(applied_control.mouse_aim_y, 456);
+    EXPECT_EQ(applied_control.mouse_dist, input_control.mouse_dist);
+    EXPECT_EQ(applied_control.was_running_left, input_control.was_running_left);
+    EXPECT_EQ(applied_control.was_jumping, input_control.was_jumping);
+    EXPECT_EQ(applied_control.was_throwing_weapon, input_control.was_throwing_weapon);
+    EXPECT_EQ(applied_control.was_changing_weapon, input_control.was_changing_weapon);
+    EXPECT_EQ(applied_control.was_throwing_grenade, input_control.was_throwing_grenade);
+    EXPECT_EQ(applied_control.was_reloading_weapon, input_control.was_reloading_weapon);
+}
 
 TEST(MovementTest, TestRunBackRight)
 {

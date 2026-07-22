@@ -3,6 +3,7 @@ module;
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 
 export module Shared.Networking.PingTimer;
 
@@ -19,8 +20,9 @@ public:
 
     void Stop()
     {
-        is_running_ = false;
         Update();
+        is_running_ = false;
+        last_completed_ping_ = last_ping_;
     }
     void Update()
     {
@@ -32,6 +34,10 @@ public:
     }
 
     std::uint16_t GetLastPingMeasure() const { return last_ping_; }
+    std::optional<std::uint16_t> GetLastCompletedPingMeasure() const
+    {
+        return last_completed_ping_;
+    }
     bool IsRunning() const { return is_running_; }
     bool IsOverThreshold() const
     {
@@ -45,6 +51,7 @@ private:
 
     std::chrono::time_point<std::chrono::system_clock> start_time_;
     std::uint16_t last_ping_{};
+    std::optional<std::uint16_t> last_completed_ping_;
     bool is_running_{};
 };
 } // namespace Soldank

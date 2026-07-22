@@ -30,6 +30,7 @@ import Shared.Core.Entities.Soldier;
 import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.Loop.FixedTimestepRunner;
 import Shared.Core.Loop.PlatformFixedTimestepLoop;
+import Shared.Core.Simulation.PlayerInputApplication;
 import Shared.Core.Simulation.SimulationCommands;
 import Shared.Core.Simulation.SimulationEvents;
 import Shared.Core.Simulation.WorldTick;
@@ -123,7 +124,7 @@ public:
         state_manager_->SetGameTick(input.tick);
 
         for (const auto& player_input : input.player_inputs) {
-            ApplyPlayerInputCommand(player_input);
+            ApplyPlayerInputCommand(*state_manager_, player_input);
         }
 
         for (const auto& command : input.commands) {
@@ -376,35 +377,24 @@ public:
     void SetFPSLimit(int new_fps_limit) final { fps_limit_ = new_fps_limit; }
 
 private:
-    void ApplyPlayerInputCommand(const PlayerInputCommand& command)
-    {
-        state_manager_->SoldierControlApply(command.soldier_id,
-                                            [&](const Soldier& /*soldier*/, Control& control) {
-                                                control = command.control;
-                                            });
-        state_manager_->ChangeSoldierMouseMapPosition(command.soldier_id,
-                                                      command.mouse_map_position);
-    }
-
     void ApplySimulationCommand(const SimulationCommand& command)
     {
-        std::visit(VisitOverload{
-                     [&](const SpawnSoldierCommand& spawn_command) {
-                         SpawnSoldier(spawn_command.soldier_id, spawn_command.spawn_position);
-                     },
-                     [&](const KillSoldierCommand& kill_command) {
-                         KillSoldier(kill_command.soldier_id);
-                     },
-                     [&](const RemoveSoldierCommand& remove_command) {
-                         state_manager_->RemoveSoldier(remove_command.soldier_id);
-                     },
-                     [&](const SetWeaponChoiceCommand& weapon_choice_command) {
-                         UpdateWeaponChoices(weapon_choice_command.soldier_id,
-                                             weapon_choice_command.primary_weapon_type,
-                                             weapon_choice_command.secondary_weapon_type);
-                     },
-                   },
-                   command);
+        std::visit(
+          VisitOverload{
+            [&](const SpawnSoldierCommand& spawn_command) {
+                SpawnSoldier(spawn_command.soldier_id, spawn_command.spawn_position);
+            },
+            [&](const KillSoldierCommand& kill_command) { KillSoldier(kill_command.soldier_id); },
+            [&](const RemoveSoldierCommand& remove_command) {
+                state_manager_->RemoveSoldier(remove_command.soldier_id);
+            },
+            [&](const SetWeaponChoiceCommand& weapon_choice_command) {
+                UpdateWeaponChoices(weapon_choice_command.soldier_id,
+                                    weapon_choice_command.primary_weapon_type,
+                                    weapon_choice_command.secondary_weapon_type);
+            },
+          },
+          command);
     }
 
     std::shared_ptr<StateManager> state_manager_;

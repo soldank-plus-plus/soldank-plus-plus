@@ -379,7 +379,13 @@ void Application::Run()
             client_state_->camera.position = { 0.0F, 0.0F };
         }
     });
-    world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {});
+    world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {
+        if (application_mode_ == ApplicationMode::Online &&
+            client_state_->client_soldier_id.has_value()) {
+            network_client_session_->StorePredictedSoldierSnapshot(
+              *client_state_->client_soldier_id);
+        }
+    });
     world_->SetPostGameLoopIterationCallback(
       [&](const StateManager& state_manager, double frame_percent, int last_fps) {
           if (!client_state_->network.objects_interpolation) {
