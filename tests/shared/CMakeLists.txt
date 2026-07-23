@@ -69,6 +69,10 @@ add_executable(SimulationSpineTest core/simulation/SimulationSpineTest.cpp)
 AddTestOptionsAndLibraries(SimulationSpineTest)
 target_link_libraries(SimulationSpineTest PRIVATE shared_lib)
 
+add_executable(StateManagerTest core/state/StateManagerTest.cpp)
+AddTestOptionsAndLibraries(StateManagerTest)
+target_link_libraries(StateManagerTest PRIVATE shared_lib)
+
 add_executable(MapBuilderTest core/map/MapBuilderTest.cpp)
 AddTestOptionsAndLibraries(MapBuilderTest)
 target_link_libraries(MapBuilderTest PRIVATE shared_lib)
@@ -127,6 +131,8 @@ add_test(BodyGetUpAnimationStateTest BodyGetUpAnimationStateTest)
 add_test(AnimationStatesTest AnimationStatesTest)
 add_test(WeaponTest WeaponTest)
 add_test(SimulationSpineTest SimulationSpineTest)
+add_test(StateManagerTest StateManagerTest)
+set_tests_properties(StateManagerTest PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 add_test(MapBuilderTest MapBuilderTest)
 add_test(MapDocumentRuntimeMapTest MapDocumentRuntimeMapTest)
 add_test(MapTest MapTest)
@@ -168,3 +174,15 @@ add_custom_command(TARGET MovementTest POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${soldatbase_SOURCE_DIR}/shared/weapons_realistic.ini"
         "$<TARGET_FILE_DIR:MovementTest>/weapons_realistic.ini") 
+
+add_custom_command(TARGET StateManagerTest POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:StateManagerTest>/objects"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${soldatbase_SOURCE_DIR}/shared/objects/gostek.po"
+        "$<TARGET_FILE_DIR:StateManagerTest>/objects/gostek.po"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${soldatbase_SOURCE_DIR}/shared/objects/karabin.po"
+        "$<TARGET_FILE_DIR:StateManagerTest>/objects/karabin.po"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${soldatbase_SOURCE_DIR}/shared/weapons.ini"
+        "$<TARGET_FILE_DIR:StateManagerTest>/weapons.ini")

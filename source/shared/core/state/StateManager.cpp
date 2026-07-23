@@ -7,6 +7,7 @@ module;
 #include <filesystem>
 #include <functional>
 #include <random>
+#include <stdexcept>
 #include <vector>
 
 export module Shared.Core.State.StateManager;
@@ -701,6 +702,11 @@ Item& StateManager::CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemTy
         ++new_id;
     }
 
+    if (new_id >= state_.items.size()) {
+        spdlog::critical("Trying to create a new item but array is full, id: {}", new_id);
+        throw std::runtime_error("Cannot create item: item array is full");
+    }
+
     Item new_item;
     new_item.active = true;
     new_item.style = style;
@@ -845,14 +851,10 @@ Item& StateManager::CreateItem(glm::vec2 position, std::uint8_t owner_id, ItemTy
             break;
     }
 
-    if (new_id >= state_.items.size()) {
-        spdlog::critical("Trying to create a new item but array is full, id: {}", new_id);
-    }
-
     state_.items.at(new_id) = new_item;
     SetItemPosition(new_id, position);
 
-    return state_.items.back();
+    return state_.items.at(new_id);
 }
 
 void StateManager::SetItemPosition(unsigned int id, glm::vec2 new_position)
