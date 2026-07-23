@@ -25,6 +25,7 @@ void Render(const StateManager& game_state_manager,
             ClientState& client_state,
             double frame_percent,
             int fps);
+void RenderFrameContents(const StateManager& game_state_manager, ClientState& client_state, int fps);
 bool GetWantCaptureMouse();
 bool GetWantTextInput();
 } // namespace Soldank::DebugUI
@@ -256,20 +257,8 @@ void AddControlActionTypes(const Control& soldier_control,
     }
 }
 
-void Render(const StateManager& game_state_manager,
-            ClientState& client_state,
-            double /*frame_percent*/,
-            int fps)
+void RenderFrameContents(const StateManager& game_state_manager, ClientState& client_state, int fps)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent(client_state.input.mouse_screen_position.x,
-                        client_state.input.window_height -
-                          client_state.input.mouse_screen_position.y);
-    io.MouseDrawCursor = false;
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
     if (client_state.debug_render.is_game_debug_interface_enabled) {
         {
             ImGui::Begin("Network window (Works only when connected to a server)");
@@ -530,7 +519,23 @@ void Render(const StateManager& game_state_manager,
         }
         ImGui::EndPopup();
     }
+}
 
+void Render(const StateManager& game_state_manager,
+            ClientState& client_state,
+            double /*frame_percent*/,
+            int fps)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddMousePosEvent(client_state.input.mouse_screen_position.x,
+                        client_state.input.window_height -
+                          client_state.input.mouse_screen_position.y);
+    io.MouseDrawCursor = false;
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    RenderFrameContents(game_state_manager, client_state, fps);
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

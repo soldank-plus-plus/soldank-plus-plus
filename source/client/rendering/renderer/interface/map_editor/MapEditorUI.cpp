@@ -33,6 +33,7 @@ import Shared.Core.Map.Map;
 export namespace Soldank::MapEditorUI
 {
 void Render(const StateManager& game_state_manager, ClientState& client_state);
+void RenderFrameContents(const StateManager& game_state_manager, ClientState& client_state);
 void RenderPlayTestEscapeMenu(ClientState& client_state);
 } // namespace Soldank::MapEditorUI
 
@@ -1183,10 +1184,8 @@ void RenderSettingsModal(ClientState& client_state)
     }
 }
 
-void Render(const StateManager& game_state_manager, ClientState& client_state)
+void RenderFrameContents(const StateManager& game_state_manager, ClientState& client_state)
 {
-    BeginFrame(client_state);
-
     const ImGuiWindowFlags default_window_flags = GetDefaultWindowFlags();
     {
         RenderMainMenuBar(game_state_manager, client_state);
@@ -1210,7 +1209,12 @@ void Render(const StateManager& game_state_manager, ClientState& client_state)
     RenderPolygonTypePopup(client_state);
     RenderSceneryPickerPopup(client_state);
     RenderSelectionContextMenu(client_state);
+}
 
+void Render(const StateManager& game_state_manager, ClientState& client_state)
+{
+    BeginFrame(client_state);
+    RenderFrameContents(game_state_manager, client_state);
     EndFrame();
 }
 

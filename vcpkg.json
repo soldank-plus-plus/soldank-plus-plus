@@ -42,6 +42,17 @@
                 "gtest"
             ]
         },
+        "imgui-test-engine": {
+            "description": "Build Dear ImGui with the Test Engine instrumentation.",
+            "dependencies": [
+                {
+                    "name": "imgui",
+                    "features": [
+                        "test-engine"
+                    ]
+                }
+            ]
+        },
         "webrtc-server": {
             "description": "Build the experimental WebRTC server transport.",
             "dependencies": [

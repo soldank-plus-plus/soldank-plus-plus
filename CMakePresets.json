@@ -15,7 +15,9 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
       }
     },
     {
@@ -76,7 +78,7 @@
       "binaryDir": "${sourceDir}/build/clang-ninja-debug-all-webrtc",
       "cacheVariables": {
         "BUILD_WEBRTC_SERVER_TRANSPORT": "ON",
-        "VCPKG_MANIFEST_FEATURES": "webrtc-server"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine;webrtc-server"
       }
     },
     {
@@ -133,7 +135,7 @@
       "binaryDir": "${sourceDir}/build/clang-ninja-server-debug-webrtc",
       "cacheVariables": {
         "BUILD_WEBRTC_SERVER_TRANSPORT": "ON",
-        "VCPKG_MANIFEST_FEATURES": "webrtc-server"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine;webrtc-server"
       }
     },
     {
@@ -157,7 +159,9 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "BUILD_COMPILE_WITH_COVERAGE": "ON"
+        "BUILD_COMPILE_WITH_COVERAGE": "ON",
+        "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
       }
     },
     {
@@ -180,7 +184,9 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "BUILD_USE_ADDRESS_SANITIZER": "ON"
+        "BUILD_USE_ADDRESS_SANITIZER": "ON",
+        "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
       }
     },
     {
@@ -193,7 +199,9 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER": "ON"
+        "BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER": "ON",
+        "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
       }
     },
     {
@@ -240,7 +248,9 @@
       "architecture": "x64",
       "binaryDir": "${sourceDir}/build/msvc-vs-debug",
       "cacheVariables": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
       }
     },
     {
@@ -328,7 +338,9 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
       }
     },
     {

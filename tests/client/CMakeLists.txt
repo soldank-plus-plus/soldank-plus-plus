@@ -1,9 +1,13 @@
 set(MAP_EDITOR_TEST_DATA_DIR "${CMAKE_CURRENT_BINARY_DIR}/map_editor_test_data")
-set(MAP_EDITOR_TEST_DATA_STAMP "${MAP_EDITOR_TEST_DATA_DIR}/assets.stamp")
+set(MAP_EDITOR_TEST_DATA_VERSION 2)
+set(MAP_EDITOR_TEST_DATA_STAMP
+  "${MAP_EDITOR_TEST_DATA_DIR}/assets-v${MAP_EDITOR_TEST_DATA_VERSION}.stamp")
 
 add_custom_command(
   OUTPUT "${MAP_EDITOR_TEST_DATA_STAMP}"
   COMMAND ${CMAKE_COMMAND} -E make_directory "${MAP_EDITOR_TEST_DATA_DIR}/objects"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${MAP_EDITOR_TEST_DATA_DIR}/textures"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${MAP_EDITOR_TEST_DATA_DIR}/scenery-gfx"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${soldatbase_SOURCE_DIR}/shared/weapons.ini"
     "${MAP_EDITOR_TEST_DATA_DIR}/weapons.ini"
@@ -16,16 +20,28 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${soldatbase_SOURCE_DIR}/shared/objects/gostek.po"
     "${MAP_EDITOR_TEST_DATA_DIR}/objects/gostek.po"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${soldatbase_SOURCE_DIR}/play-regular.ttf"
+    "${MAP_EDITOR_TEST_DATA_DIR}/play-regular.ttf"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${soldatbase_SOURCE_DIR}/shared/textures/malina.png"
+    "${MAP_EDITOR_TEST_DATA_DIR}/textures/malina.png"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${soldatbase_SOURCE_DIR}/shared/scenery-gfx/rir-hotel2.png"
+    "${MAP_EDITOR_TEST_DATA_DIR}/scenery-gfx/rir-hotel2.png"
   COMMAND ${CMAKE_COMMAND} -E touch "${MAP_EDITOR_TEST_DATA_STAMP}"
   DEPENDS
     "${soldatbase_SOURCE_DIR}/shared/weapons.ini"
     "${soldatbase_SOURCE_DIR}/shared/weapons_realistic.ini"
     "${soldatbase_SOURCE_DIR}/shared/objects/gostek.po"
+    "${soldatbase_SOURCE_DIR}/play-regular.ttf"
+    "${soldatbase_SOURCE_DIR}/shared/textures/malina.png"
+    "${soldatbase_SOURCE_DIR}/shared/scenery-gfx/rir-hotel2.png"
   VERBATIM
 )
 add_custom_target(MapEditorTestData DEPENDS "${MAP_EDITOR_TEST_DATA_STAMP}")
 
-function(AddMapEditorTest TestName SourceFile)
+function(AddClientTestWithMapEditorData TestName SourceFile)
   add_executable(${TestName} ${SourceFile})
   target_link_libraries(${TestName} PRIVATE client_lib shared_lib)
   AddTestOptionsAndLibraries(${TestName})
@@ -36,9 +52,17 @@ function(AddMapEditorTest TestName SourceFile)
   )
 endfunction()
 
-AddMapEditorTest(MapEditorActionsTest map_editor/MapEditorActionsTest.cpp)
-AddMapEditorTest(MapEditorToolsTest map_editor/MapEditorToolsTest.cpp)
-AddMapEditorTest(MapEditorControllersTest map_editor/MapEditorControllersTest.cpp)
+AddClientTestWithMapEditorData(MapEditorActionsTest map_editor/MapEditorActionsTest.cpp)
+AddClientTestWithMapEditorData(MapEditorToolsTest map_editor/MapEditorToolsTest.cpp)
+AddClientTestWithMapEditorData(MapEditorControllersTest map_editor/MapEditorControllersTest.cpp)
+
+if (BUILD_IMGUI_TEST_ENGINE_ENABLED)
+  AddClientTestWithMapEditorData(
+    ImGuiInterfaceTest
+    rendering/renderer/interface/ImGuiInterfaceTest.cpp
+  )
+  target_link_libraries(ImGuiInterfaceTest PRIVATE imgui::imgui)
+endif()
 
 add_executable(ShortcutTest application/input/ShortcutTest.cpp)
 target_link_libraries(ShortcutTest PRIVATE client_lib)

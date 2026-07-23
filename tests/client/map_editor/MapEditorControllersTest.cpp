@@ -82,6 +82,33 @@ public:
     bool last_was_tool_selection = false;
 };
 
+class ScopedTestDirectory
+{
+public:
+    explicit ScopedTestDirectory(const std::filesystem::path& directory_name)
+        : original_path_(std::filesystem::current_path())
+        , test_path_(original_path_ / directory_name)
+    {
+        std::filesystem::remove_all(test_path_);
+        std::filesystem::create_directories(test_path_);
+        std::filesystem::current_path(test_path_);
+    }
+
+    ~ScopedTestDirectory()
+    {
+        std::error_code error;
+        std::filesystem::current_path(original_path_, error);
+        std::filesystem::remove_all(test_path_, error);
+    }
+
+    ScopedTestDirectory(const ScopedTestDirectory&) = delete;
+    ScopedTestDirectory& operator=(const ScopedTestDirectory&) = delete;
+
+private:
+    std::filesystem::path original_path_;
+    std::filesystem::path test_path_;
+};
+
 class MapEditorControllersTest : public testing::Test
 {
 protected:
@@ -222,6 +249,8 @@ TEST_F(MapEditorControllersTest, EventRouterAndToolControllerExposeTheirState)
 
 TEST_F(MapEditorControllersTest, UiOptionsAndAssetBrowserReturnCompleteSortedChoices)
 {
+    const ScopedTestDirectory scoped_test_directory("editor-asset-browser-test");
+
     EXPECT_EQ(EditorUiOptions::GetToolOptions().size(), 11U);
     EXPECT_EQ(EditorUiOptions::GetDisabledToolTypes().size(), 3U);
     EXPECT_EQ(EditorUiOptions::GetSpawnPointOptions().size(), 17U);
@@ -249,8 +278,6 @@ TEST_F(MapEditorControllersTest, UiOptionsAndAssetBrowserReturnCompleteSortedCho
     EXPECT_EQ(EditorAssetBrowser::LoadTextureNames(),
               (std::vector<std::string>{ "a.jpg", "z.png" }));
     EXPECT_EQ(EditorAssetBrowser::LoadSceneryNames(), (std::vector<std::string>{ "tree.bmp" }));
-    std::filesystem::remove_all("textures");
-    std::filesystem::remove_all("scenery-gfx");
 }
 
 TEST_F(MapEditorControllersTest, DocumentAndMapPropertiesUpdateStateAndMap)
