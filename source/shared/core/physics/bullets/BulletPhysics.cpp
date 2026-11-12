@@ -11,6 +11,8 @@ export module Shared.Core.Physics.BulletPhysics;
 import Extern.Glm;
 
 import Shared.Core.Entities.Bullet;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Physics.Bullets.BulletCollision;
 import Shared.Core.Physics.Bullets.BulletImpactResolver;
 import Shared.Core.Physics.Bullets.BulletTypes;
@@ -24,13 +26,15 @@ namespace Soldank
 {
 namespace
 {
-void ApplyTimeoutAndDamageFalloff(Bullet& bullet)
+void ApplyTimeoutAndDamageFalloff(const PhysicsEvents& physics_events,
+                                  Bullet& bullet,
+                                  StateManager& state)
 {
     bullet.timeout_prev = bullet.timeout;
     --bullet.timeout;
 
-    if (bullet.timeout == 0) {
-        BulletImpactResolver::ResolveExpiry(bullet);
+    if (bullet.timeout <= 0) {
+        BulletImpactResolver::ResolveExpiry(physics_events, bullet, state);
         return;
     }
 
@@ -61,6 +65,25 @@ bool IsOutOfBounds(const Bullet& bullet, const Map& map)
            bound;
 }
 
+void IntegrateParticle(Bullet& bullet, StateManager& state_manager)
+{
+    bullet.velocity_prev = bullet.particle.velocity_;
+    if (bullet.stuck && !bullet.attached_soldier && bullet.timeout < 20) {
+        bullet.stuck = false;
+        bullet.particle.SetForce({});
+    }
+    if (bullet.stuck) {
+        if (bullet.attached_soldier && bullet.attached_part) {
+            const auto& soldier = state_manager.GetSoldier(*bullet.attached_soldier);
+            if (soldier.active && soldier.skeleton) {
+                bullet.particle.position = soldier.skeleton->GetPos(*bullet.attached_part);
+            }
+        }
+    } else {
+        bullet.particle.Euler();
+    }
+}
+
 std::optional<BulletCollisionResult> FindClosestCollision(
   std::initializer_list<std::optional<BulletCollisionResult>> collisions)
 {
@@ -86,23 +109,51 @@ void UpdateBullet(const PhysicsEvents& physics_events,
                   const Map& map,
                   StateManager& state_manager)
 {
-    bullet.velocity_prev = bullet.particle.velocity_;
-    bullet.particle.Euler();
-
-    const auto collision = FindClosestCollision({
-      BulletCollision::FindMapCollision(bullet, map),
-      BulletCollision::FindColliderCollision(bullet, map),
-      BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F),
-      BulletCollision::FindThingCollision(bullet, state_manager),
-    });
-    if (collision.has_value()) {
-        BulletImpactResolver::ResolveImpact(physics_events, bullet, state_manager, *collision);
+    if (!bullet.active) {
+        return;
     }
-
-    ApplyTimeoutAndDamageFalloff(bullet);
-
+    IntegrateParticle(bullet, state_manager);
+    if (!state_manager.HasAuthoritativeProjectiles()) {
+        // Online clients integrate presentation; reliable server events own impacts and removal.
+        if (bullet.timeout > 0) {
+            --bullet.timeout;
+        }
+        if (bullet.style == BulletType::Flame) {
+            bullet.particle.SetForce(bullet.particle.GetForce() + glm::vec2{ 0.0F, -0.15F });
+        }
+        return;
+    }
     if (IsOutOfBounds(bullet, map)) {
         bullet.active = false;
+        auto event = MakeProjectileEvent(
+          ProjectileEventKind::ProjectileDestroyed, bullet, state_manager.GetGameTick());
+        event.reason = ProjectileDestructionReason::OutOfBounds;
+        state_manager.RecordProjectileEvent(event);
+        return;
+    }
+
+    // A penetrating soldier hit leaves the remaining swept segment available.
+    // Every continuation excludes another target, so the loop is bounded by the soldier count.
+    while (bullet.active && !bullet.stuck) {
+        const auto collision = FindClosestCollision({
+          BulletCollision::FindMapCollision(bullet, map),
+          BulletCollision::FindColliderCollision(bullet, map),
+          BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F),
+          BulletCollision::FindThingCollision(bullet, state_manager),
+        });
+        if (!collision.has_value()) {
+            break;
+        }
+        const auto previous_hits = bullet.penetrated_soldiers.size();
+        BulletImpactResolver::ResolveImpact(physics_events, bullet, state_manager, *collision);
+        if (!bullet.active || bullet.penetrated_soldiers.size() == previous_hits) {
+            break;
+        }
+        bullet.particle.old_position = collision->position;
+    }
+
+    if (bullet.active) {
+        ApplyTimeoutAndDamageFalloff(physics_events, bullet, state_manager);
     }
 
     if (bullet.style == BulletType::Flame) {

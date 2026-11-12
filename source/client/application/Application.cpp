@@ -42,6 +42,7 @@ import Networking.AssignPlayerIdNetworkEventHandler;
 import Networking.PingCheckNetworkEventHandler;
 import Networking.PlayerLeaveNetworkEventHandler;
 import Networking.ProjectileSpawnNetworkEventHandler;
+import Networking.ProjectilePhysicsNetworkEventHandler;
 import Networking.SoldierInfoNetworkEventHandler;
 import Networking.SoldierStateNetworkEventHandler;
 import Networking.SpawnSoldierNetworkEventHandler;
@@ -188,6 +189,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             std::make_shared<PingCheckNetworkEventHandler>(client_state_),
             std::make_shared<PlayerLeaveNetworkEventHandler>(world_),
             std::make_shared<ProjectileSpawnNetworkEventHandler>(world_),
+            std::make_shared<ProjectilePhysicsNetworkEventHandler>(world_, client_state_),
             std::make_shared<SoldierInfoNetworkEventHandler>(world_, client_state_),
             std::make_shared<SoldierStateNetworkEventHandler>(world_, client_state_),
             std::make_shared<SpawnSoldierNetworkEventHandler>(world_),
@@ -421,6 +423,8 @@ void Application::Run()
 
         return false;
     });
+    world_->GetStateManager()->SetAuthoritativeProjectiles(application_mode_ !=
+                                                           ApplicationMode::Online);
     world_->SetPreProjectileSpawnCallback([&](const BulletParams& /*bullet_params*/) {
         return application_mode_ != ApplicationMode::Online;
     });

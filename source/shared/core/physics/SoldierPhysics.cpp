@@ -527,7 +527,6 @@ void Update(StateManager& state_manager,
     if (soldier.particle.velocity_.y < -PhysicsConstants::MAX_VELOCITY) {
         soldier.particle.velocity_.y = -PhysicsConstants::MAX_VELOCITY;
     }
-
 }
 
 bool CheckMapCollision(Soldier& soldier,
@@ -868,6 +867,16 @@ bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i,
     return result;
 }
 
+bool CanFireLaw(const Soldier& soldier)
+{
+    const auto animation = soldier.legs_animation->GetType();
+    const auto frame = soldier.legs_animation->GetFrame();
+    return (soldier.on_ground || soldier.on_ground_permanent || soldier.on_ground_for_law) &&
+           ((animation == AnimationType::Crouch && frame > 13) ||
+            animation == AnimationType::CrouchRun || animation == AnimationType::CrouchRunBack ||
+            (animation == AnimationType::Prone && frame > 23));
+}
+
 void Fire(Soldier& soldier, std::vector<BulletParams>& bullet_emitter)
 {
     auto weapon = GetPrimaryWeapon(soldier);
@@ -895,8 +904,10 @@ void Fire(Soldier& soldier, std::vector<BulletParams>& bullet_emitter)
         bullet_velocity + inherited_velocity,
         (std::int16_t)weapon.GetWeaponParameters().timeout,
         weapon.GetWeaponParameters().hit_multiply,
-        TeamType::None,
+        soldier.GetTeam(),
         soldier.id,
+        weapon.GetWeaponParameters().push,
+        soldier.GetPingTicks(),
     };
 
     switch (weapon.GetWeaponParameters().kind) {
@@ -913,19 +924,27 @@ void Fire(Soldier& soldier, std::vector<BulletParams>& bullet_emitter)
             break;
         }
         case WeaponType::Spas12:
+            for (int pellet = -2; pellet <= 2; ++pellet) {
+                auto pellet_params = params;
+                const float spread =
+                  static_cast<float>(pellet) * weapon.GetWeaponParameters().bullet_spread;
+                const float cosine = std::cos(spread);
+                const float sine = std::sin(spread);
+                pellet_params.velocity =
+                  glm::vec2{ bullet_velocity.x * cosine - bullet_velocity.y * sine,
+                             bullet_velocity.x * sine + bullet_velocity.y * cosine } +
+                  inherited_velocity;
+                bullet_emitter.push_back(pellet_params);
+            }
+            break;
         case WeaponType::Flamer:
         case WeaponType::NoWeapon:
         case WeaponType::Knife:
         case WeaponType::Chainsaw:
+            bullet_emitter.push_back(params);
             break;
         case WeaponType::LAW: {
-            if ((soldier.on_ground || soldier.on_ground_permanent || soldier.on_ground_for_law) &&
-                (((soldier.legs_animation->GetType() == AnimationType::Crouch &&
-                   soldier.legs_animation->GetFrame() > 13) ||
-                  soldier.legs_animation->GetType() == AnimationType::CrouchRun ||
-                  soldier.legs_animation->GetType() == AnimationType::CrouchRunBack) ||
-                 (soldier.legs_animation->GetType() == AnimationType::Prone &&
-                  soldier.legs_animation->GetFrame() > 23))) {
+            if (CanFireLaw(soldier)) {
                 bullet_emitter.push_back(params);
             }
             break;

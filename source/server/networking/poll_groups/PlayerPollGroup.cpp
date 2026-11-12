@@ -1,6 +1,7 @@
 module;
 
 #include <cassert>
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -54,9 +55,17 @@ public:
                 break;
             }
             assert(messages_count == 1 && incoming_message);
-            const auto connection_id =
-              GnsServerTransport::ToConnectionId(incoming_message->m_conn);
+            const auto connection_id = GnsServerTransport::ToConnectionId(incoming_message->m_conn);
             assert(IsConnectionAssigned(connection_id));
+            GNS::SteamNetConnectionRealTimeStatus_t status{};
+            if (GetInterface()->GetConnectionRealTimeStatus(
+                  incoming_message->m_conn, &status, 0, nullptr) == GNS::EResult::OK) {
+                const auto ping_ticks =
+                  static_cast<std::uint16_t>(std::clamp(status.m_nPing * 60 / 1000, 0, 125));
+                world_->GetStateManager()->TransformSoldier(
+                  GetConnectionSoldierId(connection_id),
+                  [&](auto& soldier) { soldier.SetPingTicks(ping_ticks); });
+            }
 
             std::span<char> received_bytes{ static_cast<char*>(incoming_message->m_pData),
                                             static_cast<unsigned int>(incoming_message->m_cbSize) };

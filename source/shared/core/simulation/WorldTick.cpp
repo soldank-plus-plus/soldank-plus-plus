@@ -2,6 +2,7 @@ module;
 
 #include <span>
 #include <vector>
+#include <cstdint>
 
 export module Shared.Core.Simulation.WorldTick;
 

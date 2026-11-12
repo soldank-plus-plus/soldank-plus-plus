@@ -12,6 +12,7 @@ const auto a = k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged;
 
 using SteamNetConnectionStatusChangedCallback_t = SteamNetConnectionStatusChangedCallback_t;
 using HSteamNetConnection = HSteamNetConnection;
+using SteamNetConnectionRealTimeStatus_t = ::SteamNetConnectionRealTimeStatus_t;
 using ISteamNetworkingSockets = ISteamNetworkingSockets;
 using HSteamNetPollGroup = HSteamNetPollGroup;
 using HSteamListenSocket = HSteamListenSocket;

@@ -11,6 +11,14 @@ import Extern.Glm;
 import ClientState;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 import Networking.IGameServer;
+import Networking.CoreEventsConnectionNotifier;
+import Networking.ProjectilePhysicsNetworkEventHandler;
+import Shared.Core.Entities.Bullet;
+import Shared.Core.Physics.Bullets.BulletLagCompensation;
+import Shared.Core.Physics.Bullets.BulletEvents;
+import Shared.Core.Types.BulletType;
+import Shared.Core.Types.TeamType;
+import Shared.Core.Types.WeaponType;
 import Networking.INetworkingClient;
 import Networking.InputApplicationTimeline;
 import Networking.NetworkClientSession;
@@ -33,6 +41,7 @@ import Shared.Networking.DeliveryMode;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
+import Shared.Networking.NetworkPackets;
 
 import Testing.Framework.Shared.MapBuilder;
 
@@ -655,4 +664,135 @@ TEST(FullClientServerReconciliationTest,
 #ifndef NDEBUG
     EXPECT_EQ(late_input_count, 0U);
 #endif
+}
+
+TEST(FullClientServerReconciliationTest, ProjectilePushesConvergeUnderChangingLatency)
+{
+    constexpr std::uint8_t PLAYER_ID = 1;
+    const auto map =
+      SoldankTesting::MapBuilder::Empty()
+        ->AddPolygon(
+          { -4000.0F, 0.0F }, { 4000.0F, 0.0F }, { 4000.0F, 60.0F }, PMSPolygonType::Normal)
+        ->AddPolygon(
+          { -4000.0F, 0.0F }, { 4000.0F, 60.0F }, { -4000.0F, 60.0F }, PMSPolygonType::Normal)
+        ->Build();
+    auto client_world = std::make_shared<World>();
+    auto server_world = std::make_shared<World>();
+    const std::vector<std::pair<unsigned int, glm::vec2>> positions{ { PLAYER_ID,
+                                                                       { 0.0F, -34.0F } } };
+    InitializeWorld(*client_world, *map, positions);
+    InitializeWorld(*server_world, *map, positions);
+    client_world->GetStateManager()->SetAuthoritativeProjectiles(false);
+    auto client_state = std::make_shared<ClientState>();
+    client_state->client_soldier_id = PLAYER_ID;
+    client_state->network.server_reconciliation = true;
+    client_state->network.client_side_prediction = true;
+    auto bridge = std::make_shared<DeterministicNetworkBridge>(
+      std::vector<LatencyPhase>{ { 0, 77 }, { 250, 280 }, { 500, 445 } });
+    auto endpoint = bridge->CreateClientEndpoint(PLAYER_ID);
+    auto server = std::static_pointer_cast<IGameServer>(bridge);
+    PlayerSessionManager sessions;
+    ServerCommandQueues queues;
+    auto server_dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<SoldierInputNetworkEventHandler>(server, sessions, queues) });
+    auto client_dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<SoldierStateNetworkEventHandler>(client_world, client_state),
+        std::make_shared<ProjectilePhysicsNetworkEventHandler>(client_world, client_state) });
+    CoreEventsConnectionNotifier::ObserveAll(
+      bridge.get(), server_world->GetWorldEvents(), server_world->GetPhysicsEvents());
+    NetworkClientSession client_session(*endpoint, client_dispatcher, *client_world, *client_state);
+    ReplicationService replication(*bridge, sessions);
+    unsigned int received_pushes = 0;
+    client_world->GetPhysicsEvents().projectile_event.AddObserver(
+      [&](const ProjectilePhysicsEvent& event) {
+          if (event.kind == ProjectileEventKind::SoldierProjectilePushScheduled) {
+              ++received_pushes;
+          }
+      });
+    for (std::uint64_t step = 0; step < 1000; ++step) {
+        bridge->SetCurrentStep(step);
+        client_state->network.target_input_delay_ticks =
+          std::max(client_state->network.target_input_delay_ticks,
+                   CalculateInputDelayTicks(bridge->GetCurrentRoundTripTime()));
+        bridge->DeliverMessagesToServer(server_dispatcher);
+        auto state = server_world->GetStateManager();
+        const auto tick = state->GetGameTick();
+        if (step == 120 || step == 370 || step == 620) {
+            Bullet bullet{ BulletParams{ .style = BulletType::Bullet,
+                                         .weapon = WeaponType::Ak74,
+                                         .position = {},
+                                         .velocity = { 10.0F, 0.0F },
+                                         .timeout = 100,
+                                         .hit_multiply = 1.0F,
+                                         .team = TeamType::None,
+                                         .owner_id = 255,
+                                         .push = 0.1F,
+                                         .owner_ping_ticks = static_cast<std::uint16_t>(
+                                           bridge->GetCurrentRoundTripTime() * 60 / 1000) } };
+            BulletLagCompensation::SchedulePush(
+              *state, state->GetSoldier(PLAYER_ID), bullet, { 2.0F, -1.0F });
+        }
+        auto inputs = queues.SelectPlayerInputsForSimulation(tick);
+        const std::vector<SimulationCommand> commands;
+        static_cast<void>(
+          server_world->Tick({ .tick = tick, .player_inputs = inputs, .commands = commands }));
+        for (const auto& input : inputs) {
+            sessions.MarkInputApplied(input.soldier_id, input.input_sequence_id);
+        }
+        replication.BroadcastTick(*state);
+        state->SetGameTick(tick + 1);
+        client_session.UpdateBeforeWorldTick();
+        client_session.SendSoldierInput(PLAYER_ID, { 100.0F, 0.0F });
+        const auto client_tick = client_world->GetStateManager()->GetGameTick();
+        TickWorldWithNoInput(*client_world, client_tick);
+        client_session.StorePredictedSoldierSnapshot(PLAYER_ID);
+    }
+    EXPECT_EQ(bridge->GetDispatchFailureCount(), 0U);
+    EXPECT_EQ(received_pushes, 3U);
+    EXPECT_LE(glm::distance(client_world->GetSoldier(PLAYER_ID).particle.position,
+                            server_world->GetSoldier(PLAYER_ID).particle.position),
+              1.5F);
+    EXPECT_LE(glm::distance(client_world->GetSoldier(PLAYER_ID).particle.GetVelocity(),
+                            server_world->GetSoldier(PLAYER_ID).particle.GetVelocity()),
+              0.15F);
+}
+
+TEST(FullClientServerReconciliationTest, AuthoritativeRemovalTargetsTheCorrectProjectile)
+{
+    auto world = std::make_shared<World>();
+    auto client_state = std::make_shared<ClientState>();
+    world->GetStateManager()->SetAuthoritativeProjectiles(false);
+    world->GetStateManager()->CreateProjectile({ .style = BulletType::Bullet,
+                                                 .weapon = WeaponType::Ak74,
+                                                 .position = {},
+                                                 .velocity = { 10.0F, 0.0F },
+                                                 .timeout = 100,
+                                                 .hit_multiply = 1.0F,
+                                                 .team = TeamType::None,
+                                                 .owner_id = 255,
+                                                 .push = 1.0F,
+                                                 .id = 10 });
+    auto dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<ProjectilePhysicsNetworkEventHandler>(world, client_state) });
+    const ConnectionMetadata connection{
+        .connection_id = 1, .send_message_to_connection = [](const NetworkMessage&) {}
+    };
+    ProjectilePhysicsPacket packet{ .kind = ProjectileEventKind::ProjectileDestroyed,
+                                    .projectile_id = 11 };
+    EXPECT_EQ(
+      dispatcher
+        ->ProcessNetworkMessage(connection, NetworkMessage(NetworkEvent::ProjectilePhysics, packet))
+        .first,
+      NetworkEventDispatchResult::Success);
+    EXPECT_EQ(world->GetStateManager()->GetBulletsCount(), 1U);
+    packet.projectile_id = 10;
+    EXPECT_EQ(
+      dispatcher
+        ->ProcessNetworkMessage(connection, NetworkMessage(NetworkEvent::ProjectilePhysics, packet))
+        .first,
+      NetworkEventDispatchResult::Success);
+    EXPECT_EQ(world->GetStateManager()->GetBulletsCount(), 0U);
 }

@@ -20,6 +20,7 @@ import Extern.Glm;
 import Shared.Core.IWorld;
 import Shared.Core.WorldEvents;
 import Shared.Core.Physics.BulletPhysics;
+import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Physics.ItemPhysics;
 import Shared.Core.Physics.SoldierPhysics;
 import Shared.Core.Physics.SoldierSkeletonPhysics;
@@ -144,12 +145,14 @@ public:
         std::vector<BulletParams> bullet_emitter;
 
         state_manager_->TransformSoldiers([&](auto& soldier) {
+            soldier.RecordPosition(state_manager_->GetGameTick());
             bool should_update_current_soldier = true;
             if (pre_soldier_update_callback_) {
                 should_update_current_soldier = pre_soldier_update_callback_(soldier);
             }
 
             if (should_update_current_soldier) {
+                soldier.ApplyProjectilePushes(state_manager_->GetGameTick());
                 SoldierPhysics::Update(*state_manager_,
                                        soldier,
                                        *physics_events_,
@@ -165,13 +168,20 @@ public:
             }
         });
 
+        std::vector<std::uint8_t> living_soldiers;
+        state_manager_->ForEachSoldier([&](const Soldier& soldier) {
+            if (!soldier.dead_meat) {
+                living_soldiers.push_back(soldier.id);
+            }
+        });
         state_manager_->TransformBullets([&](auto& bullet) {
             BulletPhysics::UpdateBullet(
               *physics_events_, bullet, state_manager_->GetMap(), *state_manager_);
         });
 
-        for (const auto& bullet_params : state_manager_->GetBulletEmitter()) {
-            bool should_spawn_projectile = false;
+        for (const auto& emitted_params : state_manager_->GetBulletEmitter()) {
+            const auto bullet_params = state_manager_->PrepareProjectile(emitted_params);
+            bool should_spawn_projectile = true;
             if (pre_projectile_spawn_callback_) {
                 should_spawn_projectile = pre_projectile_spawn_callback_(bullet_params);
             }
@@ -188,6 +198,19 @@ public:
           [&](auto& item) { ItemPhysics::Update(*state_manager_, item, *physics_events_); });
 
         state_manager_->ClearBulletEmitter();
+        for (const auto soldier_id : living_soldiers) {
+            if (state_manager_->GetSoldier(soldier_id).dead_meat) {
+                KillSoldier(soldier_id);
+            }
+        }
+        // Publish only after all authoritative actions (including queued spawns) are committed.
+        const auto projectile_events = state_manager_->GetProjectileEvents();
+        state_manager_->ClearProjectileEvents();
+        if (state_manager_->HasAuthoritativeProjectiles()) {
+            for (const auto& event : projectile_events) {
+                physics_events_->projectile_event.Notify(event);
+            }
+        }
     }
 
     void UpdateSoldier(unsigned int soldier_id) final
@@ -196,6 +219,8 @@ public:
         std::vector<BulletParams> bullet_emitter;
 
         state_manager_->TransformSoldier(soldier_id, [&](Soldier& soldier) {
+            soldier.RecordPosition(state_manager_->GetGameTick());
+            soldier.ApplyProjectilePushes(state_manager_->GetGameTick());
             SoldierPhysics::Update(*state_manager_,
                                    soldier,
                                    *physics_events_,

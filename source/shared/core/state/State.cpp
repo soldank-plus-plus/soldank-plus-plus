@@ -4,6 +4,7 @@ module;
 #include <utility>
 #include <vector>
 #include <array>
+#include <deque>
 
 export module Shared.Core.State.State;
 

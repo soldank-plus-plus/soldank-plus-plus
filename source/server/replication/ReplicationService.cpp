@@ -76,7 +76,7 @@ public:
             std::visit(VisitOverload{
                          [&](const ProjectileSpawnedEvent& projectile_spawned_event) {
                              auto packet = ProtocolConversions::ToProjectileSpawnPacket(
-                               0, projectile_spawned_event);
+                               projectile_spawned_event.bullet_params.id, projectile_spawned_event);
                              network_host_.SendNetworkMessageToAll(
                                { NetworkEvent::ProjectileSpawn, packet });
                          },

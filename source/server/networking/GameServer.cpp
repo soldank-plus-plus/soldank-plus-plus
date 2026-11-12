@@ -100,11 +100,24 @@ public:
     }
     void SendNetworkMessageToAll(const NetworkMessage& network_message) override
     {
-        player_poll_group_->SendNetworkMessageToAll(network_message);
+        const auto event = network_message.GetNetworkEvent();
+        const bool reliable =
+          event &&
+          (*event == NetworkEvent::SpawnSoldier || *event == NetworkEvent::ProjectileSpawn ||
+           *event == NetworkEvent::ProjectilePhysics || *event == NetworkEvent::HitSoldier ||
+           *event == NetworkEvent::KillSoldier);
+        if (reliable) {
+            player_poll_group_->SendReliableNetworkMessageToAll(network_message);
+        } else {
+            player_poll_group_->SendNetworkMessageToAll(network_message);
+        }
 #if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
         for (const auto& [connection_id, connection] : web_rtc_connections_) {
             if (connection.soldier_id.has_value()) {
-                SendWebRtcNetworkMessage(connection_id, network_message, DeliveryMode::Unreliable);
+                SendWebRtcNetworkMessage(connection_id,
+                                         network_message,
+                                         reliable ? DeliveryMode::Reliable
+                                                  : DeliveryMode::Unreliable);
             }
         }
 #endif

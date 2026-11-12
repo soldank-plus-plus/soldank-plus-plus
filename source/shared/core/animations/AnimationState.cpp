@@ -90,12 +90,6 @@ public:
     // types and players are allowed to shoot during animations.
     void TryToShoot(TryToShootParams& params) const
     {
-        if (params.weapons[params.active_weapon].GetWeaponParameters().kind ==
-              WeaponType::NoWeapon ||
-            params.weapons[params.active_weapon].GetWeaponParameters().kind == WeaponType::Knife) {
-            return;
-        }
-
         if (params.fire && IsSoldierShootingPossible(params.weapons, params.active_weapon)) {
             params.should_fire_primary_weapon = true;
         }

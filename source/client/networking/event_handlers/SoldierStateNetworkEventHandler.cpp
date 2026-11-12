@@ -54,6 +54,9 @@ private:
             return NetworkEventHandlerResult::Success;
         }
         latest_server_tick = soldier_state_packet.server_tick;
+        world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
+            soldier.latest_authoritative_tick = soldier_state_packet.server_tick;
+        });
 
         const std::uint32_t local_tick = world_->GetStateManager()->GetGameTick();
         client_state_->network.server_tick_offset =
@@ -140,6 +143,11 @@ private:
 #endif
 
         world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
+            const auto snapshot_local_tick = static_cast<unsigned int>(
+              std::max<std::int64_t>(0,
+                                     static_cast<std::int64_t>(soldier_state_packet.server_tick) -
+                                       client_state_->network.server_tick_offset.value_or(0)));
+            soldier.RestoreProjectilePushesAfterTick(snapshot_local_tick);
             soldier.particle.old_position = soldier_old_position;
             soldier.particle.position = soldier_position;
             soldier.particle.SetVelocity(soldier_velocity);
@@ -287,7 +295,9 @@ private:
 
         const auto replay_inputs =
           SelectReplayInputs(client_state_->network.prediction_inputs, authoritative_server_tick);
+        const auto original_tick = world_->GetStateManager()->GetGameTick();
         for (const auto& input : replay_inputs) {
+            world_->GetStateManager()->SetGameTick(input.client_tick);
             const auto player_input = ProtocolConversions::ToPlayerInputCommand(soldier_id, input);
             ApplyPlayerInputCommand(*world_->GetStateManager(), player_input);
             world_->UpdateSoldier(soldier_id);
@@ -297,6 +307,7 @@ private:
                                           input.apply_server_tick,
                                           world_->GetSoldier(soldier_id));
         }
+        world_->GetStateManager()->SetGameTick(original_tick);
     }
 
     void RemoveAcknowledgedNetworkInputs(std::uint32_t last_applied_input_id)

@@ -25,7 +25,7 @@ PlayerInputCommand ToPlayerInputCommand(std::uint8_t soldier_id, const SoldierIn
     };
 }
 
-ProjectileSpawnPacket ToProjectileSpawnPacket(std::uint16_t projectile_id,
+ProjectileSpawnPacket ToProjectileSpawnPacket(std::uint32_t projectile_id,
                                               const ProjectileSpawnedEvent& event)
 {
     return ProjectileSpawnPacket{
@@ -40,6 +40,11 @@ ProjectileSpawnPacket ToProjectileSpawnPacket(std::uint16_t projectile_id,
         .hit_multiply = event.bullet_params.hit_multiply,
         .team = event.bullet_params.team,
         .owner_id = event.bullet_params.owner_id,
+        .push = event.bullet_params.push,
+        .owner_ping_ticks = event.bullet_params.owner_ping_ticks,
+        .seed = event.bullet_params.seed,
+        .spawn_tick = event.bullet_params.spawn_tick,
+        .derived = event.bullet_params.derived,
     };
 }
 
@@ -56,7 +61,12 @@ ProjectileSpawnedEvent ToProjectileSpawnedEvent(const ProjectileSpawnPacket& pac
             .hit_multiply = packet.hit_multiply,
             .team = packet.team,
             .owner_id = packet.owner_id,
-            .push = 0.0F,
+            .push = packet.push,
+            .owner_ping_ticks = packet.owner_ping_ticks,
+            .id = packet.projectile_id,
+            .seed = packet.seed,
+            .spawn_tick = packet.spawn_tick,
+            .derived = packet.derived,
           },
     };
 }

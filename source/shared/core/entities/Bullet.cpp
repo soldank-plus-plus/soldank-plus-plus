@@ -2,6 +2,7 @@ module;
 
 #include <cstdint>
 #include <vector>
+#include <optional>
 
 export module Shared.Core.Entities.Bullet;
 
@@ -25,6 +26,11 @@ struct BulletParams
     TeamType team;
     std::uint8_t owner_id;
     float push;
+    std::uint16_t owner_ping_ticks{};
+    std::uint32_t id{};
+    std::uint32_t seed{};
+    unsigned int spawn_tick{};
+    bool derived{};
 };
 
 struct ItemCollisionCooldown
@@ -61,6 +67,10 @@ struct Bullet
         , hit_multiply(params.hit_multiply)
         , hit_multiply_prev(params.hit_multiply)
         , push(params.push)
+        , owner_ping_ticks(params.owner_ping_ticks)
+        , id(params.id)
+        , seed(params.seed)
+        , spawn_tick(params.spawn_tick)
     {
     }
 
@@ -81,6 +91,14 @@ struct Bullet
     std::int32_t ricochet_count{};
     std::uint32_t degrade_count = 0;
     float push{};
+    std::uint16_t owner_ping_ticks{};
+    std::uint32_t id{};
+    std::uint32_t seed{};
+    unsigned int spawn_tick{};
+    bool stuck{};
+    std::optional<std::uint8_t> attached_soldier;
+    std::optional<unsigned int> attached_part;
+    std::vector<std::uint8_t> penetrated_soldiers;
     std::vector<ItemCollisionCooldown> item_collision_cooldowns;
 };
 } // namespace Soldank

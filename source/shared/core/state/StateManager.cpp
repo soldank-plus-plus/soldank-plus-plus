@@ -17,6 +17,7 @@ import Extern.Glm;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Entities.Bullet;
+import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Entities.Item;
 import Shared.Core.Math.Calc;
@@ -126,6 +127,36 @@ public:
 
     void EnqueueNewProjectile(const BulletParams& bullet_params);
     void CreateProjectile(const BulletParams& bullet_params);
+    BulletParams PrepareProjectile(BulletParams params)
+    {
+        if (params.id == 0) {
+            params.id = next_projectile_id_++;
+            if (params.seed == 0) {
+                params.seed = GetRandomInt(1, 0x7fffffffU);
+            }
+            params.spawn_tick = GetGameTick();
+            ForEachSoldier([&](const Soldier& owner) {
+                if (!params.derived && owner.id == params.owner_id) {
+                    params.owner_ping_ticks = owner.GetPingTicks();
+                }
+            });
+        }
+        return params;
+    }
+    void RecordProjectileEvent(ProjectilePhysicsEvent event)
+    {
+        projectile_events_.push_back(std::move(event));
+    }
+    const std::vector<ProjectilePhysicsEvent>& GetProjectileEvents() const
+    {
+        return projectile_events_;
+    }
+    void ClearProjectileEvents() { projectile_events_.clear(); }
+    void SetFriendlyFire(bool enabled) { friendly_fire_ = enabled; }
+    bool IsFriendlyFireEnabled() const { return friendly_fire_; }
+    void SetAuthoritativeProjectiles(bool enabled) { authoritative_projectiles_ = enabled; }
+    bool HasAuthoritativeProjectiles() const { return authoritative_projectiles_; }
+
     const std::vector<BulletParams>& GetBulletEmitter() const;
     void ClearBulletEmitter();
     void ForEachBullet(
@@ -163,6 +194,10 @@ private:
 
     State state_;
     std::vector<BulletParams> bullet_emitter_;
+    std::vector<ProjectilePhysicsEvent> projectile_events_;
+    std::uint32_t next_projectile_id_{ 1 };
+    bool friendly_fire_{ true };
+    bool authoritative_projectiles_{ true };
 
     std::mt19937 mersenne_twister_engine_{ 0U };
 };
@@ -588,6 +623,10 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
     soldier.active = true;
     soldier.particle.active = true;
     soldier.health = 150.0;
+    soldier.projectile_pushes.clear();
+    soldier.projectile_push_history.clear();
+    soldier.latest_authoritative_tick.reset();
+    soldier.position_history.clear();
     soldier.dead_meat = false;
     soldier.weapons[0] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[0], false);
     soldier.weapons[1] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[1], false);
@@ -654,7 +693,7 @@ std::size_t StateManager::GetSoldiersCount() const
 
 void StateManager::EnqueueNewProjectile(const BulletParams& bullet_params)
 {
-    bullet_emitter_.push_back(bullet_params);
+    bullet_emitter_.push_back(PrepareProjectile(bullet_params));
 }
 
 void StateManager::CreateProjectile(const BulletParams& bullet_params)
@@ -665,7 +704,9 @@ void StateManager::CreateProjectile(const BulletParams& bullet_params)
             continue;
         }
 
-        bullet = bullet_params;
+        bullet = PrepareProjectile(bullet_params);
+        RecordProjectileEvent(
+          MakeProjectileEvent(ProjectileEventKind::ProjectileSpawned, bullet, GetGameTick()));
         bullet.active = true;
         is_bullet_created = true;
 

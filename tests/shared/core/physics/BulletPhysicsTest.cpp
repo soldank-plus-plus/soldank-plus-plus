@@ -12,10 +12,20 @@
 #include <vector>
 
 import Shared.Core.Animations;
+import Shared.Core.World;
+import Shared.CoreEventHandler;
 import Shared.Core.Data.IFileReader;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Entities.Item;
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.WeaponParameters;
+import Shared.Core.Entities.WeaponParametersFactory;
+import Shared.Core.Physics.SoldierPhysics;
+import Shared.Core.Physics.Bullets.BulletEvents;
+import Shared.Core.Physics.Bullets.BulletEffects;
+import Shared.Core.Physics.Bullets.BulletLagCompensation;
+import Shared.Core.Simulation.SimulationEvents;
+import Shared.Networking.ProtocolConversions;
 import Shared.Core.Map.Map;
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
@@ -63,7 +73,7 @@ Soldank::Bullet CreateBullet(glm::vec2 position,
       .timeout = timeout,
       .hit_multiply = hit_multiply,
       .team = Soldank::TeamType::None,
-      .owner_id = 0,
+      .owner_id = 255,
       .push = 0.0F,
     } };
 }
@@ -327,20 +337,24 @@ TEST(BulletPhysicsTest, RicochetsEligibleProjectilesAwayFromMapSurfaces)
     for (const Soldank::BulletType style : RICOCHETING_STYLES) {
         auto animation_data_manager = CreateAnimationDataManager();
         auto state_manager = CreateStateManager(animation_data_manager);
-        auto map =
-          SoldankTesting::MapBuilder::Empty()
-            ->AddPolygon(
-              { -5.0F, -10.0F }, { 5.0F, -10.0F }, { 0.0F, 10.0F }, Soldank::PMSPolygonType::Normal)
-            ->Build();
+        auto map = SoldankTesting::MapBuilder::Empty()
+                     ->AddPolygon({ -100.0F, 0.0F },
+                                  { 100.0F, 0.0F },
+                                  { 100.0F, 100.0F },
+                                  Soldank::PMSPolygonType::Normal)
+                     ->Build();
         Soldank::PhysicsEvents physics_events;
-        auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F });
+        const float surface_y = map->GetPolygons().at(0).vertices.at(0).y;
+        auto bullet = CreateBullet({ -20.0F, surface_y - 1.0F }, { 40.0F, 2.0F });
         bullet.style = style;
-        bullet.hit_spot = { -100.0F, 0.0F };
+        bullet.hit_spot = { -100.0F, surface_y };
 
         Soldank::BulletPhysics::UpdateBullet(physics_events, bullet, *map, state_manager);
 
         EXPECT_TRUE(bullet.active);
-        EXPECT_LT(bullet.particle.GetVelocity().x, 0.0F);
+        EXPECT_GT(bullet.particle.GetVelocity().x, 0.0F);
+        EXPECT_LT(bullet.particle.GetVelocity().y, 0.0F);
+        EXPECT_LT(glm::length(bullet.particle.GetVelocity()), 40.0F);
         EXPECT_EQ(bullet.ricochet_count, 1);
     }
 }
@@ -525,7 +539,7 @@ TEST(BulletPhysicsTest, SelectsNearestSoldierCollisionRatherThanFirstActiveSoldi
     EXPECT_LT(collision->distance, 20.0F);
 }
 
-TEST(BulletPhysicsTest, ResolvesTheNearestImpactAcrossMapAndSoldiers)
+TEST(BulletPhysicsTest, ResolvesNearSoldierBeforeContinuingToWall)
 {
     auto animation_data_manager = CreateAnimationDataManager();
     auto state_manager = CreateStateManagerWithSoldierSkeleton(animation_data_manager);
@@ -556,7 +570,7 @@ TEST(BulletPhysicsTest, ResolvesTheNearestImpactAcrossMapAndSoldiers)
     Soldank::BulletPhysics::UpdateBullet(physics_events, bullet, *map, state_manager);
 
     EXPECT_EQ(soldier_hit_count, 1);
-    EXPECT_EQ(map_hit_count, 0);
+    EXPECT_EQ(map_hit_count, 1);
 }
 
 TEST(BulletPhysicsTest, MapBulletCollisionPolicyCoversEverySpecialPolygonType)
@@ -674,7 +688,7 @@ TEST(BulletPhysicsTest, ReducesDamageMultiplierAfterTravellingPastFirstThreshold
 {
     auto animation_data_manager = CreateAnimationDataManager();
     auto state_manager = CreateStateManager(animation_data_manager);
-    auto map = SoldankTesting::MapBuilder::Empty()->Build();
+    auto map = CreateMapWithColliders({});
     Soldank::PhysicsEvents physics_events;
     auto bullet = CreateBullet({ 0.0F, 0.0F }, { 501.0F, 0.0F }, 7, 2.0F);
 
@@ -683,4 +697,677 @@ TEST(BulletPhysicsTest, ReducesDamageMultiplierAfterTravellingPastFirstThreshold
     EXPECT_EQ(bullet.degrade_count, 1U);
     EXPECT_FLOAT_EQ(bullet.hit_multiply_prev, 2.0F);
     EXPECT_FLOAT_EQ(bullet.hit_multiply, 1.0F);
+}
+
+TEST(BulletPhysicsTest, DelaysAndAccumulatesProjectilePushes)
+{
+    Soldank::Soldier soldier;
+    soldier.SetPingTicks(4);
+    soldier.ScheduleProjectilePush(10, 3, { 2.0F, 1.0F });
+    soldier.ScheduleProjectilePush(10, 3, { 1.0F, -1.0F });
+    soldier.ApplyProjectilePushes(15);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(0.0F));
+    soldier.ApplyProjectilePushes(16);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(3.0F, 0.0F));
+    soldier.ApplyProjectilePushes(17);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(3.0F, 0.0F));
+    EXPECT_TRUE(soldier.projectile_pushes.empty());
+}
+
+TEST(BulletPhysicsTest, CapsProjectilePushLatency)
+{
+    Soldank::Soldier soldier;
+    soldier.ScheduleProjectilePush(10, 1000, { 2.0F, 0.0F });
+    soldier.ApplyProjectilePushes(134);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(0.0F));
+    soldier.ApplyProjectilePushes(135);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(2.0F, 0.0F));
+}
+
+TEST(BulletPhysicsTest, FiltersProtectedAndAlreadyPenetratedSoldiers)
+{
+    auto animation_data_manager = CreateAnimationDataManager();
+    auto state_manager = CreateStateManagerWithSoldierSkeleton(animation_data_manager);
+    auto soldiers = state_manager.CreateEmptySoldiersSnapshot();
+    soldiers.at(0).active = true;
+    state_manager.ApplySoldiersSnapshot(soldiers);
+    auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F });
+    bullet.particle.position = { 20.0F, 0.0F };
+    auto& soldier = state_manager.GetSoldier(0);
+    for (unsigned int part = 1; part <= 16; ++part) {
+        soldier.skeleton->SetPos(part, { 0.0F, 0.0F });
+    }
+    EXPECT_TRUE(Soldank::BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F));
+    soldier.SetTeam(Soldank::TeamType::Spectator);
+    EXPECT_FALSE(Soldank::BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F));
+    soldier.SetTeam(Soldank::TeamType::None);
+    soldier.SetCeaseFireCounter(0);
+    EXPECT_FALSE(Soldank::BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F));
+    soldier.SetCeaseFireCounter(-1);
+    bullet.owner_id = 0;
+    EXPECT_FALSE(Soldank::BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F));
+    bullet.timeout -= 21;
+    EXPECT_TRUE(Soldank::BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F));
+    bullet.penetrated_soldiers.push_back(0);
+    EXPECT_FALSE(Soldank::BulletCollision::FindSoldierCollision(bullet, state_manager, -1.0F));
+}
+
+TEST(BulletPhysicsTest, PenetratesTwoTargetsInOneTickWithoutRepeatedDamage)
+{
+    auto animation_data_manager = CreateAnimationDataManager();
+    auto state_manager = CreateStateManagerWithSoldierSkeleton(animation_data_manager);
+    auto soldiers = state_manager.CreateEmptySoldiersSnapshot();
+    soldiers.at(0).active = true;
+    soldiers.at(1).active = true;
+    state_manager.ApplySoldiersSnapshot(soldiers);
+    for (unsigned int id = 0; id < 2; ++id) {
+        auto& soldier = state_manager.GetSoldier(id);
+        soldier.dead_meat = true;
+        const glm::vec2 position{ static_cast<float>(id) * 25.0F, 0.0F };
+        soldier.particle.position = position;
+        for (unsigned int part = 1; part <= 16; ++part) {
+            soldier.skeleton->SetPos(part, position);
+        }
+    }
+    auto map = SoldankTesting::MapBuilder::Empty()->Build();
+    Soldank::PhysicsEvents physics_events;
+    unsigned int hits = 0;
+    physics_events.soldier_hit_by_bullet.AddObserver([&](Soldank::Soldier&, float) { ++hits; });
+    auto bullet = CreateBullet({ -20.0F, 0.0F }, { 80.0F, 0.0F });
+    Soldank::BulletPhysics::UpdateBullet(physics_events, bullet, *map, state_manager);
+    EXPECT_EQ(hits, 2U);
+    EXPECT_TRUE(bullet.active);
+    EXPECT_NEAR(bullet.particle.GetVelocity().x, 80.0F * 0.99F * 0.9F * 0.9F, 0.01F);
+    EXPECT_EQ(bullet.penetrated_soldiers.size(), 2U);
+}
+
+TEST(BulletPhysicsTest, DirectDamageUsesProjectileFalloffMultiplier)
+{
+    auto animation_data_manager = CreateAnimationDataManager();
+    auto state_manager = CreateStateManagerWithSoldierSkeleton(animation_data_manager);
+    auto soldiers = state_manager.CreateEmptySoldiersSnapshot();
+    soldiers.at(0).active = true;
+    state_manager.ApplySoldiersSnapshot(soldiers);
+    Soldank::PhysicsEvents physics_events;
+    std::vector<float> damages;
+    physics_events.soldier_hit_by_bullet.AddObserver(
+      [&](Soldank::Soldier&, float damage) { damages.push_back(damage); });
+    auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F });
+    const Soldank::BulletCollisionResult collision{
+        .kind = Soldank::BulletCollisionKind::Soldier,
+        .position = { -7.0F, 0.0F },
+        .distance = 13.0F,
+        .soldier_id = 0,
+        .body_part_id = 12,
+    };
+    Soldank::BulletDamage::ApplyDirectHit(physics_events, bullet, state_manager, collision);
+    bullet.particle.SetVelocity({ 40.0F, 0.0F });
+    bullet.hit_multiply *= 0.5F;
+    Soldank::BulletDamage::ApplyDirectHit(physics_events, bullet, state_manager, collision);
+    ASSERT_EQ(damages.size(), 2U);
+    EXPECT_GT(damages.at(0), 0.0F);
+    EXPECT_FLOAT_EQ(damages.at(1), damages.at(0) * 0.5F);
+}
+
+TEST(BulletPhysicsTest, CapturesShooterPingWhenProjectileIsCreated)
+{
+    auto animation_data_manager = CreateAnimationDataManager();
+    auto state_manager = CreateStateManagerWithSoldierSkeleton(animation_data_manager);
+    auto soldiers = state_manager.CreateEmptySoldiersSnapshot();
+    soldiers.at(0).active = true;
+    state_manager.ApplySoldiersSnapshot(soldiers);
+    state_manager.GetSoldier(0).SetPingTicks(7);
+    state_manager.CreateProjectile({
+      .style = Soldank::BulletType::Bullet,
+      .weapon = Soldank::WeaponType::Ak74,
+      .position = {},
+      .velocity = { 10.0F, 0.0F },
+      .timeout = 100,
+      .hit_multiply = 1.0F,
+      .team = Soldank::TeamType::None,
+      .owner_id = 0,
+      .push = 1.0F,
+    });
+    state_manager.GetSoldier(0).SetPingTicks(20);
+    unsigned int count = 0;
+    state_manager.ForEachBullet([&](const Soldank::Bullet& bullet) {
+        ++count;
+        EXPECT_EQ(bullet.owner_ping_ticks, 7);
+    });
+    EXPECT_EQ(count, 1U);
+}
+
+namespace
+{
+void ActivateTarget(Soldank::StateManager& state,
+                    unsigned int id,
+                    glm::vec2 position,
+                    bool dead = false)
+{
+    auto& soldier = state.GetSoldier(static_cast<std::uint8_t>(id));
+    soldier.active = true;
+    soldier.id = static_cast<std::uint8_t>(id);
+    soldier.skeleton = std::make_shared<Soldank::ParticleSystem>(
+      std::vector<Soldank::Particle>(
+        23, Soldank::Particle(true, position, position, {}, {}, 1.0F, 1.0F, 0.0F, 1.0F, 0.0F)),
+      std::vector<Soldank::Constraint>{});
+    soldier.dead_meat = dead;
+    soldier.health = 10000.0F;
+    soldier.particle.position = position;
+    for (unsigned int part = 1; part <= 23; ++part) {
+        soldier.skeleton->SetPos(part, position);
+        soldier.skeleton->SetOldPos(part, position);
+    }
+}
+
+std::size_t CountEvents(const Soldank::StateManager& state, Soldank::ProjectileEventKind kind)
+{
+    std::size_t count = 0;
+    for (const auto& event : state.GetProjectileEvents()) {
+        count += event.kind == kind ? 1U : 0U;
+    }
+    return count;
+}
+} // namespace
+
+TEST(BulletPhysicsTest, SweepsPolygonsThinnerThanTheOldSamplingInterval)
+{
+    auto map = SoldankTesting::MapBuilder::Empty()
+                 ->AddPolygon({ 1.234F, -10.0F },
+                              { 1.244F, -10.0F },
+                              { 1.239F, 10.0F },
+                              Soldank::PMSPolygonType::Normal)
+                 ->Build();
+    auto bullet = CreateBullet({ 0.0F, 0.0F }, { 100.0F, 0.0F });
+    bullet.particle.position = { 100.0F, 0.0F };
+    const auto collision = Soldank::BulletCollision::FindMapCollision(bullet, *map);
+    ASSERT_TRUE(collision);
+    const auto& polygon = map->GetPolygons().at(0);
+    const float entry_x = (polygon.vertices.at(0).x + polygon.vertices.at(2).x) * 0.5F;
+    EXPECT_NEAR(collision->position.x, entry_x, 0.001F);
+}
+
+TEST(BulletPhysicsTest, DetonatesEveryExplosiveStyleOnTimeoutOnce)
+{
+    constexpr std::array STYLES{ Soldank::BulletType::FragGrenade, Soldank::BulletType::M79Grenade,
+                                 Soldank::BulletType::FlameArrow,  Soldank::BulletType::LAWMissile,
+                                 Soldank::BulletType::Cluster,     Soldank::BulletType::M2Bullet };
+    for (const auto style : STYLES) {
+        auto animations = CreateAnimationDataManager();
+        auto state = CreateStateManager(animations);
+        auto map = SoldankTesting::MapBuilder::Empty()->Build();
+        Soldank::PhysicsEvents events;
+        auto bullet = CreateBullet({}, {}, 1);
+        bullet.style = style;
+        Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+        EXPECT_FALSE(bullet.active);
+        EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileExploded), 1U);
+        Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+        EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileExploded), 1U);
+    }
+}
+
+TEST(BulletPhysicsTest, ExplosiveWallImpactsDetonateAndGrenadesBounceBeforeExpiry)
+{
+    for (const auto style : { Soldank::BulletType::M79Grenade,
+                              Soldank::BulletType::LAWMissile,
+                              Soldank::BulletType::FlameArrow }) {
+        auto animations = CreateAnimationDataManager();
+        auto state = CreateStateManager(animations);
+        auto map =
+          SoldankTesting::MapBuilder::Empty()
+            ->AddPolygon(
+              { -5.0F, -10.0F }, { 5.0F, -10.0F }, { 0.0F, 10.0F }, Soldank::PMSPolygonType::Normal)
+            ->Build();
+        Soldank::PhysicsEvents events;
+        auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F });
+        bullet.style = style;
+        Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+        EXPECT_FALSE(bullet.active);
+        EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileExploded), 1U);
+    }
+}
+
+TEST(BulletPhysicsTest, ExplosionDamageUsesDistanceHitboxesAndDelayedRadialPush)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, { 10.0F, 0.0F });
+    ActivateTarget(state, 1, { 30.0F, 0.0F });
+    ActivateTarget(state, 2, { 100.0F, 0.0F });
+    Soldank::PhysicsEvents events;
+    auto bullet = CreateBullet({}, {});
+    bullet.style = Soldank::BulletType::FragGrenade;
+    bullet.weapon = Soldank::WeaponType::FragGrenade;
+    Soldank::BulletDamage::Explode(events, bullet, state);
+    const auto& near = state.GetSoldier(0);
+    const auto& far = state.GetSoldier(1);
+    EXPECT_LT(near.health, far.health);
+    EXPECT_LT(far.health, 10000.0F);
+    EXPECT_FLOAT_EQ(state.GetSoldier(2).health, 10000.0F);
+    ASSERT_EQ(near.projectile_pushes.size(), 1U);
+    ASSERT_EQ(far.projectile_pushes.size(), 1U);
+    EXPECT_GT(near.projectile_pushes.front().impulse.x, 0.0F);
+    EXPECT_GT(near.projectile_pushes.front().impulse.x / 10.0F,
+              far.projectile_pushes.front().impulse.x / 30.0F);
+    EXPECT_EQ(near.projectile_pushes.front().tick, state.GetGameTick() + 1);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::SoldierHitByExplosion), 2U);
+}
+
+TEST(BulletPhysicsTest, ExplosionMovesRagdollsAndItemsAndChainsEachRoundOnce)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, { 10.0F, 0.0F }, true);
+    auto& item = state.CreateItem({ 10.0F, 0.0F },
+                                  255,
+                                  Soldank::ItemType::Knife,
+                                  CreateItemSkeleton({ 10.0F, 0.0F }, { 10.0F, 0.0F }));
+    item.collide_with_bullets = true;
+    for (const float position : { 20.0F, 40.0F }) {
+        state.CreateProjectile({ .style = Soldank::BulletType::FragGrenade,
+                                 .weapon = Soldank::WeaponType::FragGrenade,
+                                 .position = { position, 0.0F },
+                                 .velocity = {},
+                                 .timeout = 100,
+                                 .hit_multiply = 1.0F,
+                                 .team = Soldank::TeamType::None,
+                                 .owner_id = 255,
+                                 .push = 1.0F });
+    }
+    Soldank::PhysicsEvents events;
+    auto bullet = CreateBullet({}, {});
+    bullet.style = Soldank::BulletType::FragGrenade;
+    Soldank::BulletDamage::Explode(events, bullet, state);
+    EXPECT_EQ(state.GetBulletsCount(), 0U);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileExploded), 3U);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileChainDetonated), 2U);
+    EXPECT_NE(state.GetSoldier(0).skeleton->GetOldPos(1).x, 10.0F);
+    EXPECT_NE(item.skeleton->GetOldPos(1).x, 10.0F);
+    EXPECT_FALSE(item.static_type);
+}
+
+TEST(BulletPhysicsTest, ClusterChildrenAreSeededQueuedAndOwned)
+{
+    auto animations = CreateAnimationDataManager();
+    auto first = CreateStateManager(animations);
+    auto second = CreateStateManager(animations);
+    auto bullet = CreateBullet({ 10.0F, 20.0F }, { 2.0F, 3.0F });
+    bullet.seed = 123;
+    bullet.style = Soldank::BulletType::ClusterGrenade;
+    Soldank::BulletEffects::Fragment(first, bullet);
+    Soldank::BulletEffects::Fragment(second, bullet);
+    ASSERT_EQ(first.GetBulletEmitter().size(), 5U);
+    ASSERT_EQ(second.GetBulletEmitter().size(), 5U);
+    EXPECT_EQ(first.GetBulletsCount(), 0U);
+    for (std::size_t index = 0; index < 5; ++index) {
+        const auto& child = first.GetBulletEmitter().at(index);
+        EXPECT_EQ(child.velocity, second.GetBulletEmitter().at(index).velocity);
+        EXPECT_EQ(child.seed, second.GetBulletEmitter().at(index).seed);
+        EXPECT_EQ(child.owner_id, bullet.owner_id);
+        EXPECT_EQ(child.style, Soldank::BulletType::Cluster);
+        EXPECT_TRUE(child.derived);
+    }
+    EXPECT_EQ(CountEvents(first, Soldank::ProjectileEventKind::ProjectileFragmented), 1U);
+    second.ClearBulletEmitter();
+    second.SetAuthoritativeProjectiles(false);
+    Soldank::BulletEffects::Fragment(second, bullet);
+    EXPECT_TRUE(second.GetBulletEmitter().empty());
+}
+
+TEST(BulletPhysicsTest, RespectsAllSixWeaponMasks)
+{
+    for (unsigned int explosion = 0; explosion < 2; ++explosion) {
+        for (unsigned int category = 0; category < 3; ++category) {
+            const auto mask = static_cast<std::uint8_t>(1U << (category + explosion * 3));
+            for (unsigned int target = 0; target < 3; ++target) {
+                EXPECT_EQ(
+                  Soldank::AllowsWeaponCollision(mask, target == 2, target == 1, explosion != 0),
+                  target != category);
+                EXPECT_TRUE(
+                  Soldank::AllowsWeaponCollision(mask, target == 2, target == 1, explosion == 0));
+            }
+        }
+    }
+}
+
+TEST(BulletPhysicsTest, FriendlyFireAndProtectedTargetsBlockDirectAndExplosionDamage)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& target = state.GetSoldier(0);
+    target.team = Soldank::TeamType::Alpha;
+    auto bullet = CreateBullet({}, { 10.0F, 0.0F });
+    bullet.team = Soldank::TeamType::Alpha;
+    state.SetFriendlyFire(false);
+    for (const bool explosion : { false, true }) {
+        EXPECT_FALSE(Soldank::BulletDamage::CanDamage(state, target, bullet, explosion));
+        state.SetFriendlyFire(true);
+        EXPECT_TRUE(Soldank::BulletDamage::CanDamage(state, target, bullet, explosion));
+        target.SetCeaseFireCounter(0);
+        EXPECT_FALSE(Soldank::BulletDamage::CanDamage(state, target, bullet, explosion));
+        target.SetCeaseFireCounter(-1);
+        target.team = Soldank::TeamType::Spectator;
+        EXPECT_FALSE(Soldank::BulletDamage::CanDamage(state, target, bullet, explosion));
+        target.team = Soldank::TeamType::Alpha;
+        state.SetFriendlyFire(false);
+    }
+}
+
+TEST(BulletPhysicsTest, UsesBoundedHistoricalPositionsForShooterLatency)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& target = state.GetSoldier(0);
+    target.RecordPosition(10);
+    ActivateTarget(state, 0, { 50.0F, 0.0F });
+    target.RecordPosition(20);
+    state.SetGameTick(20);
+    auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F });
+    bullet.particle.position = { 20.0F, 0.0F };
+    EXPECT_FALSE(Soldank::BulletCollision::FindSoldierCollision(bullet, state, -1.0F));
+    bullet.owner_ping_ticks = 10;
+    EXPECT_TRUE(Soldank::BulletCollision::FindSoldierCollision(bullet, state, -1.0F));
+    for (unsigned int tick = 21; tick < 300; ++tick) {
+        target.RecordPosition(tick);
+    }
+    EXPECT_EQ(target.position_history.size(), 125U);
+    target.RecordPosition(290);
+    EXPECT_EQ(target.position_history.back().tick, 290U);
+}
+
+TEST(BulletPhysicsTest, FlamePropagationIsBoundedAndRetainsReducedDamage)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& target = state.GetSoldier(0);
+    target.particle.SetVelocity({ 2.0F, 0.0F });
+    auto bullet = CreateBullet({}, {}, 2, 1000.0F);
+    bullet.style = Soldank::BulletType::Flame;
+    Soldank::BulletEffects::PropagateFlame(state, bullet, target, 12);
+    ASSERT_EQ(state.GetBulletEmitter().size(), 1U);
+    EXPECT_FLOAT_EQ(state.GetBulletEmitter().front().hit_multiply, 2000.0F / 3.0F);
+    EXPECT_EQ(state.GetBulletEmitter().front().velocity, glm::vec2(-2.0F, 0.0F));
+    EXPECT_EQ(bullet.timeout, 31);
+    EXPECT_EQ(bullet.ricochet_count, 1);
+    bullet.timeout = 2;
+    Soldank::BulletEffects::PropagateFlame(state, bullet, target, 12);
+    bullet.timeout = 2;
+    Soldank::BulletEffects::PropagateFlame(state, bullet, target, 12);
+    EXPECT_EQ(state.GetBulletEmitter().size(), 2U);
+}
+
+TEST(BulletPhysicsTest, FiresM79AndPrimaryProjectileStylesWithCombatMetadata)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& owner = state.GetSoldier(0);
+    owner.team = Soldank::TeamType::Bravo;
+    owner.SetPingTicks(8);
+    owner.control.mouse_aim_x = 100;
+    for (const auto weapon : { Soldank::WeaponType::M79,
+                               Soldank::WeaponType::Bow,
+                               Soldank::WeaponType::Flamer,
+                               Soldank::WeaponType::Knife }) {
+        owner.GetActiveWeapon() = Soldank::WeaponParametersFactory::GetParameters(weapon, false);
+        owner.is_shooting = false;
+        std::vector<Soldank::BulletParams> emitted;
+        Soldank::SoldierPhysics::Fire(owner, emitted);
+        ASSERT_EQ(emitted.size(), 1U);
+        EXPECT_EQ(emitted.front().weapon, weapon);
+        EXPECT_EQ(emitted.front().team, owner.team);
+        EXPECT_EQ(emitted.front().owner_ping_ticks, 8);
+    }
+}
+
+TEST(BulletPhysicsTest, SpawnReplicationPreservesDeterministicAndLatencyMetadata)
+{
+    Soldank::ProjectileSpawnedEvent event{ .bullet_params = { .style = Soldank::BulletType::Cluster,
+                                                              .weapon =
+                                                                Soldank::WeaponType::Cluster,
+                                                              .position = { 1.0F, 2.0F },
+                                                              .velocity = { 3.0F, 4.0F },
+                                                              .timeout = 50,
+                                                              .hit_multiply = 12.0F,
+                                                              .team = Soldank::TeamType::Charlie,
+                                                              .owner_id = 2,
+                                                              .push = 0.5F,
+                                                              .owner_ping_ticks = 9,
+                                                              .id = 60000,
+                                                              .seed = 12345,
+                                                              .spawn_tick = 100,
+                                                              .derived = true } };
+    const auto packet = Soldank::ProtocolConversions::ToProjectileSpawnPacket(60000, event);
+    const auto decoded = Soldank::ProtocolConversions::ToProjectileSpawnedEvent(packet);
+    EXPECT_EQ(decoded.bullet_params.id, event.bullet_params.id);
+    EXPECT_EQ(decoded.bullet_params.seed, event.bullet_params.seed);
+    EXPECT_EQ(decoded.bullet_params.spawn_tick, 100U);
+    EXPECT_EQ(decoded.bullet_params.owner_ping_ticks, 9);
+    EXPECT_FLOAT_EQ(decoded.bullet_params.push, 0.5F);
+    EXPECT_TRUE(decoded.bullet_params.derived);
+}
+
+TEST(BulletPhysicsTest, GrenadeBouncesAndThenExplodesOnItsLastTick)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManager(animations);
+    auto map =
+      SoldankTesting::MapBuilder::Empty()
+        ->AddPolygon(
+          { -5.0F, -10.0F }, { 5.0F, -10.0F }, { 0.0F, 10.0F }, Soldank::PMSPolygonType::Normal)
+        ->Build();
+    Soldank::PhysicsEvents events;
+    auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F }, 2);
+    bullet.style = Soldank::BulletType::FragGrenade;
+    Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+    ASSERT_TRUE(bullet.active);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileBounced), 1U);
+    Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+    EXPECT_FALSE(bullet.active);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileExploded), 1U);
+}
+
+TEST(BulletPhysicsTest, PunchDropsEnemyWeaponButPreservesBows)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& target = state.GetSoldier(0);
+    target.GetActiveWeapon() =
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::Ak74, false);
+    auto bullet = CreateBullet({}, { 10.0F, 0.0F });
+    bullet.style = Soldank::BulletType::Fist;
+    const Soldank::BulletCollisionResult collision{ .kind = Soldank::BulletCollisionKind::Soldier,
+                                                    .position = {},
+                                                    .distance = 0.0F,
+                                                    .soldier_id = 0,
+                                                    .body_part_id = 12 };
+    Soldank::PhysicsEvents events;
+    Soldank::BulletDamage::ApplyDirectHit(events, bullet, state, collision);
+    EXPECT_EQ(target.GetActiveWeapon().GetWeaponParameters().kind, Soldank::WeaponType::NoWeapon);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::WorldItemSpawnedFromProjectile), 1U);
+    target.GetActiveWeapon() =
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::Bow, false);
+    Soldank::BulletDamage::ApplyDirectHit(events, bullet, state, collision);
+    EXPECT_EQ(target.GetActiveWeapon().GetWeaponParameters().kind, Soldank::WeaponType::Bow);
+}
+
+TEST(BulletPhysicsTest, ArrowSticksToSoldierWithoutRepeatedDamage)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto map = SoldankTesting::MapBuilder::Empty()->Build();
+    auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F }, 400);
+    bullet.style = Soldank::BulletType::Arrow;
+    Soldank::PhysicsEvents events;
+    Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+    ASSERT_TRUE(bullet.stuck);
+    ASSERT_TRUE(bullet.attached_soldier);
+    const float health = state.GetSoldier(0).health;
+    Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+    EXPECT_FLOAT_EQ(state.GetSoldier(0).health, health);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::ProjectileStuck), 1U);
+}
+
+TEST(BulletPhysicsTest, CommitsDamageBeforePublishingItsValueSnapshot)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    Soldank::PhysicsEvents events;
+    float observed_health = 0.0F;
+    events.soldier_hit_by_bullet.AddObserver(
+      [&](Soldank::Soldier& soldier, float) { observed_health = soldier.health; });
+    auto bullet = CreateBullet({}, { 10.0F, 0.0F });
+    Soldank::BulletDamage::ApplyDamage(
+      events, state, state.GetSoldier(0), bullet, 12.0F, 12, false);
+    EXPECT_FLOAT_EQ(observed_health, 9988.0F);
+    const auto snapshot = state.GetProjectileEvents().back();
+    state.GetSoldier(0).health = 100.0F;
+    EXPECT_FLOAT_EQ(snapshot.damage, 12.0F);
+    EXPECT_EQ(snapshot.particle_id, 12U);
+}
+
+TEST(BulletPhysicsTest, ClientDoesNotRepeatAuthoritativeDamageOrSpawnEffects)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, { 10.0F, 0.0F });
+    state.SetAuthoritativeProjectiles(false);
+    auto bullet = CreateBullet({}, {});
+    bullet.style = Soldank::BulletType::FragGrenade;
+    Soldank::PhysicsEvents events;
+    Soldank::BulletDamage::Explode(events, bullet, state);
+    EXPECT_FLOAT_EQ(state.GetSoldier(0).health, 10000.0F);
+    EXPECT_TRUE(state.GetSoldier(0).projectile_pushes.empty());
+    Soldank::BulletEffects::Fragment(state, bullet);
+    EXPECT_TRUE(state.GetBulletEmitter().empty());
+}
+
+TEST(BulletPhysicsTest, RebuildsOnlyFuturePushesDuringSnapshotReplay)
+{
+    Soldank::Soldier soldier;
+    soldier.ScheduleProjectilePush(10, 0, { 1.0F, 0.0F });
+    soldier.ScheduleProjectilePush(15, 0, { 2.0F, 0.0F });
+    soldier.ApplyProjectilePushes(20);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(3.0F, 0.0F));
+    soldier.RestoreProjectilePushesAfterTick(12);
+    ASSERT_EQ(soldier.projectile_pushes.size(), 1U);
+    soldier.particle.SetVelocity({ 1.0F, 0.0F });
+    soldier.ApplyProjectilePushes(16);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(3.0F, 0.0F));
+    soldier.ApplyProjectilePushes(17);
+    EXPECT_EQ(soldier.particle.GetVelocity(), glm::vec2(3.0F, 0.0F));
+    soldier.ApplyProjectilePushes(200);
+    EXPECT_TRUE(soldier.projectile_push_history.empty());
+}
+
+TEST(BulletPhysicsTest, DirectDamageReportsEachHitboxAndItsImpactNormal)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    Soldank::PhysicsEvents events;
+    auto bullet = CreateBullet({}, { 10.0F, 0.0F });
+    for (const int part : { 3, 6, 12 }) {
+        const Soldank::BulletCollisionResult collision{ .kind =
+                                                          Soldank::BulletCollisionKind::Soldier,
+                                                        .position = { -7.0F, 0.0F },
+                                                        .distance = 1.0F,
+                                                        .soldier_id = 0,
+                                                        .body_part_id = part };
+        Soldank::BulletDamage::ApplyDirectHit(events, bullet, state, collision);
+        const auto& event = state.GetProjectileEvents().back();
+        ASSERT_EQ(event.kind, Soldank::ProjectileEventKind::SoldierHitByProjectile);
+        EXPECT_FLOAT_EQ(event.damage,
+                        10.0F * Soldank::BulletDamage::HitboxModifier(bullet.weapon, part));
+        ASSERT_TRUE(event.collision);
+        EXPECT_EQ(event.position, collision.position);
+        ASSERT_TRUE(event.collision->surface_normal);
+        EXPECT_NEAR(event.collision->surface_normal->x, -9.1F, 0.00001F);
+        EXPECT_FLOAT_EQ(event.collision->surface_normal->y, 0.0F);
+    }
+}
+
+TEST(BulletPhysicsTest, ThrownKnifeIsRecoverableAfterHittingALivingSoldier)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    Soldank::PhysicsEvents events;
+    auto bullet = CreateBullet({}, { 10.0F, 0.0F });
+    bullet.style = Soldank::BulletType::ThrownKnife;
+    const Soldank::BulletCollisionResult collision{ .kind = Soldank::BulletCollisionKind::Soldier,
+                                                    .position = {},
+                                                    .distance = 0.0F,
+                                                    .soldier_id = 0,
+                                                    .body_part_id = 12 };
+    EXPECT_EQ(Soldank::BulletDamage::ApplyDirectHit(events, bullet, state, collision),
+              Soldank::BulletDamage::DirectHitOutcome::Destroyed);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::WorldItemSpawnedFromProjectile), 1U);
+}
+
+TEST(BulletPhysicsTest, OnlineProjectilesWaitForAuthoritativeImpactAndRemoval)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManager(animations);
+    state.SetAuthoritativeProjectiles(false);
+    auto map =
+      SoldankTesting::MapBuilder::Empty()
+        ->AddPolygon(
+          { -5.0F, -10.0F }, { 5.0F, -10.0F }, { 0.0F, 10.0F }, Soldank::PMSPolygonType::Normal)
+        ->Build();
+    auto bullet = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F }, 1);
+    bullet.style = Soldank::BulletType::M79Grenade;
+    Soldank::PhysicsEvents events;
+    Soldank::BulletPhysics::UpdateBullet(events, bullet, *map, state);
+    EXPECT_TRUE(bullet.active);
+    EXPECT_TRUE(state.GetProjectileEvents().empty());
+}
+
+TEST(BulletPhysicsTest, ColliderImpactsRecoverKnivesAndRespectGrenadeArmingGrace)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManager(animations);
+    auto map = CreateMapWithColliders({ { .active = 1, .x = 0.0F, .y = 0.0F, .radius = 17.0F } });
+    Soldank::PhysicsEvents events;
+    auto knife = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F });
+    knife.style = Soldank::BulletType::ThrownKnife;
+    Soldank::BulletPhysics::UpdateBullet(events, knife, *map, state);
+    EXPECT_FALSE(knife.active);
+    EXPECT_EQ(CountEvents(state, Soldank::ProjectileEventKind::WorldItemSpawnedFromProjectile), 1U);
+    auto grenade = CreateBullet({ -20.0F, 0.0F }, { 40.0F, 0.0F });
+    grenade.style = Soldank::BulletType::FragGrenade;
+    grenade.particle.position = { 20.0F, 0.0F };
+    EXPECT_FALSE(Soldank::BulletCollision::FindColliderCollision(grenade, *map));
+    grenade.timeout -= 3;
+    EXPECT_TRUE(Soldank::BulletCollision::FindColliderCollision(grenade, *map));
+}
+
+TEST(BulletPhysicsTest, ThrownKnifeEventPreservesOwnerCombatMetadata)
+{
+    auto world = std::make_shared<Soldank::World>();
+    Soldank::CoreEventHandler::ObserveAll(world.get());
+    const auto owner_id = world->CreateSoldier().id;
+    auto& owner = world->GetStateManager()->GetSoldier(owner_id);
+    owner.GetActiveWeapon() =
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::Knife, false);
+    owner.SetTeam(Soldank::TeamType::Alpha);
+    owner.SetPingTicks(9);
+    owner.control.mouse_aim_x = 100;
+    world->GetPhysicsEvents().soldier_throws_active_weapon.Notify(owner);
+    const auto& emitted = world->GetStateManager()->GetBulletEmitter();
+    ASSERT_EQ(emitted.size(), 1U);
+    EXPECT_EQ(emitted.front().style, Soldank::BulletType::ThrownKnife);
+    EXPECT_EQ(emitted.front().team, Soldank::TeamType::Alpha);
+    EXPECT_EQ(emitted.front().owner_ping_ticks, 9);
+    EXPECT_FLOAT_EQ(
+      emitted.front().push,
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::ThrownKnife, false)
+        .push);
 }

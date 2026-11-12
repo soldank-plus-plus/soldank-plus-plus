@@ -92,14 +92,6 @@ private:
 
     static void ObserveAllPhysicsEvents(IWorld* world)
     {
-        world->GetPhysicsEvents().soldier_hit_by_bullet.AddObserver(
-          [world](Soldier& soldier, float damage) {
-              soldier.health -= damage;
-              spdlog::debug("soldier {} hit by {} damage", soldier.id, damage);
-              if (soldier.health <= 0.0F) {
-                  world->KillSoldier(soldier.id);
-              }
-          });
         world->GetPhysicsEvents().soldier_switches_weapon.AddObserver([world](Soldier& soldier) {
             spdlog::debug(
               "soldier {} switched weapon from {} to {}",
@@ -134,9 +126,10 @@ private:
                       velocity,
                       (std::int16_t)weapon.GetWeaponParameters().timeout,
                       weapon.GetWeaponParameters().hit_multiply,
-                      TeamType::None,
+                      soldier.GetTeam(),
                       soldier.id,
-                      0.0F // TODO: Add push
+                      weapon.GetWeaponParameters().push,
+                      soldier.GetPingTicks(),
                   };
                   world->GetStateManager()->EnqueueNewProjectile(params);
                   world->GetStateManager()->ChangeSoldierPrimaryWeapon(soldier.id,

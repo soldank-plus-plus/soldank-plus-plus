@@ -61,6 +61,9 @@ set(soldank_core_modules
 
     core/math/Calc.cpp
 
+    core/physics/bullets/BulletEvents.cpp
+    core/physics/bullets/BulletEffects.cpp
+    core/physics/bullets/BulletLagCompensation.cpp
     core/physics/bullets/BulletTypes.cpp
     core/physics/bullets/BulletCollision.cpp
     core/physics/bullets/BulletDamage.cpp

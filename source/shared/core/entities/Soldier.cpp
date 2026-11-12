@@ -7,6 +7,9 @@ module;
 #include <vector>
 #include <memory>
 #include <array>
+#include <deque>
+#include <optional>
+#include <algorithm>
 
 export module Shared.Core.Entities.Soldier;
 
@@ -63,6 +66,10 @@ struct Soldier
 
     void SetDefaultValues()
     {
+        projectile_pushes.clear();
+        projectile_push_history.clear();
+        latest_authoritative_tick.reset();
+        position_history.clear();
         active = false;
         dead_meat = true;
         style = 0;
@@ -112,6 +119,80 @@ struct Soldier
 
     void SetPingTicks(std::uint16_t new_ping_ticks) { ping_ticks = new_ping_ticks; }
     std::uint16_t GetPingTicks() const { return ping_ticks; }
+
+    struct HistoricalPosition
+    {
+        unsigned int tick;
+        glm::vec2 position;
+    };
+
+    void RecordPosition(unsigned int tick)
+    {
+        while (!position_history.empty() && position_history.back().tick >= tick) {
+            position_history.pop_back();
+        }
+        position_history.push_back({ tick, particle.position });
+        if (position_history.size() > 125) {
+            position_history.pop_front();
+        }
+    }
+
+    glm::vec2 GetHistoricalPosition(unsigned int tick) const
+    {
+        for (auto sample = position_history.rbegin(); sample != position_history.rend(); ++sample) {
+            if (sample->tick <= tick) {
+                return sample->position;
+            }
+        }
+        return position_history.empty() ? particle.position : position_history.front().position;
+    }
+
+    std::deque<HistoricalPosition> position_history;
+
+    struct ProjectilePush
+    {
+        unsigned int tick;
+        glm::vec2 impulse;
+    };
+
+    void ScheduleProjectilePush(unsigned int tick, unsigned int owner_ping, glm::vec2 impulse)
+    {
+        const unsigned int delay = std::min(125U, ping_ticks / 2U + owner_ping + 1U);
+        AddProjectilePush(tick + delay, impulse);
+    }
+
+    void AddProjectilePush(unsigned int tick, glm::vec2 impulse)
+    {
+        projectile_pushes.push_back({ tick, impulse });
+        projectile_push_history.push_back({ tick, impulse });
+    }
+
+    void RestoreProjectilePushesAfterTick(unsigned int tick)
+    {
+        projectile_pushes.clear();
+        for (const auto& push : projectile_push_history) {
+            if (push.tick > tick) {
+                projectile_pushes.push_back(push);
+            }
+        }
+    }
+
+    void ApplyProjectilePushes(unsigned int tick)
+    {
+        for (const auto& push : projectile_pushes) {
+            if (push.tick <= tick) {
+                particle.SetVelocity(particle.GetVelocity() + push.impulse);
+            }
+        }
+        std::erase_if(projectile_pushes, [tick](const auto& push) { return push.tick <= tick; });
+        std::erase_if(projectile_push_history, [tick](const auto& push) {
+            return tick > push.tick && tick - push.tick > 125;
+        });
+    }
+
+    std::vector<ProjectilePush> projectile_pushes;
+    std::vector<ProjectilePush> projectile_push_history;
+    std::optional<unsigned int> latest_authoritative_tick;
 
     Weapon& GetActiveWeapon() { return weapons.at(active_weapon); }
     const Weapon& GetActiveWeapon() const { return weapons.at(active_weapon); }

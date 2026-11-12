@@ -25,6 +25,18 @@ constexpr bool HasWeaponNoCollision(std::uint8_t collision_mask, WeaponNoCollisi
     return (collision_mask & static_cast<std::uint8_t>(collision)) != 0U;
 }
 
+constexpr bool AllowsWeaponCollision(std::uint8_t mask, bool self, bool same_team, bool explosion)
+{
+    const auto category =
+      explosion
+        ? (self
+             ? WeaponNoCollision::ExplosionSelf
+             : (same_team ? WeaponNoCollision::ExplosionTeam : WeaponNoCollision::ExplosionEnemy))
+        : (self ? WeaponNoCollision::Self
+                : (same_team ? WeaponNoCollision::Team : WeaponNoCollision::Enemy));
+    return !HasWeaponNoCollision(mask, category);
+}
+
 struct WeaponParameters
 {
     WeaponType kind;

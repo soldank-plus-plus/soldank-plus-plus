@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -199,7 +200,8 @@ std::set<std::pair<unsigned int, unsigned int>> FindPolygonSectors(const Soldank
     const auto size = static_cast<unsigned int>(map.GetSectorsCount() * 2 + 1);
     for (unsigned int x = 0; x < size; ++x) {
         for (unsigned int y = 0; y < size; ++y) {
-            if (std::ranges::contains(map.GetSector(x, y).polygons, polygon_id)) {
+            const auto& polygons = map.GetSector(x, y).polygons;
+            if (std::ranges::find(polygons, polygon_id) != polygons.end()) {
                 sectors.emplace(x, y);
             }
         }

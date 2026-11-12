@@ -97,6 +97,7 @@ set(client_lib_modules
     networking/event_handlers/PingCheckNetworkEventHandler.cpp
     networking/event_handlers/PlayerLeaveNetworkEventHandler.cpp
     networking/event_handlers/ProjectileSpawnNetworkEventHandler.cpp
+    networking/event_handlers/ProjectilePhysicsNetworkEventHandler.cpp
     networking/event_handlers/SoldierInfoNetworkEventHandler.cpp
     networking/event_handlers/SoldierStateNetworkEventHandler.cpp
     networking/event_handlers/SpawnSoldierNetworkEventHandler.cpp

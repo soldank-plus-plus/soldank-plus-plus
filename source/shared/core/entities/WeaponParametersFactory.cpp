@@ -23,7 +23,7 @@ const std::uint16_t SECOND = 60;
 const std::uint16_t BULLET_TIMEOUT = SECOND * 7;
 const std::uint16_t GRENADE_TIMEOUT = SECOND * 3;
 const std::uint16_t M2BULLET_TIMEOUT = SECOND;
-const std::uint16_t FLAMER_TIMEOUT = SECOND * 32;
+const std::uint16_t FLAMER_TIMEOUT = 32;
 const std::uint16_t MELEE_TIMEOUT = 1;
 
 // TODO: Move to Bullet classes
