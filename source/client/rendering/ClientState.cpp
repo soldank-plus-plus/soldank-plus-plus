@@ -12,6 +12,7 @@ export module ClientState;
 import Extern.Glm;
 
 import Camera;
+import WeaponVisualEffects;
 import MapEditorState;
 
 import Shared.Networking.PingTimer;
@@ -98,6 +99,10 @@ struct ClientDebugRenderState
 
 struct ClientWorldRenderOptions
 {
+    bool draw_minimap = true;
+    bool draw_trails = true;
+    bool draw_weather = true;
+    bool camera_shake = true;
     bool draw_background = true;
     bool draw_polygons = true;
     bool draw_sceneries = true;
@@ -107,6 +112,8 @@ struct ClientWorldRenderOptions
 
 struct ClientState
 {
+    WeaponVisualEffects visual_effects;
+    SoldierAppearance appearance;
     std::vector<ProjectilePhysicsEvent> projectile_visual_events;
     std::vector<PolygonEffectEvent> polygon_visual_events;
     /**

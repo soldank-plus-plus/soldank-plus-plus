@@ -101,3 +101,21 @@ endif()
 
 AddClientTestWithMapEditorData(PolygonReconciliationTest networking/PolygonReconciliationTest.cpp)
 target_link_libraries(PolygonReconciliationTest PRIVATE shared_lib_testing_framework)
+
+AddClientTestWithMapEditorData(VisualEffectsTest rendering/VisualEffectsTest.cpp)
+target_link_libraries(VisualEffectsTest PRIVATE shared_lib_testing_framework)
+
+# Optional software OpenGL coverage: no window server or graphics hardware is required.
+if (UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  find_package(OpenGL QUIET COMPONENTS EGL)
+  if (TARGET OpenGL::EGL)
+    add_executable(VisualEffectsRenderingTest rendering/VisualEffectsRenderingTest.cpp)
+    target_link_libraries(VisualEffectsRenderingTest PRIVATE client_lib OpenGL::EGL)
+    AddTestOptionsAndLibraries(VisualEffectsRenderingTest)
+    add_test(NAME VisualEffectsRenderingTest COMMAND VisualEffectsRenderingTest)
+    set_tests_properties(VisualEffectsRenderingTest PROPERTIES
+      WORKING_DIRECTORY "${soldatbase_SOURCE_DIR}/shared"
+      ENVIRONMENT "LIBGL_ALWAYS_SOFTWARE=1;EGL_PLATFORM=surfaceless;MESA_SHADER_CACHE_DISABLE=true"
+    )
+  endif()
+endif()

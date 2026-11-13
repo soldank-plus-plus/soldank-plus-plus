@@ -1,5 +1,6 @@
 module;
 
+#include <algorithm>
 #include <format>
 #include <string>
 
@@ -7,6 +8,10 @@ export module GameHudRenderer;
 
 import ClientState;
 import TextRenderer;
+import HudSpriteRenderer;
+import MinimapRenderer;
+import Extern.Glm;
+import Shared.Core.Types.WeaponType;
 
 import Shared.Core.State.StateManager;
 
@@ -22,6 +27,11 @@ public:
 
     void Render(const StateManager& game_state_manager, const ClientState& client_state)
     {
+        if (client_state.world_render_options.draw_minimap) {
+            minimap_.Render(game_state_manager,
+                            { client_state.input.window_width, client_state.input.window_height },
+                            client_state.client_soldier_id);
+        }
         if (client_state.network.weapon_config_mismatch) {
             text_renderer_.Render(
               "Weapon settings differ from this server.",
@@ -41,6 +51,46 @@ public:
         game_state_manager.ForEachSoldier([&](const auto& soldier) {
             if (client_state.client_soldier_id.has_value() &&
                 *client_state.client_soldier_id == soldier.id) {
+                const glm::vec2 viewport(client_state.input.window_width,
+                                         client_state.input.window_height);
+                sprites_.Render(HudSprite::Health, { 5.0F, 439.0F }, viewport);
+                sprites_.Render(HudSprite::HealthBar,
+                                { 45.0F, 449.0F },
+                                viewport,
+                                soldier.health / game_state_manager.GetMaximumHealth());
+                sprites_.Render(
+                  HudSprite::VestBar, { 45.0F, 459.0F }, viewport, soldier.vest / 100.0F);
+                sprites_.Render(HudSprite::Ammo, { 275.0F, 439.0F }, viewport);
+                sprites_.Render(HudSprite::Jet, { 480.0F, 439.0F }, viewport);
+                const auto jet_capacity = game_state_manager.GetConstMap().GetJetCount();
+                sprites_.Render(
+                  HudSprite::JetBar,
+                  { 520.0F, 449.0F },
+                  viewport,
+                  jet_capacity > 0 ? static_cast<float>(soldier.jets_count) / jet_capacity : 0.0F);
+                const auto& active = soldier.GetActiveWeapon();
+                const auto reload_time = active.GetWeaponParameters().reload_time;
+                const float ammo_fill =
+                  active.IsReloading()
+                    ? (reload_time > 0
+                         ? 1.0F - static_cast<float>(active.GetReloadTimeCount()) / reload_time
+                         : 0.0F)
+                    : (active.GetCapacity() > 0
+                         ? static_cast<float>(active.GetAmmoCount()) / active.GetCapacity()
+                         : 0.0F);
+                sprites_.Render(HudSprite::AmmoBar, { 352.0F, 449.0F }, viewport, ammo_fill);
+                if (soldier.weapons.size() > 2) {
+                    const auto& grenades = soldier.weapons.at(2);
+                    for (unsigned int index = 0;
+                         index < std::min(6U, static_cast<unsigned int>(grenades.GetAmmoCount()));
+                         ++index) {
+                        sprites_.Render(grenades.GetState().kind == WeaponType::ClusterGrenade
+                                          ? HudSprite::ClusterGrenade
+                                          : HudSprite::Grenade,
+                                        { 308.0F + index * 10.0F, 462.0F },
+                                        viewport);
+                    }
+                }
                 text_renderer_.Render(
                   "Health: " + std::to_string((int)soldier.health),
                   50.0,
@@ -120,6 +170,8 @@ public:
     }
 
 private:
+    MinimapRenderer minimap_;
+    HudSpriteRenderer sprites_;
     TextRenderer text_renderer_;
 };
 } // namespace Soldank

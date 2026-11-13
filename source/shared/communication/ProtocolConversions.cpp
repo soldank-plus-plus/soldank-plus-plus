@@ -24,9 +24,14 @@ PlayerInputCommand ToPlayerInputCommand(std::uint8_t soldier_id, const SoldierIn
         .apply_server_tick = packet.apply_server_tick,
         .control = packet.control,
         .mouse_map_position = { packet.mouse_map_position_x, packet.mouse_map_position_y },
+        .weapon_choices = std::nullopt,
+        .appearance = std::nullopt,
     };
     if (packet.has_weapon_choice) {
         command.weapon_choices = std::array{ packet.primary_choice, packet.secondary_choice };
+    }
+    if (packet.has_appearance && packet.appearance.IsValid()) {
+        command.appearance = packet.appearance;
     }
     return command;
 }

@@ -74,6 +74,7 @@ struct MapData
 
 struct MapChangeEvents
 {
+    Observable<> replaced_contents;
     Observable<const PMSPolygon&> added_new_polygon;
     Observable<const PMSPolygon&, const std::vector<PMSPolygon>&> removed_polygon;
     Observable<const std::vector<PMSPolygon>, const std::vector<PMSPolygon>&> added_new_polygons;

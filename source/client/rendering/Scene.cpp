@@ -97,7 +97,6 @@ private:
     GameHudRenderer game_hud_renderer_;
     RectangleRenderer rectangle_renderer_;
     BulletRenderer bullet_renderer_;
-    WeaponVisualEffects weapon_effects_;
     LineRenderer line_renderer_;
     CircleRenderer circle_renderer_;
     ItemRenderer item_renderer_;
@@ -176,6 +175,11 @@ void Scene::RenderWorld(const StateManager& game_state_manager,
     glm::vec2 new_camera_position = Calc::Lerp(
       client_state.camera.previous_position, client_state.camera.position, (float)frame_percent);
     Camera& camera = client_state.camera.view;
+    if (client_state.world_render_options.camera_shake) {
+        const auto shake = client_state.visual_effects.GetCameraShake(
+          { new_camera_position.x, -new_camera_position.y }, static_cast<float>(frame_percent));
+        new_camera_position += glm::vec2(shake.x, -shake.y);
+    }
     camera.Move(new_camera_position.x, new_camera_position.y);
 
     glViewport(0, 0, (int)client_state.input.window_width, (int)client_state.input.window_height);
@@ -199,24 +203,40 @@ void Scene::RenderWorld(const StateManager& game_state_manager,
                                    client_state.network.soldier_position_server_pov,
                                    { 1.0F, 0.0F, 0.0F, 1.0F });
     }
+    bullet_renderer_.BeginBatch(camera.GetView());
     game_state_manager.ForEachBullet([&](const auto& bullet) {
-        bullet_renderer_.Render(camera.GetView(), bullet, frame_percent);
+        bullet_renderer_.Render(camera.GetView(),
+                                bullet,
+                                frame_percent,
+                                game_state_manager.GetGameTick(),
+                                client_state.world_render_options.draw_trails);
     });
-    weapon_effects_.Update(game_state_manager, client_state.projectile_visual_events);
-    client_state.projectile_visual_events.clear();
-    for (const auto& event : client_state.polygon_visual_events) {
-        weapon_effects_.ObservePolygon(event);
-    }
-    client_state.polygon_visual_events.clear();
+    bullet_renderer_.EndBatch();
     RenderSoldiers(game_state_manager, client_state, frame_percent);
     game_state_manager.ForEachItem([&](const auto& item) {
         item_renderer_.Render(
           camera.GetView(), item, frame_percent, game_state_manager.GetGameTick());
     });
     // GameRendering.pas draws sparks after soldiers and items, before foreground scenery.
-    for (const auto& effect : weapon_effects_.GetEffects()) {
+    bullet_renderer_.BeginBatch(camera.GetView());
+    for (const auto& effect : client_state.visual_effects.GetEffects()) {
+        if (effect.has_owner && game_state_manager.IsRealistic()) {
+            const auto* owner = game_state_manager.FindSoldier([&](const auto& soldier) {
+                return soldier.id == effect.owner && soldier.life_sequence == effect.owner_life;
+            });
+            if (owner != nullptr && owner->visible == 0) {
+                continue;
+            }
+        }
+        const glm::vec2 camera_position(camera.GetX(), -camera.GetY());
+        const auto distance = glm::abs(effect.position - camera_position);
+        if (distance.x > camera.GetWidth() * 0.5F + 128.0F ||
+            distance.y > camera.GetHeight() * 0.5F + 128.0F) {
+            continue;
+        }
         bullet_renderer_.RenderEffect(camera.GetView(), effect, static_cast<float>(frame_percent));
     }
+    bullet_renderer_.EndBatch();
     if (client_state.world_render_options.draw_sceneries) {
         sceneries_renderer_.Render(
           camera.GetView(), 1, game_state_manager.GetConstMap().GetSceneryInstances());
@@ -394,7 +414,11 @@ void Scene::RenderSoldiers(const StateManager& game_state_manager,
             return;
         }
 
-        soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
+        soldier_renderer_.Render(camera.GetView(),
+                                 sprite_manager_,
+                                 soldier,
+                                 frame_percent,
+                                 game_state_manager.IsRealistic());
     });
 
     // Render player's soldier last because it's the most important for the player to see their
@@ -403,7 +427,11 @@ void Scene::RenderSoldiers(const StateManager& game_state_manager,
         unsigned int client_soldier_id = *client_state.client_soldier_id;
         game_state_manager.ForSoldier(client_soldier_id, [&](const auto& soldier) {
             if (soldier.active) {
-                soldier_renderer_.Render(camera.GetView(), sprite_manager_, soldier, frame_percent);
+                soldier_renderer_.Render(camera.GetView(),
+                                         sprite_manager_,
+                                         soldier,
+                                         frame_percent,
+                                         game_state_manager.IsRealistic());
             }
         });
     }

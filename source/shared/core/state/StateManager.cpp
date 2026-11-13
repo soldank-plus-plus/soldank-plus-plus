@@ -720,6 +720,8 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
     soldier.active = true;
     soldier.particle.active = true;
     soldier.health = GetMaximumHealth();
+    soldier.wear_helmet = soldier.appearance.headgear != 0 ? 1 : 0;
+    soldier.has_cigar = soldier.appearance.cigar != 0 ? 5 : 0;
     soldier.polygon_background = {};
     soldier.background_touched = false;
     soldier.polygon_contacts.clear();

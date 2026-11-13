@@ -297,6 +297,27 @@ public:
             { ObjectSpriteType::Para2, "gostek-gfx/para2.png" },
         };
 
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Smoke, "sparks-gfx/smoke.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Lilfire, "sparks-gfx/lilfire.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Blood, "sparks-gfx/blood.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Spawnspark,
+                                           "sparks-gfx/spawnspark.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Pin, "sparks-gfx/pin.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Stuff, "sparks-gfx/stuff.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Cygaro, "sparks-gfx/cygaro.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Blacksmoke,
+                                           "sparks-gfx/blacksmoke.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Rain, "sparks-gfx/rain.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Sand, "sparks-gfx/sand.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Odlamek1, "sparks-gfx/odlamek1.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Odlamek2, "sparks-gfx/odlamek2.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Odlamek3, "sparks-gfx/odlamek3.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Odlamek4, "sparks-gfx/odlamek4.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Skrawek, "sparks-gfx/skrawek.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Puff, "sparks-gfx/puff.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Snow, "sparks-gfx/snow.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Jetfire, "sparks-gfx/jetfire.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Lilblood, "sparks-gfx/lilblood.png");
         all_sprite_file_paths.emplace_back(SparkSpriteType::Plomyk, "sparks-gfx/plomyk.png");
         all_sprite_file_paths.emplace_back(SparkSpriteType::Lilsmoke, "sparks-gfx/lilsmoke.png");
         all_sprite_file_paths.emplace_back(SparkSpriteType::Odprysk, "sparks-gfx/odprysk.png");
@@ -315,6 +336,13 @@ public:
               static_cast<SparkSpriteType>(
                 static_cast<unsigned int>(SparkSpriteType::ExplosionExplode1) + frame),
               "sparks-gfx/explosion/explode" + std::to_string(frame + 1) + ".png");
+        }
+
+        for (unsigned int frame = 0; frame < 16; ++frame) {
+            all_sprite_file_paths.emplace_back(
+              static_cast<SparkSpriteType>(
+                static_cast<unsigned int>(SparkSpriteType::FlamesExplode1) + frame),
+              "sparks-gfx/flames/explode" + std::to_string(frame + 1) + ".png");
         }
 
         std::ranges::for_each(
@@ -354,33 +382,33 @@ public:
     soldier_part_type_to_data_.emplace_back(SoldierPartSecondaryWeaponSpriteType::Bow, nullptr);
     AddSprite(SoldierPartSecondaryWeaponSpriteType::Flamer, WeaponSpriteType::Flamer, WeaponSpriteType::Flamer2, {5, 10}, {0.300, 0.300}, false, false, 0.0F, SoldierSpriteColor::None, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Udo, SoldierPartSpriteType::Udo, SoldierPartSpriteType::Udo2, {6, 3}, {0.200, 0.500}, true, true, 5.0, SoldierSpriteColor::Pants, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyUdo, SoldierPartSpriteType::Udo, SoldierPartSpriteType::Udo2, {6, 3}, {0.200, 0.500}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyUdo, SoldierPartSpriteType::RannyUdo, SoldierPartSpriteType::RannyUdo2, {6, 3}, {0.200, 0.500}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Stopa, SoldierPartSpriteType::Stopa, SoldierPartSpriteType::Stopa2, {2, 18}, {0.350, 0.350}, true, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Lecistopa, SoldierPartSpriteType::Lecistopa, SoldierPartSpriteType::Lecistopa2, {2, 18}, {0.350, 0.350}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Noga, SoldierPartSpriteType::Noga, SoldierPartSpriteType::Noga2, {3, 2}, {0.150, 0.550}, true, true, 0.0, SoldierSpriteColor::Pants, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyNoga, SoldierPartSpriteType::Noga, SoldierPartSpriteType::Noga2, {3, 2}, {0.150, 0.550}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyNoga, SoldierPartSpriteType::RannyNoga, SoldierPartSpriteType::RannyNoga2, {3, 2}, {0.150, 0.550}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Ramie, SoldierPartSpriteType::Ramie, SoldierPartSpriteType::Ramie2, {11, 14}, {0.000, 0.500}, true, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyRamie, SoldierPartSpriteType::Ramie, SoldierPartSpriteType::Ramie2, {11, 14}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyRamie, SoldierPartSpriteType::RannyRamie, SoldierPartSpriteType::RannyRamie2, {11, 14}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Reka, SoldierPartSpriteType::Reka, std::nullopt, {14, 15}, {0.000, 0.500}, true, true, 5.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyReka, SoldierPartSpriteType::Reka, SoldierPartSpriteType::Reka2, {14, 15}, {0.000, 0.500}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyReka, SoldierPartSpriteType::RannyReka, SoldierPartSpriteType::RannyReka2, {14, 15}, {0.000, 0.500}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Dlon, SoldierPartSpriteType::Dlon, SoldierPartSpriteType::Dlon2, {15, 19}, {0.000, 0.400}, true, true, 0.0, SoldierSpriteColor::Skin, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Helm, SoldierPartSpriteType::Helm, SoldierPartSpriteType::Helm2, {15, 19}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Kap, SoldierPartSpriteType::Kap, SoldierPartSpriteType::Kap2, {15, 19}, {0.100, 0.400}, false, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Udo, SoldierPartSpriteType::Udo, SoldierPartSpriteType::Udo2, {5, 4}, {0.200, 0.650}, true, true, 5.0, SoldierSpriteColor::Pants, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyUdo, SoldierPartSpriteType::Udo, SoldierPartSpriteType::Udo2, {5, 4}, {0.200, 0.650}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyUdo, SoldierPartSpriteType::RannyUdo, SoldierPartSpriteType::RannyUdo2, {5, 4}, {0.200, 0.650}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Stopa, SoldierPartSpriteType::Stopa, SoldierPartSpriteType::Stopa2, {1, 17}, {0.350, 0.350}, true, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Lecistopa, SoldierPartSpriteType::Lecistopa, SoldierPartSpriteType::Lecistopa2, {1, 17}, {0.350, 0.350}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Noga, SoldierPartSpriteType::Noga, SoldierPartSpriteType::Noga2, {4, 1}, {0.150, 0.550}, true, true, 0.0, SoldierSpriteColor::Pants, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyNoga, SoldierPartSpriteType::Noga, SoldierPartSpriteType::Noga2, {4, 1}, {0.150, 0.550}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyNoga, SoldierPartSpriteType::RannyNoga, SoldierPartSpriteType::RannyNoga2, {4, 1}, {0.150, 0.550}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Klata, SoldierPartSpriteType::Klata, SoldierPartSpriteType::Klata2, {10, 11}, {0.100, 0.300}, true, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Kamizelka, SoldierPartSpriteType::Kamizelka, SoldierPartSpriteType::Kamizelka2, {10, 11}, {0.100, 0.300}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyKlata, SoldierPartSpriteType::Klata, SoldierPartSpriteType::Klata2, {10, 11}, {0.100, 0.300}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyKlata, SoldierPartSpriteType::RannyKlata, SoldierPartSpriteType::RannyKlata2, {10, 11}, {0.100, 0.300}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Biodro, SoldierPartSpriteType::Biodro, SoldierPartSpriteType::Biodro2, {5, 6}, {0.250, 0.600}, true, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyBiodro, SoldierPartSpriteType::Biodro, SoldierPartSpriteType::Biodro2, {5, 6}, {0.250, 0.600}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyBiodro, SoldierPartSpriteType::RannyBiodro, SoldierPartSpriteType::RannyBiodro2, {5, 6}, {0.250, 0.600}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Morda, SoldierPartSpriteType::Morda, SoldierPartSpriteType::Morda2, {9, 12}, {0.000, 0.500}, true, true, 0.0, SoldierSpriteColor::Skin, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyMorda, SoldierPartSpriteType::Morda, SoldierPartSpriteType::Morda2, {9, 12}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::Headblood, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyMorda, SoldierPartSpriteType::RannyMorda, SoldierPartSpriteType::RannyMorda2, {9, 12}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::Headblood, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Morda, SoldierPartSpriteType::Morda, SoldierPartSpriteType::Morda2, {9, 12}, {0.500, 0.500}, false, true, 0.0, SoldierSpriteColor::Skin, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyMorda, SoldierPartSpriteType::Morda, SoldierPartSpriteType::Morda2, {9, 12}, {0.500, 0.500}, false, true, 0.0, SoldierSpriteColor::Headblood, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyMorda, SoldierPartSpriteType::RannyMorda, SoldierPartSpriteType::RannyMorda2, {9, 12}, {0.500, 0.500}, false, true, 0.0, SoldierSpriteColor::Headblood, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Hair3, SoldierPartSpriteType::Hair3, SoldierPartSpriteType::Hair32, {9, 12}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::Hair, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Helm, SoldierPartSpriteType::Helm, SoldierPartSpriteType::Helm2, {9, 12}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
     AddSprite(SoldierPartSpriteType::Kap, SoldierPartSpriteType::Kap, SoldierPartSpriteType::Kap2, {9, 12}, {0.000, 0.500}, false, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
@@ -463,9 +491,9 @@ public:
     soldier_part_type_to_data_.emplace_back(SoldierPartPrimaryWeaponSpriteType::FlamerClip, nullptr);
     AddSprite(SoldierPartPrimaryWeaponSpriteType::FlamerFire, WeaponSpriteType::FlamerFire, std::nullopt, {16, 15}, { 0.000,  0.000}, false, false, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Base );
     AddSprite(SoldierPartSpriteType::Ramie, SoldierPartSpriteType::Ramie, SoldierPartSpriteType::Ramie2, {10, 13}, {0.000, 0.600}, true, true, 0.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyRamie, SoldierPartSpriteType::Ramie, SoldierPartSpriteType::Ramie2, {10, 13}, {-0.100, 0.500}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyRamie, SoldierPartSpriteType::RannyRamie, SoldierPartSpriteType::RannyRamie2, {10, 13}, {-0.100, 0.500}, false, true, 0.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Reka, SoldierPartSpriteType::Reka, std::nullopt, {13, 16}, {0.000, 0.600}, true, true, 5.0, SoldierSpriteColor::Main, SoldierSpriteAlpha::Base);
-    AddSprite(SoldierPartSpriteType::RannyReka, SoldierPartSpriteType::Reka, SoldierPartSpriteType::Reka2, {13, 16}, {0.000, 0.600}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
+    AddSprite(SoldierPartSpriteType::RannyReka, SoldierPartSpriteType::RannyReka, SoldierPartSpriteType::RannyReka2, {13, 16}, {0.000, 0.600}, false, true, 5.0, SoldierSpriteColor::None, SoldierSpriteAlpha::Blood);
     AddSprite(SoldierPartSpriteType::Dlon, SoldierPartSpriteType::Dlon, SoldierPartSpriteType::Dlon2, {16, 20}, {0.000, 0.500}, true, true, 0.0, SoldierSpriteColor::Skin, SoldierSpriteAlpha::Base);
         // clang-format on
         Spdlog::info("Loaded {} soldier part sprites", soldier_part_type_to_data_.size());
@@ -497,6 +525,11 @@ public:
     GetSoldierPartDataType(unsigned int id) const
     {
         return soldier_part_type_to_data_[id].first;
+    }
+
+    Texture::TextureData GetSoldierTexture(SoldierPartSpriteType type) const
+    {
+        return all_sprites_.at(type);
     }
 
     unsigned int GetSoldierPartCount() const { return soldier_part_type_to_data_.size(); }

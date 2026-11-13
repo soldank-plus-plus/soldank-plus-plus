@@ -57,6 +57,8 @@ public:
     glm::uvec2 GetPoint() const { return point_; }
     glm::vec2 GetCenter() const { return center_; }
 
+    bool IsTeam() const { return team_; }
+
     bool IsVisible() const { return visible_; }
     bool IsFlippable() const { return flip_; }
 

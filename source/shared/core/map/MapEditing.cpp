@@ -167,6 +167,7 @@ void Map::ReplaceContents(const Map& source_map)
     map_change_events_.modified_polygons.Notify(map_data_.polygons);
     map_change_events_.modified_sceneries.Notify(map_data_.scenery_instances);
     map_change_events_.modified_spawn_points.Notify(map_data_.spawn_points);
+    map_change_events_.replaced_contents.Notify();
 }
 
 void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)

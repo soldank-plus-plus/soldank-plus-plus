@@ -22,143 +22,14 @@ import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Utility.SerialNumber;
 import Shared.Core.Physics.Polygons.PolygonContact;
 import Shared.Core.Map.Map;
+import Shared.Core.Map.PMSEnums;
+import Shared.Core.Entities.Bullet;
 import Shared.Core.Map.Polygons.PolygonCollisionPolicy;
+
+export import EffectDefinitions;
 
 export namespace Soldank
 {
-enum class WeaponVisualEffectKind
-{
-    Casing,
-    Blood,
-    Explosion,
-    ExplosionSmoke,
-    ExplosionAfterSmoke,
-    ClusterSmoke,
-    Smoke,
-    Spark,
-    Flame,
-};
-
-struct WeaponVisualEffect
-{
-    WeaponVisualEffectKind kind{};
-    WeaponType weapon{};
-    glm::vec2 position{};
-    glm::vec2 old_position{};
-    glm::vec2 velocity{};
-    float rotation{};
-    float old_rotation{};
-    float size{ 1.0F };
-    int lifetime{ 30 };
-    int initial_lifetime{ 30 };
-    std::uint8_t owner{ 255 };
-};
-
-enum class ExplosionSpriteKind
-{
-    Blast,
-    Smoke,
-    BigSmoke,
-    BigSmoke2,
-};
-
-struct ExplosionSprite
-{
-    ExplosionSpriteKind kind{};
-    int frame{};
-    glm::vec2 position{};
-    glm::vec2 scale{ 1.0F };
-    glm::vec4 color{ 1.0F };
-};
-
-// Sparks.pas uses Pascal Round (ties to even), not truncation or round-away-from-zero.
-int RoundExplosionFrame(float value)
-{
-    const auto lower = static_cast<int>(std::floor(value));
-    const float fraction = value - static_cast<float>(lower);
-    return lower + static_cast<int>(fraction > 0.5F || (fraction == 0.5F && lower % 2 != 0));
-}
-
-// Pure render descriptions keep the reference frame, anchor and compositing rules testable
-// without an OpenGL context. Scales are relative to the asset's native game size.
-std::vector<ExplosionSprite> GetExplosionSprites(const WeaponVisualEffect& effect,
-                                                 float frame_percent)
-{
-    const float life =
-      std::min(static_cast<float>(effect.initial_lifetime),
-               static_cast<float>(effect.lifetime) + 1.0F - std::clamp(frame_percent, 0.0F, 1.0F));
-    const auto color = [](float shade, float alpha) {
-        return glm::vec4(glm::vec3(shade / 255.0F), std::clamp(alpha / 255.0F, 0.0F, 1.0F));
-    };
-    if (effect.kind == WeaponVisualEffectKind::Explosion) {
-        const bool cluster = effect.weapon == WeaponType::Cluster;
-        const bool frag = effect.weapon == WeaponType::FragGrenade;
-        const int frame =
-          std::clamp(15 - RoundExplosionFrame(life / (cluster ? 3.0F : 4.0F)), 0, 15);
-        const glm::vec2 scale(cluster ? 0.5F : (frag ? 1.0F : 0.75F));
-        const auto position = effect.position + (cluster ? glm::vec2(-15.0F, -37.0F)
-                                                         : (frag ? glm::vec2(-25.0F, -50.0F)
-                                                                 : glm::vec2(-19.0F, -38.0F)));
-        std::vector<ExplosionSprite> sprites;
-        if (!cluster && frame > 0) {
-            sprites.push_back({ ExplosionSpriteKind::Blast,
-                                frame - 1,
-                                position,
-                                scale,
-                                color(frag ? 170.0F : 173.0F, 100.0F) });
-        }
-        sprites.push_back({ ExplosionSpriteKind::Blast,
-                            frame,
-                            position,
-                            scale,
-                            color(255.0F, cluster ? 255.0F - 2.0F * life : 175.0F + life) });
-        return sprites;
-    }
-    if (effect.kind == WeaponVisualEffectKind::ExplosionSmoke && life <= 40.0F) {
-        const int frame = std::clamp(10 - RoundExplosionFrame(life / 4.0F), 0, 10);
-        const auto position = effect.position + glm::vec2(-26.0F, -48.0F);
-        std::vector<ExplosionSprite> sprites;
-        if (frame > 0) {
-            sprites.push_back({ ExplosionSpriteKind::Smoke,
-                                frame - 1,
-                                position,
-                                glm::vec2(1.0F),
-                                color(204.0F, 2.0F * life + 10.0F) });
-        }
-        sprites.push_back({ ExplosionSpriteKind::Smoke,
-                            frame,
-                            position,
-                            glm::vec2(1.0F),
-                            color(221.0F, 3.0F * life + 10.0F) });
-        return sprites;
-    }
-    if (effect.kind == WeaponVisualEffectKind::ExplosionAfterSmoke) {
-        const glm::vec2 scale(0.5F + 16.0F / (life + 50.0F));
-        const auto position = effect.position + glm::vec2(-14.0F * scale.x, -30.0F);
-        return { { ExplosionSpriteKind::BigSmoke,
-                   0,
-                   position,
-                   scale,
-                   color(255.0F, std::floor(life / 3.3F)) },
-                 { ExplosionSpriteKind::BigSmoke2,
-                   0,
-                   position,
-                   scale,
-                   color(life > 30.0F ? 102.0F : 191.0F,
-                         std::floor(life > 30.0F ? (255.0F - life) / 9.0F : life)) } };
-    }
-    if (effect.kind == WeaponVisualEffectKind::ClusterSmoke) {
-        const glm::vec2 scale(0.5F * (0.6F + (75.0F / life) / 96.0F),
-                              0.5F * (0.6F + (75.0F / life) / 90.0F));
-        return { { ExplosionSpriteKind::BigSmoke,
-                   0,
-                   effect.position + glm::vec2(-22.0F * scale.x, -48.0F + life / 1.5F),
-                   scale,
-                   color(255.0F, std::floor(2.5F * life)) } };
-    }
-    return {};
-}
-
 // Presentation-only particles. Their RNG and collisions never modify simulation state.
 class WeaponVisualEffects
 {
@@ -166,6 +37,7 @@ public:
     const std::vector<WeaponVisualEffect>& GetEffects() const { return effects_; }
     void ObservePolygon(const PolygonEffectEvent& event)
     {
+        current_owner_.reset();
         if (event.kind == PolygonEventKind::Lava) {
             Add(WeaponVisualEffectKind::Flame,
                 event.position - glm::vec2(0.0F, 3.0F),
@@ -187,12 +59,63 @@ public:
         }
     }
 
-    void Update(const StateManager& state, std::span<const ProjectilePhysicsEvent> events)
+    void ObserveSpawn(const Soldier& soldier)
+    {
+        if (soldier.id >= spawned_lives_.size() ||
+            spawned_lives_.at(soldier.id) == soldier.life_sequence) {
+            return;
+        }
+        spawned_lives_.at(soldier.id) = soldier.life_sequence;
+        current_owner_ = OwnerContext{ soldier.id,
+                                       static_cast<std::uint8_t>(soldier.GetTeam()),
+                                       soldier.is_holding_flags,
+                                       soldier.life_sequence };
+        Add(WeaponVisualEffectKind::Spawn, soldier.particle.position, {}, 1.0F, 33);
+        effects_.back().tint = soldier.appearance.shirt;
+        current_owner_.reset();
+    }
+
+    void Reset()
+    {
+        effects_.clear();
+        seen_events_.clear();
+        shooters_ = {};
+        spawned_lives_ = {};
+        m2_heat_ = {};
+        last_tick_.reset();
+        current_owner_.reset();
+        random_ = 0xA341316CU;
+    }
+
+    glm::vec2 GetCameraShake(glm::vec2 camera, float fraction) const
+    {
+        glm::vec2 offset{};
+        for (const auto& effect : effects_) {
+            if (effect.kind != WeaponVisualEffectKind::Explosion || effect.lifetime <= 36) {
+                continue;
+            }
+            const float attenuation =
+              std::clamp(1.0F - glm::length(effect.position - camera) / 500.0F, 0.0F, 1.0F);
+            const float phase = static_cast<float>(effect.lifetime) + fraction;
+            offset += glm::vec2(std::sin(phase * 13.0F), std::cos(phase * 17.0F)) * attenuation *
+                      (effect.lifetime / 6.0F);
+        }
+        return glm::clamp(offset, glm::vec2(-10.0F), glm::vec2(10.0F));
+    }
+
+    void Update(const StateManager& state,
+                std::span<const ProjectilePhysicsEvent> events,
+                glm::vec2 camera = {},
+                glm::vec2 viewport = { 800.0F, 600.0F },
+                bool weather = true)
     {
         if (state.IsGamePaused()) {
             return;
         }
         const auto tick = state.GetGameTick();
+        if (last_tick_ && IsSerialNumberOlder(tick, *last_tick_)) {
+            Reset();
+        }
         if (!last_tick_ || tick != *last_tick_) {
             const unsigned int steps = last_tick_ ? std::min(5U, tick - *last_tick_) : 0;
             for (unsigned int step = 0; step < steps; ++step) {
@@ -210,21 +133,51 @@ public:
                     shooters_.at(id).initialized = false;
                 }
             }
-            if (tick % 3U == 0) {
-                state.ForEachBullet([&](const auto& bullet) {
-                    if (bullet.style == BulletType::FlameArrow ||
-                        bullet.style == BulletType::Flame) {
-                        Add(WeaponVisualEffectKind::Flame, bullet.particle.position, {}, 4.0F, 12);
-                    } else if (bullet.style == BulletType::LAWMissile ||
-                               bullet.style == BulletType::M79Grenade) {
-                        Add(WeaponVisualEffectKind::Smoke,
+            current_owner_.reset();
+            state.ForEachBullet([&](const auto& bullet) {
+                const auto* owner = state.FindSoldier(
+                  [&](const Soldier& soldier) { return soldier.id == bullet.owner_id; });
+                current_owner_ =
+                  owner != nullptr
+                    ? std::optional(OwnerContext{ owner->id,
+                                                  static_cast<std::uint8_t>(owner->GetTeam()),
+                                                  owner->is_holding_flags,
+                                                  owner->life_sequence })
+                    : std::nullopt;
+                if (!bullet.active) {
+                    return;
+                }
+                if (bullet.style == BulletType::FlameArrow) {
+                    if (Chance(2)) {
+                        Add(WeaponVisualEffectKind::Flame,
                             bullet.particle.position,
-                            { 0.0F, -0.1F },
-                            3.0F,
-                            20);
+                            { 0.0F, -0.5F },
+                            1.0F,
+                            40);
                     }
-                });
-            }
+                    if (Chance(2)) {
+                        Add(WeaponVisualEffectKind::BlackSmoke,
+                            bullet.particle.position,
+                            { 0.0F, -0.5F },
+                            1.0F,
+                            40);
+                    }
+                } else if (bullet.style == BulletType::LAWMissile) {
+                    Add(WeaponVisualEffectKind::Exhaust,
+                        bullet.particle.position,
+                        { 0.0F, -1.5F },
+                        1.0F,
+                        50);
+                }
+                if (!bullet.penetrated_soldiers.empty() && Chance(5)) {
+                    Add(WeaponVisualEffectKind::SmallBlood,
+                        bullet.particle.position,
+                        bullet.particle.GetVelocity() * 0.5F,
+                        1.0F,
+                        90);
+                }
+            });
+            current_owner_.reset();
             state.ForEachItem([&](const auto& item) {
                 if (item.style != ItemType::M2 || item.id >= m2_heat_.size()) {
                     return;
@@ -245,18 +198,68 @@ public:
                 }
                 m2_heat_.at(item.id) = item.interest;
             });
+            current_owner_.reset();
+            if (weather && tick % 17U == 0) {
+                const auto weather_type = state.GetConstMap().GetWeatherType();
+                if (weather_type != PMSWeatherType::None) {
+                    const auto kind =
+                      weather_type == PMSWeatherType::Rain   ? WeaponVisualEffectKind::Rain
+                      : weather_type == PMSWeatherType::Snow ? WeaponVisualEffectKind::Snow
+                                                             : WeaponVisualEffectKind::Sand;
+                    const glm::vec2 velocity =
+                      weather_type == PMSWeatherType::Rain   ? glm::vec2(0.0F, 12.0F)
+                      : weather_type == PMSWeatherType::Snow ? glm::vec2(1.0F, 2.0F)
+                                                             : glm::vec2(10.0F, 7.0F);
+                    const unsigned int count =
+                      static_cast<unsigned int>(std::clamp(viewport.x / 128.0F, 8.0F, 24.0F));
+                    for (unsigned int index = 0; index < count; ++index) {
+                        const glm::vec2 position =
+                          camera - viewport * 0.5F +
+                          glm::vec2(-128.0F + (viewport.x + 256.0F) * index / count +
+                                      RandomVelocity() * 45.0F,
+                                    -128.0F + RandomVelocity() * 75.0F);
+                        Add(kind,
+                            position,
+                            velocity,
+                            1.0F,
+                            kind == WeaponVisualEffectKind::Rain ? 60 : 80);
+                    }
+                }
+            }
             last_tick_ = tick;
         }
         for (const auto& event : events) {
+            const auto* owner = state.FindSoldier(
+              [&](const Soldier& soldier) { return soldier.id == event.owner_id; });
+            current_owner_ =
+              owner != nullptr
+                ? std::optional(OwnerContext{ owner->id,
+                                              static_cast<std::uint8_t>(owner->GetTeam()),
+                                              owner->is_holding_flags,
+                                              owner->life_sequence })
+                : std::nullopt;
             ObserveEvent(event);
         }
+        current_owner_.reset();
     }
 
 private:
+    struct OwnerContext
+    {
+        std::uint8_t id{};
+        std::uint8_t team{};
+        bool carrying_flag{};
+        std::uint32_t life{};
+    };
+    std::optional<OwnerContext> current_owner_;
     struct Shooter
     {
         bool initialized{};
         std::array<WeaponState, 2> weapons{};
+        std::uint32_t life_sequence{};
+        bool alive{};
+        bool on_ground{};
+        bool holding_flag{};
     };
     struct EventKey
     {
@@ -264,9 +267,38 @@ private:
         unsigned int tick;
         ProjectileEventKind kind;
         std::optional<std::uint8_t> soldier;
-        glm::vec2 position;
+        std::optional<std::uint8_t> item;
+        std::optional<unsigned int> particle;
+        std::optional<unsigned int> polygon;
         bool operator==(const EventKey&) const = default;
     };
+    bool Chance(unsigned int denominator)
+    {
+        random_ ^= random_ << 13;
+        random_ ^= random_ >> 17;
+        random_ ^= random_ << 5;
+        return random_ % denominator == 0;
+    }
+    float RandomVelocity()
+    {
+        Chance(1);
+        return static_cast<float>(random_ % 2001U) / 1000.0F - 1.0F;
+    }
+    void Burst(WeaponVisualEffectKind kind,
+               glm::vec2 position,
+               glm::vec2 velocity,
+               unsigned int count,
+               float speed,
+               int lifetime)
+    {
+        for (unsigned int index = 0; index < count; ++index) {
+            Add(kind,
+                position,
+                velocity + glm::vec2(RandomVelocity(), RandomVelocity()) * speed,
+                1.0F,
+                lifetime);
+        }
+    }
     static bool HasCasing(WeaponType kind)
     {
         return kind >= WeaponType::DesertEagles && kind <= WeaponType::USSOCOM;
@@ -278,28 +310,152 @@ private:
              int lifetime,
              WeaponType weapon = WeaponType::NoWeapon)
     {
-        constexpr std::size_t MAX_EFFECTS = 256;
+        constexpr std::size_t MAX_EFFECTS = 2048;
         if (effects_.size() == MAX_EFFECTS) {
-            effects_.erase(effects_.begin());
+            const auto expendable = std::ranges::find_if(effects_, [](const auto& effect) {
+                return effect.kind != WeaponVisualEffectKind::Explosion &&
+                       effect.kind != WeaponVisualEffectKind::ExplosionSmoke;
+            });
+            effects_.erase(expendable == effects_.end() ? effects_.begin() : expendable);
         }
-        effects_.push_back({ .kind = kind,
-                             .weapon = weapon,
-                             .position = position,
-                             .old_position = position,
-                             .velocity = velocity,
-                             .size = size,
-                             .lifetime = lifetime,
-                             .initial_lifetime = lifetime });
+        effects_.push_back(
+          { .kind = kind,
+            .weapon = weapon,
+            .position = position,
+            .old_position = position,
+            .velocity = velocity,
+            .size = size,
+            .lifetime = lifetime,
+            .initial_lifetime = lifetime,
+            .owner = current_owner_ ? current_owner_->id : static_cast<std::uint8_t>(255),
+            .variant = static_cast<std::uint8_t>(random_ % 4U),
+            .team = current_owner_ ? current_owner_->team : static_cast<std::uint8_t>(0),
+            .carrying_flag = current_owner_ && current_owner_->carrying_flag,
+            .has_owner = current_owner_.has_value(),
+            .owner_life = current_owner_ ? current_owner_->life : 0U });
     }
     void ObserveSoldier(const Soldier& soldier)
     {
         if (soldier.id >= shooters_.size() || soldier.active_weapon >= 2) {
             return;
         }
+        current_owner_ = OwnerContext{ soldier.id,
+                                       static_cast<std::uint8_t>(soldier.GetTeam()),
+                                       soldier.is_holding_flags,
+                                       soldier.life_sequence };
         auto& shooter = shooters_.at(soldier.id);
-        if (!soldier.IsAlive()) {
-            shooter.initialized = false;
+        const bool alive = soldier.IsAlive();
+        if (shooter.initialized &&
+            (shooter.life_sequence != soldier.life_sequence || (!shooter.alive && alive))) {
+            ObserveSpawn(soldier);
+            current_owner_ = OwnerContext{ soldier.id,
+                                           static_cast<std::uint8_t>(soldier.GetTeam()),
+                                           soldier.is_holding_flags,
+                                           soldier.life_sequence };
+            shooter.weapons = {};
+        }
+        if (shooter.initialized && shooter.alive && !alive) {
+            Burst(WeaponVisualEffectKind::Blood,
+                  soldier.skeleton->GetPos(9),
+                  soldier.particle.GetVelocity() * 0.5F,
+                  12,
+                  2.0F,
+                  80);
+            if (soldier.death_severity != DeathSeverity::Normal) {
+                Burst(
+                  WeaponVisualEffectKind::Debris, soldier.skeleton->GetPos(9), {}, 8, 3.0F, 180);
+                for (unsigned int index = 0; index < 6; ++index) {
+                    Add(WeaponVisualEffectKind::Cloth,
+                        soldier.skeleton->GetPos(6),
+                        glm::vec2(RandomVelocity(), RandomVelocity()) * 2.0F,
+                        1.0F,
+                        120);
+                    effects_.back().tint =
+                      index % 2 == 0 ? soldier.appearance.shirt : soldier.appearance.pants;
+                }
+            }
+        }
+        if (shooter.initialized && !shooter.on_ground && soldier.on_ground && alive) {
+            Burst(WeaponVisualEffectKind::Smoke, soldier.skeleton->GetPos(1), {}, 2, 0.3F, 35);
+        }
+        if (shooter.initialized && shooter.alive && !alive) {
+            if (soldier.appearance.headgear != 0 && soldier.wear_helmet == 1) {
+                Add(WeaponVisualEffectKind::Headgear,
+                    soldier.skeleton->GetPos(12),
+                    soldier.particle.GetVelocity(),
+                    1.0F,
+                    198);
+                effects_.back().variant = soldier.appearance.headgear;
+                effects_.back().tint = soldier.appearance.shirt;
+            }
+            if (soldier.has_cigar == 5 || soldier.has_cigar == 10) {
+                Add(WeaponVisualEffectKind::Cigar,
+                    soldier.skeleton->GetPos(12),
+                    soldier.particle.GetVelocity(),
+                    1.0F,
+                    245);
+            }
+        }
+        shooter.life_sequence = soldier.life_sequence;
+        shooter.alive = alive;
+        shooter.on_ground = soldier.on_ground;
+        if (!alive) {
+            shooter.initialized = true;
             return;
+        }
+        if (soldier.control.jets && soldier.jets_count > 0) {
+            for (unsigned int foot = 1; foot <= 2; ++foot) {
+                const glm::vec2 position = soldier.skeleton->GetPos(foot) + glm::vec2(-1.0F, 3.0F);
+                if (Chance(8)) {
+                    Add(WeaponVisualEffectKind::Smoke,
+                        position,
+                        soldier.particle.GetVelocity(),
+                        1.0F,
+                        75);
+                }
+                if (Chance(7)) {
+                    const auto leg = foot == 1
+                                       ? soldier.skeleton->GetPos(5) - soldier.skeleton->GetPos(4)
+                                       : soldier.skeleton->GetPos(6) - soldier.skeleton->GetPos(3);
+                    const float length = glm::length(leg);
+                    Add(WeaponVisualEffectKind::JetFire,
+                        position,
+                        length > 0.001F ? leg * (-0.5F / length) : glm::vec2(0.0F, 0.5F),
+                        1.0F,
+                        40);
+                    effects_.back().tint = soldier.appearance.jet;
+                }
+            }
+        }
+        if (soldier.health < 90.0F && Chance(12)) {
+            Add(WeaponVisualEffectKind::SmallBlood,
+                soldier.skeleton->GetPos(6),
+                soldier.particle.GetVelocity() * 0.5F,
+                1.0F,
+                60);
+        }
+        if ((soldier.has_cigar == 5 || soldier.has_cigar == 10) && Chance(20)) {
+            Add(WeaponVisualEffectKind::Smoke,
+                soldier.skeleton->GetPos(12),
+                { 0.0F, -0.3F },
+                1.0F,
+                35);
+        }
+        if (soldier.on_fire > 0) {
+            if (Chance(2)) {
+                Add(WeaponVisualEffectKind::Flame,
+                    soldier.skeleton->GetPos(6),
+                    { 0.0F, -0.5F },
+                    1.0F,
+                    35);
+            }
+            if (Chance(4)) {
+                Add(WeaponVisualEffectKind::BlackSmoke,
+                    soldier.skeleton->GetPos(9),
+                    { 0.0F, -0.5F },
+                    1.0F,
+                    75);
+            }
         }
         const auto state = soldier.GetActiveWeapon().GetState();
         auto& previous = shooter.weapons.at(soldier.active_weapon);
@@ -316,10 +472,30 @@ private:
                     soldier.particle.GetVelocity() +
                       glm::vec2(0.4F * static_cast<float>(soldier.direction), -1.0F - variation),
                     1.0F,
-                    60,
+                    255,
                     state.kind);
                 effects_.back().owner = soldier.id;
             }
+        }
+        if (shooter.initialized && previous.kind == state.kind &&
+            previous.instance_id == state.instance_id &&
+            IsSerialNumberNewer(state.shot_sequence, previous.shot_sequence)) {
+            Add(WeaponVisualEffectKind::MuzzleSmoke,
+                soldier.skeleton->GetPos(15),
+                { 0.0F, -0.1F },
+                1.0F,
+                10);
+        }
+        const auto clip_out = soldier.GetActiveWeapon().GetClipOutTime();
+        if (shooter.initialized && previous.instance_id == state.instance_id &&
+            previous.kind == state.kind && previous.reloading && state.reloading && clip_out > 0 &&
+            previous.reload > clip_out && state.reload <= clip_out) {
+            Add(WeaponVisualEffectKind::Magazine,
+                soldier.skeleton->GetPos(15),
+                soldier.particle.GetVelocity() + glm::vec2(0.3F * soldier.direction, 0.5F),
+                1.0F,
+                255,
+                state.kind);
         }
         if (!shooter.initialized || previous.kind != state.kind ||
             previous.instance_id != state.instance_id || previous.realistic != state.realistic ||
@@ -330,39 +506,138 @@ private:
     }
     void Advance(const StateManager& state)
     {
+        std::vector<WeaponVisualEffect> children;
+        const auto& map = state.GetConstMap();
         for (auto& effect : effects_) {
             effect.old_position = effect.position;
             effect.old_rotation = effect.rotation;
-            effect.position += effect.velocity;
-            if (effect.kind == WeaponVisualEffectKind::Casing) {
+            const bool debris = effect.kind == WeaponVisualEffectKind::Casing ||
+                                effect.kind == WeaponVisualEffectKind::Pin ||
+                                effect.kind == WeaponVisualEffectKind::Magazine ||
+                                effect.kind == WeaponVisualEffectKind::Debris ||
+                                effect.kind == WeaponVisualEffectKind::Cloth ||
+                                effect.kind == WeaponVisualEffectKind::Headgear ||
+                                effect.kind == WeaponVisualEffectKind::Cigar;
+            const bool blood = effect.kind == WeaponVisualEffectKind::Blood ||
+                               effect.kind == WeaponVisualEffectKind::SmallBlood;
+            if (debris || blood || effect.kind == WeaponVisualEffectKind::Ember ||
+                effect.kind == WeaponVisualEffectKind::Spark) {
                 effect.velocity.y += 0.06F;
                 effect.rotation += 0.2F;
-                const auto* owner = state.FindSoldier(
-                  [&](const Soldier& soldier) { return soldier.id == effect.owner; });
-                if (owner != nullptr) {
-                    const PolygonQuery query{ .kind = PolygonQueryKind::Cosmetic,
-                                              .team = static_cast<std::uint8_t>(owner->GetTeam()),
-                                              .carrying_flag = owner->is_holding_flags,
-                                              .has_owner = true };
-                    for (const auto& polygon : state.GetConstMap().GetPolygons()) {
-                        if (AllowsPolygon(polygon.polygon_type, query) &&
-                            Map::PointInPoly(effect.position, polygon)) {
-                            effect.lifetime = 0;
+            }
+            effect.position += effect.velocity;
+            if ((debris || blood || effect.kind == WeaponVisualEffectKind::JetFire) &&
+                effect.has_owner) {
+                const PolygonQuery query{ .kind = PolygonQueryKind::Cosmetic,
+                                          .team = effect.team,
+                                          .carrying_flag = effect.carrying_flag,
+                                          .has_owner = true };
+                const auto sector = map.GetSectorIndex(effect.position);
+                const auto collide = [&](unsigned int index) {
+                    const auto& polygon = map.GetPolygons().at(index);
+                    if (!AllowsPolygon(polygon.polygon_type, query) ||
+                        !Map::PointInPoly(effect.position, polygon)) {
+                        return false;
+                    }
+                    float distance = 0.0F;
+                    int edge = 0;
+                    auto normal = map.ClosestPerpendicular(
+                      static_cast<int>(index), effect.position, &distance, &edge);
+                    const float length = glm::length(normal);
+                    if (length > 0.001F) {
+                        normal /= length;
+                        effect.velocity =
+                          (effect.velocity - normal * 2.0F * glm::dot(effect.velocity, normal)) *
+                          0.5F;
+                    }
+                    effect.position = effect.old_position;
+                    if (effect.kind == WeaponVisualEffectKind::Blood) {
+                        auto splat = effect;
+                        splat.kind = WeaponVisualEffectKind::Splat;
+                        splat.velocity = {};
+                        splat.lifetime = splat.initial_lifetime = 30;
+                        children.push_back(splat);
+                    }
+                    ++effect.collisions;
+                    if (effect.collisions > (blood ? 1 : 4)) {
+                        effect.lifetime = 0;
+                    }
+                    return true;
+                };
+                if (sector.x >= 0 && sector.y >= 0 && sector.x < map.GetSectorsPerAxis() &&
+                    sector.y < map.GetSectorsPerAxis()) {
+                    for (const auto polygon : map.GetSector(sector.x, sector.y).polygons) {
+                        if (polygon > 0 && polygon <= map.GetPolygons().size() &&
+                            collide(polygon - 1U)) {
                             break;
                         }
                     }
                 }
             }
-            effect.velocity *= 0.99F;
+            if (effect.kind != WeaponVisualEffectKind::Rain &&
+                effect.kind != WeaponVisualEffectKind::Sand &&
+                effect.kind != WeaponVisualEffectKind::Snow) {
+                effect.velocity *= 0.99F;
+            }
             --effect.lifetime;
         }
         std::erase_if(effects_, [](const auto& effect) { return effect.lifetime <= 0; });
+        for (const auto& child : children) {
+            if (effects_.size() < 2048) {
+                effects_.push_back(child);
+            }
+        }
+    }
+    void ExplosionDebris(const ProjectilePhysicsEvent& event)
+    {
+        const bool frag = event.style == BulletType::FragGrenade;
+        auto position = event.position - event.velocity_before;
+        const auto dirt_velocity = [&]() {
+            const auto base = event.velocity_before * (frag ? -0.2F : -0.15F);
+            return glm::vec2(-base.x + RandomVelocity() * 3.5F,
+                             base.y - 0.25F + RandomVelocity() * 3.25F);
+        };
+        for (unsigned int index = 0; index < (frag ? 6U : 7U); ++index) {
+            const auto velocity = dirt_velocity();
+            for (unsigned int variant = 0; variant < 4; ++variant) {
+                if (Chance(4)) {
+                    Add(WeaponVisualEffectKind::Debris,
+                        position,
+                        velocity,
+                        1.0F,
+                        180 + random_ % 50U);
+                    effects_.back().variant = static_cast<std::uint8_t>(variant);
+                }
+            }
+        }
+        for (unsigned int index = 0; index < (frag ? 7U : 5U); ++index) {
+            const auto velocity = dirt_velocity();
+            for (unsigned int variant = 0; variant < 4; ++variant) {
+                if (Chance(frag ? 4 : 3)) {
+                    Add(WeaponVisualEffectKind::Debris, position, velocity, 1.0F, 120);
+                    effects_.back().variant = static_cast<std::uint8_t>(variant + 4);
+                }
+            }
+        }
+        for (unsigned int index = 0; index < (frag ? 3U : 4U); ++index) {
+            for (unsigned int spark = 0; spark < 3; ++spark) {
+                if (Chance(frag ? 23 : 22)) {
+                    Add(WeaponVisualEffectKind::Ember, position, dirt_velocity(), 1.0F, 120);
+                }
+            }
+            position += glm::vec2(RandomVelocity(), RandomVelocity()) * (frag ? 25.0F : 20.0F);
+            Add(WeaponVisualEffectKind::Flame, position, dirt_velocity(), 1.0F, 35);
+        }
     }
     void ObserveEvent(const ProjectilePhysicsEvent& event)
     {
-        const EventKey key{
-            event.projectile_id, event.tick, event.kind, event.soldier_id, event.position
-        };
+        const EventKey key{ event.projectile_id,
+                            event.tick,
+                            event.kind,
+                            event.soldier_id,
+                            event.item_id,
+                            event.particle_id,
+                            event.collision ? event.collision->polygon_id : std::nullopt };
         if (std::ranges::find(seen_events_, key) != seen_events_.end()) {
             return;
         }
@@ -371,6 +646,31 @@ private:
             seen_events_.pop_front();
         }
         switch (event.kind) {
+            case ProjectileEventKind::SoldierHitByProjectile:
+            case ProjectileEventKind::SoldierHitByExplosion:
+                if (event.damage > 0.0F) {
+                    auto velocity = event.velocity_before * 0.025F * glm::vec2(1.2F, 0.85F);
+                    Add(WeaponVisualEffectKind::SmallBlood, event.position, velocity, 1.0F, 70);
+                    velocity *= glm::vec2(0.745F, 1.1F);
+                    Add(WeaponVisualEffectKind::SmallBlood, event.position, velocity, 1.0F, 75);
+                    velocity *= glm::vec2(0.9F, 0.85F);
+                    if (Chance(2)) {
+                        Add(WeaponVisualEffectKind::SmallBlood, event.position, velocity, 1.0F, 75);
+                    }
+                    velocity *= glm::vec2(1.2F, 0.85F);
+                    Add(WeaponVisualEffectKind::Blood, event.position, velocity, 1.0F, 80);
+                    Add(WeaponVisualEffectKind::Blood, event.position, velocity, 1.0F, 85);
+                }
+                break;
+            case ProjectileEventKind::ProjectileBounced:
+                Burst(WeaponVisualEffectKind::Puff, event.position, {}, 2, 0.2F, 20);
+                break;
+            case ProjectileEventKind::ProjectileSpawned:
+                if (event.style == BulletType::FragGrenade ||
+                    event.style == BulletType::ClusterGrenade) {
+                    Add(WeaponVisualEffectKind::Pin, event.position, { 0.3F, -0.5F }, 1.0F, 255);
+                }
+                break;
             case ProjectileEventKind::ProjectileExploded:
                 if (event.style == BulletType::M2Bullet) {
                     Add(WeaponVisualEffectKind::ClusterSmoke, event.position, {}, 1.0F, 55);
@@ -385,6 +685,7 @@ private:
                         smoke_lifetime);
                     Add(WeaponVisualEffectKind::ExplosionSmoke, event.position, {}, 1.0F, 50);
                 }
+                ExplosionDebris(event);
                 Add(WeaponVisualEffectKind::Explosion,
                     event.position,
                     {},
@@ -399,19 +700,42 @@ private:
                 Add(WeaponVisualEffectKind::ClusterSmoke, event.position, {}, 1.0F, 55);
                 break;
             case ProjectileEventKind::ProjectileRicocheted:
-                Add(WeaponVisualEffectKind::Spark,
-                    event.position,
-                    event.velocity_after * 0.1F,
-                    3.0F,
-                    12);
+                for (unsigned int index = 0; index < 6; ++index) {
+                    Add(WeaponVisualEffectKind::Spark,
+                        event.position,
+                        glm::vec2(RandomVelocity(), RandomVelocity()) * (index < 2 ? 2.0F : 3.0F),
+                        1.0F,
+                        35);
+                    effects_.back().variant = 1;
+                    effects_.back().tint =
+                      index == 5 ? glm::vec4(0.67F, 0.67F, 0.67F, 1.0F)
+                                 : glm::vec4(1.0F, 254.0F / 255.0F, 53.0F / 255.0F, 1.0F);
+                }
                 break;
-            case ProjectileEventKind::ProjectileImpact:
-                Add(WeaponVisualEffectKind::Smoke, event.position, { 0.0F, -0.1F }, 4.0F, 15);
+            case ProjectileEventKind::ProjectileImpact: {
+                auto velocity = event.velocity_before * -0.06F - glm::vec2(0.0F, 1.0F);
+                for (int lifetime : { 60, 65, 50 }) {
+                    velocity *=
+                      glm::vec2(0.9F + RandomVelocity() * 0.3F, 0.9F + RandomVelocity() * 0.2F);
+                    Add(WeaponVisualEffectKind::Spark, event.position, velocity, 1.0F, lifetime);
+                }
+                Add(WeaponVisualEffectKind::Smoke, event.position, velocity * 0.5F, 1.0F, 60);
+                Add(WeaponVisualEffectKind::Puff, event.position, {}, 1.0F, 22);
+                break;
+            }
+            case ProjectileEventKind::ThingHitByProjectile:
+                Add(WeaponVisualEffectKind::Smoke,
+                    event.position,
+                    event.velocity_before * -0.01F,
+                    1.0F,
+                    70);
                 break;
             default:
                 break;
         }
     }
+    std::array<std::optional<std::uint32_t>, 32> spawned_lives_{};
+    std::uint32_t random_{ 0xA341316CU };
     std::array<int, 128> m2_heat_{};
     std::optional<unsigned int> last_tick_;
     std::array<Shooter, 32> shooters_{};

@@ -92,6 +92,10 @@ private:
                     IsSerialNumberNewer(soldier_state_packet.server_tick, *config_mismatch_tick_)) {
                     config_mismatch_tick_ = soldier_state_packet.server_tick;
                 }
+                if (!soldier_state_packet.appearance.IsValid() ||
+                    soldier_state_packet.wear_helmet > 2) {
+                    return NetworkEventHandlerResult::Failure;
+                }
                 latest_server_tick = soldier_state_packet.server_tick;
                 return NetworkEventHandlerResult::Failure;
             }
@@ -118,9 +122,18 @@ private:
             world_->GetStateManager()->IsRealistic() != soldier_state_packet.weapons[0].realistic) {
             world_->GetStateManager()->SetRealistic(soldier_state_packet.weapons[0].realistic);
         }
+        if (!soldier_state_packet.appearance.IsValid() || soldier_state_packet.wear_helmet > 2) {
+            return NetworkEventHandlerResult::Failure;
+        }
         latest_server_tick = soldier_state_packet.server_tick;
         world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
             soldier.latest_authoritative_tick = soldier_state_packet.server_tick;
+            soldier.appearance = soldier_state_packet.appearance;
+            soldier.wear_helmet = soldier_state_packet.wear_helmet;
+            soldier.has_cigar = soldier_state_packet.has_cigar;
+            soldier.on_fire = soldier_state_packet.on_fire;
+            soldier.alpha = soldier_state_packet.visual_alpha;
+            soldier.visible = soldier_state_packet.visual_visible;
             if (soldier_state_packet.has_polygon_state) {
                 soldier.death_severity = soldier_state_packet.death_severity;
             }

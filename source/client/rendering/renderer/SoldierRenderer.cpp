@@ -9,6 +9,7 @@ module;
 #include <array>
 #include <filesystem>
 #include <cmath>
+#include <numbers>
 #include <utility>
 #include <vector>
 #include <optional>
@@ -22,9 +23,11 @@ import Texture;
 import Renderer;
 import SpritesManager;
 import SoldierPartData;
+import SoldierVisuals;
 import Shader;
 
 import Shared.Core.Types.WeaponType;
+import Shared.Core.Types.TeamType;
 import Shared.Core.Math.Calc;
 import Shared.Core.Utility.VisitHelper;
 import Shared.Core.Map.Map;
@@ -54,7 +57,8 @@ public:
     void Render(glm::mat4 transform,
                 const Sprites::SpriteManager& sprite_manager,
                 const Soldier& soldier,
-                double frame_percent);
+                double frame_percent,
+                bool realistic = false);
 
 private:
     static bool IsSoldierPartTypeVisible(Sprites::SoldierPartSpriteType soldier_part_type,
@@ -73,7 +77,8 @@ private:
 
     static glm::vec4 GetColorForSoldierPart(const Soldier& soldier,
                                             Sprites::SoldierSpriteColor soldier_color,
-                                            Sprites::SoldierSpriteAlpha soldier_alpha);
+                                            Sprites::SoldierSpriteAlpha soldier_alpha,
+                                            bool realistic_mode);
 
     static const Weapon& GetPrimaryWeapon(const Soldier& soldier)
     {
@@ -179,9 +184,14 @@ void SoldierRenderer::GenerateVertices(std::vector<float>& vertices,
 void SoldierRenderer::Render(glm::mat4 transform,
                              const Sprites::SpriteManager& sprite_manager,
                              const Soldier& soldier,
-                             double frame_percent)
+                             double frame_percent,
+                             bool realistic)
 {
+    if (realistic && soldier.visible == 0 && !soldier.dead_meat) {
+        return;
+    }
     shader_.Use();
+    unsigned int dread_index = 0;
 
     for (unsigned int i = 0; i < vbos_.size(); i++) {
         const Sprites::SoldierPartData* part_data = sprite_manager.GetSoldierPartData(i);
@@ -210,6 +220,24 @@ void SoldierRenderer::Render(glm::mat4 transform,
             } },
           part_type);
 
+        if (const auto* body_type = std::get_if<Sprites::SoldierPartSpriteType>(&part_type)) {
+            const auto type = *body_type;
+            if (type == Sprites::SoldierPartSpriteType::Morda ||
+                type == Sprites::SoldierPartSpriteType::RannyMorda) {
+                const bool dead_head = part_data->GetCenter().x == 0.5F;
+                part_visible =
+                  (type != Sprites::SoldierPartSpriteType::RannyMorda || soldier.health < 90.0F) &&
+                  dead_head == soldier.dead_meat;
+            }
+            if (type == Sprites::SoldierPartSpriteType::Helm ||
+                type == Sprites::SoldierPartSpriteType::Kap) {
+                const auto animation = soldier.body_animation->GetType();
+                const bool grabbed =
+                  (animation == AnimationType::Wipe || animation == AnimationType::TakeOff) &&
+                  soldier.body_animation->GetFrame() > 4;
+                part_visible = part_visible && (part_data->GetPoint().x == 15) == grabbed;
+            }
+        }
         if (!part_visible) {
             continue;
         }
@@ -217,20 +245,16 @@ void SoldierRenderer::Render(glm::mat4 transform,
         Sprites::SoldierSpriteColor part_soldier_color = part_data->GetSoldierColor();
         Sprites::SoldierSpriteAlpha part_soldier_alpha = part_data->GetSoldierAlpha();
         glm::vec4 part_color = std::visit(
-          VisitOverload{ [&soldier, part_soldier_color, part_soldier_alpha](
-                           Sprites::SoldierPartSpriteType /*soldier_part_type*/) {
-                            return SoldierRenderer::GetColorForSoldierPart(
-                              soldier, part_soldier_color, part_soldier_alpha);
-                        },
-                         [](Sprites::SoldierPartPrimaryWeaponSpriteType /*weapon_type*/) {
-                             return glm::vec4{ 1.0F, 1.0F, 1.0F, 1.0F };
-                         },
-                         [](Sprites::SoldierPartSecondaryWeaponSpriteType /*weapon_type*/) {
-                             return glm::vec4{ 1.0F, 1.0F, 1.0F, 1.0F };
-                         },
-                         [](Sprites::SoldierPartTertiaryWeaponSpriteType /*weapon_type*/) {
-                             return glm::vec4{ 1.0F, 1.0F, 1.0F, 1.0F };
-                         } },
+          VisitOverload{
+            [&soldier, part_soldier_color, part_soldier_alpha, realistic](
+              Sprites::SoldierPartSpriteType /*soldier_part_type*/) {
+                return SoldierRenderer::GetColorForSoldierPart(
+                  soldier, part_soldier_color, part_soldier_alpha, realistic);
+            },
+            [&soldier, part_soldier_alpha, realistic](auto /*weapon_type*/) {
+                return SoldierRenderer::GetColorForSoldierPart(
+                  soldier, Sprites::SoldierSpriteColor::None, part_soldier_alpha, realistic);
+            } },
           part_type);
 
         unsigned int sprite_texture = part_data->GetTexture();
@@ -253,6 +277,35 @@ void SoldierRenderer::Render(glm::mat4 transform,
             }
         }
 
+        if (part_data->IsTeam() &&
+            (soldier.GetTeam() == TeamType::Bravo || soldier.GetTeam() == TeamType::Delta)) {
+            if (const auto* type = std::get_if<Sprites::SoldierPartSpriteType>(&part_type)) {
+                const auto team_type = static_cast<Sprites::SoldierPartSpriteType>(
+                  static_cast<unsigned int>(*type) +
+                  static_cast<unsigned int>(Sprites::SoldierPartSpriteType::Team2Stopa) +
+                  (soldier.direction != 1 && part_data->IsFlippable() ? 1U : 0U));
+                sprite_texture = sprite_manager.GetSoldierTexture(team_type).opengl_id;
+            }
+        }
+        if (const auto* type = std::get_if<Sprites::SoldierPartSpriteType>(&part_type);
+            type != nullptr && *type == Sprites::SoldierPartSpriteType::Dred) {
+            const auto head = Calc::Lerp(soldier.skeleton->GetOldPos(9),
+                                         soldier.skeleton->GetPos(9),
+                                         static_cast<float>(frame_percent));
+            const auto head_tip = Calc::Lerp(soldier.skeleton->GetOldPos(12),
+                                             soldier.skeleton->GetPos(12),
+                                             static_cast<float>(frame_percent));
+            const auto strand =
+              GetDreadlockTransform(head_tip - head,
+                                    part_data->GetCenter(),
+                                    { static_cast<float>(part_data->GetTextureWidth()),
+                                      static_cast<float>(part_data->GetTextureHeight()) },
+                                    rot,
+                                    soldier.direction,
+                                    dread_index++);
+            p0 += strand.anchor_offset;
+            scale.x = strand.longitudinal_scale;
+        }
         if (part_data->GetFlexibility() > 0.0) {
             scale.x = std::min(1.5F, glm::length(p1 - p0) / part_data->GetFlexibility());
         }
@@ -282,7 +335,7 @@ bool SoldierRenderer::IsSoldierPartTypeVisible(Sprites::SoldierPartSpriteType so
                                                const Soldier& soldier,
                                                bool part_base_visibility)
 {
-    bool has_blood = false; // TODO: need to get real value
+    const bool has_blood = soldier.health < 90.0F;
     if (has_blood) {
         switch (soldier_part_type) {
             case Sprites::SoldierPartSpriteType::RannyUdo:
@@ -298,6 +351,40 @@ bool SoldierRenderer::IsSoldierPartTypeVisible(Sprites::SoldierPartSpriteType so
         }
     }
 
+    const bool bow = soldier.GetActiveWeapon().IsAny({ WeaponType::Bow, WeaponType::FlameBow });
+    const auto animation = soldier.body_animation->GetType();
+    const bool grabbed =
+      (animation == AnimationType::Wipe || animation == AnimationType::TakeOff) &&
+      soldier.body_animation->GetFrame() > 4;
+    const bool show_hair = !bow && (grabbed || soldier.wear_helmet != 1 ||
+                                    soldier.appearance.hair_style == HairStyle::MrT);
+    switch (soldier_part_type) {
+        case Sprites::SoldierPartSpriteType::Hair1:
+        case Sprites::SoldierPartSpriteType::Dred:
+            return show_hair && soldier.appearance.hair_style == HairStyle::Dreadlocks;
+        case Sprites::SoldierPartSpriteType::Hair2:
+            return show_hair && soldier.appearance.hair_style == HairStyle::Punk;
+        case Sprites::SoldierPartSpriteType::Hair3:
+            return show_hair && soldier.appearance.hair_style == HairStyle::MrT;
+        case Sprites::SoldierPartSpriteType::Hair4:
+            return show_hair && soldier.appearance.hair_style == HairStyle::Normal;
+        case Sprites::SoldierPartSpriteType::Helm:
+            return !bow && soldier.wear_helmet == 1 && soldier.appearance.headgear == 1;
+        case Sprites::SoldierPartSpriteType::Kap:
+            return !bow && soldier.wear_helmet == 1 && soldier.appearance.headgear == 2;
+        case Sprites::SoldierPartSpriteType::Badge:
+            return bow;
+        case Sprites::SoldierPartSpriteType::Cygaro:
+            return soldier.has_cigar == 5 || soldier.has_cigar == 10;
+        case Sprites::SoldierPartSpriteType::Lancuch:
+        case Sprites::SoldierPartSpriteType::Metal:
+            return soldier.appearance.chain == 1;
+        case Sprites::SoldierPartSpriteType::Zlotylancuch:
+        case Sprites::SoldierPartSpriteType::Zloto:
+            return soldier.appearance.chain == 2;
+        default:
+            break;
+    }
     if (soldier.control.jets && soldier.jets_count > 0) {
         switch (soldier_part_type) {
             case Sprites::SoldierPartSpriteType::Stopa:
@@ -574,7 +661,8 @@ bool SoldierRenderer::IsTertiaryWeaponTypeVisible(
 
 glm::vec4 SoldierRenderer::GetColorForSoldierPart(const Soldier& soldier,
                                                   Sprites::SoldierSpriteColor soldier_color,
-                                                  Sprites::SoldierSpriteAlpha soldier_alpha)
+                                                  Sprites::SoldierSpriteAlpha soldier_alpha,
+                                                  bool realistic_mode)
 {
     auto alpha_base = soldier.alpha;
     auto alpha_blood = std::max(0.0F, std::min(255.0F, 200.0F - soldier.health));
@@ -582,7 +670,7 @@ glm::vec4 SoldierRenderer::GetColorForSoldierPart(const Soldier& soldier,
     glm::vec3 color;
     switch (soldier_color) {
         case Sprites::SoldierSpriteColor::Cygar:
-            if (soldier.has_cigar != 0) {
+            if (soldier.has_cigar == 5) {
                 color = { 97.0F, 97.0F, 97.0F };
             } else {
                 color = { 255.0F, 255.0F, 255.0F };
@@ -591,20 +679,22 @@ glm::vec4 SoldierRenderer::GetColorForSoldierPart(const Soldier& soldier,
         case Sprites::SoldierSpriteColor::None:
             color = { 255.0F, 255.0F, 255.0F };
             break;
-        case Sprites::SoldierSpriteColor::Main:  // TODO: Player.Color1
-        case Sprites::SoldierSpriteColor::Pants: // TODO: Player.Color2
-        case Sprites::SoldierSpriteColor::Hair:  // TODO: Player.HairColor
-            color = { 0.0F, 0.0F, 0.0F };
+        case Sprites::SoldierSpriteColor::Main:
+            color = glm::vec3(soldier.appearance.shirt) * 255.0F;
             break;
-        case Sprites::SoldierSpriteColor::Skin: // TODO: Player.SkinColor
-            color = { 230.0F, 180.0F, 120.0F };
+        case Sprites::SoldierSpriteColor::Pants:
+            color = glm::vec3(soldier.appearance.pants) * 255.0F;
+            break;
+        case Sprites::SoldierSpriteColor::Hair:
+            color = glm::vec3(soldier.appearance.hair) * 255.0F;
+            break;
+        case Sprites::SoldierSpriteColor::Skin:
+            color = glm::vec3(soldier.appearance.skin) * 255.0F;
             break;
         case Sprites::SoldierSpriteColor::Headblood:
             color = { 172.0F, 169.0F, 168.0F };
             break;
     }
-
-    bool realistic_mode = false; // TODO: get real value
 
     if (soldier.health > (90.0F - 40.0F * (float)realistic_mode)) {
         alpha_blood = 0;

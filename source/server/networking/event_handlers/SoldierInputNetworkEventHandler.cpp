@@ -40,6 +40,9 @@ private:
       unsigned int sender_connection_id,
       SoldierInputPacket soldier_input_packet) override
     {
+        if (soldier_input_packet.has_appearance && !soldier_input_packet.appearance.IsValid()) {
+            return NetworkEventHandlerResult::Failure;
+        }
         if (soldier_input_packet.has_weapon_choice &&
             (!IsPrimaryWeaponChoice(soldier_input_packet.primary_choice) ||
              !IsSecondaryWeaponChoice(soldier_input_packet.secondary_choice))) {

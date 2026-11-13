@@ -32,8 +32,47 @@ const float GRAV = 0.06F;
 
 export namespace Soldank
 {
+enum class HairStyle : std::uint8_t
+{
+    None,
+    Dreadlocks,
+    Punk,
+    MrT,
+    Normal,
+};
+
+struct SoldierAppearance
+{
+    HairStyle hair_style{ HairStyle::Normal };
+    std::uint8_t headgear{}; // 0 = none, 1 = helmet, 2 = cap
+    std::uint8_t chain{};    // 0 = none, 1 = silver, 2 = gold
+    std::uint8_t cigar{};
+    glm::vec4 shirt{ 0.2F, 0.3F, 0.2F, 1.0F };
+    glm::vec4 pants{ 0.15F, 0.2F, 0.15F, 1.0F };
+    glm::vec4 hair{ 0.2F, 0.12F, 0.06F, 1.0F };
+    glm::vec4 skin{ 230.0F / 255.0F, 180.0F / 255.0F, 120.0F / 255.0F, 1.0F };
+    glm::vec4 jet{ 1.0F, 0.75F, 0.3F, 1.0F };
+
+    bool IsValid() const
+    {
+        if (hair_style > HairStyle::Normal || headgear > 2 || chain > 2 || cigar > 1) {
+            return false;
+        }
+        for (const auto& color : { shirt, pants, hair, skin, jet }) {
+            for (int component = 0; component < 4; ++component) {
+                if (!std::isfinite(color[component]) || color[component] < 0.0F ||
+                    color[component] > 1.0F) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+};
+
 struct Soldier
 {
+    SoldierAppearance appearance{};
     PolygonBackgroundState polygon_background{};
     bool background_touched{};
     std::vector<PolygonContact> polygon_contacts;
@@ -75,6 +114,7 @@ struct Soldier
 
     void SetDefaultValues()
     {
+        appearance = {};
         projectile_pushes.clear();
         projectile_push_history.clear();
         latest_authoritative_tick.reset();

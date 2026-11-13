@@ -1,5 +1,7 @@
 set(soldank_client_rendering_modules
+    rendering/EffectDefinitions.cpp
     rendering/WeaponVisualEffects.cpp
+    rendering/SoldierVisuals.cpp
     rendering/data/Texture.cpp
     rendering/data/sprites/SoldierPartData.cpp
     rendering/data/sprites/SpritesManager.cpp
@@ -9,6 +11,7 @@ set(soldank_client_rendering_modules
     rendering/renderer/CircleRenderer.cpp
     rendering/renderer/ItemRenderer.cpp
     rendering/renderer/LineRenderer.cpp
+    rendering/renderer/interface/MinimapRenderer.cpp
     rendering/renderer/PolygonOutlinesRenderer.cpp
     rendering/renderer/PolygonsRenderer.cpp
     rendering/renderer/RectangleRenderer.cpp
@@ -118,6 +121,7 @@ set(client_lib_modules
     rendering/ClientState.cpp
     rendering/components/Camera.cpp
     rendering/renderer/interface/CursorRenderer.cpp
+    rendering/renderer/interface/HudSpriteRenderer.cpp
     rendering/renderer/interface/GameHudRenderer.cpp
     rendering/renderer/interface/ImGuiThemes.cpp
     rendering/renderer/interface/debug/DebugUI.cpp
@@ -386,4 +390,6 @@ add_custom_command(TARGET client POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${soldatbase_SOURCE_DIR}/shared/sfx" "$<TARGET_FILE_DIR:client>/sfx"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${soldatbase_SOURCE_DIR}/shared/sparks-gfx" "$<TARGET_FILE_DIR:client>/sparks-gfx")
+        "${soldatbase_SOURCE_DIR}/shared/sparks-gfx" "$<TARGET_FILE_DIR:client>/sparks-gfx"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${soldatbase_SOURCE_DIR}/shared/interface-gfx" "$<TARGET_FILE_DIR:client>/interface-gfx")

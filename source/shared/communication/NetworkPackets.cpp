@@ -6,6 +6,7 @@ module;
 export module Shared.Networking.NetworkPackets;
 
 import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.Soldier;
 import Shared.Core.Map.Polygons.PolygonBackgroundState;
 import Shared.Core.Physics.Polygons.PolygonContact;
 import Shared.Core.State.Control;
@@ -38,6 +39,8 @@ struct SoldierInputPacket
     float mouse_map_position_x;
     float mouse_map_position_y;
     Control control;
+    bool has_appearance{};
+    SoldierAppearance appearance{};
     bool has_weapon_choice{};
     WeaponType primary_choice{ WeaponType::DesertEagles };
     WeaponType secondary_choice{ WeaponType::Knife };
@@ -98,6 +101,12 @@ struct SoldierStatePacket
     bool dead_meat{};
     std::int32_t ticks_to_respawn{};
     std::uint32_t last_applied_input_id;
+    SoldierAppearance appearance{};
+    std::uint8_t wear_helmet{};
+    std::uint8_t has_cigar{};
+    std::uint8_t on_fire{};
+    std::uint8_t visual_alpha{ 255 };
+    std::uint8_t visual_visible{ 1 };
 };
 #pragma pack(pop)
 

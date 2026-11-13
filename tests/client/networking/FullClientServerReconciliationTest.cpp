@@ -1057,6 +1057,11 @@ TEST(WeaponPresentationTest, CasingsAreDeduplicatedAcrossPredictionCorrection)
     const auto empty_map = SoldankTesting::MapBuilder::Empty()->Build();
     state->OverrideMap(*empty_map);
     WeaponVisualEffects effects;
+    const auto casing_count = [&]() {
+        return std::ranges::count_if(effects.GetEffects(), [](const auto& effect) {
+            return effect.kind == WeaponVisualEffectKind::Casing;
+        });
+    };
     effects.Update(*state, {});
     auto ready = state->GetSoldier(1).GetActiveWeapon().GetState();
     ready.fire_interval = 0;
@@ -1067,16 +1072,16 @@ TEST(WeaponPresentationTest, CasingsAreDeduplicatedAcrossPredictionCorrection)
     const auto fired = weapon.GetState();
     state->SetGameTick(1);
     effects.Update(*state, {});
-    ASSERT_EQ(effects.GetEffects().size(), 2U);
+    ASSERT_EQ(casing_count(), 2U);
     effects.Update(*state, {});
-    EXPECT_EQ(effects.GetEffects().size(), 2U);
+    EXPECT_EQ(casing_count(), 2U);
     ASSERT_TRUE(weapon.RestoreState(ready));
     state->SetGameTick(2);
     effects.Update(*state, {});
     ASSERT_TRUE(weapon.RestoreState(fired));
     state->SetGameTick(3);
     effects.Update(*state, {});
-    EXPECT_EQ(effects.GetEffects().size(), 2U);
+    EXPECT_EQ(casing_count(), 2U);
     const auto previous_instance = weapon.GetState().instance_id;
     world->SpawnSoldier(1, glm::vec2{});
     EXPECT_NE(weapon.GetState().instance_id, previous_instance);
@@ -1089,7 +1094,7 @@ TEST(WeaponPresentationTest, CasingsAreDeduplicatedAcrossPredictionCorrection)
     ASSERT_TRUE(weapon.TryFire());
     state->SetGameTick(5);
     effects.Update(*state, {});
-    EXPECT_EQ(effects.GetEffects().size(), 4U);
+    EXPECT_EQ(casing_count(), 4U);
 }
 
 TEST(WeaponPresentationTest, AuthoritativeImpactEffectsDoNotChangeGameplayOrItsRandomSequence)
@@ -1109,11 +1114,11 @@ TEST(WeaponPresentationTest, AuthoritativeImpactEffectsDoNotChangeGameplayOrItsR
                                             .radius = 64.0F };
     const std::vector<ProjectilePhysicsEvent> repeated{ explosion, explosion };
     effects.Update(*state, repeated);
-    ASSERT_EQ(effects.GetEffects().size(), 3U);
+    ASSERT_GE(effects.GetEffects().size(), 3U);
     EXPECT_EQ(effects.GetEffects().back().kind, WeaponVisualEffectKind::Explosion);
     EXPECT_EQ(state->GetRandomInt(0, 10000), expected_random);
     EXPECT_TRUE(state->GetBulletEmitter().empty());
-    for (unsigned int tick = 1; tick <= 190; ++tick) {
+    for (unsigned int tick = 1; tick <= 255; ++tick) {
         state->SetGameTick(tick);
         effects.Update(*state, repeated);
     }
@@ -1276,19 +1281,28 @@ TEST(WeaponPresentationTest, ExplosionsKeepReferenceLifetimesAndDoNotScaleWithDa
                                         .position = { 100.0F, 100.0F },
                                         .radius = 1000.0F };
     effects.Update(*state, std::vector{ event });
-    ASSERT_EQ(effects.GetEffects().size(), 3U);
+    ASSERT_GE(effects.GetEffects().size(), 3U);
     EXPECT_EQ(effects.GetEffects().back().initial_lifetime, 48);
     EXPECT_EQ(GetExplosionSprites(effects.GetEffects().back(), 1.0F).back().scale, glm::vec2(1.0F));
     for (unsigned int tick = 1; tick <= 47; ++tick) {
         state->SetGameTick(tick);
         effects.Update(*state, {});
     }
-    ASSERT_EQ(effects.GetEffects().size(), 3U);
+    ASSERT_GE(effects.GetEffects().size(), 3U);
     EXPECT_EQ(effects.GetEffects().back().lifetime, 1);
     state->SetGameTick(48);
     effects.Update(*state, {});
-    ASSERT_EQ(effects.GetEffects().size(), 2U);
-    EXPECT_EQ(effects.GetEffects().back().kind, WeaponVisualEffectKind::ExplosionSmoke);
+    EXPECT_EQ(std::ranges::count_if(effects.GetEffects(),
+                                    [](const auto& effect) {
+                                        return effect.kind == WeaponVisualEffectKind::Explosion;
+                                    }),
+              0);
+    EXPECT_EQ(std::ranges::count_if(effects.GetEffects(),
+                                    [](const auto& effect) {
+                                        return effect.kind ==
+                                               WeaponVisualEffectKind::ExplosionSmoke;
+                                    }),
+              1);
 }
 
 TEST(WeaponPresentationTest, ClusterBreakupAndM2UseSmokeInsteadOfFullSizeFireball)

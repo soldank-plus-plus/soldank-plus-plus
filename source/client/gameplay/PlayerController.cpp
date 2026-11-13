@@ -67,6 +67,17 @@ public:
             UpdateControlActions(soldier_id, input);
         }
 
+        if (client_state_->appearance.IsValid()) {
+            world_.GetStateManager()->TransformSoldier(soldier_id, [&](auto& player) {
+                if (player.appearance.headgear != client_state_->appearance.headgear) {
+                    player.wear_helmet = client_state_->appearance.headgear != 0 ? 1 : 0;
+                }
+                if (player.appearance.cigar != client_state_->appearance.cigar) {
+                    player.has_cigar = client_state_->appearance.cigar != 0 ? 5 : 0;
+                }
+                player.appearance = client_state_->appearance;
+            });
+        }
         world_.UpdateWeaponChoices(soldier_id,
                                    client_state_->primary_weapon_type_choice,
                                    client_state_->secondary_weapon_type_choice);

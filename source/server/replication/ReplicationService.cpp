@@ -86,6 +86,12 @@ public:
             packet.has_polygon_state = true;
             packet.polygon_background = soldier.polygon_background;
             packet.carrying_flag = soldier.is_holding_flags;
+            packet.appearance = soldier.appearance;
+            packet.wear_helmet = soldier.wear_helmet;
+            packet.has_cigar = soldier.has_cigar;
+            packet.on_fire = soldier.on_fire;
+            packet.visual_alpha = soldier.alpha;
+            packet.visual_visible = soldier.visible;
             packet.life_sequence = soldier.life_sequence;
             packet.death_severity = soldier.death_severity;
             packet.health = soldier.health;

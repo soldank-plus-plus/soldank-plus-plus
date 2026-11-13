@@ -150,11 +150,26 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     client_state_ = std::make_shared<ClientState>();
     world_->GetPhysicsEvents().projectile_event.AddObserver(
       [client = client_state_](const ProjectilePhysicsEvent& event) {
+          if (client->network.replaying_prediction) {
+              return;
+          }
           auto& events = client->projectile_visual_events;
           if (events.size() >= 512) {
               events.erase(events.begin());
           }
           events.push_back(event);
+      });
+    world_->GetStateManager()->GetMap().GetMapChangeEvents().replaced_contents.AddObserver(
+      [client = client_state_]() {
+          client->visual_effects.Reset();
+          client->projectile_visual_events.clear();
+          client->polygon_visual_events.clear();
+      });
+    world_->GetWorldEvents().after_soldier_spawns.AddObserver(
+      [client = client_state_](const Soldier& soldier) {
+          if (!client->network.replaying_prediction) {
+              client->visual_effects.ObserveSpawn(soldier);
+          }
       });
     input_controller_ = std::make_unique<ApplicationInputController>(
       *window_, *world_, *client_state_, client_runtime_, game_session_);
@@ -419,7 +434,20 @@ void Application::Run()
       *world_->GetStateManager(),
       audio_events_,
       [client = client_state_]() { return !client->network.replaying_prediction; });
-    world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {
+    world_->SetPostWorldUpdateCallback([&](const StateManager& state_manager) {
+        const auto& camera = client_state_->camera;
+        client_state_->visual_effects.Update(state_manager,
+                                             client_state_->projectile_visual_events,
+                                             { camera.position.x, -camera.position.y },
+                                             { camera.view.GetWidth(), camera.view.GetHeight() },
+                                             client_state_->world_render_options.draw_weather);
+        client_state_->projectile_visual_events.clear();
+        if (!state_manager.IsGamePaused()) {
+            for (const auto& event : client_state_->polygon_visual_events) {
+                client_state_->visual_effects.ObservePolygon(event);
+            }
+            client_state_->polygon_visual_events.clear();
+        }
         if (application_mode_ == ApplicationMode::Online &&
             client_state_->client_soldier_id.has_value()) {
             network_client_session_->StorePredictedSoldierSnapshot(

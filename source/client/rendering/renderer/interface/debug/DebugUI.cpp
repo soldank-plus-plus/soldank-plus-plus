@@ -18,6 +18,7 @@ import Shared.Core.State.StateManager;
 import Shared.Core.State.Control;
 import Shared.Core.Animations;
 import Shared.Core.Types.WeaponType;
+import Shared.Core.Entities.Soldier;
 
 export namespace Soldank::DebugUI
 {
@@ -25,7 +26,9 @@ void Render(const StateManager& game_state_manager,
             ClientState& client_state,
             double frame_percent,
             int fps);
-void RenderFrameContents(const StateManager& game_state_manager, ClientState& client_state, int fps);
+void RenderFrameContents(const StateManager& game_state_manager,
+                         ClientState& client_state,
+                         int fps);
 bool GetWantCaptureMouse();
 bool GetWantTextInput();
 } // namespace Soldank::DebugUI
@@ -261,6 +264,29 @@ void RenderFrameContents(const StateManager& game_state_manager, ClientState& cl
 {
     if (client_state.debug_render.is_game_debug_interface_enabled) {
         {
+            ImGui::Begin("Appearance");
+            int hair_style = static_cast<int>(client_state.appearance.hair_style);
+            if (ImGui::Combo("Hair", &hair_style, "None\0Dreadlocks\0Punk\0Mr. T\0Normal\0")) {
+                client_state.appearance.hair_style = static_cast<HairStyle>(hair_style);
+            }
+            int headgear = client_state.appearance.headgear;
+            if (ImGui::Combo("Headgear", &headgear, "None\0Helmet\0Cap\0")) {
+                client_state.appearance.headgear = static_cast<std::uint8_t>(headgear);
+            }
+            int chain = client_state.appearance.chain;
+            if (ImGui::Combo("Chain", &chain, "None\0Silver\0Gold\0")) {
+                client_state.appearance.chain = static_cast<std::uint8_t>(chain);
+            }
+            bool cigar = client_state.appearance.cigar != 0;
+            if (ImGui::Checkbox("Cigar", &cigar)) {
+                client_state.appearance.cigar = cigar ? 1 : 0;
+            }
+            ImGui::ColorEdit3("Shirt", &client_state.appearance.shirt.x);
+            ImGui::ColorEdit3("Pants", &client_state.appearance.pants.x);
+            ImGui::ColorEdit3("Hair color", &client_state.appearance.hair.x);
+            ImGui::ColorEdit3("Skin", &client_state.appearance.skin.x);
+            ImGui::ColorEdit3("Jet color", &client_state.appearance.jet.x);
+            ImGui::End();
             ImGui::Begin("Network window (Works only when connected to a server)");
             ImGui::Checkbox("Server reconciliation", &client_state.network.server_reconciliation);
             ImGui::Checkbox("Client side prediction", &client_state.network.client_side_prediction);
@@ -293,6 +319,11 @@ void RenderFrameContents(const StateManager& game_state_manager, ClientState& cl
                             &client_state.debug_render.draw_bullet_hitboxes);
             ImGui::Checkbox("Draw item hitboxes", &client_state.debug_render.draw_item_hitboxes);
             ImGui::Checkbox("Draw collision sectors", &client_state.debug_render.draw_sectors);
+            ImGui::Checkbox("Minimap", &client_state.world_render_options.draw_minimap);
+            ImGui::Checkbox("Projectile trails", &client_state.world_render_options.draw_trails);
+            ImGui::Checkbox("Weather effects", &client_state.world_render_options.draw_weather);
+            ImGui::Checkbox("Explosion camera shake",
+                            &client_state.world_render_options.camera_shake);
             ImGui::Checkbox("Draw map boundaries", &client_state.debug_render.draw_map_boundaries);
 
             ImGui::Checkbox("Smooth camera", &client_state.camera.smooth);

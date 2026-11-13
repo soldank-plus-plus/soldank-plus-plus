@@ -84,6 +84,8 @@ public:
             .mouse_map_position_y = mouse_map_position[1],
             .control = world_.GetSoldier(soldier_id).control
         };
+        update_soldier_state_packet.has_appearance = true;
+        update_soldier_state_packet.appearance = client_state_.appearance;
         update_soldier_state_packet.has_weapon_choice = true;
         update_soldier_state_packet.primary_choice =
           world_.GetSoldier(soldier_id).weapon_choices.at(0);

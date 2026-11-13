@@ -162,6 +162,7 @@ void Map::CreateEmptyMap()
 
     UpdateBoundaries(false);
     GenerateSectors();
+    map_change_events_.replaced_contents.Notify();
 }
 
 void Map::LoadMap(const std::filesystem::path& map_path, const IFileReader& file_reader)
@@ -204,6 +205,7 @@ void Map::LoadMap(const std::filesystem::path& map_path, const IFileReader& file
     are_sectors_generated_ = true;
     map_change_events_.changed_background_color.Notify(
       map_data_.background_top_color, map_data_.background_bottom_color, GetBoundaries());
+    map_change_events_.replaced_contents.Notify();
 }
 
 void Map::SaveMap(const std::filesystem::path& map_path,

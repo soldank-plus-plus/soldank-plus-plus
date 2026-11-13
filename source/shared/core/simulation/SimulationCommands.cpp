@@ -8,6 +8,7 @@ module;
 export module Shared.Core.Simulation.SimulationCommands;
 
 import Extern.Glm;
+import Shared.Core.Entities.Soldier;
 
 import Shared.Core.State.Control;
 import Shared.Core.Types.WeaponType;
@@ -23,6 +24,7 @@ struct PlayerInputCommand
     Control control;
     glm::vec2 mouse_map_position;
     std::optional<std::array<WeaponType, 2>> weapon_choices;
+    std::optional<SoldierAppearance> appearance;
 };
 
 struct SpawnSoldierCommand
