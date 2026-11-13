@@ -1,6 +1,8 @@
 module;
 
 #include <cstdint>
+#include <array>
+#include <optional>
 
 export module Shared.Networking.ProtocolConversions;
 
@@ -15,7 +17,7 @@ export namespace Soldank::ProtocolConversions
 {
 PlayerInputCommand ToPlayerInputCommand(std::uint8_t soldier_id, const SoldierInputPacket& packet)
 {
-    return PlayerInputCommand{
+    auto command = PlayerInputCommand{
         .soldier_id = soldier_id,
         .input_sequence_id = packet.input_sequence_id,
         .client_tick = packet.client_tick,
@@ -23,6 +25,10 @@ PlayerInputCommand ToPlayerInputCommand(std::uint8_t soldier_id, const SoldierIn
         .control = packet.control,
         .mouse_map_position = { packet.mouse_map_position_x, packet.mouse_map_position_y },
     };
+    if (packet.has_weapon_choice) {
+        command.weapon_choices = std::array{ packet.primary_choice, packet.secondary_choice };
+    }
+    return command;
 }
 
 ProjectileSpawnPacket ToProjectileSpawnPacket(std::uint32_t projectile_id,
@@ -45,6 +51,7 @@ ProjectileSpawnPacket ToProjectileSpawnPacket(std::uint32_t projectile_id,
         .seed = event.bullet_params.seed,
         .spawn_tick = event.bullet_params.spawn_tick,
         .derived = event.bullet_params.derived,
+        .realistic = event.bullet_params.realistic,
     };
 }
 
@@ -67,6 +74,7 @@ ProjectileSpawnedEvent ToProjectileSpawnedEvent(const ProjectileSpawnPacket& pac
             .seed = packet.seed,
             .spawn_tick = packet.spawn_tick,
             .derived = packet.derived,
+            .realistic = packet.realistic,
           },
     };
 }

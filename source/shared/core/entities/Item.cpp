@@ -14,8 +14,9 @@ export namespace Soldank
 
 struct Item
 {
+    std::int16_t mounted_soldier{ -1 };
     bool active{};
-    ItemType style;
+    ItemType style{ ItemType::USSOCOM };
     std::uint8_t id;
     std::uint8_t owner;
     std::uint8_t holding_soldier_id;

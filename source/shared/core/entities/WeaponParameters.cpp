@@ -49,7 +49,7 @@ struct WeaponParameters
     std::uint16_t fire_interval;
     float hit_multiply;
     float bullet_spread;
-    BulletType bullet_style;
+    BulletType bullet_style{ BulletType::Bullet };
     float modifier_legs;
     float modifier_chest;
     float modifier_head;
@@ -61,5 +61,6 @@ struct WeaponParameters
     std::uint16_t reload_time;
     bool clip_reload;
     std::uint16_t timeout;
+    bool realistic{};
 };
 } // namespace Soldank

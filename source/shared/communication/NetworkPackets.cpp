@@ -1,9 +1,11 @@
 module;
 
 #include <cstdint>
+#include <array>
 
 export module Shared.Networking.NetworkPackets;
 
+import Shared.Core.Entities.Weapon;
 import Shared.Core.State.Control;
 import Shared.Core.Animations;
 import Shared.Core.Types.BulletType;
@@ -28,6 +30,9 @@ struct SoldierInputPacket
     float mouse_map_position_x;
     float mouse_map_position_y;
     Control control;
+    bool has_weapon_choice{};
+    WeaponType primary_choice{ WeaponType::DesertEagles };
+    WeaponType secondary_choice{ WeaponType::Knife };
 };
 #pragma pack(pop)
 
@@ -64,6 +69,21 @@ struct SoldierStatePacket
     bool using_jets;
     std::int32_t jets_count;
     std::uint8_t active_weapon;
+    std::uint8_t weapon_count{};
+    std::uint32_t weapon_generation{};
+    std::uint64_t weapon_config_hash{};
+    std::array<WeaponState, 3> weapons{};
+    bool grenade_can_throw{};
+    std::uint16_t hit_spray{};
+    std::int16_t mounted_weapon{ -1 };
+    CombatBonus combat_bonus{};
+    std::uint16_t bonus_ticks{};
+    std::uint8_t fired{};
+    Control control{};
+    float health{ 150.0F };
+    float vest{};
+    bool dead_meat{};
+    std::int32_t ticks_to_respawn{};
     std::uint32_t last_applied_input_id;
 };
 #pragma pack(pop)
@@ -76,10 +96,38 @@ struct SoldierInfoPacket
 #pragma pack(pop)
 
 #pragma pack(push, 1)
+struct ItemParticlePacket
+{
+    float x{};
+    float y{};
+    float old_x{};
+    float old_y{};
+    bool operator==(const ItemParticlePacket&) const = default;
+};
+struct ItemStatePacket
+{
+    std::uint32_t server_tick{};
+    std::uint8_t id{};
+    bool active{};
+    ItemType style{ ItemType::USSOCOM };
+    std::uint8_t owner{};
+    std::uint8_t ammo{};
+    float radius{};
+    std::int32_t timeout{};
+    bool is_static{};
+    std::int32_t heat{};
+    std::int16_t mounted_soldier{ -1 };
+    std::uint8_t particle_count{};
+    std::array<ItemParticlePacket, 4> particles{};
+    bool operator==(const ItemStatePacket&) const = default;
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
 struct ProjectileSpawnPacket
 {
     std::uint32_t projectile_id;
-    BulletType style;
+    BulletType style{ BulletType::Bullet };
     WeaponType weapon;
     float position_x;
     float position_y;
@@ -94,6 +142,7 @@ struct ProjectileSpawnPacket
     std::uint32_t seed{};
     unsigned int spawn_tick{};
     bool derived{};
+    bool realistic{};
 };
 #pragma pack(pop)
 #pragma pack(push, 1)
@@ -101,7 +150,7 @@ struct ProjectilePhysicsPacket
 {
     ProjectileEventKind kind{};
     std::uint32_t projectile_id{};
-    BulletType style{};
+    BulletType style{ BulletType::Bullet };
     WeaponType weapon{};
     std::uint8_t owner_id{};
     std::uint32_t seed{};

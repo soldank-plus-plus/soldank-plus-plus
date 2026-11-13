@@ -35,7 +35,7 @@ struct State
             std::vector<Weapon>{
               { WeaponParametersFactory::GetParameters(WeaponType::DesertEagles, false) },
               { WeaponParametersFactory::GetParameters(WeaponType::Knife, false) },
-              { WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false) } } });
+              { WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false), 2, 5 } } });
     }
 
     unsigned int game_tick{};

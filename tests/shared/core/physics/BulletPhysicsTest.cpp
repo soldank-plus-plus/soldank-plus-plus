@@ -18,9 +18,12 @@ import Shared.Core.Data.IFileReader;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Entities.Item;
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.WeaponParameters;
 import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Physics.SoldierPhysics;
+import Shared.Core.Physics.Weapons.WeaponPhysics;
+import Shared.Core.Physics.Weapons.StationaryWeaponPhysics;
 import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Physics.Bullets.BulletEffects;
 import Shared.Core.Physics.Bullets.BulletLagCompensation;
@@ -1109,11 +1112,14 @@ TEST(BulletPhysicsTest, FiresM79AndPrimaryProjectileStylesWithCombatMetadata)
     owner.team = Soldank::TeamType::Bravo;
     owner.SetPingTicks(8);
     owner.control.mouse_aim_x = 100;
-    for (const auto weapon : { Soldank::WeaponType::M79,
-                               Soldank::WeaponType::Bow,
-                               Soldank::WeaponType::Flamer,
-                               Soldank::WeaponType::Knife }) {
+    for (const auto weapon :
+         { Soldank::WeaponType::M79, Soldank::WeaponType::Bow, Soldank::WeaponType::Flamer }) {
         owner.GetActiveWeapon() = Soldank::WeaponParametersFactory::GetParameters(weapon, false);
+        auto ready = owner.GetActiveWeapon().GetState();
+        ready.ammo = owner.GetActiveWeapon().GetWeaponParameters().ammo;
+        ready.fire_interval = 0;
+        ready.startup = 0;
+        ASSERT_TRUE(owner.GetActiveWeapon().RestoreState(ready));
         owner.is_shooting = false;
         std::vector<Soldank::BulletParams> emitted;
         Soldank::SoldierPhysics::Fire(owner, emitted);
@@ -1360,7 +1366,8 @@ TEST(BulletPhysicsTest, ThrownKnifeEventPreservesOwnerCombatMetadata)
     owner.SetTeam(Soldank::TeamType::Alpha);
     owner.SetPingTicks(9);
     owner.control.mouse_aim_x = 100;
-    world->GetPhysicsEvents().soldier_throws_active_weapon.Notify(owner);
+    owner.dead_meat = false;
+    Soldank::WeaponPhysics::ThrowWeapon(*world->GetStateManager(), owner);
     const auto& emitted = world->GetStateManager()->GetBulletEmitter();
     ASSERT_EQ(emitted.size(), 1U);
     EXPECT_EQ(emitted.front().style, Soldank::BulletType::ThrownKnife);
@@ -1370,4 +1377,188 @@ TEST(BulletPhysicsTest, ThrownKnifeEventPreservesOwnerCombatMetadata)
       emitted.front().push,
       Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::ThrownKnife, false)
         .push);
+}
+
+TEST(WeaponFiringTest, SpasEmitsSixSeededPelletsAndSpendsOneShell)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& owner = state.GetSoldier(0);
+    owner.control.mouse_aim_x = 100;
+    owner.GetActiveWeapon() =
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::Spas12, false);
+    auto ready = owner.GetActiveWeapon().GetState();
+    ready.fire_interval = 0;
+    ready.startup = 0;
+    ASSERT_TRUE(owner.GetActiveWeapon().RestoreState(ready));
+    const auto velocity = owner.particle.GetVelocity();
+    std::vector<Soldank::BulletParams> first;
+    Soldank::SoldierPhysics::Fire(owner, first);
+    ASSERT_EQ(first.size(), 6U);
+    EXPECT_EQ(owner.GetActiveWeapon().GetAmmoCount(), ready.ammo - 1);
+    EXPECT_NE(first[0].velocity, first[1].velocity);
+    EXPECT_NE(owner.particle.GetVelocity(), velocity);
+    std::vector<Soldank::BulletParams> blocked;
+    Soldank::SoldierPhysics::Fire(owner, blocked);
+    EXPECT_TRUE(blocked.empty());
+    owner.GetActiveWeapon().RestoreState(ready);
+    owner.particle.SetVelocity(velocity);
+    std::vector<Soldank::BulletParams> replay;
+    Soldank::SoldierPhysics::Fire(owner, replay);
+    ASSERT_EQ(replay.size(), first.size());
+    for (std::size_t i = 0; i < first.size(); ++i) {
+        EXPECT_EQ(first[i].velocity, replay[i].velocity);
+        EXPECT_EQ(first[i].seed, replay[i].seed);
+    }
+}
+
+TEST(WeaponFiringTest, EaglesPairConsumesOneRoundAndHasIndependentSpread)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& owner = state.GetSoldier(0);
+    owner.control.mouse_aim_x = -100;
+    owner.control.mouse_aim_y = 100;
+    auto ready = owner.GetActiveWeapon().GetState();
+    ready.fire_interval = 0;
+    ready.startup = 0;
+    ASSERT_TRUE(owner.GetActiveWeapon().RestoreState(ready));
+    std::vector<Soldank::BulletParams> bullets;
+    Soldank::SoldierPhysics::Fire(owner, bullets);
+    ASSERT_EQ(bullets.size(), 2U);
+    EXPECT_EQ(owner.GetActiveWeapon().GetAmmoCount(), ready.ammo - 1);
+    EXPECT_NE(bullets[0].velocity, bullets[1].velocity);
+    EXPECT_GT(bullets[1].position.x, bullets[0].position.x);
+    EXPECT_GT(bullets[1].position.y, bullets[0].position.y);
+}
+
+TEST(WeaponFiringTest, RejectedLawDoesNotSpendAmmoOrAdvanceShotState)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& owner = state.GetSoldier(0);
+    owner.GetActiveWeapon() =
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::LAW, false);
+    const auto before = owner.GetActiveWeapon().GetState();
+    std::vector<Soldank::BulletParams> bullets;
+    Soldank::SoldierPhysics::Fire(owner, bullets);
+    EXPECT_TRUE(bullets.empty());
+    EXPECT_EQ(before, owner.GetActiveWeapon().GetState());
+    EXPECT_FALSE(owner.is_shooting);
+}
+
+TEST(WeaponFiringTest, CeasefireAndSpectatorsCannotSpendAmmo)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& owner = state.GetSoldier(0);
+    auto ready = owner.GetActiveWeapon().GetState();
+    ready.fire_interval = 0;
+    ready.startup = 0;
+    owner.GetActiveWeapon().RestoreState(ready);
+    std::vector<Soldank::BulletParams> bullets;
+    owner.SetCeaseFireCounter(1);
+    Soldank::SoldierPhysics::Fire(owner, bullets);
+    EXPECT_TRUE(bullets.empty());
+    EXPECT_EQ(ready, owner.GetActiveWeapon().GetState());
+    owner.SetCeaseFireCounter(-1);
+    owner.SetTeam(Soldank::TeamType::Spectator);
+    Soldank::SoldierPhysics::Fire(owner, bullets);
+    EXPECT_TRUE(bullets.empty());
+    EXPECT_EQ(ready, owner.GetActiveWeapon().GetState());
+}
+
+TEST(WeaponFiringTest, GrenadeRequiresValidReleaseAndOnlyConsumesOncePerThrow)
+{
+    auto animations = CreateAnimationDataManager();
+    AnimationDataReader reader;
+    animations.LoadAnimationData(Soldank::AnimationType::Throw, "stand.poa", false, 1, reader);
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& owner = state.GetSoldier(0);
+    owner.control.mouse_aim_x = 100;
+    owner.control.throw_grenade = false;
+    owner.body_animation =
+      Soldank::SoldierPhysics::CreateBodyAnimationState(Soldank::AnimationType::Throw, animations);
+    auto map = SoldankTesting::MapBuilder::Empty()->Build();
+    const auto ammo = owner.weapons[2].GetAmmoCount();
+    std::vector<Soldank::BulletParams> grenades;
+    owner.body_animation->SetFrame(14);
+    EXPECT_FALSE(Soldank::WeaponPhysics::ThrowGrenade(owner, *map, grenades));
+    owner.body_animation->SetFrame(15);
+    EXPECT_TRUE(Soldank::WeaponPhysics::ThrowGrenade(owner, *map, grenades));
+    EXPECT_FALSE(Soldank::WeaponPhysics::ThrowGrenade(owner, *map, grenades));
+    ASSERT_EQ(grenades.size(), 1U);
+    EXPECT_EQ(owner.weapons[2].GetAmmoCount(), ammo - 1);
+    EXPECT_EQ(grenades[0].style, Soldank::BulletType::FragGrenade);
+    EXPECT_LT(grenades[0].velocity.y, 0.0F);
+    owner.weapons[2].ResetThrow();
+    owner.control.throw_grenade = true;
+    owner.body_animation->SetFrame(35);
+    EXPECT_FALSE(Soldank::WeaponPhysics::ThrowGrenade(owner, *map, grenades));
+    owner.body_animation->SetFrame(36);
+    EXPECT_TRUE(Soldank::WeaponPhysics::ThrowGrenade(owner, *map, grenades));
+    EXPECT_FALSE(Soldank::WeaponPhysics::ThrowGrenade(owner, *map, grenades));
+    EXPECT_EQ(grenades.size(), 2U);
+}
+
+TEST(WeaponFiringTest, M2MountsExclusivelyAndStopsAtOverheat)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    ActivateTarget(state, 1, {});
+    state.GetSoldier(0).control.mouse_aim_x = 100;
+    state.GetSoldier(0).control.fire = true;
+    state.GetSoldier(1).control.mouse_aim_x = 100;
+    std::vector<Soldank::Particle> particles(4);
+    auto skeleton =
+      std::make_shared<Soldank::ParticleSystem>(particles, std::vector<Soldank::Constraint>{});
+    auto& item = state.CreateItem({}, 255, Soldank::ItemType::M2, skeleton);
+    item.time_out = 0;
+    const auto interval =
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::M2, false).fire_interval;
+    for (unsigned int shot = 0; shot < 25; ++shot) {
+        state.SetGameTick(shot * interval);
+        Soldank::StationaryWeaponPhysics::Update(state, item);
+    }
+    EXPECT_EQ(state.GetSoldier(0).mounted_weapon, item.id);
+    EXPECT_EQ(state.GetSoldier(1).mounted_weapon, -1);
+    EXPECT_EQ(state.GetBulletEmitter().size(), 19U);
+    EXPECT_EQ(item.interest, 19);
+    state.GetSoldier(0).control.up = true;
+    Soldank::StationaryWeaponPhysics::Update(state, item);
+    EXPECT_EQ(state.GetSoldier(0).mounted_weapon, -1);
+    EXPECT_EQ(state.GetSoldier(1).mounted_weapon, item.id);
+}
+
+TEST(BulletPhysicsTest, VestAndCombatBonusesFollowReferenceDamageOrder)
+{
+    auto animations = CreateAnimationDataManager();
+    auto state = CreateStateManagerWithSoldierSkeleton(animations);
+    ActivateTarget(state, 0, {});
+    auto& target = state.GetSoldier(0);
+    target.health = 150.0F;
+    target.vest = 100.0F;
+    auto bullet = CreateBullet({}, {});
+    Soldank::PhysicsEvents events;
+    Soldank::BulletDamage::ApplyDamage(events, state, target, bullet, 40.0F, 12, false);
+    EXPECT_FLOAT_EQ(target.health, 140.0F);
+    EXPECT_FLOAT_EQ(target.vest, 87.0F);
+    ActivateTarget(state, 1, { 100.0F, 0.0F });
+    state.GetSoldier(1).combat_bonus = Soldank::CombatBonus::Berserk;
+    bullet.owner_id = 1;
+    Soldank::BulletDamage::ApplyDamage(events, state, target, bullet, 40.0F, 12, false);
+    EXPECT_FLOAT_EQ(target.health, -20.0F);
+    EXPECT_FLOAT_EQ(target.vest, 74.0F);
+    target.health = 150.0F;
+    target.dead_meat = false;
+    target.combat_bonus = Soldank::CombatBonus::FlameGod;
+    Soldank::BulletDamage::ApplyDamage(events, state, target, bullet, 40.0F, 12, false);
+    EXPECT_FLOAT_EQ(target.health, 150.0F);
+    EXPECT_FLOAT_EQ(target.vest, 74.0F);
 }

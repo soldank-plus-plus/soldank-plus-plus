@@ -6,6 +6,7 @@ module;
 export module Networking.HitSoldierNetworkEventHandler;
 
 import Shared.Core.IWorld;
+import Shared.Core.Entities.Soldier;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
@@ -29,7 +30,11 @@ private:
       std::uint8_t soldier_id,
       float damage) override
     {
-        world_->HitSoldier(soldier_id, damage);
+        // Once absolute combat snapshots are available, a late legacy delta must not
+        // subtract health already represented by a newer authoritative snapshot.
+        if (!world_->GetSoldier(soldier_id).has_authoritative_health_snapshot) {
+            world_->HitSoldier(soldier_id, damage);
+        }
         return NetworkEventHandlerResult::Success;
     }
 

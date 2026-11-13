@@ -192,3 +192,18 @@ add_custom_command(TARGET StateManagerTest POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${soldatbase_SOURCE_DIR}/shared/weapons.ini"
         "$<TARGET_FILE_DIR:StateManagerTest>/weapons.ini")
+
+add_executable(WeaponSimulationTest core/physics/WeaponSimulationTest.cpp)
+AddTestOptionsAndLibraries(WeaponSimulationTest)
+target_link_libraries(WeaponSimulationTest PRIVATE shared_lib shared_lib_testing_framework)
+add_test(NAME WeaponSimulationTest COMMAND WeaponSimulationTest)
+set_tests_properties(WeaponSimulationTest PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+add_custom_command(TARGET WeaponSimulationTest POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${soldatbase_SOURCE_DIR}/shared/anims" "$<TARGET_FILE_DIR:WeaponSimulationTest>/anims"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${soldatbase_SOURCE_DIR}/shared/objects" "$<TARGET_FILE_DIR:WeaponSimulationTest>/objects"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${soldatbase_SOURCE_DIR}/shared/weapons.ini" "$<TARGET_FILE_DIR:WeaponSimulationTest>/weapons.ini"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${soldatbase_SOURCE_DIR}/shared/weapons_realistic.ini" "$<TARGET_FILE_DIR:WeaponSimulationTest>/weapons_realistic.ini")

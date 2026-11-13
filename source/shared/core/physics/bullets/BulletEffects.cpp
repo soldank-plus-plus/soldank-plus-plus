@@ -51,7 +51,8 @@ void DropWeapon(StateManager& state, Soldier& soldier, const Bullet& bullet)
         return;
     }
     auto& dropped = state.CreateItem(soldier.skeleton->GetPos(16), soldier.id, *item);
-    soldier.GetActiveWeapon() = WeaponParametersFactory::GetParameters(WeaponType::NoWeapon, false);
+    dropped.ammo_count = soldier.GetActiveWeapon().GetAmmoCount();
+    state.ChangeSoldierPrimaryWeapon(soldier.id, WeaponType::NoWeapon);
     auto event = MakeProjectileEvent(
       ProjectileEventKind::WorldItemSpawnedFromProjectile, bullet, state.GetGameTick());
     event.item_id = dropped.id;
@@ -67,8 +68,10 @@ void Fragment(StateManager& state, const Bullet& bullet)
         return;
     }
     std::mt19937 random{ bullet.seed };
-    const auto parameters = WeaponParametersFactory::GetParameters(WeaponType::Cluster, false);
-    const auto grenade = WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false);
+    const auto parameters =
+      WeaponParametersFactory::GetParameters(WeaponType::Cluster, bullet.realistic);
+    const auto grenade =
+      WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, bullet.realistic);
     auto event =
       MakeProjectileEvent(ProjectileEventKind::ProjectileFragmented, bullet, state.GetGameTick());
     for (unsigned int index = 0; index < 5; ++index) {
@@ -89,6 +92,7 @@ void Fragment(StateManager& state, const Bullet& bullet)
             .owner_ping_ticks = bullet.owner_ping_ticks,
             .seed = static_cast<std::uint32_t>(random()),
             .derived = true,
+            .realistic = bullet.realistic,
         };
         child = state.PrepareProjectile(child);
         state.EnqueueNewProjectile(child);
@@ -104,7 +108,8 @@ void PropagateFlame(StateManager& state, Bullet& bullet, const Soldier& target, 
     if (bullet.timeout >= 3 || bullet.ricochet_count >= 2) {
         return;
     }
-    const auto parameters = WeaponParametersFactory::GetParameters(WeaponType::Flamer, false);
+    const auto parameters =
+      WeaponParametersFactory::GetParameters(WeaponType::Flamer, bullet.realistic);
     if (bullet.hit_multiply < parameters.hit_multiply / 3.0F) {
         return;
     }
@@ -123,6 +128,7 @@ void PropagateFlame(StateManager& state, Bullet& bullet, const Soldier& target, 
           .push = parameters.push,
           .owner_ping_ticks = bullet.owner_ping_ticks,
           .derived = true,
+          .realistic = bullet.realistic,
         });
     }
 }

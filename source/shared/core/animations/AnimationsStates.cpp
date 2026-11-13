@@ -6,6 +6,8 @@ export import :BodyGetUpAnimationState;
 export import :BodyProneAnimationState;
 export import :BodyProneMoveAnimationState;
 export import :BodyPunchAnimationState;
+export import :BodyReloadAnimationState;
+export import :BodyWeaponActionAnimationState;
 export import :BodyRollAnimationState;
 export import :BodyRollBackAnimationState;
 export import :BodyStandAnimationState;

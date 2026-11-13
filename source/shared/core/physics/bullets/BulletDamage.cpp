@@ -6,6 +6,7 @@ module;
 #include <limits>
 #include <optional>
 #include <vector>
+#include <cmath>
 
 export module Shared.Core.Physics.Bullets.BulletDamage;
 
@@ -15,6 +16,7 @@ import Shared.Core.Entities.Item;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Entities.WeaponParameters;
 import Shared.Core.Entities.WeaponParametersFactory;
+import Shared.Core.Entities.Weapon;
 import Shared.Core.Physics.Bullets.BulletTypes;
 import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Physics.Bullets.BulletEffects;
@@ -42,7 +44,7 @@ bool AllowsTargetCollision(const Soldier& target, const Bullet& bullet, bool exp
     }
     const bool self = target.id == bullet.owner_id;
     const bool same_team = bullet.team != TeamType::None && bullet.team == target.team;
-    const auto parameters = WeaponParametersFactory::GetParameters(bullet.weapon, false);
+    const auto parameters = WeaponParametersFactory::GetParameters(bullet.weapon, bullet.realistic);
     return AllowsWeaponCollision(parameters.no_collision, self, same_team, explosion);
 }
 
@@ -57,9 +59,9 @@ bool CanDamage(const StateManager& state,
            (state.IsFriendlyFireEnabled() || self || !same_team);
 }
 
-float HitboxModifier(WeaponType weapon, unsigned int part)
+float HitboxModifier(WeaponType weapon, unsigned int part, bool realistic = false)
 {
-    const auto parameters = WeaponParametersFactory::GetParameters(weapon, false);
+    const auto parameters = WeaponParametersFactory::GetParameters(weapon, realistic);
     return part <= 4 ? parameters.modifier_legs
                      : (part <= 11 ? parameters.modifier_chest : parameters.modifier_head);
 }
@@ -77,7 +79,25 @@ void ApplyDamage(const PhysicsEvents& physics_events,
     if (!state.HasAuthoritativeProjectiles() || !CanDamage(state, target, bullet, explosion)) {
         return;
     }
+    if (target.combat_bonus == CombatBonus::FlameGod) {
+        return;
+    }
+    const float unprotected_damage = damage;
+    if (target.vest > 0.0F) {
+        target.vest = std::max(0.0F, target.vest - std::round(damage * 0.33F));
+        damage = std::round(damage * 0.25F);
+    }
+    state.ForEachSoldier([&](const Soldier& owner) {
+        if (owner.id == bullet.owner_id && owner.combat_bonus == CombatBonus::Berserk) {
+            // The reference applies berserk after vest depletion and overrides its reduction.
+            damage = unprotected_damage * 4.0F;
+        }
+    });
     target.health -= damage;
+    const auto bink = target.GetActiveWeapon().GetWeaponParameters().bink;
+    if (damage > 0.0F && bink > 0) {
+        target.AddBink(static_cast<std::uint16_t>(bink));
+    }
     if (!target.dead_meat && target.health <= 0.0F) {
         target.dead_meat = true;
         target.ticks_to_respawn = 180;
@@ -209,7 +229,8 @@ void AffectLivingSoldier(const ExplosionContext& context, Soldier& target)
         impulse.y *= 2.0F;
     }
     BulletLagCompensation::SchedulePush(context.state, target, context.bullet, impulse);
-    const float damage = context.damage * HitboxModifier(context.weapon, closest.part) *
+    const float damage = context.damage *
+                         HitboxModifier(context.weapon, closest.part, context.bullet.realistic) *
                          (context.fragment ? 0.5F : 1.0F) / (closest.distance + 1.0F);
     ApplyDamage(context.events,
                 context.state,
@@ -284,7 +305,7 @@ void Explode(const PhysicsEvents& physics_events, Bullet& initial, StateManager&
             ExplosionRadius(bullet.style),
             fragment,
             weapon,
-            WeaponParametersFactory::GetParameters(weapon, false).hit_multiply
+            WeaponParametersFactory::GetParameters(weapon, bullet.realistic).hit_multiply
         };
         state.TransformSoldiers([&](Soldier& target) {
             if (!state.HasAuthoritativeProjectiles() || !target.skeleton ||
@@ -335,7 +356,8 @@ DirectHitOutcome ApplyDirectHit(const PhysicsEvents& physics_events,
                         state,
                         target,
                         bullet,
-                        speed * bullet.hit_multiply * HitboxModifier(bullet.weapon, part),
+                        speed * bullet.hit_multiply *
+                          HitboxModifier(bullet.weapon, part, bullet.realistic),
                         part,
                         false,
                         collision.distance,
@@ -344,7 +366,8 @@ DirectHitOutcome ApplyDirectHit(const PhysicsEvents& physics_events,
                 (bullet.team == TeamType::None || bullet.team != target.team)) {
                 BulletEffects::DropWeapon(state, target, bullet);
             }
-            const auto parameters = WeaponParametersFactory::GetParameters(bullet.weapon, false);
+            const auto parameters =
+              WeaponParametersFactory::GetParameters(bullet.weapon, bullet.realistic);
             const auto retention =
               GetPenetrationVelocityMultiplier(was_dead, target.dead_meat, speed, parameters.speed);
             if (retention) {
@@ -368,7 +391,8 @@ DirectHitOutcome ApplyDirectHit(const PhysicsEvents& physics_events,
                         state,
                         target,
                         bullet,
-                        speed * bullet.hit_multiply * HitboxModifier(bullet.weapon, part),
+                        speed * bullet.hit_multiply *
+                          HitboxModifier(bullet.weapon, part, bullet.realistic),
                         part,
                         false,
                         collision.distance,

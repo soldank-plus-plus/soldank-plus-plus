@@ -6,10 +6,13 @@ module;
 #include <list>
 #include <memory>
 #include <optional>
+#include <vector>
+#include <cmath>
 
 export module Networking.SoldierStateNetworkEventHandler;
 
 import Extern.Glm;
+import Extern.Spdlog;
 
 import ClientState;
 import Networking.ReconciliationTimeline;
@@ -24,6 +27,9 @@ import Shared.Networking.NetworkEvent;
 import Shared.Core.Physics.SoldierSkeletonPhysics;
 import Shared.Core.Animations;
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.WeaponParametersFactory;
+import Shared.Core.Types.WeaponType;
 import Shared.Core.Simulation.PlayerInputApplication;
 import Shared.Core.Utility.SerialNumber;
 import Shared.Networking.ProtocolConversions;
@@ -47,15 +53,72 @@ private:
       unsigned int /*sender_connection_id*/,
       SoldierStatePacket soldier_state_packet) override
     {
+        if (!std::isfinite(soldier_state_packet.health) ||
+            !std::isfinite(soldier_state_packet.vest) || soldier_state_packet.active_weapon >= 2 ||
+            (soldier_state_packet.weapon_count != 0 && soldier_state_packet.weapon_count != 3)) {
+            return NetworkEventHandlerResult::Failure;
+        }
         std::uint8_t soldier_id = soldier_state_packet.player_id;
+        if (soldier_id >= latest_server_ticks_.size()) {
+            return NetworkEventHandlerResult::Failure;
+        }
         std::optional<std::uint32_t>& latest_server_tick = latest_server_ticks_.at(soldier_id);
         if (latest_server_tick.has_value() &&
             !IsSerialNumberNewer(soldier_state_packet.server_tick, *latest_server_tick)) {
             return NetworkEventHandlerResult::Success;
         }
+        if (soldier_state_packet.weapon_count == 3 &&
+            soldier_state_packet.weapon_config_hash != 0) {
+            const auto expected = WeaponParametersFactory::GetConfigurationHash(
+              soldier_state_packet.weapons[0].realistic);
+            if (soldier_state_packet.weapon_config_hash != expected) {
+                if (!client_state_->network.weapon_config_mismatch) {
+                    Spdlog::error("Weapon settings differ from the server. Install matching weapon "
+                                  "files and reconnect.");
+                }
+                client_state_->network.weapon_config_mismatch = true;
+                if (!config_mismatch_tick_ ||
+                    IsSerialNumberNewer(soldier_state_packet.server_tick, *config_mismatch_tick_)) {
+                    config_mismatch_tick_ = soldier_state_packet.server_tick;
+                }
+                latest_server_tick = soldier_state_packet.server_tick;
+                return NetworkEventHandlerResult::Failure;
+            }
+            if (config_mismatch_tick_ &&
+                IsSerialNumberOlder(soldier_state_packet.server_tick, *config_mismatch_tick_)) {
+                return NetworkEventHandlerResult::Success;
+            }
+            client_state_->network.weapon_config_mismatch = false;
+        }
+        std::vector<Weapon> restored_weapons;
+        if (soldier_state_packet.weapon_count == 3) {
+            for (const auto& state : soldier_state_packet.weapons) {
+                if (state.kind < WeaponType::DesertEagles || state.kind > WeaponType::ThrownKnife) {
+                    return NetworkEventHandlerResult::Failure;
+                }
+                Weapon weapon(WeaponParametersFactory::GetParameters(state.kind, state.realistic));
+                if (!weapon.RestoreState(state)) {
+                    return NetworkEventHandlerResult::Failure;
+                }
+                restored_weapons.push_back(weapon);
+            }
+        }
+        if (!restored_weapons.empty() &&
+            world_->GetStateManager()->IsRealistic() != soldier_state_packet.weapons[0].realistic) {
+            world_->GetStateManager()->SetRealistic(soldier_state_packet.weapons[0].realistic);
+        }
         latest_server_tick = soldier_state_packet.server_tick;
         world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
             soldier.latest_authoritative_tick = soldier_state_packet.server_tick;
+            // Health/armor are not predicted and are applied even when movement needs no
+            // correction.
+            if (soldier_state_packet.weapon_count == 3) {
+                soldier.health = soldier_state_packet.health;
+                soldier.vest = soldier_state_packet.vest;
+                soldier.dead_meat = soldier_state_packet.dead_meat;
+                soldier.ticks_to_respawn = soldier_state_packet.ticks_to_respawn;
+                soldier.has_authoritative_health_snapshot = true;
+            }
         });
 
         const std::uint32_t local_tick = world_->GetStateManager()->GetGameTick();
@@ -95,8 +158,7 @@ private:
             is_soldier_id_me = *client_state_->client_soldier_id == soldier_id;
         }
         if (is_soldier_id_me) {
-            client_state_->network.soldier_position_server_pov = { soldier_position.x,
-                                                                   soldier_position.y };
+            client_state_->network.soldier_position_server_pov = soldier_position;
         }
 
         const bool awaiting_timeline_resynchronization =
@@ -108,6 +170,7 @@ private:
         if (awaiting_timeline_resynchronization) {
             RemoveAcknowledgedNetworkInputs(last_applied_input_id);
             PrunePredictionHistory(soldier_state_packet.server_tick);
+            PublishPresentation(soldier_id);
             return NetworkEventHandlerResult::Success;
         }
         if (is_soldier_id_me &&
@@ -123,10 +186,12 @@ private:
                                    soldier_velocity,
                                    on_ground,
                                    stance,
-                                   is_soldier_id_me);
+                                   is_soldier_id_me,
+                                   soldier_state_packet);
         if (predicted_state_accurate) {
             RemoveAcknowledgedNetworkInputs(last_applied_input_id);
             PrunePredictionHistory(soldier_state_packet.server_tick);
+            PublishPresentation(soldier_id);
             return NetworkEventHandlerResult::Success;
         }
 
@@ -167,7 +232,7 @@ private:
             world_->GetStateManager()->ChangeSoldierMouseMapPosition(
               soldier_id, { mouse_map_position_x, mouse_map_position_y });
 
-            if ((float)soldier.control.mouse_aim_x >= soldier.particle.position.x) {
+            if ((float)soldier.control.mouse_aim_x >= soldier.particle.position[0]) {
                 soldier.direction = 1;
             } else {
                 soldier.direction = -1;
@@ -179,13 +244,21 @@ private:
             soldier.jets_count = jets_count;
 
             soldier.active_weapon = active_weapon;
+            if (!restored_weapons.empty()) {
+                soldier.weapons = restored_weapons;
+                soldier.weapon_generation = soldier_state_packet.weapon_generation;
+                soldier.grenade_can_throw = soldier_state_packet.grenade_can_throw;
+                soldier.hit_spray = soldier_state_packet.hit_spray;
+                soldier.mounted_weapon = soldier_state_packet.mounted_weapon;
+                soldier.combat_bonus = soldier_state_packet.combat_bonus;
+                soldier.bonus_ticks = soldier_state_packet.bonus_ticks;
+                soldier.fired = soldier_state_packet.fired;
+                soldier.control = soldier_state_packet.control;
+            }
 
             if (soldier.body_animation->GetType() != body_animation_type) {
                 AnimationState::ExitParams body_exit_params{ false };
                 soldier.body_animation->Exit(body_exit_params);
-                if (body_exit_params.should_throw_active_weapon) {
-                    world_->GetPhysicsEvents().soldier_throws_active_weapon.Notify(soldier);
-                }
                 soldier.body_animation = world_->GetBodyAnimationState(body_animation_type);
                 AnimationState::EnterParams body_enter_params{
                     soldier.on_ground,         soldier.direction, soldier.particle.GetForce(),
@@ -201,9 +274,6 @@ private:
             if (soldier.legs_animation->GetType() != legs_animation_type) {
                 AnimationState::ExitParams legs_exit_params{ false };
                 soldier.legs_animation->Exit(legs_exit_params);
-                if (legs_exit_params.should_throw_active_weapon) {
-                    world_->GetPhysicsEvents().soldier_throws_active_weapon.Notify(soldier);
-                }
                 soldier.legs_animation = world_->GetLegsAnimationState(legs_animation_type);
                 AnimationState::EnterParams legs_enter_params{
                     soldier.on_ground,         soldier.direction, soldier.particle.GetForce(),
@@ -236,7 +306,14 @@ private:
             PrunePredictionHistory(soldier_state_packet.server_tick);
         }
 
+        PublishPresentation(soldier_id);
         return NetworkEventHandlerResult::Success;
+    }
+
+    void PublishPresentation(std::uint8_t soldier_id)
+    {
+        world_->GetWorldEvents().after_soldier_updates.Notify(
+          world_->GetSoldier(soldier_id), world_->GetStateManager()->GetGameTick());
     }
 
     bool IsPredictedStateAccurate(std::uint32_t server_tick,
@@ -244,7 +321,8 @@ private:
                                   const glm::vec2& server_velocity,
                                   bool server_on_ground,
                                   std::uint8_t server_stance,
-                                  bool is_soldier_id_me) const
+                                  bool is_soldier_id_me,
+                                  const SoldierStatePacket& packet) const
     {
         if (!is_soldier_id_me || !client_state_->network.client_side_prediction ||
             !client_state_->network.server_reconciliation) {
@@ -254,6 +332,43 @@ private:
         const auto snapshot = FindPredictedSnapshot(server_tick);
         if (snapshot == client_state_->network.soldier_snapshot_history.end()) {
             return false;
+        }
+
+        if (packet.weapon_count != 0) {
+            const auto& predicted = snapshot->soldier_snapshot;
+            const auto& control = predicted.GetControl();
+            if (control.was_changing_weapon != packet.control.was_changing_weapon ||
+                control.was_throwing_weapon != packet.control.was_throwing_weapon ||
+                control.was_throwing_grenade != packet.control.was_throwing_grenade ||
+                control.was_reloading_weapon != packet.control.was_reloading_weapon) {
+                return false;
+            }
+            const auto animation = packet.body_animation_type;
+            const bool action_animation =
+              animation == AnimationType::Throw || animation == AnimationType::ThrowWeapon ||
+              animation == AnimationType::Change || animation == AnimationType::Punch ||
+              animation == AnimationType::Melee || animation == AnimationType::Reload ||
+              animation == AnimationType::ReloadBow || animation == AnimationType::ClipOut ||
+              animation == AnimationType::ClipIn || animation == AnimationType::SlideBack;
+            if (action_animation &&
+                (predicted.GetBodyAnimationType() != animation ||
+                 predicted.GetBodyAnimationFrame() != packet.body_animation_frame ||
+                 predicted.GetBodyAnimationCount() != packet.body_animation_count)) {
+                return false;
+            }
+            if (predicted.GetWeaponGeneration() != packet.weapon_generation ||
+                predicted.GetHitSpray() != packet.hit_spray ||
+                predicted.GetMountedWeapon() != packet.mounted_weapon ||
+                predicted.GetCombatBonus() != packet.combat_bonus ||
+                predicted.GetBonusTicks() != packet.bonus_ticks ||
+                predicted.GetActiveWeapon() != packet.active_weapon ||
+                predicted.CanThrowGrenade() != packet.grenade_can_throw ||
+                predicted.GetWeapons().size() != packet.weapon_count ||
+                !std::equal(predicted.GetWeapons().begin(),
+                            predicted.GetWeapons().end(),
+                            packet.weapons.begin())) {
+                return false;
+            }
         }
 
         const float position_difference =
@@ -288,6 +403,18 @@ private:
     void ReplayPredictedInputsAfterTick(std::uint8_t soldier_id,
                                         std::uint32_t authoritative_server_tick)
     {
+        struct ReplayGuard
+        {
+            bool& flag;
+            bool previous;
+            explicit ReplayGuard(bool& replaying)
+                : flag(replaying)
+                , previous(replaying)
+            {
+                flag = true;
+            }
+            ~ReplayGuard() { flag = previous; }
+        } guard(client_state_->network.replaying_prediction);
         auto& snapshot_history = client_state_->network.soldier_snapshot_history;
         snapshot_history.remove_if([authoritative_server_tick](const auto& snapshot) {
             return IsSerialNumberNewer(snapshot.apply_server_tick, authoritative_server_tick);
@@ -336,6 +463,7 @@ private:
     static constexpr float STATE_RECONCILIATION_POSITION_EPSILON = 0.25F;
     static constexpr std::uint32_t PREDICTION_HISTORY_TICK_GRACE = 4;
 
+    std::optional<std::uint32_t> config_mismatch_tick_;
     std::shared_ptr<IWorld> world_;
     std::shared_ptr<ClientState> client_state_;
     std::array<std::optional<std::uint32_t>, Config::MAX_PLAYERS> latest_server_ticks_{};

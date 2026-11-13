@@ -1,5 +1,5 @@
 set(MAP_EDITOR_TEST_DATA_DIR "${CMAKE_CURRENT_BINARY_DIR}/map_editor_test_data")
-set(MAP_EDITOR_TEST_DATA_VERSION 2)
+set(MAP_EDITOR_TEST_DATA_VERSION 3)
 set(MAP_EDITOR_TEST_DATA_STAMP
   "${MAP_EDITOR_TEST_DATA_DIR}/assets-v${MAP_EDITOR_TEST_DATA_VERSION}.stamp")
 
@@ -17,9 +17,9 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${soldatbase_SOURCE_DIR}/shared/anims"
     "${MAP_EDITOR_TEST_DATA_DIR}/anims"
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${soldatbase_SOURCE_DIR}/shared/objects/gostek.po"
-    "${MAP_EDITOR_TEST_DATA_DIR}/objects/gostek.po"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${soldatbase_SOURCE_DIR}/shared/objects"
+    "${MAP_EDITOR_TEST_DATA_DIR}/objects"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${soldatbase_SOURCE_DIR}/play-regular.ttf"
     "${MAP_EDITOR_TEST_DATA_DIR}/play-regular.ttf"
@@ -55,6 +55,8 @@ endfunction()
 AddClientTestWithMapEditorData(MapEditorActionsTest map_editor/MapEditorActionsTest.cpp)
 AddClientTestWithMapEditorData(MapEditorToolsTest map_editor/MapEditorToolsTest.cpp)
 AddClientTestWithMapEditorData(MapEditorControllersTest map_editor/MapEditorControllersTest.cpp)
+AddClientTestWithMapEditorData(WeaponAudioTest audio/WeaponAudioTest.cpp)
+target_link_libraries(WeaponAudioTest PRIVATE shared_lib_testing_framework)
 
 if (BUILD_IMGUI_TEST_ENGINE_ENABLED)
   AddClientTestWithMapEditorData(

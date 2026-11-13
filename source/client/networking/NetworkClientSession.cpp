@@ -78,17 +78,28 @@ public:
             .input_sequence_id = input_sequence_id_,
             .client_tick = client_tick,
             .apply_server_tick = *apply_server_tick,
-            .position_x = world_.GetSoldier(soldier_id).particle.position.x,
-            .position_y = world_.GetSoldier(soldier_id).particle.position.y,
-            .mouse_map_position_x = mouse_map_position.x,
-            .mouse_map_position_y = mouse_map_position.y,
+            .position_x = world_.GetSoldier(soldier_id).particle.position[0],
+            .position_y = world_.GetSoldier(soldier_id).particle.position[1],
+            .mouse_map_position_x = mouse_map_position[0],
+            .mouse_map_position_y = mouse_map_position[1],
             .control = world_.GetSoldier(soldier_id).control
         };
+        update_soldier_state_packet.has_weapon_choice = true;
+        update_soldier_state_packet.primary_choice =
+          world_.GetSoldier(soldier_id).weapon_choices.at(0);
+        update_soldier_state_packet.secondary_choice =
+          world_.GetSoldier(soldier_id).weapon_choices.at(1);
+        if (client_state_.network.weapon_config_mismatch) {
+            update_soldier_state_packet.control = {};
+            client_state_.network.pending_inputs.clear();
+            client_state_.network.prediction_inputs.clear();
+        }
         last_sent_input_sequence_id_ = input_sequence_id_;
         last_sent_input_client_tick_ = client_tick;
         last_sent_input_apply_server_tick_ = update_soldier_state_packet.apply_server_tick;
         input_sequence_id_++;
-        if (client_state_.network.server_reconciliation) {
+        if (client_state_.network.server_reconciliation &&
+            !client_state_.network.weapon_config_mismatch) {
             client_state_.network.pending_inputs.push_back(update_soldier_state_packet);
             client_state_.network.prediction_inputs.push_back(update_soldier_state_packet);
         }
@@ -98,6 +109,10 @@ public:
 
     void StorePredictedSoldierSnapshot(std::uint8_t soldier_id)
     {
+        if (client_state_.network.weapon_config_mismatch) {
+            client_state_.network.soldier_snapshot_history.clear();
+            return;
+        }
         if (!client_state_.network.server_reconciliation ||
             !last_sent_input_sequence_id_.has_value()) {
             return;

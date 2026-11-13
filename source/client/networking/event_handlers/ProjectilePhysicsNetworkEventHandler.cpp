@@ -71,8 +71,12 @@ private:
     {
         auto state = world_->GetStateManager();
         if (packet.kind == ProjectileEventKind::WorldItemSpawnedFromProjectile) {
-            state->CreateItem(
-              { packet.position_x, packet.position_y }, packet.owner_id, packet.item_style);
+            if (packet.item_id != 255) {
+                state->RestoreItem(packet.item_id,
+                                   packet.item_style,
+                                   packet.owner_id,
+                                   { packet.position_x, packet.position_y });
+            }
         } else if (packet.item_id != 255 &&
                    (packet.kind == ProjectileEventKind::ExplosionAffectedThing ||
                     packet.kind == ProjectileEventKind::ThingHitByProjectile)) {

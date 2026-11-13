@@ -16,6 +16,8 @@ set(soldank_core_modules
     core/animations/states/BodyGetUpAnimationState.cpp
     core/animations/states/BodyProneAnimationState.cpp
     core/animations/states/BodyProneMoveAnimationState.cpp
+    core/animations/states/BodyWeaponActionAnimationState.cpp
+    core/animations/states/BodyReloadAnimationState.cpp
     core/animations/states/BodyPunchAnimationState.cpp
     core/animations/states/BodyRollAnimationState.cpp
     core/animations/states/BodyRollBackAnimationState.cpp
@@ -69,6 +71,8 @@ set(soldank_core_modules
     core/physics/bullets/BulletDamage.cpp
     core/physics/bullets/BulletImpactResolver.cpp
     core/physics/bullets/BulletPhysics.cpp
+    core/physics/weapons/WeaponPhysics.cpp
+    core/physics/weapons/StationaryWeaponPhysics.cpp
     core/physics/Constants.cpp
     core/physics/ItemPhysics.cpp
     core/physics/SoldierPhysics.cpp

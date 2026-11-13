@@ -5,6 +5,10 @@ module;
 
 #include <string>
 #include <unordered_map>
+#include <stdexcept>
+#include <cstdint>
+#include <bit>
+#include <array>
 
 export module Shared.Core.Entities.WeaponParametersFactory;
 
@@ -59,7 +63,7 @@ BulletType ConvertToBulletStyleEnum(uint8_t bullet_type_id)
         case 14:
             return BulletType::M2Bullet;
         default:
-            std::unreachable();
+            throw std::invalid_argument("Unknown weapon bullet style");
     }
 }
 } // namespace Soldank::WeaponParametersFactory
@@ -159,64 +163,64 @@ WeaponParameters LoadFromINIFile(const std::string& ini_file_path,
     if (rc < 0) {
         spdlog::critical("Error: INI File could not be loaded: {}", ini_file_path);
     };
-    return LoadFromINI(ini_config, weapon_type);
+    auto parameters = LoadFromINI(ini_config, weapon_type);
+    parameters.realistic = ini_file_path == Config::WEAPONS_REALISTIC_INI_FILE_PATH;
+    return parameters;
 }
 
-const WeaponParameters& GetParameters(WeaponType weapon_type,
-                                      bool realistic,
-                                      const IFileReader& file_reader = FileReader())
+const WeaponParameters& GetParameters(WeaponType weapon_type, bool realistic)
 {
     // clang-format off
     static std::unordered_map<WeaponType, const WeaponParameters> weapon_parameters_map{
-        { WeaponType::DesertEagles, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::DesertEagles, file_reader) },
-        { WeaponType::MP5, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::MP5, file_reader) },
-        { WeaponType::Ak74, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Ak74, file_reader) },
-        { WeaponType::SteyrAUG, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::SteyrAUG, file_reader) },
-        { WeaponType::Spas12, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Spas12, file_reader) },
-        { WeaponType::Ruger77, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Ruger77, file_reader) },
-        { WeaponType::M79, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::M79, file_reader) },
-        { WeaponType::Barrett, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Barrett, file_reader) },
-        { WeaponType::Minimi, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Minimi, file_reader) },
-        { WeaponType::Minigun, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Minigun, file_reader) },
-        { WeaponType::USSOCOM, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::USSOCOM, file_reader) },
-        { WeaponType::Knife, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Knife, file_reader) },
-        { WeaponType::Chainsaw, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Chainsaw, file_reader) },
-        { WeaponType::LAW, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::LAW, file_reader) },
-        { WeaponType::FlameBow, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::FlameBow, file_reader) },
-        { WeaponType::Bow, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Bow, file_reader) },
-        { WeaponType::Flamer, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Flamer, file_reader) },
-        { WeaponType::M2, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::M2, file_reader) },
-        { WeaponType::NoWeapon, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::NoWeapon, file_reader) },
-        { WeaponType::FragGrenade, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::FragGrenade, file_reader) },
-        { WeaponType::ClusterGrenade, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::ClusterGrenade, file_reader) },
-        { WeaponType::Cluster, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Cluster, file_reader) },
-        { WeaponType::ThrownKnife, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::ThrownKnife, file_reader) },
+        { WeaponType::DesertEagles, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::DesertEagles) },
+        { WeaponType::MP5, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::MP5) },
+        { WeaponType::Ak74, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Ak74) },
+        { WeaponType::SteyrAUG, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::SteyrAUG) },
+        { WeaponType::Spas12, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Spas12) },
+        { WeaponType::Ruger77, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Ruger77) },
+        { WeaponType::M79, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::M79) },
+        { WeaponType::Barrett, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Barrett) },
+        { WeaponType::Minimi, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Minimi) },
+        { WeaponType::Minigun, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Minigun) },
+        { WeaponType::USSOCOM, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::USSOCOM) },
+        { WeaponType::Knife, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Knife) },
+        { WeaponType::Chainsaw, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Chainsaw) },
+        { WeaponType::LAW, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::LAW) },
+        { WeaponType::FlameBow, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::FlameBow) },
+        { WeaponType::Bow, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Bow) },
+        { WeaponType::Flamer, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Flamer) },
+        { WeaponType::M2, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::M2) },
+        { WeaponType::NoWeapon, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::NoWeapon) },
+        { WeaponType::FragGrenade, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::FragGrenade) },
+        { WeaponType::ClusterGrenade, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::ClusterGrenade) },
+        { WeaponType::Cluster, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::Cluster) },
+        { WeaponType::ThrownKnife, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::ThrownKnife) },
     };
 
     static std::unordered_map<WeaponType, const WeaponParameters> weapon_parameters_realistic_map{
-        { WeaponType::DesertEagles, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::DesertEagles, file_reader) },
-        { WeaponType::MP5, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::MP5, file_reader) },
-        { WeaponType::Ak74, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Ak74, file_reader) },
-        { WeaponType::SteyrAUG, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::SteyrAUG, file_reader) },
-        { WeaponType::Spas12, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Spas12, file_reader) },
-        { WeaponType::Ruger77, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Ruger77, file_reader) },
-        { WeaponType::M79, LoadFromINIFile(Config::WEAPONS_INI_FILE_PATH, WeaponType::M79, file_reader) },
-        { WeaponType::Barrett, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Barrett, file_reader) },
-        { WeaponType::Minimi, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Minimi, file_reader) },
-        { WeaponType::Minigun, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Minigun, file_reader) },
-        { WeaponType::USSOCOM, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::USSOCOM, file_reader) },
-        { WeaponType::Knife, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Knife, file_reader) },
-        { WeaponType::Chainsaw, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Chainsaw, file_reader) },
-        { WeaponType::LAW, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::LAW, file_reader) },
-        { WeaponType::FlameBow, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::FlameBow, file_reader) },
-        { WeaponType::Bow, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Bow, file_reader) },
-        { WeaponType::Flamer, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Flamer, file_reader) },
-        { WeaponType::M2, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::M2, file_reader) },
-        { WeaponType::NoWeapon, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::NoWeapon, file_reader) },
-        { WeaponType::FragGrenade, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::FragGrenade, file_reader) },
-        { WeaponType::ClusterGrenade, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::ClusterGrenade, file_reader) },
-        { WeaponType::Cluster, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Cluster, file_reader) },
-        { WeaponType::ThrownKnife, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::ThrownKnife, file_reader) },
+        { WeaponType::DesertEagles, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::DesertEagles) },
+        { WeaponType::MP5, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::MP5) },
+        { WeaponType::Ak74, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Ak74) },
+        { WeaponType::SteyrAUG, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::SteyrAUG) },
+        { WeaponType::Spas12, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Spas12) },
+        { WeaponType::Ruger77, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Ruger77) },
+        { WeaponType::M79, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::M79) },
+        { WeaponType::Barrett, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Barrett) },
+        { WeaponType::Minimi, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Minimi) },
+        { WeaponType::Minigun, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Minigun) },
+        { WeaponType::USSOCOM, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::USSOCOM) },
+        { WeaponType::Knife, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Knife) },
+        { WeaponType::Chainsaw, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Chainsaw) },
+        { WeaponType::LAW, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::LAW) },
+        { WeaponType::FlameBow, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::FlameBow) },
+        { WeaponType::Bow, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Bow) },
+        { WeaponType::Flamer, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Flamer) },
+        { WeaponType::M2, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::M2) },
+        { WeaponType::NoWeapon, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::NoWeapon) },
+        { WeaponType::FragGrenade, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::FragGrenade) },
+        { WeaponType::ClusterGrenade, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::ClusterGrenade) },
+        { WeaponType::Cluster, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::Cluster) },
+        { WeaponType::ThrownKnife, LoadFromINIFile(Config::WEAPONS_REALISTIC_INI_FILE_PATH, WeaponType::ThrownKnife) },
     };
     // clang-format on
 
@@ -224,6 +228,51 @@ const WeaponParameters& GetParameters(WeaponType weapon_type,
         return weapon_parameters_realistic_map.at(weapon_type);
     }
     return weapon_parameters_map.at(weapon_type);
+}
+
+std::uint64_t GetConfigurationHash(bool realistic)
+{
+    const auto compute = [](bool mode) {
+        std::uint64_t hash = 14695981039346656037ULL;
+        const auto append = [&](std::uint32_t value) {
+            for (unsigned int byte = 0; byte < 4; ++byte) {
+                hash ^= (value >> (byte * 8U)) & 0xffU;
+                hash *= 1099511628211ULL;
+            }
+        };
+        for (int index = 0; index <= static_cast<int>(WeaponType::ThrownKnife); ++index) {
+            const auto& parameters = GetParameters(static_cast<WeaponType>(index), mode);
+            for (const std::uint32_t value : std::array{
+                   static_cast<std::uint32_t>(index),
+                   static_cast<std::uint32_t>(parameters.ammo),
+                   static_cast<std::uint32_t>(static_cast<std::uint16_t>(parameters.bink)),
+                   static_cast<std::uint32_t>(parameters.recoil),
+                   static_cast<std::uint32_t>(parameters.fire_interval),
+                   static_cast<std::uint32_t>(parameters.bullet_style),
+                   static_cast<std::uint32_t>(parameters.no_collision),
+                   static_cast<std::uint32_t>(parameters.start_up_time),
+                   static_cast<std::uint32_t>(parameters.reload_time),
+                   static_cast<std::uint32_t>(parameters.clip_reload),
+                   static_cast<std::uint32_t>(parameters.timeout) }) {
+                append(value);
+            }
+            for (const float value : { parameters.movement_acc,
+                                       parameters.hit_multiply,
+                                       parameters.bullet_spread,
+                                       parameters.modifier_legs,
+                                       parameters.modifier_chest,
+                                       parameters.modifier_head,
+                                       parameters.inherited_velocity,
+                                       parameters.push,
+                                       parameters.speed }) {
+                append(std::bit_cast<std::uint32_t>(value));
+            }
+        }
+        return hash == 0 ? std::uint64_t{ 1 } : hash;
+    };
+    static const auto NORMAL_HASH = compute(false);
+    static const auto REALISTIC_HASH = compute(true);
+    return realistic ? REALISTIC_HASH : NORMAL_HASH;
 }
 
 std::string GetNameForWeaponType(WeaponType weapon_type)

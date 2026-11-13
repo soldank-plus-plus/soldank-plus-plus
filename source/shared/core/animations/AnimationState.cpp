@@ -79,7 +79,7 @@ public:
 
     struct TryToShootParams
     {
-        std::vector<Weapon> weapons;
+        const std::vector<Weapon>& weapons;
         std::uint8_t active_weapon;
         bool fire;
         bool should_fire_primary_weapon;

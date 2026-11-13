@@ -17,6 +17,7 @@ import MapEditorState;
 import Shared.Networking.PingTimer;
 import Shared.Networking.NetworkPackets;
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Utility.Observable;
 
@@ -42,6 +43,8 @@ struct ClientInputState
 
 struct ClientNetworkState
 {
+    bool replaying_prediction{};
+    bool weapon_config_mismatch{};
     glm::vec2 soldier_position_server_pov;
 
     struct PredictedSoldierSnapshot
@@ -103,6 +106,7 @@ struct ClientWorldRenderOptions
 
 struct ClientState
 {
+    std::vector<ProjectilePhysicsEvent> projectile_visual_events;
     /**
      * This is nullopt when the soldier is not created yet.
      * For example when client is still in a connecting state

@@ -17,7 +17,7 @@ export namespace Soldank
 {
 struct BulletParams
 {
-    BulletType style;
+    BulletType style{ BulletType::Bullet };
     WeaponType weapon;
     glm::vec2 position;
     glm::vec2 velocity;
@@ -31,6 +31,7 @@ struct BulletParams
     std::uint32_t seed{};
     unsigned int spawn_tick{};
     bool derived{};
+    bool realistic{};
 };
 
 struct ItemCollisionCooldown
@@ -71,11 +72,12 @@ struct Bullet
         , id(params.id)
         , seed(params.seed)
         , spawn_tick(params.spawn_tick)
+        , realistic(params.realistic)
     {
     }
 
     bool active = false;
-    BulletType style{};
+    BulletType style{ BulletType::Bullet };
     WeaponType weapon{};
     TeamType team{};
     std::uint8_t owner_id{};
@@ -95,6 +97,7 @@ struct Bullet
     std::uint32_t id{};
     std::uint32_t seed{};
     unsigned int spawn_tick{};
+    bool realistic{};
     bool stuck{};
     std::optional<std::uint8_t> attached_soldier;
     std::optional<unsigned int> attached_part;

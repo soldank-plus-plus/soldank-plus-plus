@@ -28,4 +28,14 @@ enum class WeaponType
     Cluster,
     ThrownKnife,
 };
+
+bool IsPrimaryWeaponChoice(WeaponType type)
+{
+    return type >= WeaponType::DesertEagles && type <= WeaponType::Minigun;
+}
+
+bool IsSecondaryWeaponChoice(WeaponType type)
+{
+    return (type >= WeaponType::USSOCOM && type <= WeaponType::LAW) || type == WeaponType::NoWeapon;
+}
 } // namespace Soldank

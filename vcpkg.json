@@ -14,6 +14,7 @@
         "cxxopts",
         "glfw3",
         "stb",
+        "miniaudio",
         "freetype",
         {
             "name": "imgui",

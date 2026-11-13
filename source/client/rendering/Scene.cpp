@@ -29,6 +29,7 @@ import TextRenderer;
 import GameHudRenderer;
 import RectangleRenderer;
 import BulletRenderer;
+import WeaponVisualEffects;
 import LineRenderer;
 import CircleRenderer;
 import MapEditorScene;
@@ -96,6 +97,7 @@ private:
     GameHudRenderer game_hud_renderer_;
     RectangleRenderer rectangle_renderer_;
     BulletRenderer bullet_renderer_;
+    WeaponVisualEffects weapon_effects_;
     LineRenderer line_renderer_;
     CircleRenderer circle_renderer_;
     ItemRenderer item_renderer_;
@@ -197,11 +199,17 @@ void Scene::RenderWorld(const StateManager& game_state_manager,
     game_state_manager.ForEachBullet([&](const auto& bullet) {
         bullet_renderer_.Render(camera.GetView(), bullet, frame_percent);
     });
+    weapon_effects_.Update(game_state_manager, client_state.projectile_visual_events);
+    client_state.projectile_visual_events.clear();
     RenderSoldiers(game_state_manager, client_state, frame_percent);
     game_state_manager.ForEachItem([&](const auto& item) {
         item_renderer_.Render(
           camera.GetView(), item, frame_percent, game_state_manager.GetGameTick());
     });
+    // GameRendering.pas draws sparks after soldiers and items, before foreground scenery.
+    for (const auto& effect : weapon_effects_.GetEffects()) {
+        bullet_renderer_.RenderEffect(camera.GetView(), effect, static_cast<float>(frame_percent));
+    }
     if (client_state.world_render_options.draw_sceneries) {
         sceneries_renderer_.Render(
           camera.GetView(), 1, game_state_manager.GetConstMap().GetSceneryInstances());

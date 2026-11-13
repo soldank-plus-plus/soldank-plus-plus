@@ -3,6 +3,8 @@ module;
 #include <cstdint>
 #include <memory>
 #include <span>
+#include <array>
+#include <algorithm>
 
 export module Replication.ReplicationService;
 
@@ -10,6 +12,7 @@ import Runtime.ServerRuntimeServices;
 import Sessions.PlayerSessionManager;
 
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.State.StateManager;
 import Shared.Core.Simulation.SimulationEventSink;
 import Shared.Core.Simulation.SimulationEvents;
@@ -66,8 +69,61 @@ public:
                 .active_weapon = soldier.active_weapon,
                 .last_applied_input_id = player_session_manager_.GetLastAppliedInputId(soldier.id),
             };
+            packet.weapon_count = static_cast<std::uint8_t>(soldier.weapons.size());
+            packet.weapon_generation = soldier.weapon_generation;
+            packet.weapon_config_hash =
+              WeaponParametersFactory::GetConfigurationHash(state_manager.IsRealistic());
+            for (std::size_t slot = 0; slot < packet.weapons.size(); ++slot) {
+                packet.weapons.at(slot) = soldier.weapons.at(slot).GetState();
+            }
+            packet.grenade_can_throw = soldier.grenade_can_throw;
+            packet.hit_spray = soldier.hit_spray;
+            packet.mounted_weapon = soldier.mounted_weapon;
+            packet.combat_bonus = soldier.combat_bonus;
+            packet.bonus_ticks = soldier.bonus_ticks;
+            packet.fired = soldier.fired;
+            packet.control = soldier.control;
+            packet.health = soldier.health;
+            packet.vest = soldier.vest;
+            packet.dead_meat = soldier.dead_meat;
+            packet.ticks_to_respawn = soldier.ticks_to_respawn;
             network_host_.SendNetworkMessageToAll({ NetworkEvent::SoldierState, packet });
         });
+        std::array<ItemStatePacket, 128> items{};
+        for (std::size_t id = 0; id < items.size(); ++id) {
+            items.at(id).id = static_cast<std::uint8_t>(id);
+            items.at(id).server_tick = state_manager.GetGameTick();
+        }
+        state_manager.ForEachItem([&](const auto& item) {
+            auto& packet = items.at(item.id);
+            packet.active = item.active;
+            packet.style = item.style;
+            packet.owner = item.owner;
+            packet.ammo = item.ammo_count;
+            packet.radius = item.radius;
+            packet.timeout = item.time_out;
+            packet.is_static = item.static_type;
+            packet.heat = item.interest;
+            packet.mounted_soldier = item.mounted_soldier;
+            packet.particle_count = static_cast<std::uint8_t>(
+              std::min<std::size_t>(4, item.skeleton->GetParticles().size()));
+            for (unsigned int i = 0; i < packet.particle_count; ++i) {
+                const auto pos = item.skeleton->GetPos(i + 1);
+                const auto old = item.skeleton->GetOldPos(i + 1);
+                packet.particles.at(i) = { pos.x, pos.y, old.x, old.y };
+            }
+        });
+        for (std::size_t id = 0; id < items.size(); ++id) {
+            auto& previous = last_items_.at(id);
+            if (!items.at(id).active && !previous.active) {
+                continue;
+            }
+            previous.server_tick = items.at(id).server_tick;
+            if (items.at(id) != previous || state_manager.GetGameTick() % 60U == 0) {
+                network_host_.SendNetworkMessageToAll({ NetworkEvent::ItemState, items.at(id) });
+                previous = items.at(id);
+            }
+        }
     }
 
     void OnSimulationEvents(std::span<const SimulationEvent> events) override
@@ -89,6 +145,7 @@ public:
     }
 
 private:
+    std::array<ItemStatePacket, 128> last_items_{};
     IServerNetworkHost& network_host_;
     const PlayerSessionManager& player_session_manager_;
 };

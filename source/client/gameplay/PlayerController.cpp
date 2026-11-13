@@ -5,6 +5,8 @@ module;
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include <algorithm>
+#include <array>
 
 export module Gameplay.PlayerController;
 
@@ -17,6 +19,11 @@ import Application.Window;
 import ClientState;
 
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Utility.SerialNumber;
+import Gameplay.WeaponRecoil;
+import Shared.Core.Types.WeaponType;
+import Shared.Core.Animations;
 import Shared.Core.IWorld;
 import Shared.Core.State.Control;
 import Shared.Core.State.StateManager;
@@ -39,6 +46,7 @@ public:
 
     void Update(std::uint8_t soldier_id)
     {
+        UpdateRecoil(world_.GetSoldier(soldier_id));
         const PlatformInput& input = window_.GetPlatformInput();
         glm::vec2 mouse_position = { input.GetX(), input.GetY() };
         client_state_->input.mouse_screen_position = mouse_position;
@@ -68,6 +76,44 @@ public:
     }
 
 private:
+    void UpdateRecoil(const Soldier& soldier)
+    {
+        if (!soldier.IsAlive()) {
+            recoil_initialized_ = false;
+            return;
+        }
+        const auto slot = soldier.active_weapon;
+        const auto current = soldier.GetActiveWeapon().GetState();
+        auto& previous = recoil_weapons_.at(slot);
+        if (recoil_initialized_ && previous.kind == current.kind &&
+            previous.instance_id == current.instance_id &&
+            previous.realistic == current.realistic &&
+            IsSerialNumberNewer(current.shot_sequence, previous.shot_sequence)) {
+            const auto& input = window_.GetPlatformInput();
+            const glm::vec2 scale(
+              client_state_->input.window_width / client_state_->camera.view.GetWidth(),
+              client_state_->input.window_height / client_state_->camera.view.GetHeight());
+            const glm::vec2 player =
+              (glm::vec2(client_state_->camera.view.GetWidth(),
+                         client_state_->camera.view.GetHeight()) /
+                 2.0F +
+               glm::vec2(soldier.particle.position.x - client_state_->camera.position.x,
+                         soldier.particle.position.y + client_state_->camera.position.y)) *
+              scale;
+            const glm::vec2 cursor(input.GetX(), client_state_->input.window_height - input.GetY());
+            const auto result = ApplyWeaponRecoil(soldier, player, cursor);
+            window_.SetCursorScreenPosition(
+              { result.x, client_state_->input.window_height - result.y });
+        }
+        if (!recoil_initialized_ || previous.kind != current.kind ||
+            previous.instance_id != current.instance_id ||
+            previous.realistic != current.realistic ||
+            !IsSerialNumberOlder(current.shot_sequence, previous.shot_sequence)) {
+            previous = current;
+        }
+        recoil_initialized_ = true;
+    }
+
     void UpdateControlActions(std::uint8_t soldier_id, const PlatformInput& input)
     {
         const std::shared_ptr<StateManager>& state_manager = world_.GetStateManager();
@@ -110,12 +156,27 @@ private:
         float width = client_state_->camera.view.GetWidth();
         float height = client_state_->camera.view.GetHeight();
 
+        const auto& soldier = world_.GetSoldier(soldier_id);
+        const auto& weapon = soldier.GetActiveWeapon();
+        const auto body = soldier.body_animation->GetType();
+        const bool scope_ready = weapon.GetWeaponParameters().kind == WeaponType::Barrett &&
+                                 weapon.GetFireIntervalCount() == 0 && !weapon.IsReloading() &&
+                                 (body == AnimationType::Prone || body == AnimationType::Aim);
+        const auto aim_delta =
+          glm::abs(glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y) -
+                   soldier.particle.position);
+        if (scope_ready && (aim_delta.x >= 640.0F / 1.035F || aim_delta.y >= 480.0F / 1.035F)) {
+            aim_distance_ =
+              std::max(body == AnimationType::Prone ? 3.5F : 4.5F, aim_distance_ - 0.05F);
+        } else {
+            aim_distance_ = 7.0F;
+        }
         if (client_state_->camera.smooth) {
             glm::vec2 mouse_offset;
             mouse_offset.x =
-              (mouse_position.x - width / 2.0F) / 7.0F *
+              (mouse_position.x - width / 2.0F) / aim_distance_ *
               ((2.0F * 640.0F / width - 1.0F) + (width - 640.0F) / width * 0.0F / 6.8F);
-            mouse_offset.y = (mouse_position.y - height / 2.0F) / 7.0F;
+            mouse_offset.y = (mouse_position.y - height / 2.0F) / aim_distance_;
 
             glm::vec2 camera_position = client_state_->camera.position;
             const glm::vec2& soldier_position = world_.GetSoldier(soldier_id).particle.position;
@@ -131,6 +192,9 @@ private:
         }
     }
 
+    bool recoil_initialized_{};
+    std::array<WeaponState, 2> recoil_weapons_{};
+    float aim_distance_{ 7.0F };
     IWorld& world_;
     Window& window_;
     std::shared_ptr<ClientState> client_state_;

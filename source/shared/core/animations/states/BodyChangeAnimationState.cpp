@@ -29,7 +29,7 @@ public:
 
     void Update(UpdateParams& params) final
     {
-        if (GetFrame() == 25) {
+        if (GetFrame() == 25 && GetCount() == 0) {
             params.should_switch_weapon = true;
         }
     }

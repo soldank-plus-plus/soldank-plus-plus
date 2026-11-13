@@ -5,6 +5,7 @@ module;
 #include <cmath>
 #include <memory>
 #include <stdexcept>
+#include <algorithm>
 
 export module Shared.Core.Physics.SoldierPhysics;
 
@@ -13,6 +14,7 @@ import Extern.Glm;
 import Shared.Core.Animations;
 import Shared.Core.Animations.States;
 import Shared.Core.Entities.Weapon;
+import Shared.Core.Physics.Weapons.WeaponPhysics;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Math.Calc;
@@ -68,18 +70,6 @@ const Weapon& GetTertiaryWeapon(Soldier& soldier)
     return soldier.weapons[2];
 }
 
-void SwitchWeapon(Soldier& soldier)
-{
-    int new_active_weapon = (soldier.active_weapon + 1) % 2;
-    soldier.active_weapon = new_active_weapon;
-    // weapons[new_active_weapon].start_up_time_count =
-    //   weapons[new_active_weapon].GetWeaponParameters().start_up_time;
-    soldier.weapons[new_active_weapon].ResetStartUpTimeCount();
-    // weapons[new_active_weapon].reload_time_prev = weapons[new_active_weapon].reload_time_count;
-    soldier.weapons[new_active_weapon].SetReloadTimePrev(
-      soldier.weapons[new_active_weapon].GetReloadTimeCount());
-}
-
 void UpdateKeys(Soldier& soldier, const Control& control)
 {
     soldier.control = control;
@@ -98,6 +88,23 @@ std::shared_ptr<AnimationState> CreateBodyAnimationState(
   const AnimationDataManager& animation_data_manager)
 {
     switch (animation_type) {
+        case AnimationType::Melee:
+        case AnimationType::Recoil:
+        case AnimationType::SmallRecoil:
+        case AnimationType::Shotgun:
+        case AnimationType::Barret:
+        case AnimationType::AimRecoil:
+        case AnimationType::HandsUpRecoil:
+        case AnimationType::HandsUpAim:
+            return std::make_shared<BodyWeaponActionAnimationState>(animation_data_manager,
+                                                                    animation_type);
+        case AnimationType::Reload:
+        case AnimationType::ReloadBow:
+        case AnimationType::ClipOut:
+        case AnimationType::ClipIn:
+        case AnimationType::SlideBack:
+            return std::make_shared<BodyReloadAnimationState>(animation_data_manager,
+                                                              animation_type);
         case AnimationType::Stand:
             return std::make_shared<BodyStandAnimationState>(animation_data_manager);
         case AnimationType::Throw:
@@ -171,6 +178,192 @@ void ApplyTransitionInitialFrame(AnimationState& animation_state,
     }
 }
 
+AnimationType ReloadAnimation(const Weapon& weapon)
+{
+    if (weapon.GetWeaponParameters().kind == WeaponType::Spas12) {
+        return AnimationType::Reload;
+    }
+    if (weapon.IsAny({ WeaponType::Bow, WeaponType::FlameBow })) {
+        return AnimationType::ReloadBow;
+    }
+    if (!weapon.GetWeaponParameters().clip_reload ||
+        weapon.GetReloadTimeCount() > weapon.GetClipOutTime()) {
+        return AnimationType::ClipOut;
+    }
+    return weapon.GetReloadTimeCount() > weapon.GetClipInTime() ? AnimationType::ClipIn
+                                                                : AnimationType::SlideBack;
+}
+
+void UpdateReloadAnimation(Soldier& soldier, const AnimationDataManager& manager)
+{
+    const auto& weapon = soldier.GetActiveWeapon();
+    const bool can_show_reload = soldier.body_animation->IsAny({ AnimationType::Stand,
+                                                                 AnimationType::Aim,
+                                                                 AnimationType::Prone,
+                                                                 AnimationType::ProneMove,
+                                                                 AnimationType::Reload,
+                                                                 AnimationType::ReloadBow,
+                                                                 AnimationType::ClipOut,
+                                                                 AnimationType::ClipIn,
+                                                                 AnimationType::SlideBack,
+                                                                 AnimationType::SmallRecoil,
+                                                                 AnimationType::AimRecoil,
+                                                                 AnimationType::Shotgun });
+    if (!weapon.IsReloading() || !can_show_reload) {
+        return;
+    }
+    const auto type = ReloadAnimation(weapon);
+    if (soldier.body_animation->GetType() != type) {
+        soldier.body_animation = CreateBodyAnimationState(type, manager);
+    }
+}
+
+void ApplyFiringAnimation(Soldier& soldier, const AnimationDataManager& manager)
+{
+    if (soldier.stance == PhysicsConstants::STANCE_PRONE ||
+        soldier.body_animation->IsAny({ AnimationType::Throw,
+                                        AnimationType::ThrowWeapon,
+                                        AnimationType::Change,
+                                        AnimationType::GetUp,
+                                        AnimationType::Melee }) ||
+        soldier.GetActiveWeapon().IsAny(
+          { WeaponType::Knife, WeaponType::NoWeapon, WeaponType::Chainsaw, WeaponType::Flamer })) {
+        return;
+    }
+    auto recoil = AnimationType::SmallRecoil;
+    if (soldier.GetActiveWeapon().GetWeaponParameters().kind == WeaponType::Spas12) {
+        recoil = AnimationType::Shotgun;
+    } else if (soldier.stance == PhysicsConstants::STANCE_CROUCH) {
+        recoil = AnimationType::AimRecoil;
+    }
+    soldier.body_animation = CreateBodyAnimationState(recoil, manager);
+}
+
+void AdvanceWeapons(StateManager& state_manager,
+                    Soldier& soldier,
+                    const PhysicsEvents& physics_events,
+                    const AnimationDataManager& animation_data_manager)
+{
+    if (!soldier.IsAlive()) {
+        return;
+    }
+    const auto notify_weapon_action = [&](WeaponActionKind kind, const WeaponState& state) {
+        const WeaponActionEvent event{
+            kind,
+            soldier.id,
+            state_manager.GetGameTick(),
+            state,
+            static_cast<std::uint8_t>(
+              kind == WeaponActionKind::GrenadeThrown ? 2 : soldier.active_weapon)
+        };
+        physics_events.weapon_action_event.Notify(event);
+    };
+    if (state_manager.HasAuthoritativeProjectiles() && state_manager.GetGameTick() % 3U == 0 &&
+        soldier.GetActiveWeapon().IsAny({ WeaponType::Bow, WeaponType::FlameBow }) &&
+        soldier.health < 150.0F) {
+        soldier.health = std::min(150.0F, soldier.health + 1.0F);
+    }
+    const auto before = soldier.GetActiveWeapon().GetState();
+    WeaponPhysics::Advance(soldier);
+    const auto after = soldier.GetActiveWeapon().GetState();
+    if (before.reloading != after.reloading) {
+        notify_weapon_action(after.reloading ? WeaponActionKind::ReloadStarted
+                                             : WeaponActionKind::ReloadCompleted,
+                             after);
+    }
+    auto& weapon = soldier.GetActiveWeapon();
+    const auto body_type = soldier.body_animation->GetType();
+    if (weapon.IsReloading() && body_type == AnimationType::Reload &&
+        soldier.body_animation->GetFrame() == 14 && soldier.body_animation->GetCount() == 0) {
+        weapon.InsertShell();
+        notify_weapon_action(WeaponActionKind::ShellInserted, weapon.GetState());
+    }
+    UpdateReloadAnimation(soldier, animation_data_manager);
+    std::vector<BulletParams> grenades;
+    if (WeaponPhysics::ThrowGrenade(soldier, state_manager.GetConstMap(), grenades)) {
+        notify_weapon_action(WeaponActionKind::GrenadeThrown, soldier.weapons[2].GetState());
+    }
+    if (state_manager.HasAuthoritativeProjectiles()) {
+        for (const auto& grenade : grenades) {
+            state_manager.EnqueueNewProjectile(grenade);
+        }
+    }
+}
+
+void TryButtstock(StateManager& state_manager,
+                  Soldier& soldier,
+                  const AnimationDataManager& animation_data_manager)
+{
+    if (soldier.IsAlive() && soldier.control.fire && soldier.CanReceiveCombatImpact() &&
+        soldier.mounted_weapon < 0 && soldier.stance == PhysicsConstants::STANCE_STAND &&
+        soldier.body_animation->GetType() != AnimationType::Melee &&
+        !soldier.GetActiveWeapon().IsAny(
+          { WeaponType::NoWeapon, WeaponType::Knife, WeaponType::Chainsaw })) {
+        const auto* target = state_manager.FindSoldier([&](const Soldier& candidate) {
+            return candidate.id != soldier.id && candidate.IsAlive() && !candidate.IsSpectator() &&
+                   candidate.stance == PhysicsConstants::STANCE_STAND &&
+                   glm::distance(candidate.particle.position, soldier.particle.position) < 12.0F;
+        });
+        if (target != nullptr) {
+            soldier.body_animation =
+              CreateBodyAnimationState(AnimationType::Melee, animation_data_manager);
+        }
+    }
+}
+
+void TryFireWeapon(StateManager& state_manager,
+                   Soldier& soldier,
+                   const PhysicsEvents& physics_events,
+                   const AnimationDataManager& animation_data_manager)
+{
+    const auto& map = state_manager.GetConstMap();
+    const auto notify_weapon_action = [&](WeaponActionKind kind, const WeaponState& state) {
+        const WeaponActionEvent event{
+            kind,
+            soldier.id,
+            state_manager.GetGameTick(),
+            state,
+            static_cast<std::uint8_t>(
+              kind == WeaponActionKind::GrenadeThrown ? 2 : soldier.active_weapon)
+        };
+        physics_events.weapon_action_event.Notify(event);
+    };
+    AnimationState::TryToShootParams try_to_shoot_params{
+        soldier.weapons,
+        soldier.active_weapon,
+        soldier.control.fire || soldier.body_animation->GetType() == AnimationType::Punch ||
+          soldier.body_animation->GetType() == AnimationType::Melee,
+        false
+    };
+    soldier.body_animation->TryToShoot(try_to_shoot_params);
+    if (try_to_shoot_params.should_fire_primary_weapon) {
+        std::vector<BulletParams> shots;
+        const auto before_shot = soldier.GetActiveWeapon().GetState();
+        const bool accepted = WeaponPhysics::Fire(soldier, shots);
+        const auto after_shot = soldier.GetActiveWeapon().GetState();
+        if (after_shot.startup < before_shot.startup &&
+            before_shot.startup == soldier.GetActiveWeapon().GetWeaponParameters().start_up_time) {
+            notify_weapon_action(WeaponActionKind::StartupStarted, after_shot);
+        }
+        if (accepted) {
+            notify_weapon_action(WeaponActionKind::Fired, after_shot);
+            if (state_manager.HasAuthoritativeProjectiles()) {
+                for (auto& params : shots) {
+                    glm::vec2 perpendicular{};
+                    if (map.CollisionTest(params.position, perpendicular)) {
+                        params.position.y += 2.5F;
+                    }
+                    state_manager.EnqueueNewProjectile(params);
+                }
+            }
+            ApplyFiringAnimation(soldier, animation_data_manager);
+            physics_events.soldier_fires_primary_weapon.Notify(soldier);
+        }
+    } else {
+        soldier.GetActiveWeapon().ResetStartUpTimeCount();
+    }
+}
+
 void Update(StateManager& state_manager,
             Soldier& soldier,
             const PhysicsEvents& physics_events,
@@ -178,6 +371,24 @@ void Update(StateManager& state_manager,
             std::vector<BulletParams>& bullet_emitter,
             float gravity)
 {
+    if (soldier.combat_bonus == CombatBonus::FlameGod) {
+        soldier.control.change = false;
+        soldier.control.drop = false;
+    }
+    if (soldier.GetActiveWeapon().IsAny({ WeaponType::Bow, WeaponType::FlameBow })) {
+        soldier.control.drop = false;
+    }
+    const auto notify_weapon_action = [&](WeaponActionKind kind, const WeaponState& state) {
+        const WeaponActionEvent event{
+            kind,
+            soldier.id,
+            state_manager.GetGameTick(),
+            state,
+            static_cast<std::uint8_t>(
+              kind == WeaponActionKind::GrenadeThrown ? 2 : soldier.active_weapon)
+        };
+        physics_events.weapon_action_event.Notify(event);
+    };
     const Map& map = state_manager.GetConstMap();
     float body_y = 0.0F;
     float arm_s = 0.0F;
@@ -258,6 +469,11 @@ void Update(StateManager& state_manager,
         AnimationState::ExitParams exit_params{ false };
         soldier.legs_animation->Exit(exit_params);
         if (exit_params.should_throw_active_weapon) {
+            const auto dropped = soldier.GetActiveWeapon().GetState();
+            WeaponPhysics::ThrowWeapon(state_manager, soldier);
+            if (soldier.GetActiveWeapon().GetState().kind != dropped.kind) {
+                notify_weapon_action(WeaponActionKind::Dropped, dropped);
+            }
             physics_events.soldier_throws_active_weapon.Notify(soldier);
         }
         soldier.legs_animation = CreateLegsAnimationState(
@@ -272,13 +488,9 @@ void Update(StateManager& state_manager,
         soldier.grenade_can_throw = enter_params.grenade_can_throw;
     }
 
-    AnimationState::TryToShootParams try_to_shoot_params{
-        soldier.weapons, soldier.active_weapon, soldier.control.fire, false
-    };
-    soldier.body_animation->TryToShoot(try_to_shoot_params);
-    if (try_to_shoot_params.should_fire_primary_weapon) {
-        physics_events.soldier_fires_primary_weapon.Notify(soldier);
-    }
+    AdvanceWeapons(state_manager, soldier, physics_events, animation_data_manager);
+    TryButtstock(state_manager, soldier, animation_data_manager);
+    TryFireWeapon(state_manager, soldier, physics_events, animation_data_manager);
 
     AnimationState::TryToThrowFlagsParams try_to_throw_flags_params{ soldier.control.flag_throw,
                                                                      soldier.is_holding_flags,
@@ -303,6 +515,11 @@ void Update(StateManager& state_manager,
         AnimationState::ExitParams exit_params{ false };
         soldier.body_animation->Exit(exit_params);
         if (exit_params.should_throw_active_weapon) {
+            const auto dropped = soldier.GetActiveWeapon().GetState();
+            WeaponPhysics::ThrowWeapon(state_manager, soldier);
+            if (soldier.GetActiveWeapon().GetState().kind != dropped.kind) {
+                notify_weapon_action(WeaponActionKind::Dropped, dropped);
+            }
             physics_events.soldier_throws_active_weapon.Notify(soldier);
         }
         soldier.body_animation = CreateBodyAnimationState(
@@ -328,7 +545,9 @@ void Update(StateManager& state_manager,
     soldier.stance = legs_update_params.stance;
     soldier.particle.SetVelocity(legs_update_params.velocity);
     soldier.particle.SetForce(legs_update_params.force);
-    if (legs_update_params.should_switch_weapon) {
+    if (legs_update_params.should_switch_weapon && soldier.combat_bonus != CombatBonus::FlameGod) {
+        state_manager.SwitchSoldierWeapon(soldier.id);
+        notify_weapon_action(WeaponActionKind::Switched, soldier.GetActiveWeapon().GetState());
         physics_events.soldier_switches_weapon.Notify(soldier);
     }
 
@@ -343,7 +562,9 @@ void Update(StateManager& state_manager,
     soldier.stance = body_update_params.stance;
     soldier.particle.SetVelocity(body_update_params.velocity);
     soldier.particle.SetForce(body_update_params.force);
-    if (body_update_params.should_switch_weapon) {
+    if (body_update_params.should_switch_weapon && soldier.combat_bonus != CombatBonus::FlameGod) {
+        state_manager.SwitchSoldierWeapon(soldier.id);
+        notify_weapon_action(WeaponActionKind::Switched, soldier.GetActiveWeapon().GetState());
         physics_events.soldier_switches_weapon.Notify(soldier);
     }
 
@@ -869,91 +1090,11 @@ bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i,
 
 bool CanFireLaw(const Soldier& soldier)
 {
-    const auto animation = soldier.legs_animation->GetType();
-    const auto frame = soldier.legs_animation->GetFrame();
-    return (soldier.on_ground || soldier.on_ground_permanent || soldier.on_ground_for_law) &&
-           ((animation == AnimationType::Crouch && frame > 13) ||
-            animation == AnimationType::CrouchRun || animation == AnimationType::CrouchRunBack ||
-            (animation == AnimationType::Prone && frame > 23));
+    return WeaponPhysics::CanFireLaw(soldier);
 }
 
 void Fire(Soldier& soldier, std::vector<BulletParams>& bullet_emitter)
 {
-    auto weapon = GetPrimaryWeapon(soldier);
-
-    glm::vec2 dir;
-    if (weapon.GetWeaponParameters().bullet_style == BulletType::Blade ||
-        soldier.body_animation->GetType() == AnimationType::Mercy ||
-        soldier.body_animation->GetType() == AnimationType::Mercy2) {
-        dir = Calc::Vec2Normalize(soldier.skeleton->GetPos(15) - soldier.skeleton->GetPos(16));
-    } else {
-        auto aim_x = (float)soldier.control.mouse_aim_x;
-        auto aim_y = (float)soldier.control.mouse_aim_y;
-        dir = Calc::Vec2Normalize(glm::vec2(aim_x, aim_y) - soldier.skeleton->GetPos(15));
-    };
-
-    auto pos = soldier.skeleton->GetPos(15) + dir * 4.0F - glm::vec2(0.0, 2.0);
-    auto bullet_velocity = dir * weapon.GetWeaponParameters().speed;
-    auto inherited_velocity =
-      soldier.particle.velocity_ * weapon.GetWeaponParameters().inherited_velocity;
-
-    BulletParams params{
-        weapon.GetWeaponParameters().bullet_style,
-        weapon.GetWeaponParameters().kind,
-        pos,
-        bullet_velocity + inherited_velocity,
-        (std::int16_t)weapon.GetWeaponParameters().timeout,
-        weapon.GetWeaponParameters().hit_multiply,
-        soldier.GetTeam(),
-        soldier.id,
-        weapon.GetWeaponParameters().push,
-        soldier.GetPingTicks(),
-    };
-
-    switch (weapon.GetWeaponParameters().kind) {
-        case WeaponType::DesertEagles: {
-            if (!soldier.is_shooting) {
-                bullet_emitter.push_back(params);
-
-                auto signx = dir.x > 0.0F ? 1.0F : (dir.x < 0.0F ? -1.0F : 0.0F);
-                auto signy = dir.x > 0.0F ? 1.0F : (dir.x < 0.0F ? -1.0F : 0.0F);
-
-                params.position += glm::vec2(-signx * dir.y, signy * dir.x) * 3.0F;
-                bullet_emitter.push_back(params);
-            }
-            break;
-        }
-        case WeaponType::Spas12:
-            for (int pellet = -2; pellet <= 2; ++pellet) {
-                auto pellet_params = params;
-                const float spread =
-                  static_cast<float>(pellet) * weapon.GetWeaponParameters().bullet_spread;
-                const float cosine = std::cos(spread);
-                const float sine = std::sin(spread);
-                pellet_params.velocity =
-                  glm::vec2{ bullet_velocity.x * cosine - bullet_velocity.y * sine,
-                             bullet_velocity.x * sine + bullet_velocity.y * cosine } +
-                  inherited_velocity;
-                bullet_emitter.push_back(pellet_params);
-            }
-            break;
-        case WeaponType::Flamer:
-        case WeaponType::NoWeapon:
-        case WeaponType::Knife:
-        case WeaponType::Chainsaw:
-            bullet_emitter.push_back(params);
-            break;
-        case WeaponType::LAW: {
-            if (CanFireLaw(soldier)) {
-                bullet_emitter.push_back(params);
-            }
-            break;
-        }
-        default: {
-            bullet_emitter.push_back(params);
-        }
-    };
-
-    soldier.is_shooting = true;
+    WeaponPhysics::Fire(soldier, bullet_emitter);
 }
 } // namespace Soldank::SoldierPhysics

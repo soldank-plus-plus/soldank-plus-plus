@@ -15,6 +15,7 @@ import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkPackets;
 import Shared.Networking.ProtocolConversions;
 import Shared.Core.Simulation.SimulationCommands;
+import Shared.Core.Types.WeaponType;
 
 import Extern.Spdlog;
 
@@ -39,6 +40,11 @@ private:
       unsigned int sender_connection_id,
       SoldierInputPacket soldier_input_packet) override
     {
+        if (soldier_input_packet.has_weapon_choice &&
+            (!IsPrimaryWeaponChoice(soldier_input_packet.primary_choice) ||
+             !IsSecondaryWeaponChoice(soldier_input_packet.secondary_choice))) {
+            return NetworkEventHandlerResult::Failure;
+        }
         unsigned int input_sequence_id = soldier_input_packet.input_sequence_id;
         unsigned int soldier_id = game_server_->GetSoldierIdFromConnectionId(sender_connection_id);
         PlayerInputCommand player_input_command = ProtocolConversions::ToPlayerInputCommand(

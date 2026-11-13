@@ -1,6 +1,7 @@
 module;
 
 #include <limits>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <cstdint>
@@ -47,6 +48,9 @@ public:
             config.fps_limit = static_cast<int>(fps_limit);
         }
 
+        config.realistic = ini_config.GetBoolValue("GAME", "Realistic_Mode", false);
+        config.max_grenades = static_cast<std::uint8_t>(
+          std::clamp<long>(ini_config.GetLongValue("GAME", "Max_Grenades", 5), 0, 255));
         return config;
     }
 };

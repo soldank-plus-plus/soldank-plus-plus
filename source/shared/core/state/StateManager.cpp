@@ -15,6 +15,7 @@ export module Shared.Core.State.StateManager;
 import Extern.Glm;
 
 import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.WeaponParameters;
 import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Physics.Bullets.BulletEvents;
@@ -32,12 +33,15 @@ import Shared.Core.State.State;
 import Shared.Core.Types.ItemType;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Animations;
+import Shared.Core.Utility.Observable;
 
 export namespace Soldank
 {
 class StateManager
 {
 public:
+    Observable<bool> game_pause_changed;
+    Observable<std::uint8_t> soldier_removed;
     using SoldierStates = std::array<Soldier, MAX_SOLDIERS_COUNT>;
 
     StateManager(
@@ -52,6 +56,8 @@ public:
     {
         state_.map.ReplaceContents(map_document.GetMap());
     }
+    void SpawnWeaponMapItems();
+    void UpdateWeaponMapItems();
     void CreateEmptyMapDocument()
     {
         MapDocument map_document;
@@ -63,6 +69,7 @@ public:
         MapDocument map_document;
         map_document.LoadMap(map_path);
         ApplyMapDocument(map_document);
+        SpawnWeaponMapItems();
     }
     RuntimeMap BuildRuntimeMapFromDocument() const
     {
@@ -154,6 +161,18 @@ public:
     void ClearProjectileEvents() { projectile_events_.clear(); }
     void SetFriendlyFire(bool enabled) { friendly_fire_ = enabled; }
     bool IsFriendlyFireEnabled() const { return friendly_fire_; }
+    void SetMaxGrenades(std::uint8_t count) { max_grenades_ = count; }
+    bool IsRealistic() const { return realistic_; }
+    void SetRealistic(bool enabled)
+    {
+        realistic_ = enabled;
+        for (auto& soldier : state_.soldiers) {
+            for (std::size_t slot = 0; slot < soldier.weapons.size(); ++slot) {
+                const auto kind = soldier.weapons.at(slot).GetWeaponParameters().kind;
+                EquipWeapon(soldier, slot, WeaponParametersFactory::GetParameters(kind, enabled));
+            }
+        }
+    }
     void SetAuthoritativeProjectiles(bool enabled) { authoritative_projectiles_ = enabled; }
     bool HasAuthoritativeProjectiles() const { return authoritative_projectiles_; }
 
@@ -167,7 +186,17 @@ public:
     Item& CreateItem(glm::vec2 position,
                      std::uint8_t owner_id,
                      ItemType style,
-                     std::shared_ptr<ParticleSystem> skeleton = nullptr);
+                     std::shared_ptr<ParticleSystem> skeleton = nullptr,
+                     std::optional<std::uint8_t> force_id = std::nullopt);
+    Item& RestoreItem(std::uint8_t id, ItemType style, std::uint8_t owner, glm::vec2 position)
+    {
+        auto& item = state_.items.at(id);
+        if (!item.active || item.style != style) {
+            return CreateItem(position, owner, style, nullptr, id);
+        }
+        return item;
+    }
+    void RemoveItem(std::uint8_t id) { state_.items.at(id).active = false; }
     void SetItemPosition(unsigned int id, glm::vec2 new_position);
     void MoveItemIntoDirection(unsigned int id, glm::vec2 direction);
     void TransformItems(const std::function<void(Item& item)>& transform_item_function);
@@ -184,20 +213,47 @@ public:
     void SetGameTick(unsigned int new_game_tick) { state_.game_tick = new_game_tick; }
 
     bool IsGamePaused() const { return state_.paused; }
-    void PauseGame() { state_.paused = true; }
-    void UnPauseGame() { state_.paused = false; }
-    void TogglePauseGame() { state_.paused = !state_.paused; }
+    void PauseGame() { SetGamePaused(true); }
+    void UnPauseGame() { SetGamePaused(false); }
+    void TogglePauseGame() { SetGamePaused(!state_.paused); }
 
 private:
+    void SetGamePaused(bool paused)
+    {
+        if (state_.paused != paused) {
+            state_.paused = paused;
+            game_pause_changed.Notify(paused);
+        }
+    }
+    void EquipWeapon(Soldier& soldier,
+                     std::size_t slot,
+                     const WeaponParameters& parameters,
+                     std::optional<std::uint8_t> ammo = std::nullopt,
+                     std::optional<std::uint8_t> capacity = std::nullopt)
+    {
+        Weapon weapon(parameters, ammo, capacity);
+        weapon.SetInstanceId(++soldier.weapon_generation);
+        soldier.weapons.at(slot) = std::move(weapon);
+    }
     Soldier& GetSoldierRef(std::uint8_t soldier_id);
     Item& GetItemRef(std::uint8_t item_id);
 
+    struct MapItemSpawn
+    {
+        std::uint8_t id;
+        ItemType style;
+        glm::vec2 position;
+        std::optional<unsigned int> respawn_tick;
+    };
+    std::vector<MapItemSpawn> map_item_spawns_;
     State state_;
     std::vector<BulletParams> bullet_emitter_;
     std::vector<ProjectilePhysicsEvent> projectile_events_;
     std::uint32_t next_projectile_id_{ 1 };
     bool friendly_fire_{ true };
     bool authoritative_projectiles_{ true };
+    bool realistic_{};
+    std::uint8_t max_grenades_{ 5 };
 
     std::mt19937 mersenne_twister_engine_{ 0U };
 };
@@ -336,30 +392,35 @@ void StateManager::ChangeSoldierMouseMapPosition(std::uint8_t soldier_id,
 void StateManager::SwitchSoldierWeapon(std::uint8_t soldier_id)
 {
     Soldier& soldier = GetSoldierRef(soldier_id);
+    if (soldier.combat_bonus == CombatBonus::FlameGod) {
+        return;
+    }
     int new_active_weapon = (soldier.active_weapon + 1) % 2;
     soldier.active_weapon = new_active_weapon;
-    // weapons[new_active_weapon].start_up_time_count =
-    //   weapons[new_active_weapon].GetWeaponParameters().start_up_time;
     soldier.weapons[new_active_weapon].ResetStartUpTimeCount();
-    // weapons[new_active_weapon].reload_time_prev = weapons[new_active_weapon].reload_time_count;
-    soldier.weapons[new_active_weapon].SetReloadTimePrev(
-      soldier.weapons[new_active_weapon].GetReloadTimeCount());
+    soldier.weapons[new_active_weapon].ResetBurst();
 }
 
 void StateManager::ChangeSoldierPrimaryWeapon(std::uint8_t soldier_id, WeaponType new_weapon_type)
 {
     Soldier& soldier = GetSoldierRef(soldier_id);
-    auto new_weapon_parameters = WeaponParametersFactory::GetParameters(new_weapon_type, false);
-    soldier.weapons[soldier.active_weapon] = new_weapon_parameters;
+    auto new_weapon_parameters =
+      WeaponParametersFactory::GetParameters(new_weapon_type, realistic_);
+    EquipWeapon(soldier, soldier.active_weapon, new_weapon_parameters);
 }
 
 void StateManager::SoldierPickupWeapon(std::uint8_t soldier_id, const Item& item)
 {
     Soldier& soldier = GetSoldierRef(soldier_id);
     WeaponType new_weapon_type = ItemTypeToWeaponType(item.style);
-    auto new_weapon_parameters = WeaponParametersFactory::GetParameters(new_weapon_type, false);
-    new_weapon_parameters.ammo = item.ammo_count;
-    soldier.weapons[soldier.active_weapon] = new_weapon_parameters;
+    auto new_weapon_parameters =
+      WeaponParametersFactory::GetParameters(new_weapon_type, realistic_);
+    EquipWeapon(soldier, soldier.active_weapon, new_weapon_parameters, item.ammo_count);
+    if (new_weapon_type == WeaponType::Bow) {
+        EquipWeapon(soldier,
+                    (soldier.active_weapon + 1) % 2,
+                    WeaponParametersFactory::GetParameters(WeaponType::FlameBow, realistic_));
+    }
 }
 
 void StateManager::SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_id)
@@ -383,17 +444,30 @@ void StateManager::SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_i
             return;
         }
 
-        if (soldier.weapons[2].GetAmmoCount() >= soldier.weapons[2].GetWeaponParameters().ammo) {
+        if (soldier.weapons[2].GetAmmoCount() >= soldier.weapons[2].GetCapacity()) {
             // Don't pickup if Soldier has all the grenades (or more)
             return;
         }
 
-        soldier.weapons[2] = WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false);
+        EquipWeapon(soldier,
+                    2,
+                    WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, realistic_),
+                    max_grenades_,
+                    max_grenades_);
         item.active = false;
     }
 
-    if (item.style == ItemType::FlamerKit) {
-        // TODO
+    if (item.style == ItemType::FlamerKit && soldier.combat_bonus == CombatBonus::None &&
+        soldier.CanReceiveCombatImpact() &&
+        !soldier.GetActiveWeapon().IsAny({ WeaponType::Bow, WeaponType::FlameBow })) {
+        soldier.weapons[(soldier.active_weapon + 1) % 2] = soldier.GetActiveWeapon();
+        EquipWeapon(soldier,
+                    soldier.active_weapon,
+                    WeaponParametersFactory::GetParameters(WeaponType::Flamer, realistic_));
+        soldier.combat_bonus = CombatBonus::FlameGod;
+        soldier.bonus_ticks = 600;
+        soldier.health = SOLDIER_START_HEALTH;
+        item.active = false;
     }
 
     if (item.style == ItemType::PredatorKit) {
@@ -405,8 +479,11 @@ void StateManager::SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_i
         item.active = false;
     }
 
-    if (item.style == ItemType::BerserkKit) {
-        // TODO
+    if (item.style == ItemType::BerserkKit && soldier.combat_bonus == CombatBonus::None &&
+        soldier.CanReceiveCombatImpact()) {
+        soldier.combat_bonus = CombatBonus::Berserk;
+        soldier.bonus_ticks = 900;
+        item.active = false;
     }
 
     if (item.style == ItemType::ClusterKit) {
@@ -416,8 +493,11 @@ void StateManager::SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_i
             return;
         }
 
-        soldier.weapons[2] =
-          WeaponParametersFactory::GetParameters(WeaponType::ClusterGrenade, false);
+        EquipWeapon(soldier,
+                    2,
+                    WeaponParametersFactory::GetParameters(WeaponType::ClusterGrenade, realistic_),
+                    3,
+                    3);
         item.active = false;
     }
 }
@@ -570,12 +650,6 @@ const Soldier& StateManager::CreateSoldier(std::optional<unsigned int> force_sol
         new_soldier_id = *force_soldier_id;
     }
 
-    std::vector<Weapon> weapons{
-        { WeaponParametersFactory::GetParameters(WeaponType::DesertEagles, false) },
-        { WeaponParametersFactory::GetParameters(WeaponType::Knife, false) },
-        { WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, false) }
-    };
-
     spdlog::debug("new_soldier_id {}", new_soldier_id);
     state_.soldiers.at(new_soldier_id).SetDefaultValues();
     state_.soldiers.at(new_soldier_id).active = true;
@@ -623,13 +697,28 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
     soldier.active = true;
     soldier.particle.active = true;
     soldier.health = 150.0;
+    soldier.vest = 0.0F;
+    soldier.fired = 0;
     soldier.projectile_pushes.clear();
     soldier.projectile_push_history.clear();
     soldier.latest_authoritative_tick.reset();
     soldier.position_history.clear();
     soldier.dead_meat = false;
-    soldier.weapons[0] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[0], false);
-    soldier.weapons[1] = WeaponParametersFactory::GetParameters(soldier.weapon_choices[1], false);
+    EquipWeapon(
+      soldier, 0, WeaponParametersFactory::GetParameters(soldier.weapon_choices.at(0), realistic_));
+    EquipWeapon(
+      soldier, 1, WeaponParametersFactory::GetParameters(soldier.weapon_choices.at(1), realistic_));
+    EquipWeapon(soldier,
+                2,
+                WeaponParametersFactory::GetParameters(WeaponType::FragGrenade, realistic_),
+                static_cast<std::uint8_t>(max_grenades_ / 2),
+                max_grenades_);
+    soldier.grenade_can_throw = true;
+    soldier.is_shooting = false;
+    soldier.hit_spray = 0;
+    soldier.mounted_weapon = -1;
+    soldier.combat_bonus = CombatBonus::None;
+    soldier.bonus_ticks = 0;
     soldier.active_weapon = 0;
     RepositionSoldierSkeletonParts(soldier);
 
@@ -684,6 +773,7 @@ void StateManager::RemoveSoldier(std::uint8_t soldier_id)
     }
 
     state_.soldiers.at(soldier_id).active = false;
+    soldier_removed.Notify(soldier_id);
 }
 
 std::size_t StateManager::GetSoldiersCount() const
@@ -770,23 +860,27 @@ void StateManager::TransformBullets(
 Item& StateManager::CreateItem(glm::vec2 position,
                                std::uint8_t owner_id,
                                ItemType style,
-                               std::shared_ptr<ParticleSystem> skeleton)
+                               std::shared_ptr<ParticleSystem> skeleton,
+                               std::optional<std::uint8_t> force_id)
 {
     std::uint8_t new_id = 0;
     for (const auto& item : state_.items) {
-        if (!item.active) {
+        const bool reserved = std::ranges::any_of(
+          map_item_spawns_, [new_id](const auto& spawn) { return spawn.id == new_id; });
+        if (!item.active && !reserved) {
             break;
         }
 
         ++new_id;
     }
 
+    new_id = force_id.value_or(new_id);
     if (new_id >= state_.items.size()) {
         spdlog::critical("Trying to create a new item but array is full, id: {}", new_id);
         throw std::runtime_error("Cannot create item: item array is full");
     }
 
-    Item new_item;
+    Item new_item{};
     new_item.active = true;
     new_item.style = style;
     new_item.id = new_id;
@@ -934,6 +1028,10 @@ Item& StateManager::CreateItem(glm::vec2 position,
             break;
     }
 
+    if (IsItemTypeWeapon(style)) {
+        new_item.ammo_count =
+          WeaponParametersFactory::GetParameters(ItemTypeToWeaponType(style), realistic_).ammo;
+    }
     state_.items.at(new_id) = new_item;
     SetItemPosition(new_id, position);
 
@@ -998,5 +1096,109 @@ Item& StateManager::GetItemRef(std::uint8_t item_id)
     }
 
     return state_.items.at(item_id);
+}
+} // namespace Soldank
+
+namespace Soldank
+{
+std::optional<ItemType> WeaponMapItemStyle(PMSSpawnPointType type)
+{
+    switch (type) {
+        case PMSSpawnPointType::Grenades:
+            return ItemType::GrenadeKit;
+        case PMSSpawnPointType::Medkits:
+            return ItemType::MedicalKit;
+        case PMSSpawnPointType::Clusters:
+            return ItemType::ClusterKit;
+        case PMSSpawnPointType::Vest:
+            return ItemType::VestKit;
+        case PMSSpawnPointType::Flamer:
+            return ItemType::FlamerKit;
+        case PMSSpawnPointType::Berserker:
+            return ItemType::BerserkKit;
+        case PMSSpawnPointType::RamboBow:
+            return ItemType::Bow;
+        case PMSSpawnPointType::StatGun:
+            return ItemType::M2;
+        default:
+            return std::nullopt;
+    }
+}
+
+void StateManager::SpawnWeaponMapItems()
+{
+    for (const auto& spawn : map_item_spawns_) {
+        state_.items.at(spawn.id).active = false;
+    }
+    map_item_spawns_.clear();
+    if (!HasAuthoritativeProjectiles()) {
+        return;
+    }
+    for (const auto& point : state_.map.GetSpawnPoints()) {
+        if (!point.active) {
+            continue;
+        }
+        const auto style = WeaponMapItemStyle(point.type);
+        if (style) {
+            // One pickup per category until game modes provide a pickup budget.
+            // Stationary guns are placed at every explicit map spawn.
+            if (*style != ItemType::M2 &&
+                std::ranges::any_of(map_item_spawns_,
+                                    [&](const auto& spawn) { return spawn.style == *style; })) {
+                continue;
+            }
+            const glm::vec2 position(point.x, point.y);
+            const auto& item = CreateItem(position, 255, *style);
+            map_item_spawns_.push_back({ item.id, *style, position, std::nullopt });
+        }
+    }
+}
+
+void StateManager::UpdateWeaponMapItems()
+{
+    if (!HasAuthoritativeProjectiles()) {
+        return;
+    }
+    for (auto& spawn : map_item_spawns_) {
+        if (state_.items.at(spawn.id).active) {
+            spawn.respawn_tick.reset();
+            continue;
+        }
+        if (!spawn.respawn_tick) {
+            spawn.respawn_tick = GetGameTick() + 1U;
+            continue;
+        }
+        if (GetGameTick() >= *spawn.respawn_tick) {
+            if (spawn.style == ItemType::Bow &&
+                FindSoldier([](const Soldier& soldier) {
+                    return soldier.IsAlive() && soldier.GetActiveWeapon().IsAny(
+                                                  { WeaponType::Bow, WeaponType::FlameBow });
+                }) != nullptr) {
+                continue;
+            }
+            bool bow_in_world = false;
+            ForEachItem([&](const Item& item) {
+                bow_in_world =
+                  bow_in_world || (spawn.style == ItemType::Bow && item.style == ItemType::Bow);
+            });
+            if (bow_in_world) {
+                continue;
+            }
+            std::vector<glm::vec2> positions;
+            for (const auto& point : state_.map.GetSpawnPoints()) {
+                const glm::vec2 candidate(point.x, point.y);
+                if (point.active && WeaponMapItemStyle(point.type) == spawn.style &&
+                    candidate != spawn.position) {
+                    positions.push_back(candidate);
+                }
+            }
+            if (!positions.empty()) {
+                spawn.position =
+                  positions.at(GetRandomInt(0, static_cast<unsigned int>(positions.size() - 1)));
+            }
+            CreateItem(spawn.position, 255, spawn.style, nullptr, spawn.id);
+            spawn.respawn_tick.reset();
+        }
+    }
 }
 } // namespace Soldank

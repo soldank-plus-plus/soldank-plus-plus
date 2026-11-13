@@ -10,6 +10,7 @@ module;
 #include <deque>
 #include <optional>
 #include <algorithm>
+#include <cmath>
 
 export module Shared.Core.Entities.Soldier;
 
@@ -72,6 +73,8 @@ struct Soldier
         position_history.clear();
         active = false;
         dead_meat = true;
+        weapon_choices = { WeaponType::DesertEagles, WeaponType::Knife };
+        active_weapon = 0;
         style = 0;
         num = 1;
         visible = 1;
@@ -95,6 +98,11 @@ struct Soldier
         collider_distance = 255;
         half_dead = false;
         is_shooting = false;
+        has_authoritative_health_snapshot = false;
+        hit_spray = 0;
+        mounted_weapon = -1;
+        combat_bonus = CombatBonus::None;
+        bonus_ticks = 0;
     }
 
     void SetTeam(TeamType new_team) { team = new_team; }
@@ -115,6 +123,18 @@ struct Soldier
     bool CanReceiveCombatImpact() const
     {
         return active && !IsSpectator() && cease_fire_counter < 0;
+    }
+
+    void AddBink(std::uint16_t bink)
+    {
+        if (bink == 0) {
+            return;
+        }
+        const float accumulated = hit_spray;
+        const auto reduction = std::lround(accumulated * accumulated /
+                                           ((10.0F * static_cast<float>(bink)) + accumulated));
+        hit_spray =
+          static_cast<std::uint16_t>(std::clamp<long>(hit_spray + bink - reduction, 0, 65535));
     }
 
     void SetPingTicks(std::uint16_t new_ping_ticks) { ping_ticks = new_ping_ticks; }
@@ -234,12 +254,18 @@ struct Soldier
     std::shared_ptr<AnimationState> legs_animation;
     std::shared_ptr<AnimationState> body_animation;
     Control control{};
+    std::uint32_t weapon_generation{};
     std::uint8_t active_weapon{};
     std::vector<Weapon> weapons;
     std::array<WeaponType, 2> weapon_choices{};
     std::uint8_t fired{};
     Particle particle;
+    CombatBonus combat_bonus{ CombatBonus::None };
+    std::uint16_t bonus_ticks{};
+    std::int16_t mounted_weapon{ -1 };
+    bool has_authoritative_health_snapshot{};
     bool is_shooting{};
+    std::uint16_t hit_spray{};
     bool is_holding_flags{};
 
     int ticks_to_respawn{};
@@ -274,7 +300,16 @@ public:
         , velocity_(soldier.particle.GetVelocity())
         , force_(soldier.particle.GetForce())
         , grenade_can_throw_(soldier.grenade_can_throw)
+        , active_weapon_(soldier.active_weapon)
+        , weapon_generation_(soldier.weapon_generation)
+        , hit_spray_(soldier.hit_spray)
+        , mounted_weapon_(soldier.mounted_weapon)
+        , combat_bonus_(soldier.combat_bonus)
+        , bonus_ticks_(soldier.bonus_ticks)
     {
+        for (const auto& weapon : soldier.weapons) {
+            weapons_.push_back(weapon.GetState());
+        }
     }
 
     AnimationType GetBodyAnimationType() const { return body_animation_type_; }
@@ -301,6 +336,13 @@ public:
     bool IsUsingJets() const { return control_.jets; }
     const Control& GetControl() const { return control_; }
     bool CanThrowGrenade() const { return grenade_can_throw_; }
+    CombatBonus GetCombatBonus() const { return combat_bonus_; }
+    std::uint16_t GetBonusTicks() const { return bonus_ticks_; }
+    std::int16_t GetMountedWeapon() const { return mounted_weapon_; }
+    std::uint16_t GetHitSpray() const { return hit_spray_; }
+    std::uint32_t GetWeaponGeneration() const { return weapon_generation_; }
+    std::uint8_t GetActiveWeapon() const { return active_weapon_; }
+    const std::vector<WeaponState>& GetWeapons() const { return weapons_; }
 
     void CompareAndLog(const Soldier& other_soldier)
     {
@@ -460,5 +502,12 @@ private:
     glm::vec2 force_;
 
     bool grenade_can_throw_;
+    std::uint8_t active_weapon_;
+    std::uint32_t weapon_generation_;
+    std::uint16_t hit_spray_;
+    std::int16_t mounted_weapon_;
+    CombatBonus combat_bonus_;
+    std::uint16_t bonus_ticks_;
+    std::vector<WeaponState> weapons_;
 };
 } // namespace Soldank

@@ -13,5 +13,7 @@ struct ServerConfig
     std::uint16_t server_port = 0;
     std::string map_path = "maps/ctf_Ash.pms";
     int fps_limit = 60;
+    bool realistic{};
+    std::uint8_t max_grenades{ 5 };
 };
 } // namespace Soldank

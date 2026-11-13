@@ -28,6 +28,11 @@ import Application.Platform.ClientTransportStartup;
 import Runtime.ClientRuntime;
 import Gameplay.GameSession;
 import Gameplay.PlayerController;
+import Audio.WeaponAudio;
+import Audio.AudioEvents;
+import Gameplay.WeaponSoundEventRouter;
+import Shared.Core.Physics.Bullets.BulletEvents;
+import Shared.Core.Physics.PhysicsEvents;
 import Editor.EditorSession;
 import Scene;
 import RenderPipeline;
@@ -43,6 +48,7 @@ import Networking.PingCheckNetworkEventHandler;
 import Networking.PlayerLeaveNetworkEventHandler;
 import Networking.ProjectileSpawnNetworkEventHandler;
 import Networking.ProjectilePhysicsNetworkEventHandler;
+import Networking.ItemStateNetworkEventHandler;
 import Networking.SoldierInfoNetworkEventHandler;
 import Networking.SoldierStateNetworkEventHandler;
 import Networking.SpawnSoldierNetworkEventHandler;
@@ -93,6 +99,9 @@ private:
     std::unique_ptr<RenderPipeline> render_pipeline_;
     std::unique_ptr<ApplicationInputController> input_controller_;
     std::unique_ptr<PlayerController> player_controller_;
+    std::shared_ptr<AudioEvents> audio_events_;
+    std::unique_ptr<WeaponAudio> weapon_audio_;
+    std::shared_ptr<WeaponSoundEventRouter> weapon_sound_event_router_;
 
     ApplicationMode application_mode_;
     WindowSizeMode window_size_mode_;
@@ -133,7 +142,17 @@ Application::Application(const std::vector<const char*>& cli_parameters)
 
     window_ = std::make_unique<Window>();
     world_ = std::make_shared<World>();
+    world_->GetStateManager()->SetAuthoritativeProjectiles(application_mode_ !=
+                                                           ApplicationMode::Online);
     client_state_ = std::make_shared<ClientState>();
+    world_->GetPhysicsEvents().projectile_event.AddObserver(
+      [client = client_state_](const ProjectilePhysicsEvent& event) {
+          auto& events = client->projectile_visual_events;
+          if (events.size() >= 512) {
+              events.erase(events.begin());
+          }
+          events.push_back(event);
+      });
     input_controller_ = std::make_unique<ApplicationInputController>(
       *window_, *world_, *client_state_, client_runtime_, game_session_);
     player_controller_ =
@@ -190,6 +209,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             std::make_shared<PlayerLeaveNetworkEventHandler>(world_),
             std::make_shared<ProjectileSpawnNetworkEventHandler>(world_),
             std::make_shared<ProjectilePhysicsNetworkEventHandler>(world_, client_state_),
+            std::make_shared<ItemStateNetworkEventHandler>(world_),
             std::make_shared<SoldierInfoNetworkEventHandler>(world_, client_state_),
             std::make_shared<SoldierStateNetworkEventHandler>(world_, client_state_),
             std::make_shared<SpawnSoldierNetworkEventHandler>(world_),
@@ -385,6 +405,14 @@ void Application::Run()
             client_state_->camera.position = { 0.0F, 0.0F };
         }
     });
+    audio_events_ = std::make_shared<AudioEvents>();
+    weapon_audio_ = std::make_unique<WeaponAudio>(*audio_events_);
+    weapon_sound_event_router_ = WeaponSoundEventRouter::Create(
+      world_->GetPhysicsEvents(),
+      world_->GetWorldEvents(),
+      *world_->GetStateManager(),
+      audio_events_,
+      [client = client_state_]() { return !client->network.replaying_prediction; });
     world_->SetPostWorldUpdateCallback([&](const StateManager& /*state_manager*/) {
         if (application_mode_ == ApplicationMode::Online &&
             client_state_->client_soldier_id.has_value()) {
@@ -410,6 +438,9 @@ void Application::Run()
       });
 
     world_->SetPreSoldierUpdateCallback([&](const Soldier& soldier) {
+        if (client_state_->network.weapon_config_mismatch) {
+            return false;
+        }
         if (application_mode_ != ApplicationMode::Online) {
             return true;
         }

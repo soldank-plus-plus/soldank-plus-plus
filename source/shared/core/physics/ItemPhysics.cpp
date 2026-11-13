@@ -15,6 +15,7 @@ import Shared.Core.Math.Calc;
 import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.Physics.Constants;
 import Shared.Core.Types.ItemType;
+import Shared.Core.Physics.Weapons.StationaryWeaponPhysics;
 
 export namespace Soldank::ItemPhysics
 {
@@ -202,6 +203,13 @@ void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physic
         }
     }
 
+    if (item.style == ItemType::M2) {
+        if (item.time_out > 0) {
+            --item.time_out;
+        }
+        StationaryWeaponPhysics::Update(state_manager, item);
+        return;
+    }
     --item.time_out;
     if (item.time_out < -1000) {
         item.time_out = -1000;

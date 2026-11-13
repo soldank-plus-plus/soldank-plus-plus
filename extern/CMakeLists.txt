@@ -5,6 +5,7 @@ add_subdirectory(tomlplusplus)
 
 if (BUILD_CLIENT_ENABLED)
     add_subdirectory(glad-2.1.0)
+    add_subdirectory(miniaudio)
 endif()
 
 if ((BUILD_CLIENT_ENABLED AND NOT BUILD_WEBASM_CLIENT_TRANSPORT) OR BUILD_SERVER_ENABLED)

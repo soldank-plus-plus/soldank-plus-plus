@@ -105,7 +105,7 @@ public:
           event &&
           (*event == NetworkEvent::SpawnSoldier || *event == NetworkEvent::ProjectileSpawn ||
            *event == NetworkEvent::ProjectilePhysics || *event == NetworkEvent::HitSoldier ||
-           *event == NetworkEvent::KillSoldier);
+           *event == NetworkEvent::KillSoldier || *event == NetworkEvent::ItemState);
         if (reliable) {
             player_poll_group_->SendReliableNetworkMessageToAll(network_message);
         } else {

@@ -1,4 +1,5 @@
 set(soldank_client_rendering_modules
+    rendering/WeaponVisualEffects.cpp
     rendering/data/Texture.cpp
     rendering/data/sprites/SoldierPartData.cpp
     rendering/data/sprites/SpritesManager.cpp
@@ -23,6 +24,9 @@ set(soldank_client_rendering_modules
 )
 
 set(client_lib_modules
+    audio/AudioEvents.cpp
+    audio/WeaponAudio.cpp
+    gameplay/WeaponSoundEventRouter.cpp
     stb.cpp
 
     application/Application.cpp
@@ -44,6 +48,7 @@ set(client_lib_modules
     editor/PlayTestSession.cpp
     gameplay/GameSession.cpp
     gameplay/PlayerController.cpp
+    gameplay/WeaponRecoil.cpp
 
     map_editor/MapEditor.cpp
     map_editor/MapEditorConfig.cpp
@@ -97,6 +102,7 @@ set(client_lib_modules
     networking/event_handlers/PingCheckNetworkEventHandler.cpp
     networking/event_handlers/PlayerLeaveNetworkEventHandler.cpp
     networking/event_handlers/ProjectileSpawnNetworkEventHandler.cpp
+    networking/event_handlers/ItemStateNetworkEventHandler.cpp
     networking/event_handlers/ProjectilePhysicsNetworkEventHandler.cpp
     networking/event_handlers/SoldierInfoNetworkEventHandler.cpp
     networking/event_handlers/SoldierStateNetworkEventHandler.cpp
@@ -175,6 +181,7 @@ target_link_libraries(soldank_client_rendering PRIVATE BZip2::BZip2)
 soldank_target_precompile_headers(soldank_client_rendering)
 
 add_library(client_lib)
+target_link_libraries(client_lib PRIVATE Miniaudio)
 
 target_sources(client_lib
     PUBLIC
@@ -317,6 +324,8 @@ if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 
     foreach(asset_directory
         anims
+        sfx
+        sparks-gfx
         maps
         textures
         gostek-gfx
@@ -370,3 +379,9 @@ if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 endif()
 soldank_target_precompile_headers(client)
 install(TARGETS client DESTINATION ${CMAKE_SOURCE_DIR}/bin)
+
+add_custom_command(TARGET client POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${soldatbase_SOURCE_DIR}/shared/sfx" "$<TARGET_FILE_DIR:client>/sfx"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${soldatbase_SOURCE_DIR}/shared/sparks-gfx" "$<TARGET_FILE_DIR:client>/sparks-gfx")

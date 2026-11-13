@@ -7,6 +7,7 @@ import Extern.Glm;
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Utility.Observable;
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.Item;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Physics.Bullets.BulletEvents;
@@ -16,6 +17,7 @@ export namespace Soldank
 struct PhysicsEvents
 {
     Observable<const ProjectilePhysicsEvent&> projectile_event;
+    Observable<const WeaponActionEvent&> weapon_action_event;
     Observable<Soldier&, float /* damage */> soldier_hit_by_bullet;
     Observable<Soldier&> soldier_switches_weapon;
     Observable<const Soldier&> soldier_throws_active_weapon;

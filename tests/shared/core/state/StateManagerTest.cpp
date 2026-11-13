@@ -9,6 +9,9 @@
 import Shared.Core.Animations;
 import Shared.Core.Data.IFileReader;
 import Shared.Core.Entities.Item;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.WeaponParametersFactory;
+import Shared.Core.Types.WeaponType;
 import Shared.Core.Physics.Particles;
 import Shared.Core.State.StateManager;
 import Shared.Core.Types.ItemType;
@@ -63,4 +66,25 @@ TEST(StateManagerTest, RandomNumbersAreReproducibleAfterResettingTheSeed)
     state_manager.SetRandomSeed(42U);
 
     EXPECT_EQ(state_manager.GetRandomInt(0, 1000), first_value);
+}
+
+TEST(StateManagerTest, PartiallyLoadedPickupKeepsItsOriginalCapacity)
+{
+    AnimationDataReader reader;
+    Soldank::AnimationDataManager animations;
+    animations.LoadAnimationData(Soldank::AnimationType::Stand, "stand.poa", true, 1, reader);
+    Soldank::StateManager state(
+      animations, Soldank::ParticleSystem::Load(Soldank::ParticleSystemType::Soldier));
+    auto& item = state.CreateItem({}, 0, Soldank::ItemType::M79);
+    EXPECT_EQ(item.ammo_count, 1);
+    state.SoldierPickupWeapon(0, item);
+    EXPECT_EQ(state.GetSoldier(0).GetActiveWeapon().GetAmmoCount(), 1);
+    item.style = Soldank::ItemType::Ak74;
+    item.ammo_count = 2;
+    state.SoldierPickupWeapon(0, item);
+    const auto& weapon = state.GetSoldier(0).GetActiveWeapon();
+    EXPECT_EQ(weapon.GetAmmoCount(), 2);
+    EXPECT_EQ(
+      weapon.GetWeaponParameters().ammo,
+      Soldank::WeaponParametersFactory::GetParameters(Soldank::WeaponType::Ak74, false).ammo);
 }

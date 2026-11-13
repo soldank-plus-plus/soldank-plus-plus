@@ -3,6 +3,7 @@ module;
 #include <cstdint>
 #include <optional>
 #include <variant>
+#include <array>
 
 export module Shared.Core.Simulation.SimulationCommands;
 
@@ -21,6 +22,7 @@ struct PlayerInputCommand
     std::uint32_t apply_server_tick;
     Control control;
     glm::vec2 mouse_map_position;
+    std::optional<std::array<WeaponType, 2>> weapon_choices;
 };
 
 struct SpawnSoldierCommand

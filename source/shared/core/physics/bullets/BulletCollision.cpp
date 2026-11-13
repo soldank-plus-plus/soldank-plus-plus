@@ -202,7 +202,8 @@ std::optional<BulletCollisionResult> FindSoldierCollision(const Bullet& bullet,
             return;
         }
         const bool same_team = bullet.team != TeamType::None && bullet.team == candidate.team;
-        const auto mask = WeaponParametersFactory::GetParameters(bullet.weapon, false).no_collision;
+        const auto mask =
+          WeaponParametersFactory::GetParameters(bullet.weapon, bullet.realistic).no_collision;
         if (!AllowsWeaponCollision(mask, self, same_team, false)) {
             return;
         }

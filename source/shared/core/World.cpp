@@ -23,12 +23,14 @@ import Shared.Core.Physics.BulletPhysics;
 import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Physics.ItemPhysics;
 import Shared.Core.Physics.SoldierPhysics;
+import Shared.Core.Physics.Weapons.WeaponPhysics;
 import Shared.Core.Physics.SoldierSkeletonPhysics;
 import Shared.Core.State.StateManager;
 import Shared.Core.State.State;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Physics.PhysicsEvents;
+import Shared.Core.Physics.Constants;
 import Shared.Core.Loop.FixedTimestepRunner;
 import Shared.Core.Loop.PlatformFixedTimestepLoop;
 import Shared.Core.Simulation.PlayerInputApplication;
@@ -143,6 +145,7 @@ public:
         static float gravity = 0.06F;
 
         std::vector<BulletParams> bullet_emitter;
+        state_manager_->UpdateWeaponMapItems();
 
         state_manager_->TransformSoldiers([&](auto& soldier) {
             soldier.RecordPosition(state_manager_->GetGameTick());
@@ -211,6 +214,12 @@ public:
                 physics_events_->projectile_event.Notify(event);
             }
         }
+        state_manager_->ForEachSoldier([&](const Soldier& soldier) {
+            world_events_->after_soldier_updates.Notify(soldier, state_manager_->GetGameTick());
+        });
+        state_manager_->ForEachItem([&](const auto& item) {
+            world_events_->after_item_updates.Notify(item, state_manager_->GetGameTick());
+        });
     }
 
     void UpdateSoldier(unsigned int soldier_id) final
@@ -228,6 +237,8 @@ public:
                                    bullet_emitter,
                                    gravity);
         });
+        world_events_->after_soldier_updates.Notify(state_manager_->GetSoldier(soldier_id),
+                                                    state_manager_->GetGameTick());
     }
 
     const std::shared_ptr<StateManager>& GetStateManager() const final { return state_manager_; }
@@ -249,72 +260,12 @@ public:
 
     std::shared_ptr<AnimationState> GetBodyAnimationState(AnimationType animation_type) const final
     {
-        switch (animation_type) {
-            case AnimationType::Stand:
-                return std::make_shared<BodyStandAnimationState>(animation_data_manager_);
-            case AnimationType::Throw:
-                return std::make_shared<BodyThrowAnimationState>(animation_data_manager_);
-            case AnimationType::Change:
-                return std::make_shared<BodyChangeAnimationState>(animation_data_manager_);
-            case AnimationType::ThrowWeapon:
-                return std::make_shared<BodyThrowWeaponAnimationState>(animation_data_manager_);
-            case AnimationType::Punch:
-                return std::make_shared<BodyPunchAnimationState>(animation_data_manager_);
-            case AnimationType::Roll:
-                return std::make_shared<BodyRollAnimationState>(animation_data_manager_);
-            case AnimationType::RollBack:
-                return std::make_shared<BodyRollBackAnimationState>(animation_data_manager_);
-            case AnimationType::Prone:
-                return std::make_shared<BodyProneAnimationState>(animation_data_manager_);
-            case AnimationType::Aim:
-                return std::make_shared<BodyAimAnimationState>(animation_data_manager_);
-            case AnimationType::ProneMove:
-                return std::make_shared<BodyProneMoveAnimationState>(animation_data_manager_);
-            case AnimationType::GetUp:
-                return std::make_shared<BodyGetUpAnimationState>(animation_data_manager_);
-            default:
-                // TODO: for now throw error, it will be easier to find this place. Once everything
-                // is implemented, do std::unreachable()
-                throw std::runtime_error("Body animation not implemented!");
-        }
+        return SoldierPhysics::CreateBodyAnimationState(animation_type, animation_data_manager_);
     }
 
     std::shared_ptr<AnimationState> GetLegsAnimationState(AnimationType animation_type) const final
     {
-        switch (animation_type) {
-            case AnimationType::Stand:
-                return std::make_shared<LegsStandAnimationState>(animation_data_manager_);
-            case AnimationType::Run:
-                return std::make_shared<LegsRunAnimationState>(animation_data_manager_);
-            case AnimationType::RunBack:
-                return std::make_shared<LegsRunBackAnimationState>(animation_data_manager_);
-            case AnimationType::Jump:
-                return std::make_shared<LegsJumpAnimationState>(animation_data_manager_);
-            case AnimationType::JumpSide:
-                return std::make_shared<LegsJumpSideAnimationState>(animation_data_manager_);
-            case AnimationType::Fall:
-                return std::make_shared<LegsFallAnimationState>(animation_data_manager_);
-            case AnimationType::Crouch:
-                return std::make_shared<LegsCrouchAnimationState>(animation_data_manager_);
-            case AnimationType::CrouchRun:
-                return std::make_shared<LegsCrouchRunAnimationState>(animation_data_manager_);
-            case AnimationType::Roll:
-                return std::make_shared<LegsRollAnimationState>(animation_data_manager_);
-            case AnimationType::RollBack:
-                return std::make_shared<LegsRollBackAnimationState>(animation_data_manager_);
-            case AnimationType::CrouchRunBack:
-                return std::make_shared<LegsCrouchRunBackAnimationState>(animation_data_manager_);
-            case AnimationType::Prone:
-                return std::make_shared<LegsProneAnimationState>(animation_data_manager_);
-            case AnimationType::ProneMove:
-                return std::make_shared<LegsProneMoveAnimationState>(animation_data_manager_);
-            case AnimationType::GetUp:
-                return std::make_shared<LegsGetUpAnimationState>(animation_data_manager_);
-            default:
-                // TODO: for now throw error, it will be easier to find this place. Once everything
-                // is implemented, do std::unreachable()
-                throw std::runtime_error("Legs animation not implemented!");
-        }
+        return SoldierPhysics::CreateLegsAnimationState(animation_type, animation_data_manager_);
     }
 
     const Soldier& CreateSoldier(std::optional<unsigned int> force_soldier_id = std::nullopt) final
@@ -326,6 +277,19 @@ public:
                            std::optional<glm::vec2> spawn_position = std::nullopt) final
     {
         auto initial_soldier_position = state_manager_->SpawnSoldier(soldier_id, spawn_position);
+        state_manager_->TransformSoldier(soldier_id, [&](Soldier& soldier) {
+            soldier.body_animation = GetBodyAnimationState(AnimationType::Stand);
+            soldier.legs_animation = GetLegsAnimationState(AnimationType::Stand);
+            soldier.control = {};
+            soldier.stance = PhysicsConstants::STANCE_STAND;
+            soldier.on_ground = false;
+            soldier.on_ground_permanent = false;
+            soldier.on_ground_for_law = false;
+            soldier.on_ground_last_frame = false;
+            soldier.particle.SetVelocity({});
+            soldier.particle.SetForce({});
+            RepositionSoldierSkeletonParts(soldier);
+        });
         world_events_->after_soldier_spawns.Notify(state_manager_->GetSoldier(soldier_id));
         pending_simulation_events_.push_back(SoldierSpawnedEvent{
           .soldier_id = static_cast<std::uint8_t>(soldier_id),
@@ -340,6 +304,7 @@ public:
             soldier.health = 0;
             soldier.dead_meat = true;
             soldier.ticks_to_respawn = 180; // 3 seconds
+            WeaponPhysics::ThrowWeapon(*state_manager_, soldier);
             world_events_->soldier_died.Notify(soldier);
             pending_simulation_events_.push_back(SoldierKilledEvent{
               .soldier_id = static_cast<std::uint8_t>(soldier_id),

@@ -30,6 +30,10 @@ public:
     void Update(UpdateParams& params) final {}
 
 private:
+    bool IsSoldierShootingPossible(const std::vector<Weapon>&, std::uint8_t) const final
+    {
+        return GetFrame() == 11 && GetCount() == 0;
+    }
     bool IsSoldierFlagThrowingPossible() const final { return true; }
 };
 } // namespace Soldank

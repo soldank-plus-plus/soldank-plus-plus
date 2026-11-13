@@ -43,7 +43,8 @@ private:
     using TSoldierPartListItem = std::pair<TSoldierPartSpriteKey, TSoldierPartSpriteData>;
     using TSoldierPartList = std::vector<TSoldierPartListItem>;
 
-    using TSpriteKey = std::variant<SoldierPartSpriteType, WeaponSpriteType, ObjectSpriteType>;
+    using TSpriteKey =
+      std::variant<SoldierPartSpriteType, WeaponSpriteType, ObjectSpriteType, SparkSpriteType>;
 
 public:
     SpriteManager()
@@ -296,11 +297,30 @@ public:
             { ObjectSpriteType::Para2, "gostek-gfx/para2.png" },
         };
 
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Plomyk, "sparks-gfx/plomyk.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Lilsmoke, "sparks-gfx/lilsmoke.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Odprysk, "sparks-gfx/odprysk.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Bigsmoke, "sparks-gfx/bigsmoke.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Bigsmoke2, "sparks-gfx/bigsmoke2.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Splat, "sparks-gfx/splat.png");
+        all_sprite_file_paths.emplace_back(SparkSpriteType::Minismoke, "sparks-gfx/minismoke.png");
+        for (unsigned int frame = 0; frame < 9; ++frame) {
+            all_sprite_file_paths.emplace_back(
+              static_cast<SparkSpriteType>(
+                static_cast<unsigned int>(SparkSpriteType::ExplosionSmoke1) + frame),
+              "sparks-gfx/explosion/smoke" + std::to_string(frame + 1) + ".png");
+        }
+        for (unsigned int frame = 0; frame < 16; ++frame) {
+            all_sprite_file_paths.emplace_back(
+              static_cast<SparkSpriteType>(
+                static_cast<unsigned int>(SparkSpriteType::ExplosionExplode1) + frame),
+              "sparks-gfx/explosion/explode" + std::to_string(frame + 1) + ".png");
+        }
+
         std::ranges::for_each(
           std::as_const(all_sprite_file_paths), [&](const auto& type_and_file_path) {
               auto texture_data_or_error = Texture::Load(type_and_file_path.second.c_str());
-              auto texture_data =
-                Texture::TextureData{ .opengl_id = 0, .width = 0, .height = 0 };
+              auto texture_data = Texture::TextureData{ .opengl_id = 0, .width = 0, .height = 0 };
               if (texture_data_or_error.has_value()) {
                   texture_data = *texture_data_or_error;
               } else {
@@ -481,6 +501,11 @@ public:
 
     unsigned int GetSoldierPartCount() const { return soldier_part_type_to_data_.size(); }
 
+    Texture::TextureData GetEffectTexture(SparkSpriteType type) const
+    {
+        return all_sprites_.at(type);
+    }
+
     Texture::TextureData GetBulletTexture(WeaponSpriteType weapon_sprite_type) const
     {
         return all_sprites_.at(weapon_sprite_type);
@@ -543,31 +568,28 @@ public:
                 }
             }
             case BulletType::FragGrenade:
+                return all_sprites_.at(WeaponSpriteType::FragGrenade);
             case BulletType::GaugeBullet:
+                return all_sprites_.at(WeaponSpriteType::SpasBullet);
             case BulletType::M79Grenade:
+                return all_sprites_.at(WeaponSpriteType::M79Bullet);
             case BulletType::Flame:
-                // TODO: I'm not sure which sprite to return here
-                //       I think this one is handled with sparks
-                return all_sprites_.at(WeaponSpriteType::FlamerFire);
+                return GetEffectTexture(SparkSpriteType::Plomyk);
             case BulletType::Fist:
+            case BulletType::Blade:
+                return {};
             case BulletType::Arrow:
-                // TODO: I'm not sure which sprite to return here
-                return all_sprites_.at(WeaponSpriteType::Arrow);
             case BulletType::FlameArrow:
-                // TODO: I'm not sure which sprite to return here
                 return all_sprites_.at(WeaponSpriteType::Arrow);
             case BulletType::ClusterGrenade:
+                return all_sprites_.at(WeaponSpriteType::ClusterGrenade);
             case BulletType::Cluster:
-            case BulletType::Blade:
-                // TODO: I'm not sure which sprite to return here
-                return all_sprites_.at(WeaponSpriteType::Bullet);
+                return all_sprites_.at(WeaponSpriteType::Cluster);
             case BulletType::LAWMissile:
-                // TODO: I'm not sure which sprite to return here
-                return all_sprites_.at(WeaponSpriteType::Bullet);
+                return all_sprites_.at(WeaponSpriteType::Missile);
             case BulletType::ThrownKnife:
                 return all_sprites_.at(WeaponSpriteType::Knife);
             case BulletType::M2Bullet:
-                // TODO: I'm not sure which sprite to return here
                 return all_sprites_.at(WeaponSpriteType::Bullet);
         }
     }

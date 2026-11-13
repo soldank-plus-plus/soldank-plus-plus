@@ -16,6 +16,7 @@ enum class NetworkEvent : unsigned int
     KillCommand,
     KillSoldier,
     HitSoldier,
-    ProjectilePhysics
+    ProjectilePhysics,
+    ItemState
 };
-}
+} // namespace Soldank

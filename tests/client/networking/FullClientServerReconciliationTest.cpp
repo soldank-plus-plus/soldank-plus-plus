@@ -23,6 +23,18 @@ import Networking.INetworkingClient;
 import Networking.InputApplicationTimeline;
 import Networking.NetworkClientSession;
 import Networking.SoldierStateNetworkEventHandler;
+import Networking.ProjectileSpawnNetworkEventHandler;
+import Networking.ItemStateNetworkEventHandler;
+import Networking.HitSoldierNetworkEventHandler;
+import Shared.Core.Entities.Weapon;
+import Shared.Core.Entities.WeaponParametersFactory;
+import Gameplay.WeaponRecoil;
+import Audio.AudioEvents;
+import Gameplay.WeaponSoundEventRouter;
+import WeaponVisualEffects;
+import Shared.Core.Entities.Soldier;
+import Shared.Core.Types.ItemType;
+import Shared.Core.Animations;
 import Replication.ReplicationService;
 import Runtime.ServerCommandQueues;
 import Runtime.ServerRuntimeServices;
@@ -42,6 +54,7 @@ import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.NetworkPackets;
+import Shared.Networking.ProtocolConversions;
 
 import Testing.Framework.Shared.MapBuilder;
 
@@ -795,4 +808,496 @@ TEST(FullClientServerReconciliationTest, AuthoritativeRemovalTargetsTheCorrectPr
         .first,
       NetworkEventDispatchResult::Success);
     EXPECT_EQ(world->GetStateManager()->GetBulletsCount(), 0U);
+}
+
+TEST(FullClientServerReconciliationTest, WeaponAmmoAndReloadConvergeUnderChangingLatency)
+{
+    constexpr std::uint8_t PLAYER_ID = 1;
+    const auto map =
+      SoldankTesting::MapBuilder::Empty()
+        ->AddPolygon(
+          { -4000.0F, 0.0F }, { 4000.0F, 0.0F }, { 4000.0F, 60.0F }, PMSPolygonType::Normal)
+        ->AddPolygon(
+          { -4000.0F, 0.0F }, { 4000.0F, 60.0F }, { -4000.0F, 60.0F }, PMSPolygonType::Normal)
+        ->Build();
+    auto client_world = std::make_shared<World>();
+    auto server_world = std::make_shared<World>();
+    const std::vector<std::pair<unsigned int, glm::vec2>> positions{ { PLAYER_ID,
+                                                                       { 0.0F, -34.0F } } };
+    InitializeWorld(*client_world, *map, positions);
+    InitializeWorld(*server_world, *map, positions);
+    client_world->GetStateManager()->SetAuthoritativeProjectiles(false);
+    server_world->GetStateManager()->ChangeSoldierPrimaryWeapon(PLAYER_ID, WeaponType::MP5);
+    client_world->GetStateManager()->ChangeSoldierPrimaryWeapon(PLAYER_ID, WeaponType::MP5);
+    auto client_state = std::make_shared<ClientState>();
+    client_state->client_soldier_id = PLAYER_ID;
+    client_state->network.server_reconciliation = true;
+    client_state->network.client_side_prediction = true;
+    auto audio_events = std::make_shared<AudioEvents>();
+    std::vector<std::uint32_t> heard_shot_sequences;
+    audio_events->sound_requested.AddObserver([&](const AudioEvent& event) {
+        if (event.command == AudioCommand::Play && event.sound == "mp5-fire") {
+            EXPECT_FALSE(client_state->network.replaying_prediction);
+            heard_shot_sequences.push_back(
+              client_world->GetSoldier(PLAYER_ID).GetActiveWeapon().GetState().shot_sequence);
+        }
+    });
+    auto sound_router =
+      WeaponSoundEventRouter::Create(client_world->GetPhysicsEvents(),
+                                     client_world->GetWorldEvents(),
+                                     *client_world->GetStateManager(),
+                                     audio_events,
+                                     [&] { return !client_state->network.replaying_prediction; });
+    auto bridge = std::make_shared<DeterministicNetworkBridge>(
+      std::vector<LatencyPhase>{ { 0, 77 }, { 250, 280 }, { 500, 445 } });
+    auto endpoint = bridge->CreateClientEndpoint(PLAYER_ID);
+    auto server = std::static_pointer_cast<IGameServer>(bridge);
+    PlayerSessionManager sessions;
+    ServerCommandQueues queues;
+    auto server_dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<SoldierInputNetworkEventHandler>(server, sessions, queues) });
+    auto client_dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<SoldierStateNetworkEventHandler>(client_world, client_state),
+        std::make_shared<ProjectilePhysicsNetworkEventHandler>(client_world, client_state),
+        std::make_shared<ProjectileSpawnNetworkEventHandler>(client_world),
+        std::make_shared<ItemStateNetworkEventHandler>(client_world) });
+    CoreEventsConnectionNotifier::ObserveAll(
+      bridge.get(), server_world->GetWorldEvents(), server_world->GetPhysicsEvents());
+    NetworkClientSession client_session(*endpoint, client_dispatcher, *client_world, *client_state);
+    ReplicationService replication(*bridge, sessions);
+    for (std::uint64_t step = 0; step < 1000; ++step) {
+        bridge->SetCurrentStep(step);
+        client_state->network.target_input_delay_ticks =
+          std::max(client_state->network.target_input_delay_ticks,
+                   CalculateInputDelayTicks(bridge->GetCurrentRoundTripTime()));
+        bridge->DeliverMessagesToServer(server_dispatcher);
+        auto state = server_world->GetStateManager();
+        const auto tick = state->GetGameTick();
+        auto inputs = queues.SelectPlayerInputsForSimulation(tick);
+        const std::vector<SimulationCommand> commands;
+        const auto result =
+          server_world->Tick({ .tick = tick, .player_inputs = inputs, .commands = commands });
+        replication.OnSimulationEvents(result.events);
+        for (const auto& input : inputs) {
+            sessions.MarkInputApplied(input.soldier_id, input.input_sequence_id);
+        }
+        replication.BroadcastTick(*state);
+        state->SetGameTick(tick + 1);
+        client_session.UpdateBeforeWorldTick();
+        client_world->GetStateManager()->TransformSoldier(PLAYER_ID, [&](Soldier& soldier) {
+            soldier.control.fire = step > 50 && step < 700;
+            soldier.control.reload = step == 200 || step == 500;
+        });
+        client_session.SendSoldierInput(PLAYER_ID, { 1000.0F, -100.0F });
+        const auto client_tick = client_world->GetStateManager()->GetGameTick();
+        TickWorldWithNoInput(*client_world, client_tick);
+        client_session.StorePredictedSoldierSnapshot(PLAYER_ID);
+    }
+    EXPECT_EQ(bridge->GetDispatchFailureCount(), 0U);
+    const auto& server_weapon = server_world->GetSoldier(PLAYER_ID).GetActiveWeapon();
+    const auto& client_weapon = client_world->GetSoldier(PLAYER_ID).GetActiveWeapon();
+    EXPECT_GT(server_weapon.GetState().shot_sequence, 10U);
+    EXPECT_EQ(server_weapon.GetState(), client_weapon.GetState());
+    EXPECT_GT(heard_shot_sequences.size(), 10U);
+    std::ranges::sort(heard_shot_sequences);
+    EXPECT_EQ(std::adjacent_find(heard_shot_sequences.begin(), heard_shot_sequences.end()),
+              heard_shot_sequences.end());
+    EXPECT_TRUE(client_world->GetStateManager()->GetBulletEmitter().empty());
+    EXPECT_LE(glm::distance(client_world->GetSoldier(PLAYER_ID).particle.position,
+                            server_world->GetSoldier(PLAYER_ID).particle.position),
+              1.5F);
+    EXPECT_LE(glm::distance(client_world->GetSoldier(PLAYER_ID).particle.GetVelocity(),
+                            server_world->GetSoldier(PLAYER_ID).particle.GetVelocity()),
+              0.15F);
+}
+
+TEST(FullClientServerReconciliationTest, WeaponMismatchForcesCorrectionDespiteAccuratePosition)
+{
+    auto world = std::make_shared<World>();
+    world->CreateSoldier(1);
+    world->SpawnSoldier(1, glm::vec2{});
+    world->GetStateManager()->SetAuthoritativeProjectiles(false);
+    auto client = std::make_shared<ClientState>();
+    client->client_soldier_id = 1;
+    client->network.client_side_prediction = true;
+    client->network.server_reconciliation = true;
+    client->network.soldier_snapshot_history.emplace_back(0, 0, 10, world->GetSoldier(1));
+    SoldierStatePacket packet{};
+    packet.server_tick = 10;
+    packet.player_id = 1;
+    packet.body_animation_type = AnimationType::Stand;
+    packet.body_animation_frame = 1;
+    packet.body_animation_speed = 3;
+    packet.legs_animation_type = AnimationType::Stand;
+    packet.legs_animation_frame = 1;
+    packet.legs_animation_speed = 3;
+    packet.weapon_count = 3;
+    packet.health = 120.0F;
+    packet.vest = 30.0F;
+    for (std::size_t i = 0; i < 3; ++i) {
+        packet.weapons[i] = world->GetSoldier(1).weapons[i].GetState();
+    }
+    packet.weapons[0].ammo = 1;
+    packet.weapons[0].trigger_latched = true;
+    auto dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<SoldierStateNetworkEventHandler>(world, client),
+        std::make_shared<HitSoldierNetworkEventHandler>(world) });
+    const ConnectionMetadata connection{
+        .connection_id = 1, .send_message_to_connection = [](const NetworkMessage&) {}
+    };
+    EXPECT_EQ(
+      dispatcher
+        ->ProcessNetworkMessage(connection, NetworkMessage(NetworkEvent::SoldierState, packet))
+        .first,
+      NetworkEventDispatchResult::Success);
+    EXPECT_EQ(world->GetSoldier(1).GetActiveWeapon().GetAmmoCount(), 1);
+    EXPECT_TRUE(world->GetSoldier(1).GetActiveWeapon().GetState().trigger_latched);
+    EXPECT_FLOAT_EQ(world->GetSoldier(1).health, 120.0F);
+    EXPECT_FLOAT_EQ(world->GetSoldier(1).vest, 30.0F);
+
+    EXPECT_EQ(dispatcher
+                ->ProcessNetworkMessage(
+                  connection, NetworkMessage(NetworkEvent::HitSoldier, std::uint8_t{ 1 }, 20.0F))
+                .first,
+              NetworkEventDispatchResult::Success);
+    EXPECT_FLOAT_EQ(world->GetSoldier(1).health, 120.0F);
+
+    packet.server_tick = 9;
+    packet.weapons[0].ammo = 2;
+    EXPECT_EQ(
+      dispatcher
+        ->ProcessNetworkMessage(connection, NetworkMessage(NetworkEvent::SoldierState, packet))
+        .first,
+      NetworkEventDispatchResult::Success);
+    EXPECT_EQ(world->GetSoldier(1).GetActiveWeapon().GetAmmoCount(), 1);
+}
+
+TEST(FullClientServerReconciliationTest, ItemSnapshotsPreserveIdentityAmmoAndRejectStaleRemoval)
+{
+    auto world = std::make_shared<World>();
+    auto dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<ItemStateNetworkEventHandler>(world) });
+    const ConnectionMetadata connection{
+        .connection_id = 1, .send_message_to_connection = [](const NetworkMessage&) {}
+    };
+    ItemStatePacket packet{};
+    packet.id = 7;
+    packet.active = true;
+    packet.server_tick = 10;
+    packet.style = ItemType::Ak74;
+    packet.owner = 255;
+    packet.ammo = 2;
+    packet.radius = 10.0F;
+    packet.timeout = 100;
+    packet.particle_count = 2;
+    packet.particles[0] = { 10.0F, 20.0F, 9.0F, 20.0F };
+    packet.particles[1] = { 12.0F, 20.0F, 11.0F, 20.0F };
+    const auto send = [&] {
+        return dispatcher
+          ->ProcessNetworkMessage(connection, NetworkMessage(NetworkEvent::ItemState, packet))
+          .first;
+    };
+    ASSERT_EQ(send(), NetworkEventDispatchResult::Success);
+    unsigned int items = 0;
+    world->GetStateManager()->ForEachItem([&](const auto& item) {
+        ++items;
+        EXPECT_EQ(item.id, 7);
+        EXPECT_EQ(item.ammo_count, 2);
+    });
+    EXPECT_EQ(items, 1U);
+    packet.server_tick = 9;
+    packet.active = false;
+    EXPECT_EQ(send(), NetworkEventDispatchResult::Success);
+    items = 0;
+    world->GetStateManager()->ForEachItem([&](const auto&) { ++items; });
+    EXPECT_EQ(items, 1U);
+    packet.server_tick = 11;
+    EXPECT_EQ(send(), NetworkEventDispatchResult::Success);
+    items = 0;
+    world->GetStateManager()->ForEachItem([&](const auto&) { ++items; });
+    EXPECT_EQ(items, 0U);
+}
+
+TEST(WeaponPresentationTest, RecoilRaisesAimOnBothSidesAndPreservesZeroLengthAim)
+{
+    auto world = std::make_shared<World>();
+    world->CreateSoldier(1);
+    world->SpawnSoldier(1, glm::vec2{});
+    world->GetStateManager()->SetRealistic(true);
+    world->GetStateManager()->ChangeSoldierPrimaryWeapon(1, WeaponType::MP5);
+    auto& soldier = world->GetStateManager()->GetSoldier(1);
+    auto firing = soldier.GetActiveWeapon().GetState();
+    firing.burst_count = 10;
+    ASSERT_TRUE(soldier.GetActiveWeapon().RestoreState(firing));
+    EXPECT_EQ(ApplyWeaponRecoil(soldier, {}, {}), glm::vec2{});
+    const auto right = ApplyWeaponRecoil(soldier, {}, { 100.0F, 0.0F });
+    const auto left = ApplyWeaponRecoil(soldier, {}, { -100.0F, 0.0F });
+    EXPECT_LT(right.y, 0.0F);
+    EXPECT_LT(left.y, 0.0F);
+    EXPECT_NEAR(right.x, -left.x, 0.0001F);
+}
+
+TEST(WeaponPresentationTest, CasingsAreDeduplicatedAcrossPredictionCorrection)
+{
+    auto world = std::make_shared<World>();
+    world->CreateSoldier(1);
+    world->SpawnSoldier(1, glm::vec2{});
+    auto state = world->GetStateManager();
+    const auto empty_map = SoldankTesting::MapBuilder::Empty()->Build();
+    state->OverrideMap(*empty_map);
+    WeaponVisualEffects effects;
+    effects.Update(*state, {});
+    auto ready = state->GetSoldier(1).GetActiveWeapon().GetState();
+    ready.fire_interval = 0;
+    ready.startup = 0;
+    auto& weapon = state->GetSoldier(1).GetActiveWeapon();
+    ASSERT_TRUE(weapon.RestoreState(ready));
+    ASSERT_TRUE(weapon.TryFire());
+    const auto fired = weapon.GetState();
+    state->SetGameTick(1);
+    effects.Update(*state, {});
+    ASSERT_EQ(effects.GetEffects().size(), 2U);
+    effects.Update(*state, {});
+    EXPECT_EQ(effects.GetEffects().size(), 2U);
+    ASSERT_TRUE(weapon.RestoreState(ready));
+    state->SetGameTick(2);
+    effects.Update(*state, {});
+    ASSERT_TRUE(weapon.RestoreState(fired));
+    state->SetGameTick(3);
+    effects.Update(*state, {});
+    EXPECT_EQ(effects.GetEffects().size(), 2U);
+    const auto previous_instance = weapon.GetState().instance_id;
+    world->SpawnSoldier(1, glm::vec2{});
+    EXPECT_NE(weapon.GetState().instance_id, previous_instance);
+    state->SetGameTick(4);
+    effects.Update(*state, {});
+    auto new_ready = weapon.GetState();
+    new_ready.fire_interval = 0;
+    new_ready.startup = 0;
+    ASSERT_TRUE(weapon.RestoreState(new_ready));
+    ASSERT_TRUE(weapon.TryFire());
+    state->SetGameTick(5);
+    effects.Update(*state, {});
+    EXPECT_EQ(effects.GetEffects().size(), 4U);
+}
+
+TEST(WeaponPresentationTest, AuthoritativeImpactEffectsDoNotChangeGameplayOrItsRandomSequence)
+{
+    auto world = std::make_shared<World>();
+    auto state = world->GetStateManager();
+    state->SetRandomSeed(99);
+    const auto expected_random = state->GetRandomInt(0, 10000);
+    state->SetRandomSeed(99);
+    WeaponVisualEffects effects;
+    const ProjectilePhysicsEvent explosion{ .kind = ProjectileEventKind::ProjectileExploded,
+                                            .projectile_id = 10,
+                                            .style = BulletType::FragGrenade,
+                                            .weapon = WeaponType::FragGrenade,
+                                            .tick = 42,
+                                            .position = { 100.0F, 100.0F },
+                                            .radius = 64.0F };
+    const std::vector<ProjectilePhysicsEvent> repeated{ explosion, explosion };
+    effects.Update(*state, repeated);
+    ASSERT_EQ(effects.GetEffects().size(), 3U);
+    EXPECT_EQ(effects.GetEffects().back().kind, WeaponVisualEffectKind::Explosion);
+    EXPECT_EQ(state->GetRandomInt(0, 10000), expected_random);
+    EXPECT_TRUE(state->GetBulletEmitter().empty());
+    for (unsigned int tick = 1; tick <= 190; ++tick) {
+        state->SetGameTick(tick);
+        effects.Update(*state, repeated);
+    }
+    EXPECT_TRUE(effects.GetEffects().empty());
+}
+
+TEST(FullClientServerReconciliationTest,
+     InputLoadoutSelectionAppliesAtRespawnWithoutRefillingLiveAmmo)
+{
+    auto world = std::make_shared<World>();
+    world->CreateSoldier(1);
+    world->SpawnSoldier(1, glm::vec2{});
+    SoldierInputPacket input{};
+    input.has_weapon_choice = true;
+    input.primary_choice = WeaponType::MP5;
+    input.secondary_choice = WeaponType::LAW;
+    const auto command = ProtocolConversions::ToPlayerInputCommand(1, input);
+    ApplyPlayerInputCommand(*world->GetStateManager(), command);
+    EXPECT_EQ(world->GetSoldier(1).GetActiveWeapon().GetWeaponParameters().kind,
+              WeaponType::DesertEagles);
+    world->SpawnSoldier(1, glm::vec2{});
+    EXPECT_EQ(world->GetSoldier(1).weapons.at(0).GetWeaponParameters().kind, WeaponType::MP5);
+    EXPECT_EQ(world->GetSoldier(1).weapons.at(1).GetWeaponParameters().kind, WeaponType::LAW);
+    input.primary_choice = WeaponType::M2;
+    ApplyPlayerInputCommand(*world->GetStateManager(),
+                            ProtocolConversions::ToPlayerInputCommand(1, input));
+    EXPECT_EQ(world->GetSoldier(1).weapon_choices.at(0), WeaponType::MP5);
+}
+
+TEST(FullClientServerReconciliationTest,
+     WeaponConfigurationMismatchStopsPredictionUntilMatchingSnapshot)
+{
+    auto world = std::make_shared<World>();
+    world->CreateSoldier(1);
+    world->SpawnSoldier(1, glm::vec2{});
+    auto client = std::make_shared<ClientState>();
+    auto dispatcher =
+      std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<SoldierStateNetworkEventHandler>(world, client) });
+    SoldierStatePacket packet{};
+    packet.server_tick = 10;
+    packet.player_id = 1;
+    packet.body_animation_type = AnimationType::Stand;
+    packet.body_animation_frame = 1;
+    packet.body_animation_speed = 3;
+    packet.legs_animation_type = AnimationType::Stand;
+    packet.legs_animation_frame = 1;
+    packet.legs_animation_speed = 3;
+    packet.weapon_count = 3;
+    for (std::size_t i = 0; i < 3; ++i) {
+        packet.weapons[i] = world->GetSoldier(1).weapons[i].GetState();
+    }
+    const auto expected_hash = WeaponParametersFactory::GetConfigurationHash(false);
+    packet.weapon_config_hash = expected_hash ^ 1U;
+    const ConnectionMetadata connection{
+        .connection_id = 1, .send_message_to_connection = [](const NetworkMessage&) {}
+    };
+    const auto send = [&] {
+        return dispatcher
+          ->ProcessNetworkMessage(connection, NetworkMessage(NetworkEvent::SoldierState, packet))
+          .first;
+    };
+    EXPECT_EQ(send(), NetworkEventDispatchResult::HandlerFailure);
+    EXPECT_TRUE(client->network.weapon_config_mismatch);
+    packet.server_tick = 9;
+    packet.weapon_config_hash = expected_hash;
+    EXPECT_EQ(send(), NetworkEventDispatchResult::Success);
+    EXPECT_TRUE(client->network.weapon_config_mismatch);
+    packet.server_tick = 11;
+    EXPECT_EQ(send(), NetworkEventDispatchResult::Success);
+    EXPECT_FALSE(client->network.weapon_config_mismatch);
+}
+
+TEST(WeaponPresentationTest, ExplosionSpritesUseReferenceTimingScaleAnchorsAndCompositing)
+{
+    for (const auto weapon :
+         { WeaponType::M79, WeaponType::LAW, WeaponType::FragGrenade, WeaponType::Cluster }) {
+        SCOPED_TRACE(static_cast<int>(weapon));
+        const bool cluster = weapon == WeaponType::Cluster;
+        const bool frag = weapon == WeaponType::FragGrenade;
+        WeaponVisualEffect effect{ .kind = WeaponVisualEffectKind::Explosion,
+                                   .weapon = weapon,
+                                   .position = { 100.0F, 200.0F },
+                                   .lifetime = 48,
+                                   .initial_lifetime = 48 };
+        const auto initial = GetExplosionSprites(effect, 1.0F);
+        ASSERT_EQ(initial.size(), cluster ? 1U : 2U);
+        const auto& blast = initial.back();
+        EXPECT_EQ(blast.frame, cluster ? 0 : 3);
+        EXPECT_EQ(blast.scale, glm::vec2(cluster ? 0.5F : (frag ? 1.0F : 0.75F)));
+        EXPECT_EQ(blast.position,
+                  glm::vec2(100.0F, 200.0F) +
+                    (cluster ? glm::vec2(-15.0F, -37.0F)
+                             : (frag ? glm::vec2(-25.0F, -50.0F) : glm::vec2(-19.0F, -38.0F))));
+        EXPECT_FLOAT_EQ(blast.color.a, (cluster ? 159.0F : 223.0F) / 255.0F);
+        if (!cluster) {
+            EXPECT_EQ(initial.front().frame, 2);
+            EXPECT_FLOAT_EQ(initial.front().color.r, (frag ? 170.0F : 173.0F) / 255.0F);
+            EXPECT_FLOAT_EQ(initial.front().color.a, 100.0F / 255.0F);
+        }
+        effect.lifetime = 1;
+        const auto final = GetExplosionSprites(effect, 1.0F);
+        EXPECT_EQ(final.back().frame, 15);
+        EXPECT_FLOAT_EQ(final.back().color.a, (cluster ? 253.0F : 176.0F) / 255.0F);
+    }
+}
+
+TEST(WeaponPresentationTest, ExplosionFrameInterpolationUsesPascalTiesToEven)
+{
+    WeaponVisualEffect effect{ .kind = WeaponVisualEffectKind::Explosion,
+                               .weapon = WeaponType::M79,
+                               .lifetime = 42,
+                               .initial_lifetime = 48 };
+    EXPECT_EQ(GetExplosionSprites(effect, 1.0F).back().frame, 5); // Round(10.5) = 10
+    EXPECT_EQ(GetExplosionSprites(effect, 0.0F).back().frame, 4); // Previous life 43
+    effect.lifetime = 38;
+    EXPECT_EQ(GetExplosionSprites(effect, 1.0F).back().frame, 5); // Round(9.5) = 10
+    effect.lifetime = 37;
+    EXPECT_EQ(GetExplosionSprites(effect, 0.5F).back().frame, 6);
+}
+
+TEST(WeaponPresentationTest, ExplosionSmokeHasReferenceDelayAndSeparateFade)
+{
+    WeaponVisualEffect effect{ .kind = WeaponVisualEffectKind::ExplosionSmoke,
+                               .position = { 100.0F, 200.0F },
+                               .lifetime = 50,
+                               .initial_lifetime = 50 };
+    EXPECT_TRUE(GetExplosionSprites(effect, 1.0F).empty());
+    effect.lifetime = 40;
+    const auto start = GetExplosionSprites(effect, 1.0F);
+    ASSERT_EQ(start.size(), 1U);
+    EXPECT_EQ(start.front().kind, ExplosionSpriteKind::Smoke);
+    EXPECT_EQ(start.front().frame, 0);
+    EXPECT_EQ(start.front().position, glm::vec2(74.0F, 152.0F));
+    EXPECT_FLOAT_EQ(start.front().color.a, 130.0F / 255.0F);
+    effect.lifetime = 36;
+    const auto layered = GetExplosionSprites(effect, 1.0F);
+    ASSERT_EQ(layered.size(), 2U);
+    EXPECT_EQ(layered.front().frame, 0);
+    EXPECT_EQ(layered.back().frame, 1);
+    effect.kind = WeaponVisualEffectKind::ExplosionAfterSmoke;
+    effect.initial_lifetime = 190;
+    effect.lifetime = 190;
+    const auto lingering = GetExplosionSprites(effect, 1.0F);
+    ASSERT_EQ(lingering.size(), 2U);
+    EXPECT_EQ(lingering.front().kind, ExplosionSpriteKind::BigSmoke);
+    EXPECT_EQ(lingering.back().kind, ExplosionSpriteKind::BigSmoke2);
+    EXPECT_FLOAT_EQ(lingering.front().scale.x, 0.5F + 16.0F / 240.0F);
+}
+
+TEST(WeaponPresentationTest, ExplosionsKeepReferenceLifetimesAndDoNotScaleWithDamageRadius)
+{
+    auto world = std::make_shared<World>();
+    auto state = world->GetStateManager();
+    WeaponVisualEffects effects;
+    const ProjectilePhysicsEvent event{ .kind = ProjectileEventKind::ProjectileExploded,
+                                        .projectile_id = 10,
+                                        .style = BulletType::FragGrenade,
+                                        .weapon = WeaponType::FragGrenade,
+                                        .position = { 100.0F, 100.0F },
+                                        .radius = 1000.0F };
+    effects.Update(*state, std::vector{ event });
+    ASSERT_EQ(effects.GetEffects().size(), 3U);
+    EXPECT_EQ(effects.GetEffects().back().initial_lifetime, 48);
+    EXPECT_EQ(GetExplosionSprites(effects.GetEffects().back(), 1.0F).back().scale, glm::vec2(1.0F));
+    for (unsigned int tick = 1; tick <= 47; ++tick) {
+        state->SetGameTick(tick);
+        effects.Update(*state, {});
+    }
+    ASSERT_EQ(effects.GetEffects().size(), 3U);
+    EXPECT_EQ(effects.GetEffects().back().lifetime, 1);
+    state->SetGameTick(48);
+    effects.Update(*state, {});
+    ASSERT_EQ(effects.GetEffects().size(), 2U);
+    EXPECT_EQ(effects.GetEffects().back().kind, WeaponVisualEffectKind::ExplosionSmoke);
+}
+
+TEST(WeaponPresentationTest, ClusterBreakupAndM2UseSmokeInsteadOfFullSizeFireball)
+{
+    auto world = std::make_shared<World>();
+    auto state = world->GetStateManager();
+    for (const bool m2 : { false, true }) {
+        WeaponVisualEffects effects;
+        const ProjectilePhysicsEvent event{ .kind = m2 ? ProjectileEventKind::ProjectileExploded
+                                                       : ProjectileEventKind::ProjectileFragmented,
+                                            .projectile_id = 10,
+                                            .style = m2 ? BulletType::M2Bullet
+                                                        : BulletType::ClusterGrenade };
+        effects.Update(*state, std::vector{ event });
+        ASSERT_EQ(effects.GetEffects().size(), 1U);
+        EXPECT_EQ(effects.GetEffects().front().kind, WeaponVisualEffectKind::ClusterSmoke);
+        EXPECT_EQ(effects.GetEffects().front().initial_lifetime, 55);
+    }
 }

@@ -45,6 +45,8 @@ public:
         , player_session_manager_(std::make_unique<PlayerSessionManager>())
         , command_queues_(std::make_unique<ServerCommandQueues>())
     {
+        world_->GetStateManager()->SetRealistic(config_.realistic);
+        world_->GetStateManager()->SetMaxGrenades(config_.max_grenades);
         world_->GetStateManager()->LoadMapDocument(config_.map_path);
 
         scripting_engine_ = std::make_shared<DaScriptScriptingEngine>();
@@ -69,13 +71,12 @@ public:
         CoreEventsConnectionNotifier::ObserveAll(
           game_server_.get(), world_->GetWorldEvents(), world_->GetPhysicsEvents());
         network_host_ = std::make_unique<ServerNetworkHost>(game_server_);
-        server_runtime_ = std::make_unique<ServerRuntime>(
-          config_,
-          world_,
-          *network_host_,
-          *lobby_client_,
-          *player_session_manager_,
-          *command_queues_);
+        server_runtime_ = std::make_unique<ServerRuntime>(config_,
+                                                          world_,
+                                                          *network_host_,
+                                                          *lobby_client_,
+                                                          *player_session_manager_,
+                                                          *command_queues_);
     }
 
     ~Application() = default;
