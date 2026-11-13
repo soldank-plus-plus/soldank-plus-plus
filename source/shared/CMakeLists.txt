@@ -54,6 +54,11 @@ set(soldank_core_modules
     core/entities/WeaponParameters.cpp
     core/entities/WeaponParametersFactory.cpp
 
+    core/map/polygons/PolygonValidation.cpp
+    core/map/polygons/PolygonRenderBatch.cpp
+    core/map/polygons/PolygonTraits.cpp
+    core/map/polygons/PolygonBackgroundState.cpp
+    core/map/polygons/PolygonCollisionPolicy.cpp
     core/map/Map.cpp
     core/map/MapDocument.cpp
     core/map/PMSEnums.cpp
@@ -73,6 +78,12 @@ set(soldank_core_modules
     core/physics/bullets/BulletPhysics.cpp
     core/physics/weapons/WeaponPhysics.cpp
     core/physics/weapons/StationaryWeaponPhysics.cpp
+    core/physics/polygons/FlagCarry.cpp
+    core/physics/polygons/PolygonContact.cpp
+    core/physics/polygons/PolygonContacts.cpp
+    core/physics/polygons/PolygonSurfaceResponse.cpp
+    core/physics/polygons/PolygonContactEffects.cpp
+    core/combat/HealthEffects.cpp
     core/physics/Constants.cpp
     core/physics/ItemPhysics.cpp
     core/physics/SoldierPhysics.cpp

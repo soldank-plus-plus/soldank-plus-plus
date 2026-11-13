@@ -25,6 +25,8 @@ import Shared.Core.State.Control;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Types.TeamType;
+import Shared.Core.Map.Polygons.PolygonBackgroundState;
+import Shared.Core.Physics.Polygons.PolygonContact;
 
 const float GRAV = 0.06F;
 
@@ -32,6 +34,12 @@ export namespace Soldank
 {
 struct Soldier
 {
+    PolygonBackgroundState polygon_background{};
+    bool background_touched{};
+    std::vector<PolygonContact> polygon_contacts;
+    std::uint32_t life_sequence{};
+    DeathSeverity death_severity{};
+    bool death_committed{};
     Soldier() = default;
     Soldier(std::uint8_t soldier_id,
             const AnimationDataManager& animation_data_manager,
@@ -95,6 +103,12 @@ struct Soldier
         idle_random = 0;
         stance = 0;
         on_fire = 0;
+        polygon_background = {};
+        polygon_contacts.clear();
+        background_touched = false;
+        death_committed = false;
+        death_severity = DeathSeverity::Normal;
+        is_holding_flags = false;
         collider_distance = 255;
         half_dead = false;
         is_shooting = false;
@@ -277,7 +291,10 @@ class SoldierSnapshot
 {
 public:
     SoldierSnapshot(const Soldier& soldier)
-        : body_animation_type_(soldier.body_animation->GetType())
+        : polygon_background_(soldier.polygon_background)
+        , carrying_flag_(soldier.is_holding_flags)
+        , life_sequence_(soldier.life_sequence)
+        , body_animation_type_(soldier.body_animation->GetType())
         , legs_animation_type_(soldier.legs_animation->GetType())
         , body_animation_frame_(soldier.body_animation->GetFrame())
         , legs_animation_frame_(soldier.legs_animation->GetFrame())
@@ -312,6 +329,9 @@ public:
         }
     }
 
+    const PolygonBackgroundState& GetPolygonBackground() const { return polygon_background_; }
+    bool IsCarryingFlag() const { return carrying_flag_; }
+    std::uint32_t GetLifeSequence() const { return life_sequence_; }
     AnimationType GetBodyAnimationType() const { return body_animation_type_; }
     AnimationType GetLegsAnimationType() const { return legs_animation_type_; }
     std::uint32_t GetBodyAnimationFrame() const { return body_animation_frame_; }
@@ -468,6 +488,9 @@ public:
     }
 
 private:
+    PolygonBackgroundState polygon_background_{};
+    bool carrying_flag_{};
+    std::uint32_t life_sequence_{};
     AnimationType body_animation_type_;
     AnimationType legs_animation_type_;
 

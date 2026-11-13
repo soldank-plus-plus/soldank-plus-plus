@@ -13,6 +13,7 @@ import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 import Networking.IGameServer;
 import Networking.CoreEventsConnectionNotifier;
 import Networking.ProjectilePhysicsNetworkEventHandler;
+import Networking.PolygonEffectNetworkEventHandler;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Physics.Bullets.BulletLagCompensation;
 import Shared.Core.Physics.Bullets.BulletEvents;
@@ -34,6 +35,9 @@ import Gameplay.WeaponSoundEventRouter;
 import WeaponVisualEffects;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Types.ItemType;
+import Shared.Core.Entities.Item;
+import Shared.Core.Physics.Polygons.FlagCarry;
+import Shared.Core.Map.Polygons.PolygonBackgroundState;
 import Shared.Core.Animations;
 import Replication.ReplicationService;
 import Runtime.ServerCommandQueues;
@@ -712,6 +716,7 @@ TEST(FullClientServerReconciliationTest, ProjectilePushesConvergeUnderChangingLa
     auto client_dispatcher =
       std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
         std::make_shared<SoldierStateNetworkEventHandler>(client_world, client_state),
+        std::make_shared<PolygonEffectNetworkEventHandler>(client_world),
         std::make_shared<ProjectilePhysicsNetworkEventHandler>(client_world, client_state) });
     CoreEventsConnectionNotifier::ObserveAll(
       bridge.get(), server_world->GetWorldEvents(), server_world->GetPhysicsEvents());
@@ -789,6 +794,7 @@ TEST(FullClientServerReconciliationTest, AuthoritativeRemovalTargetsTheCorrectPr
                                                  .id = 10 });
     auto dispatcher =
       std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
+        std::make_shared<PolygonEffectNetworkEventHandler>(world),
         std::make_shared<ProjectilePhysicsNetworkEventHandler>(world, client_state) });
     const ConnectionMetadata connection{
         .connection_id = 1, .send_message_to_connection = [](const NetworkMessage&) {}
@@ -860,6 +866,7 @@ TEST(FullClientServerReconciliationTest, WeaponAmmoAndReloadConvergeUnderChangin
     auto client_dispatcher =
       std::make_shared<NetworkEventDispatcher>(std::vector<std::shared_ptr<INetworkEventHandler>>{
         std::make_shared<SoldierStateNetworkEventHandler>(client_world, client_state),
+        std::make_shared<PolygonEffectNetworkEventHandler>(client_world),
         std::make_shared<ProjectilePhysicsNetworkEventHandler>(client_world, client_state),
         std::make_shared<ProjectileSpawnNetworkEventHandler>(client_world),
         std::make_shared<ItemStateNetworkEventHandler>(client_world) });
@@ -1299,5 +1306,114 @@ TEST(WeaponPresentationTest, ClusterBreakupAndM2UseSmokeInsteadOfFullSizeFirebal
         ASSERT_EQ(effects.GetEffects().size(), 1U);
         EXPECT_EQ(effects.GetEffects().front().kind, WeaponVisualEffectKind::ClusterSmoke);
         EXPECT_EQ(effects.GetEffects().front().initial_lifetime, 55);
+    }
+}
+
+TEST(FullClientServerReconciliationTest, BackgroundAndFlagCarryConvergeUnderChangingLatency)
+{
+    for (bool realistic : { false, true }) {
+        SCOPED_TRACE(realistic);
+        constexpr std::uint8_t PLAYER_ID = 1;
+        const auto map =
+          SoldankTesting::MapBuilder::Empty()
+            ->AddPolygon(
+              { -4000.0F, 0.0F }, { 4000.0F, 0.0F }, { 4000.0F, 60.0F }, PMSPolygonType::Normal)
+            ->AddPolygon(
+              { -4000.0F, 0.0F }, { 4000.0F, 60.0F }, { -4000.0F, 60.0F }, PMSPolygonType::Normal)
+            ->AddPolygon(
+              { -200, -500 }, { 200, -500 }, { 0, 500 }, PMSPolygonType::BackgroundTransition)
+            ->AddPolygon({ -1200, -500 }, { 1200, -500 }, { 0, 700 }, PMSPolygonType::Background)
+            ->Build();
+        auto client_world = std::make_shared<World>();
+        auto server_world = std::make_shared<World>();
+        client_world->GetStateManager()->SetRealistic(realistic);
+        server_world->GetStateManager()->SetRealistic(realistic);
+        const float spawn_y = map->GetPolygons().front().vertices.front().y - 34.0F;
+        const std::vector<std::pair<unsigned int, glm::vec2>> positions{ { PLAYER_ID,
+                                                                           { 0.0F, spawn_y } } };
+        InitializeWorld(*client_world, *map, positions);
+        InitializeWorld(*server_world, *map, positions);
+        client_world->GetStateManager()->SetAuthoritativeProjectiles(false);
+        auto client_state = std::make_shared<ClientState>();
+        client_state->client_soldier_id = PLAYER_ID;
+        client_state->network.server_reconciliation = true;
+        client_state->network.client_side_prediction = true;
+        auto bridge = std::make_shared<DeterministicNetworkBridge>(
+          std::vector<LatencyPhase>{ { 0, 77 }, { 250, 280 }, { 500, 445 } });
+        auto endpoint = bridge->CreateClientEndpoint(PLAYER_ID);
+        auto server = std::static_pointer_cast<IGameServer>(bridge);
+        PlayerSessionManager sessions;
+        ServerCommandQueues queues;
+        auto server_dispatcher = std::make_shared<NetworkEventDispatcher>(
+          std::vector<std::shared_ptr<INetworkEventHandler>>{
+            std::make_shared<SoldierInputNetworkEventHandler>(server, sessions, queues) });
+        auto client_dispatcher = std::make_shared<NetworkEventDispatcher>(
+          std::vector<std::shared_ptr<INetworkEventHandler>>{
+            std::make_shared<SoldierStateNetworkEventHandler>(client_world, client_state),
+            std::make_shared<PolygonEffectNetworkEventHandler>(client_world),
+            std::make_shared<ProjectilePhysicsNetworkEventHandler>(client_world, client_state),
+            std::make_shared<ProjectileSpawnNetworkEventHandler>(client_world),
+            std::make_shared<ItemStateNetworkEventHandler>(client_world) });
+        CoreEventsConnectionNotifier::ObserveAll(
+          bridge.get(), server_world->GetWorldEvents(), server_world->GetPhysicsEvents());
+        NetworkClientSession client_session(
+          *endpoint, client_dispatcher, *client_world, *client_state);
+        ReplicationService replication(*bridge, sessions);
+        bool saw_carrier = false;
+        bool saw_transition = false;
+        for (std::uint64_t step = 0; step < 1000; ++step) {
+            bridge->SetCurrentStep(step);
+            client_state->network.target_input_delay_ticks =
+              std::max(client_state->network.target_input_delay_ticks,
+                       CalculateInputDelayTicks(bridge->GetCurrentRoundTripTime()));
+            bridge->DeliverMessagesToServer(server_dispatcher);
+            auto state = server_world->GetStateManager();
+            if (step == 150) {
+                auto& soldier = state->GetSoldier(PLAYER_ID);
+                auto& flag = state->CreateItem(soldier.particle.position, 255, ItemType::AlphaFlag);
+                ASSERT_TRUE(FlagCarry::TryAcquire(*state, soldier, flag));
+            }
+            if (step == 550) {
+                state->ReleaseSoldierFlags(PLAYER_ID);
+            }
+            const auto tick = state->GetGameTick();
+            auto inputs = queues.SelectPlayerInputsForSimulation(tick);
+            const std::vector<SimulationCommand> commands;
+            const auto result =
+              server_world->Tick({ .tick = tick, .player_inputs = inputs, .commands = commands });
+            replication.OnSimulationEvents(result.events);
+            for (const auto& input : inputs) {
+                sessions.MarkInputApplied(input.soldier_id, input.input_sequence_id);
+            }
+            replication.BroadcastTick(*state);
+            state->SetGameTick(tick + 1);
+            client_session.UpdateBeforeWorldTick();
+            client_world->GetStateManager()->TransformSoldier(PLAYER_ID, [&](Soldier& soldier) {
+                soldier.control.right = step > 180 && step < 350;
+                soldier.control.left = step > 400 && step < 600;
+            });
+            client_session.SendSoldierInput(PLAYER_ID, { 1000.0F, -100.0F });
+            const auto client_tick = client_world->GetStateManager()->GetGameTick();
+            TickWorldWithNoInput(*client_world, client_tick);
+            client_session.StorePredictedSoldierSnapshot(PLAYER_ID);
+            saw_carrier = saw_carrier || client_world->GetSoldier(PLAYER_ID).is_holding_flags;
+            saw_transition =
+              saw_transition || client_world->GetSoldier(PLAYER_ID).polygon_background.phase ==
+                                  PolygonBackgroundPhase::Transition;
+        }
+        EXPECT_EQ(bridge->GetDispatchFailureCount(), 0U);
+        EXPECT_TRUE(saw_carrier);
+        EXPECT_TRUE(saw_transition);
+        EXPECT_EQ(client_world->GetSoldier(PLAYER_ID).is_holding_flags,
+                  server_world->GetSoldier(PLAYER_ID).is_holding_flags);
+        EXPECT_EQ(client_world->GetSoldier(PLAYER_ID).polygon_background,
+                  server_world->GetSoldier(PLAYER_ID).polygon_background);
+        EXPECT_LE(glm::distance(client_world->GetSoldier(PLAYER_ID).particle.position,
+                                server_world->GetSoldier(PLAYER_ID).particle.position),
+                  1.5F)
+          << "client=" << client_world->GetSoldier(PLAYER_ID).particle.position.x << ","
+          << client_world->GetSoldier(PLAYER_ID).particle.position.y
+          << " server=" << server_world->GetSoldier(PLAYER_ID).particle.position.x << ","
+          << server_world->GetSoldier(PLAYER_ID).particle.position.y;
     }
 }

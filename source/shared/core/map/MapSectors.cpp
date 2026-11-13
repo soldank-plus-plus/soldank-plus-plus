@@ -4,6 +4,7 @@ module;
 #include <array>
 #include <cmath>
 #include <vector>
+#include <stdexcept>
 
 module Shared.Core.Map.Map;
 
@@ -13,6 +14,7 @@ import Shared.Core.Map.PMSConstants;
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Math.Calc;
+import Shared.Core.Map.Polygons.PolygonValidation;
 
 namespace Soldank
 {
@@ -66,6 +68,10 @@ void Map::GenerateSectors()
 
 glm::vec2 Map::NormalizeCoordinatesForRuntime()
 {
+    if (GetPolygonsCount() > MAX_POLYGONS_COUNT) {
+        throw std::length_error("PMS polygon limit exceeded");
+    }
+    polygon_fingerprint_.reset();
     NormalizePolygonsAndPerpendiculars();
     FixPolygonIds();
     RecalculatePolygonBounds();
@@ -197,6 +203,7 @@ bool Map::IsPolygonInSector(unsigned short polygon_index,
 
 void Map::SetPolygonVerticesAndPerpendiculars(PMSPolygon& polygon)
 {
+    ValidatePolygon(polygon);
     // Polygons' vertices have to be arranged in clock-wise order.
     if (!polygon.AreVerticesClockwise()) {
         PMSVertex tmp = polygon.vertices[1];
@@ -227,6 +234,7 @@ void Map::SetPolygonVerticesAndPerpendiculars(PMSPolygon& polygon)
 
 void Map::RefreshPolygonDerivedState(PolygonIdPolicy polygon_id_policy)
 {
+    polygon_fingerprint_.reset();
     NormalizePolygonsAndPerpendiculars();
     if (polygon_id_policy == PolygonIdPolicy::Rebuild) {
         FixPolygonIds();

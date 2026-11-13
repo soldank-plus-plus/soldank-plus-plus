@@ -7,6 +7,7 @@ import Networking.IGameServer;
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkPackets;
+import Shared.Core.Physics.Polygons.PolygonContact;
 import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Physics.Bullets.BulletTypes;
 import Shared.Core.WorldEvents;
@@ -43,6 +44,10 @@ private:
 
     static void ObserveAllPhysicsEvents(IGameServer* game_server, PhysicsEvents& physics_events)
     {
+        physics_events.polygon_event.AddObserver([game_server](const PolygonEffectEvent& event) {
+            game_server->SendNetworkMessageToAll(NetworkMessage(
+              NetworkEvent::PolygonEffect, PolygonEffectPacket{ event, event.map_fingerprint }));
+        });
         physics_events.projectile_event.AddObserver([game_server](
                                                       const ProjectilePhysicsEvent& event) {
             const ProjectilePhysicsPacket packet{

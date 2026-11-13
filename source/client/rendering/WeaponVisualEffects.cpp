@@ -20,12 +20,16 @@ import Shared.Core.Types.BulletType;
 import Shared.Core.Types.ItemType;
 import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Utility.SerialNumber;
+import Shared.Core.Physics.Polygons.PolygonContact;
+import Shared.Core.Map.Map;
+import Shared.Core.Map.Polygons.PolygonCollisionPolicy;
 
 export namespace Soldank
 {
 enum class WeaponVisualEffectKind
 {
     Casing,
+    Blood,
     Explosion,
     ExplosionSmoke,
     ExplosionAfterSmoke,
@@ -47,6 +51,7 @@ struct WeaponVisualEffect
     float size{ 1.0F };
     int lifetime{ 30 };
     int initial_lifetime{ 30 };
+    std::uint8_t owner{ 255 };
 };
 
 enum class ExplosionSpriteKind
@@ -159,6 +164,28 @@ class WeaponVisualEffects
 {
 public:
     const std::vector<WeaponVisualEffect>& GetEffects() const { return effects_; }
+    void ObservePolygon(const PolygonEffectEvent& event)
+    {
+        if (event.kind == PolygonEventKind::Lava) {
+            Add(WeaponVisualEffectKind::Flame,
+                event.position - glm::vec2(0.0F, 3.0F),
+                { 0.0F, -1.3F },
+                4.0F,
+                40);
+        } else if (event.kind == PolygonEventKind::Death) {
+            const unsigned int count = event.severity == DeathSeverity::Brutal ? 12
+                                       : event.severity == DeathSeverity::Head ? 6
+                                                                               : 2;
+            for (unsigned int index = 0; index < count; ++index) {
+                const float angle = static_cast<float>(index) * 2.4F;
+                Add(WeaponVisualEffectKind::Blood,
+                    event.position,
+                    { std::cos(angle) * 1.4F, std::sin(angle) * 1.4F - 0.5F },
+                    3.0F,
+                    35);
+            }
+        }
+    }
 
     void Update(const StateManager& state, std::span<const ProjectilePhysicsEvent> events)
     {
@@ -209,6 +236,7 @@ public:
                         1.0F,
                         60,
                         WeaponType::M2);
+                    effects_.back().owner = static_cast<std::uint8_t>(item.mounted_soldier);
                     Add(WeaponVisualEffectKind::Flame,
                         item.skeleton->GetPos(4) + glm::vec2(4.0F, -10.0F),
                         {},
@@ -290,6 +318,7 @@ private:
                     1.0F,
                     60,
                     state.kind);
+                effects_.back().owner = soldier.id;
             }
         }
         if (!shooter.initialized || previous.kind != state.kind ||
@@ -308,9 +337,20 @@ private:
             if (effect.kind == WeaponVisualEffectKind::Casing) {
                 effect.velocity.y += 0.06F;
                 effect.rotation += 0.2F;
-                glm::vec2 perpendicular{};
-                if (state.GetConstMap().CollisionTest(effect.position, perpendicular)) {
-                    effect.lifetime = 0;
+                const auto* owner = state.FindSoldier(
+                  [&](const Soldier& soldier) { return soldier.id == effect.owner; });
+                if (owner != nullptr) {
+                    const PolygonQuery query{ .kind = PolygonQueryKind::Cosmetic,
+                                              .team = static_cast<std::uint8_t>(owner->GetTeam()),
+                                              .carrying_flag = owner->is_holding_flags,
+                                              .has_owner = true };
+                    for (const auto& polygon : state.GetConstMap().GetPolygons()) {
+                        if (AllowsPolygon(polygon.polygon_type, query) &&
+                            Map::PointInPoly(effect.position, polygon)) {
+                            effect.lifetime = 0;
+                            break;
+                        }
+                    }
                 }
             }
             effect.velocity *= 0.99F;

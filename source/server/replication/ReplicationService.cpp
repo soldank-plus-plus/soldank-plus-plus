@@ -83,6 +83,11 @@ public:
             packet.bonus_ticks = soldier.bonus_ticks;
             packet.fired = soldier.fired;
             packet.control = soldier.control;
+            packet.has_polygon_state = true;
+            packet.polygon_background = soldier.polygon_background;
+            packet.carrying_flag = soldier.is_holding_flags;
+            packet.life_sequence = soldier.life_sequence;
+            packet.death_severity = soldier.death_severity;
             packet.health = soldier.health;
             packet.vest = soldier.vest;
             packet.dead_meat = soldier.dead_meat;
@@ -105,6 +110,8 @@ public:
             packet.is_static = item.static_type;
             packet.heat = item.interest;
             packet.mounted_soldier = item.mounted_soldier;
+            packet.holding_soldier_id = item.holding_soldier_id;
+            packet.polygon_background = item.polygon_background;
             packet.particle_count = static_cast<std::uint8_t>(
               std::min<std::size_t>(4, item.skeleton->GetParticles().size()));
             for (unsigned int i = 0; i < packet.particle_count; ++i) {

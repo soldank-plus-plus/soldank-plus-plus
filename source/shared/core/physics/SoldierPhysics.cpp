@@ -20,6 +20,7 @@ import Shared.Core.Entities.Soldier;
 import Shared.Core.Math.Calc;
 import Shared.Core.Map.Map;
 import Shared.Core.Map.PMSEnums;
+import Shared.Core.Map.PMSStructs;
 import Shared.Core.Types.TeamType;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Types.ItemType;
@@ -30,6 +31,12 @@ import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.Physics.SoldierSkeletonPhysics;
 import Shared.Core.State.StateManager;
 import Shared.Core.State.Control;
+import Shared.Core.Map.Polygons.PolygonTraits;
+import Shared.Core.Physics.Polygons.PolygonContact;
+import Shared.Core.Physics.Polygons.PolygonContacts;
+import Shared.Core.Physics.Polygons.PolygonSurfaceResponse;
+import Shared.Core.Physics.Polygons.PolygonContactEffects;
+import Shared.Core.Physics.Polygons.FlagCarry;
 
 export namespace Soldank::SoldierPhysics
 {
@@ -75,12 +82,19 @@ void UpdateKeys(Soldier& soldier, const Control& control)
     soldier.control = control;
 }
 
-void HandleSpecialPolytypes(const Map& map, PMSPolygonType polytype, Soldier& soldier)
+void RecordContact(Soldier& soldier, const PMSPolygon& polygon, glm::vec2 point, PolygonProbe probe)
 {
-    if (polytype == PMSPolygonType::Deadly || polytype == PMSPolygonType::BloodyDeadly ||
-        polytype == PMSPolygonType::Explosive) {
-        soldier.particle.position = glm::vec2(map.GetSpawnPoints()[0].x, map.GetSpawnPoints()[0].y);
+    if (!soldier.IsAlive()) {
+        return;
     }
+    if (std::ranges::any_of(soldier.polygon_contacts, [&](const auto& contact) {
+            return contact.polygon == polygon.id && contact.position == point &&
+                   contact.probe == probe;
+        })) {
+        return;
+    }
+    soldier.polygon_contacts.push_back(
+      { polygon.id, polygon.polygon_type, point, soldier.particle.GetVelocity(), probe });
 }
 
 std::shared_ptr<AnimationState> CreateBodyAnimationState(
@@ -260,8 +274,8 @@ void AdvanceWeapons(StateManager& state_manager,
     };
     if (state_manager.HasAuthoritativeProjectiles() && state_manager.GetGameTick() % 3U == 0 &&
         soldier.GetActiveWeapon().IsAny({ WeaponType::Bow, WeaponType::FlameBow }) &&
-        soldier.health < 150.0F) {
-        soldier.health = std::min(150.0F, soldier.health + 1.0F);
+        soldier.health < state_manager.GetMaximumHealth()) {
+        soldier.health = std::min(state_manager.GetMaximumHealth(), soldier.health + 1.0F);
     }
     const auto before = soldier.GetActiveWeapon().GetState();
     WeaponPhysics::Advance(soldier);
@@ -371,6 +385,9 @@ void Update(StateManager& state_manager,
             std::vector<BulletParams>& bullet_emitter,
             float gravity)
 {
+    if (!soldier.active || soldier.IsSpectator()) {
+        return;
+    }
     if (soldier.combat_bonus == CombatBonus::FlameGod) {
         soldier.control.change = false;
         soldier.control.drop = false;
@@ -390,10 +407,15 @@ void Update(StateManager& state_manager,
         physics_events.weapon_action_event.Notify(event);
     };
     const Map& map = state_manager.GetConstMap();
+    FlagCarry::Refresh(state_manager, soldier);
+    soldier.polygon_contacts.clear();
+
     float body_y = 0.0F;
     float arm_s = 0.0F;
 
     soldier.particle.Euler();
+    PolygonContacts::Begin(
+      map, soldier.polygon_background, soldier.background_touched, soldier.particle.position);
 
     if (!soldier.control.fire) {
         soldier.is_shooting = false;
@@ -497,6 +519,7 @@ void Update(StateManager& state_manager,
                                                                      false };
     soldier.body_animation->TryToThrowFlags(try_to_throw_flags_params);
     if (try_to_throw_flags_params.should_throw_flags) {
+        state_manager.ThrowSoldierFlags(soldier.id);
         physics_events.soldier_throws_flags.Notify(soldier);
     }
 
@@ -703,7 +726,7 @@ void Update(StateManager& state_manager,
                 //    (CeaseFireCounter < CeaseFireTime - 30) then
                 // {$ENDIF}
                 if (soldier.on_ground || soldier.control.jets) {
-                    item.holding_soldier_id = 0;
+                    item.holding_soldier_id = -1;
                     // TODO
                     // Dec(Thing[HoldedThing].Skeleton.ConstraintCount);
                     item.time_out = 3 * 60;
@@ -727,7 +750,7 @@ void Update(StateManager& state_manager,
                 soldier.skeleton->SetForce(
                   12, { force.x, 25 * PhysicsConstants::SOLDIER_SPEED_WITH_PARACHUTE });
                 if (soldier.on_ground) {
-                    item.holding_soldier_id = 0;
+                    item.holding_soldier_id = -1;
                     // TODO
                     // Dec(Thing[HoldedThing].Skeleton.ConstraintCount);
                     item.time_out = 3 * 60;
@@ -736,6 +759,8 @@ void Update(StateManager& state_manager,
         });
     }
 
+    PolygonContacts::Finish(soldier.polygon_background, soldier.background_touched);
+    PolygonContactEffects::ApplyAll(state_manager, soldier, physics_events);
     if (soldier.particle.velocity_.x > PhysicsConstants::MAX_VELOCITY) {
         soldier.particle.velocity_.x = PhysicsConstants::MAX_VELOCITY;
     }
@@ -762,18 +787,24 @@ bool CheckMapCollision(Soldier& soldier,
     auto rx = sector_index.x;
     auto ry = sector_index.y;
 
-    if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
-        (ry < map.GetSectorsCount() + 25)) {
+    if ((rx > 0) && (rx < 2 * map.GetSectorsCount()) && (ry > 0) &&
+        (ry < 2 * map.GetSectorsCount())) {
         for (int j = 0; j < map.GetSector(rx, ry).polygons.size(); j++) {
             auto poly = map.GetSector(rx, ry).polygons[j] - 1;
             auto polytype = map.GetPolygons()[poly].polygon_type;
 
-            if ((polytype != PMSPolygonType::NoCollide) &&
-                (polytype != PMSPolygonType::OnlyBulletsCollide)) {
+            if (IsValidPolygonType(polytype)) {
                 auto polygons = map.GetPolygons()[poly];
 
-                if (Map::PointInPoly(pos, polygons)) {
-                    HandleSpecialPolytypes(map, polytype, soldier);
+                if (Map::PointInPoly(pos, polygons) &&
+                    PolygonContacts::SoldierContact(soldier, map, poly, pos)) {
+                    RecordContact(soldier, polygons, pos, PolygonProbe::Body);
+                    const float fall_speed = std::abs(soldier.particle.GetVelocity().y);
+                    if ((fall_speed > 2.2F && fall_speed < 3.4F &&
+                         polytype != PMSPolygonType::Bouncy) ||
+                        fall_speed > 3.5F) {
+                        RecordContact(soldier, polygons, pos, PolygonProbe::Landing);
+                    }
 
                     auto dist = 0.0F;
                     auto k = 0;
@@ -798,8 +829,12 @@ bool CheckMapCollision(Soldier& soldier,
                         soldier.particle.old_position = soldier.particle.position;
                         soldier.particle.position -= perp;
                         if (map.GetPolygons()[poly].polygon_type == PMSPolygonType::Bouncy) {
-                            perp = Calc::Vec2Normalize(perp);
-                            perp *= map.GetPolygons()[poly].bounciness * dist;
+                            perp = PolygonSurfaceResponse::BounceImpulse(
+                              perp, soldier.particle.GetVelocity(), polygons.bounciness);
+                            if (glm::length(perp) > 1.0F) {
+                                soldier.polygon_contacts.push_back(
+                                  { polygons.id, polytype, pos, perp, PolygonProbe::Bounce });
+                            }
                         }
                         soldier.particle.velocity_ -= perp;
                     }
@@ -822,65 +857,17 @@ bool CheckMapCollision(Soldier& soldier,
                                 particle_force.y -= PhysicsConstants::GRAV;
                                 soldier.particle.SetForce(particle_force);
                             }
-
-                            if ((step.y > PhysicsConstants::SLIDELIMIT) &&
-                                (polytype != PMSPolygonType::Ice) &&
-                                (polytype != PMSPolygonType::Bouncy)) {
-                                if ((soldier.legs_animation->GetType() == AnimationType::Stand) ||
-                                    (soldier.legs_animation->GetType() == AnimationType::Fall) ||
-                                    (soldier.legs_animation->GetType() == AnimationType::Crouch)) {
-                                    soldier.particle.velocity_.x *=
-                                      PhysicsConstants::STANDSURFACECOEFX;
-                                    soldier.particle.velocity_.y *=
-                                      PhysicsConstants::STANDSURFACECOEFY;
-
-                                    glm::vec2 particle_force = soldier.particle.GetForce();
-                                    particle_force.x -= soldier.particle.velocity_.x;
-                                    soldier.particle.SetForce(particle_force);
-                                } else if (soldier.legs_animation->GetType() ==
-                                           AnimationType::Prone) {
-                                    if (soldier.legs_animation->GetFrame() > 24) {
-                                        if (!(soldier.control.down &&
-                                              (soldier.control.left || soldier.control.right))) {
-                                            soldier.particle.velocity_.x *=
-                                              PhysicsConstants::STANDSURFACECOEFX;
-                                            soldier.particle.velocity_.y *=
-                                              PhysicsConstants::STANDSURFACECOEFY;
-
-                                            glm::vec2 particle_force = soldier.particle.GetForce();
-                                            particle_force.x -= soldier.particle.velocity_.x;
-                                            soldier.particle.SetForce(particle_force);
-                                        }
-                                    } else {
-                                        soldier.particle.velocity_.x *=
-                                          PhysicsConstants::SURFACECOEFX;
-                                        soldier.particle.velocity_.y *=
-                                          PhysicsConstants::SURFACECOEFY;
-                                    }
-                                } else if (soldier.legs_animation->GetType() ==
-                                           AnimationType::GetUp) {
-                                    soldier.particle.velocity_.x *= PhysicsConstants::SURFACECOEFX;
-                                    soldier.particle.velocity_.y *= PhysicsConstants::SURFACECOEFY;
-                                } else if (soldier.legs_animation->GetType() ==
-                                           AnimationType::ProneMove) {
-                                    soldier.particle.velocity_.x *=
-                                      PhysicsConstants::STANDSURFACECOEFX;
-                                    soldier.particle.velocity_.y *=
-                                      PhysicsConstants::STANDSURFACECOEFY;
-                                }
-                            }
-                        } else if ((soldier.legs_animation->GetType() ==
-                                    AnimationType::CrouchRun) ||
-                                   (soldier.legs_animation->GetType() ==
-                                    AnimationType::CrouchRunBack)) {
-                            soldier.particle.velocity_.x *=
-                              PhysicsConstants::CROUCHMOVESURFACECOEFX;
-                            soldier.particle.velocity_.y *=
-                              PhysicsConstants::CROUCHMOVESURFACECOEFY;
-                        } else {
-                            soldier.particle.velocity_.x *= PhysicsConstants::SURFACECOEFX;
-                            soldier.particle.velocity_.y *= PhysicsConstants::SURFACECOEFY;
                         }
+                        const auto response = PolygonSurfaceResponse::Friction(
+                          GetPolygonTraits(polytype).surface,
+                          soldier.legs_animation->GetType(),
+                          soldier.legs_animation->GetFrame(),
+                          soldier.control.down && (soldier.control.left || soldier.control.right),
+                          step,
+                          soldier.particle.GetVelocity(),
+                          soldier.particle.GetForce());
+                        soldier.particle.SetVelocity(response.velocity);
+                        soldier.particle.SetForce(response.force);
                     }
 
                     physics_events.soldier_collides_with_polygon.Notify(soldier, polygons);
@@ -906,23 +893,23 @@ bool CheckMapVerticesCollision(Soldier& soldier,
     auto rx = sector_index.x;
     auto ry = sector_index.y;
 
-    if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
-        (ry < map.GetSectorsCount() + 25)) {
+    if ((rx > 0) && (rx < 2 * map.GetSectorsCount()) && (ry > 0) &&
+        (ry < 2 * map.GetSectorsCount())) {
         for (int j = 0; j < map.GetSector(rx, ry).polygons.size(); ++j) {
             auto poly = map.GetSector(rx, ry).polygons[j] - 1;
             PMSPolygonType polytype = map.GetPolygons()[poly].polygon_type;
 
             // TODO: this if has more poly types
-            if (polytype != PMSPolygonType::NoCollide &&
-                polytype != PMSPolygonType::OnlyBulletsCollide) {
+            if (IsValidPolygonType(polytype)) {
                 for (int i = 0; i < 3; i++) {
                     auto vert = glm::vec2(map.GetPolygons()[poly].vertices[i].x,
                                           map.GetPolygons()[poly].vertices[i].y);
 
                     auto dist = Calc::Distance(vert, pos);
-                    if (dist < r) {
+                    if (dist < r && PolygonContacts::SoldierContact(soldier, map, poly, pos)) {
                         if (!has_collided) {
-                            HandleSpecialPolytypes(map, polytype, soldier);
+                            RecordContact(
+                              soldier, map.GetPolygons()[poly], pos, PolygonProbe::Vertex);
                         }
                         auto dir = pos - vert;
                         dir = Calc::Vec2Normalize(dir);
@@ -962,28 +949,29 @@ bool CheckRadiusMapCollision(Soldier& soldier,
         auto rx = sector_index.x;
         auto ry = sector_index.y;
 
-        if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
-            (ry < map.GetSectorsCount() + 25)) {
+        if ((rx > 0) && (rx < 2 * map.GetSectorsCount()) && (ry > 0) &&
+            (ry < 2 * map.GetSectorsCount())) {
             for (int j = 0; j < map.GetSector(rx, ry).polygons.size(); j++) {
                 auto poly = map.GetSector(rx, ry).polygons[j] - 1;
                 auto polytype = map.GetPolygons()[poly].polygon_type;
 
-                if (polytype != PMSPolygonType::NoCollide &&
-                    polytype != PMSPolygonType::OnlyBulletsCollide) {
-                    for (int k = 0; k < 2; k++) { // TODO: czy tu powinno być k < 3?
+                if (IsValidPolygonType(polytype)) {
+                    for (int k = 0; k < 3; k++) {
                         auto norm = glm::vec2(map.GetPolygons()[poly].perpendiculars[k].x,
                                               map.GetPolygons()[poly].perpendiculars[k].y);
                         norm *= -PhysicsConstants::SOLDIER_COL_RADIUS;
 
                         auto pos = s_pos + norm;
 
-                        if (map.PointInPolyEdges(pos.x, pos.y, poly)) {
+                        if (map.PointInPolyEdges(pos.x, pos.y, poly) &&
+                            PolygonContacts::SoldierContact(soldier, map, poly, pos)) {
                             if (!has_collided) {
-                                HandleSpecialPolytypes(map, polytype, soldier);
+                                RecordContact(
+                                  soldier, map.GetPolygons()[poly], pos, PolygonProbe::Radius);
                             }
                             auto d = 0.0f;
                             auto b = 0;
-                            auto perp = map.ClosestPerpendicular(poly, pos, &d, &b);
+                            auto perp = map.ClosestPerpendicular(poly, s_pos, &d, &b);
 
                             auto p1 = glm::vec2(0.0, 0.0);
                             auto p2 = glm::vec2(0.0, 0.0);
@@ -1039,12 +1027,13 @@ bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i,
     auto rx = sector_index.x;
     auto ry = sector_index.y;
 
-    if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
-        (ry < map.GetSectorsCount() + 25)) {
+    if ((rx > 0) && (rx < 2 * map.GetSectorsCount()) && (ry > 0) &&
+        (ry < 2 * map.GetSectorsCount())) {
         for (int j = 0; j < map.GetSector(rx, ry).polygons.size(); j++) {
             auto poly = map.GetSector(rx, ry).polygons[j] - 1;
 
-            if (map.PointInPolyEdges(pos.x, pos.y, poly)) {
+            if (map.PointInPolyEdges(pos.x, pos.y, poly) &&
+                PolygonContacts::SoldierContact(soldier, map, poly, pos)) {
                 auto dist = 0.0f;
                 auto b = 0;
                 auto perp = map.ClosestPerpendicular(poly, pos, &dist, &b);
@@ -1064,13 +1053,14 @@ bool CheckSkeletonMapCollision(Soldier& soldier, const Map& map, unsigned int i,
         auto rx = sector_index.x;
         auto ry = sector_index.y;
 
-        if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
-            (ry < map.GetSectorsCount() + 25)) {
+        if ((rx > 0) && (rx < 2 * map.GetSectorsCount()) && (ry > 0) &&
+            (ry < 2 * map.GetSectorsCount())) {
             for (int j = 0; j < map.GetSector(rx, ry).polygons.size(); j++) {
                 auto poly = map.GetSector(rx, ry).polygons[j] - 1;
                 // if (Map.PolyType[poly] <> POLY_TYPE_DOESNT) and (Map.PolyType[poly] <>
                 // POLY_TYPE_ONLY_BULLETS) then
-                if (map.PointInPolyEdges(pos.x, pos.y, poly)) {
+                if (map.PointInPolyEdges(pos.x, pos.y, poly) &&
+                    PolygonContacts::SoldierContact(soldier, map, poly, pos)) {
                     auto dist = 0.0F;
                     auto b = 0;
                     auto perp = map.ClosestPerpendicular(poly, pos, &dist, &b);

@@ -459,7 +459,8 @@ TEST(MapRobustnessTest, CollisionPolicyCoversEveryTeamForPlayersAndBullets)
 
 TEST(MapRobustnessTest, CollisionPoliciesDocumentNonFlaggerAndOnlyPlayerDifferences)
 {
-    EXPECT_FALSE(
+    // PolyMap.RayCast accepts non-carrier player rays for disk ID 22.
+    EXPECT_TRUE(
       RayCastHitsPolygon(Soldank::PMSPolygonType::NonFlaggerCollides, true, false, false, 0));
     EXPECT_TRUE(
       RayCastHitsPolygon(Soldank::PMSPolygonType::OnlyPlayersCollide, true, false, false, 0));

@@ -11,7 +11,7 @@ const float MAP_BOUNDARY = 50.0F;
 const int MAP_VERSION = 11;
 
 const unsigned int MAX_POLYGONS_COUNT = 5000;
-const unsigned int POLYGON_TYPES_COUNT = 24;
+const unsigned int POLYGON_TYPES_COUNT = 26;
 
 const unsigned int MAX_SCENERIES_COUNT = 500;
 const unsigned int MAX_SPAWN_POINTS_COUNT = 128;

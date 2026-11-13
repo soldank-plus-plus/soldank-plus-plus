@@ -8,18 +8,23 @@ export module Shared.Core.Entities.Item;
 
 import Shared.Core.Types.ItemType;
 import Shared.Core.Physics.Particles;
+import Shared.Core.Map.Polygons.PolygonBackgroundState;
 
 export namespace Soldank
 {
 
 struct Item
 {
+    PolygonBackgroundState polygon_background{};
+    bool background_touched{};
+    bool has_collision_owner{};
+    std::uint8_t collision_owner_team{};
     std::int16_t mounted_soldier{ -1 };
     bool active{};
     ItemType style{ ItemType::USSOCOM };
     std::uint8_t id;
     std::uint8_t owner;
-    std::uint8_t holding_soldier_id;
+    std::int16_t holding_soldier_id{ -1 };
     std::uint8_t ammo_count;
     float radius;
     std::int32_t time_out;

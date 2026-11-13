@@ -186,6 +186,9 @@ void Scene::RenderWorld(const StateManager& game_state_manager,
         background_renderer_.Render(camera.GetView());
     }
 
+    if (client_state.world_render_options.draw_polygons) {
+        polygons_renderer_->Render(camera.GetView(), true);
+    }
     if (client_state.world_render_options.draw_sceneries) {
         sceneries_renderer_.Render(
           camera.GetView(), 0, game_state_manager.GetConstMap().GetSceneryInstances());
@@ -201,6 +204,10 @@ void Scene::RenderWorld(const StateManager& game_state_manager,
     });
     weapon_effects_.Update(game_state_manager, client_state.projectile_visual_events);
     client_state.projectile_visual_events.clear();
+    for (const auto& event : client_state.polygon_visual_events) {
+        weapon_effects_.ObservePolygon(event);
+    }
+    client_state.polygon_visual_events.clear();
     RenderSoldiers(game_state_manager, client_state, frame_percent);
     game_state_manager.ForEachItem([&](const auto& item) {
         item_renderer_.Render(

@@ -33,6 +33,7 @@ import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Math.Calc;
 import Shared.Core.Utility.Observable;
+import Shared.Core.Map.Polygons.PolygonValidation;
 
 namespace
 {
@@ -135,6 +136,7 @@ namespace Soldank
 {
 void Map::CreateEmptyMap()
 {
+    polygon_fingerprint_.reset();
     map_data_ = MapData{};
     are_sectors_generated_ = false;
 
@@ -197,6 +199,7 @@ void Map::LoadMap(const std::filesystem::path& map_path, const IFileReader& file
     loaded_map.UpdateBoundaries(false);
     loaded_map.are_sectors_generated_ = true;
 
+    polygon_fingerprint_.reset();
     map_data_ = std::move(loaded_map.map_data_);
     are_sectors_generated_ = true;
     map_change_events_.changed_background_color.Notify(
@@ -277,7 +280,7 @@ void Map::ReadPolygonsFromBuffer(std::stringstream& buffer)
             ReadValue(buffer, new_polygon.perpendiculars.at(j));
         }
         new_polygon.bounciness =
-          glm::length(glm::vec2(new_polygon.perpendiculars[2].x, new_polygon.perpendiculars[2].y));
+          std::hypot(new_polygon.perpendiculars[2].x, new_polygon.perpendiculars[2].y);
 
         for (unsigned int j = 0; j < 3; j++) {
             glm::vec2 normalized_perpendiculars = Calc::Vec2Normalize(
@@ -288,6 +291,7 @@ void Map::ReadPolygonsFromBuffer(std::stringstream& buffer)
 
         ReadValue(buffer, new_polygon.polygon_type);
 
+        ValidatePolygon(new_polygon);
         map_data_.polygons.push_back(new_polygon);
     }
 }
@@ -397,18 +401,8 @@ void Map::AppendPolygonsToFileWriter(std::shared_ptr<IFileWriter>& file_writer) 
                 length = hypotf(diff_x, diff_y);
             }
 
-            float bounciness = 1.0F;
-
-            if (polygon.polygon_type == PMSPolygonType::Bouncy) {
-                if (bounciness < 1.0F) {
-                    bounciness = 1.0F;
-                } else {
-                    bounciness = polygon.bounciness;
-                }
-            } else {
-                bounciness = 1.0F;
-            }
-
+            const float bounciness =
+              polygon.polygon_type == PMSPolygonType::Bouncy ? polygon.bounciness : 1.0F;
             polygon.perpendiculars.at(i).x = (diff_y / length) * bounciness;
             polygon.perpendiculars.at(i).y = (diff_x / length) * bounciness;
             polygon.perpendiculars.at(i).z = 1.0F;

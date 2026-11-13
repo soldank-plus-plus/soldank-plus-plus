@@ -34,6 +34,7 @@ import Shared.Core.Types.ItemType;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Animations;
 import Shared.Core.Utility.Observable;
+import Shared.Core.Physics.Polygons.PolygonContact;
 
 export namespace Soldank
 {
@@ -116,6 +117,22 @@ public:
     void MoveSoldier(std::uint8_t soldier_id, const glm::vec2& move_offset);
     void SetSoldierPosition(std::uint8_t soldier_id, const glm::vec2& new_position);
     void ThrowSoldierFlags(std::uint8_t soldier_id);
+    void ReleaseSoldierFlags(std::uint8_t soldier_id)
+    {
+        auto& soldier = GetSoldierRef(soldier_id);
+        TransformItems([&](Item& item) {
+            if (IsItemTypeFlag(item.style) && item.holding_soldier_id == soldier_id) {
+                item.holding_soldier_id = -1;
+                item.static_type = false;
+                item.polygon_background = soldier.polygon_background;
+            }
+            if (item.mounted_soldier == soldier_id) {
+                item.mounted_soldier = -1;
+            }
+        });
+        soldier.is_holding_flags = false;
+        soldier.mounted_weapon = -1;
+    }
     glm::vec2 GetSoldierAimDirection(std::uint8_t soldier_id);
     void TransformSoldier(std::uint8_t soldier_id,
                           const std::function<void(Soldier&)>& transform_soldier_function);
@@ -163,6 +180,7 @@ public:
     bool IsFriendlyFireEnabled() const { return friendly_fire_; }
     void SetMaxGrenades(std::uint8_t count) { max_grenades_ = count; }
     bool IsRealistic() const { return realistic_; }
+    float GetMaximumHealth() const { return realistic_ ? 65.0F : 150.0F; }
     void SetRealistic(bool enabled)
     {
         realistic_ = enabled;
@@ -218,6 +236,7 @@ public:
     void TogglePauseGame() { SetGamePaused(!state_.paused); }
 
 private:
+    std::uint32_t next_life_sequence_{};
     void SetGamePaused(bool paused)
     {
         if (state_.paused != paused) {
@@ -274,7 +293,6 @@ const int GUN_TIMEOUT = SECOND * 20;
 const int WAYPOINT_TIMEOUT_SMALL = SECOND * 5 + 20; // = 320
 const int WAYPOINT_TIMEOUT_BIG = SECOND * 8;        // = 480
 const float FLAGTHROW_POWER = 4.225;
-const int SOLDIER_START_HEALTH = 150;
 const int SOLDIER_DEFAULT_VEST = 100;
 
 WeaponType ItemTypeToWeaponType(ItemType item_type)
@@ -429,11 +447,11 @@ void StateManager::SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_i
     Item& item = GetItemRef(item_id);
 
     if (item.style == ItemType::MedicalKit) {
-        if (soldier.health >= SOLDIER_START_HEALTH) {
+        if (soldier.health >= GetMaximumHealth()) {
             return;
         }
 
-        soldier.health = SOLDIER_START_HEALTH;
+        soldier.health = GetMaximumHealth();
         item.active = false;
     }
 
@@ -466,7 +484,7 @@ void StateManager::SoldierPickupKit(std::uint8_t soldier_id, std::uint8_t item_i
                     WeaponParametersFactory::GetParameters(WeaponType::Flamer, realistic_));
         soldier.combat_bonus = CombatBonus::FlameGod;
         soldier.bonus_ticks = 600;
-        soldier.health = SOLDIER_START_HEALTH;
+        soldier.health = GetMaximumHealth();
         item.active = false;
     }
 
@@ -521,9 +539,12 @@ void StateManager::SetSoldierPosition(std::uint8_t soldier_id, const glm::vec2& 
 
 void StateManager::ThrowSoldierFlags(std::uint8_t soldier_id)
 {
+    if (!HasAuthoritativeProjectiles()) {
+        return;
+    }
     Soldier& soldier = GetSoldierRef(soldier_id);
     for (auto item_it = state_.items.begin(); item_it != state_.items.end(); ++item_it) {
-        if (IsItemTypeFlag(item_it->style)) {
+        if (IsItemTypeFlag(item_it->style) && item_it->holding_soldier_id == soldier_id) {
             glm::vec2 aim_direction = GetSoldierAimDirection(soldier_id);
             aim_direction = Calc::Vec2Scale(aim_direction, FLAGTHROW_POWER);
 
@@ -575,7 +596,8 @@ void StateManager::ThrowSoldierFlags(std::uint8_t soldier_id)
 
                 // Release the flag
                 item_it->static_type = false;
-                item_it->holding_soldier_id = 0;
+                item_it->holding_soldier_id = -1;
+                item_it->polygon_background = soldier.polygon_background;
                 soldier.is_holding_flags = false;
             }
         }
@@ -691,12 +713,20 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
         }
     }
 
+    ReleaseSoldierFlags(static_cast<std::uint8_t>(soldier_id));
     auto& soldier = GetSoldierRef(soldier_id);
     soldier.particle.position = initial_player_position;
     soldier.particle.old_position = initial_player_position;
     soldier.active = true;
     soldier.particle.active = true;
-    soldier.health = 150.0;
+    soldier.health = GetMaximumHealth();
+    soldier.polygon_background = {};
+    soldier.background_touched = false;
+    soldier.polygon_contacts.clear();
+    soldier.life_sequence = ++next_life_sequence_;
+    soldier.death_severity = DeathSeverity::Normal;
+    soldier.death_committed = false;
+    soldier.is_holding_flags = false;
     soldier.vest = 0.0F;
     soldier.fired = 0;
     soldier.projectile_pushes.clear();
@@ -772,6 +802,7 @@ void StateManager::RemoveSoldier(std::uint8_t soldier_id)
         std::unreachable();
     }
 
+    ReleaseSoldierFlags(soldier_id);
     state_.soldiers.at(soldier_id).active = false;
     soldier_removed.Notify(soldier_id);
 }
@@ -884,7 +915,7 @@ Item& StateManager::CreateItem(glm::vec2 position,
     new_item.active = true;
     new_item.style = style;
     new_item.id = new_id;
-    new_item.holding_soldier_id = 0;
+    new_item.holding_soldier_id = -1;
     new_item.owner = owner_id;
     new_item.time_out = 0;
     // new_item.skeleton = std::make_shared<ParticleSystem>();
@@ -1104,6 +1135,12 @@ namespace Soldank
 std::optional<ItemType> WeaponMapItemStyle(PMSSpawnPointType type)
 {
     switch (type) {
+        case PMSSpawnPointType::AlphaFlag:
+            return ItemType::AlphaFlag;
+        case PMSSpawnPointType::BravoFlag:
+            return ItemType::BravoFlag;
+        case PMSSpawnPointType::YellowFlag:
+            return ItemType::PointmatchFlag;
         case PMSSpawnPointType::Grenades:
             return ItemType::GrenadeKit;
         case PMSSpawnPointType::Medkits:

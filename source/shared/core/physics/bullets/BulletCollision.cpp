@@ -283,7 +283,7 @@ std::optional<BulletCollisionResult> FindThingCollision(const Bullet& bullet,
     std::optional<BulletCollisionResult> closest_collision;
     state_manager.ForEachItem([&](const Item& item) {
         if (!item.collide_with_bullets ||
-            (item.holding_soldier_id != 0 && item.holding_soldier_id == bullet.owner_id) ||
+            (item.holding_soldier_id >= 0 && item.holding_soldier_id == bullet.owner_id) ||
             item.style == ItemType::M2 || !item.skeleton) {
             return;
         }

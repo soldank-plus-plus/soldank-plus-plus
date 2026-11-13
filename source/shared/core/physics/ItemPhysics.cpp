@@ -16,6 +16,10 @@ import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.Physics.Constants;
 import Shared.Core.Types.ItemType;
 import Shared.Core.Physics.Weapons.StationaryWeaponPhysics;
+import Shared.Core.Physics.Polygons.PolygonContacts;
+import Shared.Core.Physics.Polygons.FlagCarry;
+import Shared.Core.Map.Polygons.PolygonTraits;
+import Shared.Core.Map.Polygons.PolygonBackgroundState;
 
 export namespace Soldank::ItemPhysics
 {
@@ -37,16 +41,26 @@ int CheckSoldierCollision(Item& item, const StateManager& state_manager);
 void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physics_events)
 {
     bool was_static = item.static_type;
+    item.has_collision_owner = false;
+    state_manager.ForEachSoldier([&](const auto& owner) {
+        if (owner.id == item.owner) {
+            item.has_collision_owner = true;
+            item.collision_owner_team = static_cast<std::uint8_t>(owner.GetTeam());
+        }
+    });
 
     if (!item.static_type) {
         bool collided = false;
         bool collided2 = false;
 
-        // BGState.BackgroundTestPrepare();
+        PolygonContacts::Begin(state_manager.GetConstMap(),
+                               item.polygon_background,
+                               item.background_touched,
+                               item.skeleton->GetPos(1));
 
         for (int i = 1; i <= (int)item.skeleton->GetParticles().size(); ++i) {
             if (item.skeleton->GetActive(i) &&
-                (item.holding_soldier_id == 0 || (item.holding_soldier_id > 0 && i == 1))) {
+                (item.holding_soldier_id < 0 || (item.holding_soldier_id >= 0 && i == 2))) {
 
                 if (IsItemTypeFlag(item.style)) {
                     if (i == 1) {
@@ -115,7 +129,7 @@ void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physic
             }
         }
 
-        // BGState.BackgroundTestReset();
+        PolygonContacts::Finish(item.polygon_background, item.background_touched);
 
         item.skeleton->DoVerletTimestep();
 
@@ -135,10 +149,13 @@ void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physic
             }
         }
 
-        if (IsItemTypeFlag(item.style) && item.holding_soldier_id > 0) {
+        if (IsItemTypeFlag(item.style) && item.holding_soldier_id >= 0) {
             state_manager.ForEachSoldier([&](const auto& soldier) {
                 if (soldier.id == item.holding_soldier_id) {
                     item.skeleton->SetPos(1, soldier.skeleton->GetPos(8));
+                    if (item.polygon_background.phase != PolygonBackgroundPhase::Transition) {
+                        item.polygon_background = soldier.polygon_background;
+                    }
                     auto new_force = item.skeleton->GetForce(2);
                     new_force.y += (float)FLAG_HOLDING_FORCEUP * GRAV;
                     item.skeleton->SetForce(2, new_force);
@@ -169,6 +186,7 @@ void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physic
         if (colliding_player_id >= 0) {
             state_manager.TransformSoldiers([&](auto& soldier) {
                 if (colliding_player_id == soldier.id) {
+                    FlagCarry::TryAcquire(state_manager, soldier, item);
                     physics_events.soldier_collides_with_item.Notify(soldier, item);
                 }
             });
@@ -177,7 +195,7 @@ void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physic
 
     // Parachute
     if (item.style == ItemType::Parachute) {
-        if (item.holding_soldier_id != 0) {
+        if (item.holding_soldier_id >= 0) {
             state_manager.TransformSoldiers([&](auto& soldier) {
                 if (soldier.id == item.holding_soldier_id) {
                     item.skeleton->SetPos(4, soldier.skeleton->GetPos(12));
@@ -255,35 +273,17 @@ bool CheckMapCollision(Item& item,
     const glm::ivec2 sector_index = map.GetSectorIndex(pos);
     auto rx = sector_index.x;
     auto ry = sector_index.y;
-    if ((rx > 0) && (rx < map.GetSectorsCount() + 25) && (ry > 0) &&
-        (ry < map.GetSectorsCount() + 25)) {
+    if ((rx > 0) && (rx < 2 * map.GetSectorsCount()) && (ry > 0) &&
+        (ry < 2 * map.GetSectorsCount())) {
         // TODO
         //  BGState.BackgroundTestBigPolyCenter(Pos);
 
         for (unsigned int j = 0; j < map.GetSector(rx, ry).polygons.size(); j++) {
             auto w = map.GetSector(rx, ry).polygons[j] - 1;
 
-            auto teamcol = true;
-
-            // if (Owner > 0) and (Owner < MAX_SPRITES + 1) then
-            // begin
-            //     teamcol := TeamCollides(w, Sprite[Owner].Player.Team, False);
-            // end;
-
-            // if (Style < OBJECT_USSOCOM) and (Map.PolyType[w] > POLY_TYPE_LAVA) and
-            // (Map.PolyType[w] < POLY_TYPE_BOUNCY) then
-            //     teamcol := False;
-
-            if (teamcol &&
-                (map.GetPolygons().at(w).polygon_type != PMSPolygonType::OnlyBulletsCollide) &&
-                (map.GetPolygons().at(w).polygon_type != PMSPolygonType::OnlyPlayersCollide) &&
-                (map.GetPolygons().at(w).polygon_type != PMSPolygonType::NoCollide) &&
-                (map.GetPolygons().at(w).polygon_type != PMSPolygonType::FlaggerCollides) &&
-                (map.GetPolygons().at(w).polygon_type != PMSPolygonType::NonFlaggerCollides)) {
-                if (map.PointInPolyEdges(pos.x, pos.y, w)) {
-                    // if BGState.BackgroundTest(w) then
-                    //     Continue;
-
+            if (IsValidPolygonType(map.GetPolygons().at(w).polygon_type)) {
+                if (map.PointInPolyEdges(pos.x, pos.y, w) &&
+                    PolygonContacts::ItemContact(item, map, w, pos, IsItemTypeFlag(item.style))) {
                     float d = NAN;
                     int b = 0;
                     auto perp = map.ClosestPerpendicular(w, pos, &d, &b);
@@ -307,7 +307,7 @@ bool CheckMapCollision(Item& item,
                                 item.skeleton->SetOldPos(i,
                                                          item.skeleton->GetPos(i) + pos_diff_perp);
 
-                                if (i == 2 && item.holding_soldier_id == 0) {
+                                if (i == 2 && item.holding_soldier_id < 0) {
                                     auto new_force = item.skeleton->GetForce(i);
                                     new_force.y -= 1;
                                     item.skeleton->SetForce(i, new_force);
@@ -376,7 +376,7 @@ int CheckSoldierCollision(Item& item, const StateManager& state_manager)
     int closestplayer = -1;
 
     state_manager.ForEachSoldier([&](const auto& soldier) {
-        if (soldier.active && !soldier.dead_meat /* && soldier_it->team != SPECTATOR TODO*/) {
+        if (soldier.active && !soldier.dead_meat && !soldier.IsSpectator()) {
             glm::vec2 col_pos = soldier.particle.position;
             glm::vec2 norm = pos - col_pos;
             if (Calc::Vec2Length(norm) >= item.radius) {

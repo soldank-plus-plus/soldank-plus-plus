@@ -62,13 +62,7 @@ private:
             if (!world->GetStateManager()->HasAuthoritativeProjectiles()) {
                 return;
             }
-            if (IsItemTypeFlag(item.style)) {
-                if (item.holding_soldier_id == 0) {
-                    item.static_type = false;
-                    item.holding_soldier_id = soldier.id;
-                    soldier.is_holding_flags = true;
-                }
-            } else if (IsItemTypeWeapon(item.style)) {
+            if (IsItemTypeWeapon(item.style)) {
                 const auto cooldown = item.style == ItemType::Bow ? 1500 - 100 : 1200 - 30;
                 if (soldier.GetActiveWeapon().GetWeaponParameters().kind == WeaponType::NoWeapon &&
                     soldier.body_animation->GetType() != AnimationType::Change &&
@@ -82,7 +76,7 @@ private:
         });
         world->GetPhysicsEvents().soldier_throws_flags.AddObserver([world](Soldier& soldier) {
             spdlog::info("PLAYER {} THROWS FLAGS", soldier.id);
-            world->GetStateManager()->ThrowSoldierFlags(soldier.id);
+            // Flag release is already committed by shared simulation.
         });
     }
 };

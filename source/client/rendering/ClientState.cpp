@@ -20,6 +20,7 @@ import Shared.Core.Entities.Soldier;
 import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Utility.Observable;
+import Shared.Core.Physics.Polygons.PolygonContact;
 
 export namespace Soldank
 {
@@ -107,6 +108,7 @@ struct ClientWorldRenderOptions
 struct ClientState
 {
     std::vector<ProjectilePhysicsEvent> projectile_visual_events;
+    std::vector<PolygonEffectEvent> polygon_visual_events;
     /**
      * This is nullopt when the soldier is not created yet.
      * For example when client is still in a connecting state

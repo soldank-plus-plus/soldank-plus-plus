@@ -151,6 +151,7 @@ void ThrowWeapon(StateManager& state, Soldier& soldier)
                                           soldier.id,
                                           WeaponTypeToItemType(current_soldier_weapon_type));
         new_item.ammo_count = soldier.GetActiveWeapon().GetAmmoCount();
+        new_item.polygon_background = soldier.polygon_background;
         state.ChangeSoldierPrimaryWeapon(soldier.id, WeaponType::NoWeapon);
         new_item.skeleton->SetPos(1, new_item.skeleton->GetPos(1) + soldier.particle.GetVelocity());
         new_item.skeleton->SetPos(2, new_item.skeleton->GetPos(2) + soldier.particle.GetVelocity());

@@ -579,12 +579,11 @@ TEST(BulletPhysicsTest, ResolvesNearSoldierBeforeContinuingToWall)
 TEST(BulletPhysicsTest, MapBulletCollisionPolicyCoversEverySpecialPolygonType)
 {
     constexpr std::array ALWAYS_COLLIDABLE{
-        Soldank::PMSPolygonType::Normal,       Soldank::PMSPolygonType::Ice,
-        Soldank::PMSPolygonType::Deadly,       Soldank::PMSPolygonType::BloodyDeadly,
-        Soldank::PMSPolygonType::Hurts,        Soldank::PMSPolygonType::Regenerates,
-        Soldank::PMSPolygonType::Lava,         Soldank::PMSPolygonType::Bouncy,
-        Soldank::PMSPolygonType::Explosive,    Soldank::PMSPolygonType::HurtFlaggers,
-        Soldank::PMSPolygonType::FlagCollides,
+        Soldank::PMSPolygonType::Normal,    Soldank::PMSPolygonType::Ice,
+        Soldank::PMSPolygonType::Deadly,    Soldank::PMSPolygonType::BloodyDeadly,
+        Soldank::PMSPolygonType::Hurts,     Soldank::PMSPolygonType::Regenerates,
+        Soldank::PMSPolygonType::Lava,      Soldank::PMSPolygonType::Bouncy,
+        Soldank::PMSPolygonType::Explosive, Soldank::PMSPolygonType::HurtFlaggers,
     };
 
     for (const auto polygon_type : ALWAYS_COLLIDABLE) {
@@ -604,6 +603,7 @@ TEST(BulletPhysicsTest, MapBulletCollisionPolicyCoversEverySpecialPolygonType)
     EXPECT_FALSE(
       Soldank::Map::BulletCollidesWithPolygon(Soldank::PMSPolygonType::BackgroundTransition, 0));
 
+    EXPECT_FALSE(Soldank::Map::BulletCollidesWithPolygon(Soldank::PMSPolygonType::FlagCollides, 0));
     constexpr std::array TEAM_BULLET_TYPES{
         Soldank::PMSPolygonType::AlphaBullets,
         Soldank::PMSPolygonType::BravoBullets,
@@ -631,9 +631,13 @@ TEST(BulletPhysicsTest, MapBulletCollisionPolicyCoversEverySpecialPolygonType)
 TEST(BulletPhysicsTest, MapSweepIgnoresBulletExcludedPolygonTypes)
 {
     constexpr std::array EXCLUDED_POLYGON_TYPES{
-        Soldank::PMSPolygonType::OnlyPlayersCollide, Soldank::PMSPolygonType::NoCollide,
-        Soldank::PMSPolygonType::FlaggerCollides,    Soldank::PMSPolygonType::NonFlaggerCollides,
-        Soldank::PMSPolygonType::Background,         Soldank::PMSPolygonType::BackgroundTransition,
+        Soldank::PMSPolygonType::FlagCollides,
+        Soldank::PMSPolygonType::OnlyPlayersCollide,
+        Soldank::PMSPolygonType::NoCollide,
+        Soldank::PMSPolygonType::FlaggerCollides,
+        Soldank::PMSPolygonType::NonFlaggerCollides,
+        Soldank::PMSPolygonType::Background,
+        Soldank::PMSPolygonType::BackgroundTransition,
     };
 
     for (const auto polygon_type : EXCLUDED_POLYGON_TYPES) {

@@ -145,6 +145,12 @@ public:
         static float gravity = 0.06F;
 
         std::vector<BulletParams> bullet_emitter;
+        std::vector<std::uint8_t> living_soldiers;
+        state_manager_->ForEachSoldier([&](const Soldier& soldier) {
+            if (!soldier.dead_meat) {
+                living_soldiers.push_back(soldier.id);
+            }
+        });
         state_manager_->UpdateWeaponMapItems();
 
         state_manager_->TransformSoldiers([&](auto& soldier) {
@@ -171,12 +177,6 @@ public:
             }
         });
 
-        std::vector<std::uint8_t> living_soldiers;
-        state_manager_->ForEachSoldier([&](const Soldier& soldier) {
-            if (!soldier.dead_meat) {
-                living_soldiers.push_back(soldier.id);
-            }
-        });
         state_manager_->TransformBullets([&](auto& bullet) {
             BulletPhysics::UpdateBullet(
               *physics_events_, bullet, state_manager_->GetMap(), *state_manager_);
@@ -237,6 +237,11 @@ public:
                                    bullet_emitter,
                                    gravity);
         });
+        if (state_manager_->HasAuthoritativeProjectiles() &&
+            state_manager_->GetSoldier(soldier_id).dead_meat &&
+            !state_manager_->GetSoldier(soldier_id).death_committed) {
+            KillSoldier(soldier_id);
+        }
         world_events_->after_soldier_updates.Notify(state_manager_->GetSoldier(soldier_id),
                                                     state_manager_->GetGameTick());
     }
@@ -301,8 +306,15 @@ public:
     void KillSoldier(unsigned int soldier_id) final
     {
         state_manager_->TransformSoldier(soldier_id, [&](Soldier& soldier) {
-            soldier.health = 0;
+            if (soldier.death_committed) {
+                return;
+            }
+            soldier.death_committed = true;
+            if (!soldier.dead_meat || soldier.health > 0.0F) {
+                soldier.health = 0;
+            }
             soldier.dead_meat = true;
+            state_manager_->ReleaseSoldierFlags(soldier.id);
             soldier.ticks_to_respawn = 180; // 3 seconds
             WeaponPhysics::ThrowWeapon(*state_manager_, soldier);
             world_events_->soldier_died.Notify(soldier);

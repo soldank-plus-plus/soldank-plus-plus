@@ -30,6 +30,8 @@ import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Math.Calc;
 import Shared.Core.Utility.Observable;
+import Shared.Core.Map.Polygons.PolygonValidation;
+import Shared.Core.Map.PMSConstants;
 
 namespace
 {
@@ -122,6 +124,10 @@ namespace Soldank
 PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 {
 
+    ValidatePolygon(polygon);
+    if (GetPolygonsCount() >= MAX_POLYGONS_COUNT) {
+        throw std::length_error("PMS polygon limit exceeded");
+    }
     PMSPolygon new_polygon = polygon;
 
     new_polygon.id = map_data_.polygons.size();
@@ -137,6 +143,9 @@ PMSPolygon Map::AddNewPolygon(const PMSPolygon& polygon)
 
 void Map::ReplaceContents(const Map& source_map)
 {
+    for (const auto& polygon : source_map.GetPolygons()) {
+        ValidatePolygon(polygon);
+    }
     std::vector<std::pair<unsigned short, PMSSceneryType>> removed_scenery_types;
     removed_scenery_types.reserve(map_data_.scenery_types.size());
     for (std::size_t index = 0; index < map_data_.scenery_types.size(); ++index) {
@@ -144,6 +153,7 @@ void Map::ReplaceContents(const Map& source_map)
                                            map_data_.scenery_types.at(index));
     }
 
+    polygon_fingerprint_.reset();
     map_data_ = source_map.map_data_;
     are_sectors_generated_ = source_map.are_sectors_generated_;
 
@@ -161,6 +171,13 @@ void Map::ReplaceContents(const Map& source_map)
 
 void Map::AddPolygons(const std::vector<PMSPolygon>& polygons)
 {
+    if (GetPolygonsCount() > MAX_POLYGONS_COUNT ||
+        polygons.size() > MAX_POLYGONS_COUNT - GetPolygonsCount()) {
+        throw std::length_error("PMS polygon limit exceeded");
+    }
+    for (const auto& polygon : polygons) {
+        ValidatePolygon(polygon);
+    }
     std::vector<std::pair<unsigned int, PMSPolygon>> polygon_insertions;
     polygon_insertions.reserve(polygons.size());
     for (const auto& polygon : polygons) {
@@ -216,6 +233,12 @@ void Map::MovePolygonVerticesById(
     polygon_vertices_with_new_position)
 {
     for (const auto& [polygon_vertex, new_position] : polygon_vertices_with_new_position) {
+        if (!std::isfinite(new_position.x) || !std::isfinite(new_position.y)) {
+            throw std::invalid_argument("Non-finite polygon edit");
+        }
+        (void)map_data_.polygons.at(polygon_vertex.first).vertices.at(polygon_vertex.second);
+    }
+    for (const auto& [polygon_vertex, new_position] : polygon_vertices_with_new_position) {
         map_data_.polygons.at(polygon_vertex.first).vertices.at(polygon_vertex.second).x =
           new_position.x;
         map_data_.polygons.at(polygon_vertex.first).vertices.at(polygon_vertex.second).y =
@@ -229,6 +252,10 @@ void Map::MovePolygonVerticesById(
 
 void Map::SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>& polygons)
 {
+    for (const auto& [id, polygon] : polygons) {
+        ValidatePolygon(polygon);
+        (void)map_data_.polygons.at(id);
+    }
     for (const auto& [polygon_id, polygon] : polygons) {
         map_data_.polygons.at(polygon_id) = polygon;
     }
@@ -240,6 +267,12 @@ void Map::SetPolygonsById(const std::vector<std::pair<unsigned int, PMSPolygon>>
 
 void Map::ReplacePolygons(std::vector<PMSPolygon> polygons)
 {
+    if (polygons.size() > MAX_POLYGONS_COUNT) {
+        throw std::length_error("PMS polygon limit exceeded");
+    }
+    for (const auto& polygon : polygons) {
+        ValidatePolygon(polygon);
+    }
     map_data_.polygons = std::move(polygons);
     RefreshPolygonDerivedState(PolygonIdPolicy::Rebuild);
     map_change_events_.modified_polygons.Notify(map_data_.polygons);

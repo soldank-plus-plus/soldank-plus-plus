@@ -28,6 +28,8 @@ import Shared.Core.Physics.SoldierSkeletonPhysics;
 import Shared.Core.Animations;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Entities.Weapon;
+import Shared.Core.Map.Polygons.PolygonBackgroundState;
+import Shared.Core.Physics.Polygons.PolygonContact;
 import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Simulation.PlayerInputApplication;
@@ -56,6 +58,15 @@ private:
         if (!std::isfinite(soldier_state_packet.health) ||
             !std::isfinite(soldier_state_packet.vest) || soldier_state_packet.active_weapon >= 2 ||
             (soldier_state_packet.weapon_count != 0 && soldier_state_packet.weapon_count != 3)) {
+            return NetworkEventHandlerResult::Failure;
+        }
+        if (soldier_state_packet.has_polygon_state &&
+            (!IsValidBackgroundState(soldier_state_packet.polygon_background,
+                                     world_->GetStateManager()->GetConstMap().GetPolygons()) ||
+             soldier_state_packet.death_severity > DeathSeverity::Brutal ||
+             (soldier_state_packet.polygon_background.map_fingerprint != 0 &&
+              soldier_state_packet.polygon_background.map_fingerprint !=
+                world_->GetStateManager()->GetConstMap().GetPolygonFingerprint()))) {
             return NetworkEventHandlerResult::Failure;
         }
         std::uint8_t soldier_id = soldier_state_packet.player_id;
@@ -110,6 +121,9 @@ private:
         latest_server_tick = soldier_state_packet.server_tick;
         world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
             soldier.latest_authoritative_tick = soldier_state_packet.server_tick;
+            if (soldier_state_packet.has_polygon_state) {
+                soldier.death_severity = soldier_state_packet.death_severity;
+            }
             // Health/armor are not predicted and are applied even when movement needs no
             // correction.
             if (soldier_state_packet.weapon_count == 3) {
@@ -244,6 +258,11 @@ private:
             soldier.jets_count = jets_count;
 
             soldier.active_weapon = active_weapon;
+            if (soldier_state_packet.has_polygon_state) {
+                soldier.polygon_background = soldier_state_packet.polygon_background;
+                soldier.is_holding_flags = soldier_state_packet.carrying_flag;
+                soldier.life_sequence = soldier_state_packet.life_sequence;
+            }
             if (!restored_weapons.empty()) {
                 soldier.weapons = restored_weapons;
                 soldier.weapon_generation = soldier_state_packet.weapon_generation;
@@ -334,6 +353,13 @@ private:
             return false;
         }
 
+        const auto& polygon_prediction = snapshot->soldier_snapshot;
+        if (packet.has_polygon_state &&
+            (polygon_prediction.GetPolygonBackground() != packet.polygon_background ||
+             polygon_prediction.IsCarryingFlag() != packet.carrying_flag ||
+             polygon_prediction.GetLifeSequence() != packet.life_sequence)) {
+            return false;
+        }
         if (packet.weapon_count != 0) {
             const auto& predicted = snapshot->soldier_snapshot;
             const auto& control = predicted.GetControl();

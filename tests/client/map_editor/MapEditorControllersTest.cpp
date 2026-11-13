@@ -783,3 +783,32 @@ TEST_F(MapEditorControllersTest, MapEditorConfigRejectsInvalidPaletteWithoutChan
     std::filesystem::remove(config_path);
 }
 } // namespace
+
+TEST_F(MapEditorControllersTest, EveryPolygonTypeSupportsMultiSelectionUndoRedo)
+{
+    auto polygon = MakePolygon();
+    polygon.bounciness = 2.5F;
+    state_manager_.GetMap().AddNewPolygon(polygon);
+    state_manager_.GetMap().AddNewPolygon(polygon);
+    MapEditor editor(client_state_, state_manager_);
+    client_state_.map_editor_state.selected_polygon_vertices = { { 0U, std::bitset<3>(7) },
+                                                                 { 1U, std::bitset<3>(7) } };
+    auto previous = PMSPolygonType::Normal;
+    for (unsigned int index = 1; index <= 26; ++index) {
+        const auto type = static_cast<PMSPolygonType>(index % 26);
+        client_state_.map_editor_state.event_selected_polygons_type_changed.Notify(type);
+        for (const auto& current : state_manager_.GetConstMap().GetPolygons()) {
+            EXPECT_EQ(current.polygon_type, type);
+            EXPECT_EQ(current.bounciness, 2.5F);
+        }
+        client_state_.map_editor_state.event_pressed_undo.Notify();
+        for (const auto& current : state_manager_.GetConstMap().GetPolygons()) {
+            EXPECT_EQ(current.polygon_type, previous);
+        }
+        client_state_.map_editor_state.event_pressed_redo.Notify();
+        for (const auto& current : state_manager_.GetConstMap().GetPolygons()) {
+            EXPECT_EQ(current.polygon_type, type);
+        }
+        previous = type;
+    }
+}

@@ -207,3 +207,17 @@ add_custom_command(TARGET WeaponSimulationTest POST_BUILD
         "${soldatbase_SOURCE_DIR}/shared/weapons.ini" "$<TARGET_FILE_DIR:WeaponSimulationTest>/weapons.ini"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${soldatbase_SOURCE_DIR}/shared/weapons_realistic.ini" "$<TARGET_FILE_DIR:WeaponSimulationTest>/weapons_realistic.ini")
+
+foreach(PolygonTest IN ITEMS PolygonCollisionPolicyTest PolygonBackgroundStateTest PolygonSurfaceResponseTest PolygonContactEffectsTest PolygonSimulationTest)
+    if(PolygonTest MATCHES "Policy|Background")
+        set(PolygonTestFolder map)
+    else()
+        set(PolygonTestFolder physics)
+    endif()
+    add_executable(${PolygonTest} core/${PolygonTestFolder}/${PolygonTest}.cpp)
+    AddTestOptionsAndLibraries(${PolygonTest})
+    target_link_libraries(${PolygonTest} PRIVATE shared_lib shared_lib_testing_framework)
+    add_test(NAME ${PolygonTest} COMMAND ${PolygonTest})
+    set_tests_properties(${PolygonTest} PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+    add_dependencies(${PolygonTest} WeaponSimulationTest)
+endforeach()

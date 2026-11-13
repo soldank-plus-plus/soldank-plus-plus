@@ -49,6 +49,8 @@ import Networking.PlayerLeaveNetworkEventHandler;
 import Networking.ProjectileSpawnNetworkEventHandler;
 import Networking.ProjectilePhysicsNetworkEventHandler;
 import Networking.ItemStateNetworkEventHandler;
+import Networking.PolygonEffectNetworkEventHandler;
+import Gameplay.PolygonPresentationEventRouter;
 import Networking.SoldierInfoNetworkEventHandler;
 import Networking.SoldierStateNetworkEventHandler;
 import Networking.SpawnSoldierNetworkEventHandler;
@@ -102,6 +104,7 @@ private:
     std::shared_ptr<AudioEvents> audio_events_;
     std::unique_ptr<WeaponAudio> weapon_audio_;
     std::shared_ptr<WeaponSoundEventRouter> weapon_sound_event_router_;
+    std::shared_ptr<PolygonPresentationEventRouter> polygon_presentation_router_;
 
     ApplicationMode application_mode_;
     WindowSizeMode window_size_mode_;
@@ -210,6 +213,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             std::make_shared<ProjectileSpawnNetworkEventHandler>(world_),
             std::make_shared<ProjectilePhysicsNetworkEventHandler>(world_, client_state_),
             std::make_shared<ItemStateNetworkEventHandler>(world_),
+            std::make_shared<PolygonEffectNetworkEventHandler>(world_),
             std::make_shared<SoldierInfoNetworkEventHandler>(world_, client_state_),
             std::make_shared<SoldierStateNetworkEventHandler>(world_, client_state_),
             std::make_shared<SpawnSoldierNetworkEventHandler>(world_),
@@ -407,6 +411,8 @@ void Application::Run()
     });
     audio_events_ = std::make_shared<AudioEvents>();
     weapon_audio_ = std::make_unique<WeaponAudio>(*audio_events_);
+    polygon_presentation_router_ = PolygonPresentationEventRouter::Create(
+      world_->GetPhysicsEvents(), audio_events_, client_state_);
     weapon_sound_event_router_ = WeaponSoundEventRouter::Create(
       world_->GetPhysicsEvents(),
       world_->GetWorldEvents(),

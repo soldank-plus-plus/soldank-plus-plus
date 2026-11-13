@@ -98,3 +98,6 @@ if (BUILD_SERVER_ENABLED)
     WORKING_DIRECTORY "${MAP_EDITOR_TEST_DATA_DIR}"
   )
 endif()
+
+AddClientTestWithMapEditorData(PolygonReconciliationTest networking/PolygonReconciliationTest.cpp)
+target_link_libraries(PolygonReconciliationTest PRIVATE shared_lib_testing_framework)

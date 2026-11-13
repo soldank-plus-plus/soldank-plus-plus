@@ -21,6 +21,7 @@ import Shader;
 import Shared.Core.Map.Map;
 import Shared.Core.Map.PMSConstants;
 import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Polygons.PolygonRenderBatch;
 
 import Extern.Spdlog;
 
@@ -39,7 +40,7 @@ public:
     PolygonsRenderer(PolygonsRenderer&&) = delete;
     PolygonsRenderer& operator=(PolygonsRenderer&& other) = delete;
 
-    void Render(glm::mat4 transform);
+    void Render(glm::mat4 transform, bool background = false);
     void RenderSinglePolygonFirstEdge(glm::mat4 transform, const PMSPolygon& polygon) const;
     void RenderSinglePolygon(glm::mat4 transform, const PMSPolygon& polygon) const;
 
@@ -61,6 +62,8 @@ private:
 
     Shader shader_;
     unsigned int polygons_count_;
+    unsigned int background_count_{};
+    std::vector<PMSPolygon> polygons_;
 
     unsigned int texture_;
     unsigned int vbo_;
@@ -75,12 +78,15 @@ namespace Soldank
 PolygonsRenderer::PolygonsRenderer(Map& map, const std::string& texture_name)
     : shader_(ShaderSources::VERTEX_SHADER_SOURCE, ShaderSources::FRAGMENT_SHADER_SOURCE)
     , polygons_count_(map.GetPolygonsCount())
+    , polygons_(map.GetPolygons())
 {
     LoadTexture(map.GetTextureName());
 
     std::vector<float> vertices;
 
-    GenerateGLBufferVertices(map.GetPolygons(), vertices);
+    const auto batch = BuildPolygonRenderBatch(map.GetPolygons());
+    background_count_ = batch.background_count;
+    GenerateGLBufferVertices(batch.polygons, vertices);
 
     vbo_ = Renderer::CreateVBO(vertices, GL_DYNAMIC_DRAW);
 
@@ -127,13 +133,16 @@ PolygonsRenderer::~PolygonsRenderer()
     Texture::Delete(texture_);
 }
 
-void PolygonsRenderer::Render(glm::mat4 transform)
+void PolygonsRenderer::Render(glm::mat4 transform, bool background)
 {
     Renderer::SetupVertexArray(vbo_, std::nullopt);
     shader_.Use();
     Renderer::BindTexture(texture_);
     shader_.SetMatrix4("transform", transform);
-    Renderer::DrawArrays(GL_TRIANGLES, 0, (int)polygons_count_ * 3);
+    Renderer::DrawArrays(GL_TRIANGLES,
+                         background ? 0 : background_count_ * 3,
+                         (background ? background_count_ : polygons_count_ - background_count_) *
+                           3);
 }
 
 void PolygonsRenderer::RenderSinglePolygonFirstEdge(glm::mat4 transform,
@@ -163,49 +172,32 @@ void PolygonsRenderer::RenderSinglePolygon(glm::mat4 transform, const PMSPolygon
     Renderer::DrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void PolygonsRenderer::OnAddPolygon(const PMSPolygon& new_polygon)
+void PolygonsRenderer::OnAddPolygon(const PMSPolygon& polygon)
 {
-    std::vector<float> vertices;
-    GenerateGLBufferVerticesForPolygon(new_polygon, vertices);
-
-    int offset = new_polygon.id * 9 * sizeof(GLfloat) * 3;
-    Renderer::ModifyVBOVertices(vbo_, vertices, offset);
-    ++polygons_count_;
+    polygons_.push_back(polygon);
+    OnModifyPolygons(polygons_);
 }
-
-void PolygonsRenderer::OnRemovePolygon(const std::vector<PMSPolygon>& polygons_after_removal)
+void PolygonsRenderer::OnRemovePolygon(const std::vector<PMSPolygon>& polygons)
 {
-    std::vector<float> vertices;
-    GenerateGLBufferVertices(polygons_after_removal, vertices);
-    polygons_count_ = vertices.size();
-
-    if (!vertices.empty()) {
-        Renderer::ModifyVBOVertices(vbo_, vertices, 0);
-    }
+    OnModifyPolygons(polygons);
 }
-
-void PolygonsRenderer::OnAddPolygons(const std::vector<PMSPolygon>& polygons_after_adding)
+void PolygonsRenderer::OnAddPolygons(const std::vector<PMSPolygon>& polygons)
 {
+    OnModifyPolygons(polygons);
+}
+void PolygonsRenderer::OnRemovePolygons(const std::vector<PMSPolygon>& polygons)
+{
+    OnModifyPolygons(polygons);
+}
+void PolygonsRenderer::OnModifyPolygons(const std::vector<PMSPolygon>& polygons)
+{
+    polygons_ = polygons;
+    const auto batch = BuildPolygonRenderBatch(polygons_);
+    background_count_ = batch.background_count;
+    polygons_count_ = static_cast<unsigned int>(polygons_.size());
     std::vector<float> vertices;
-    GenerateGLBufferVertices(polygons_after_adding, vertices);
+    GenerateGLBufferVertices(batch.polygons, vertices);
     Renderer::ModifyVBOVertices(vbo_, vertices);
-    polygons_count_ = polygons_after_adding.size();
-}
-
-void PolygonsRenderer::OnRemovePolygons(const std::vector<PMSPolygon>& polygons_after_removal)
-{
-    std::vector<float> vertices;
-    GenerateGLBufferVertices(polygons_after_removal, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
-    polygons_count_ = polygons_after_removal.size();
-}
-
-void PolygonsRenderer::OnModifyPolygons(const std::vector<PMSPolygon>& polygons_after_modify)
-{
-    std::vector<float> vertices;
-    GenerateGLBufferVertices(polygons_after_modify, vertices);
-    Renderer::ModifyVBOVertices(vbo_, vertices);
-    polygons_count_ = polygons_after_modify.size();
 }
 
 void PolygonsRenderer::GenerateGLBufferVertices(const std::vector<PMSPolygon>& polygons,

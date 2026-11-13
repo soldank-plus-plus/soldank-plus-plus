@@ -1,6 +1,7 @@
 module;
 
 #include <algorithm>
+#include <bit>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -14,85 +15,38 @@ import Extern.Glm;
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Math.Calc;
-
-namespace
-{
-struct RayCastCollisionPolicy
-{
-    bool player;
-    bool flag;
-    bool bullet;
-    std::uint8_t team_id;
-};
-
-bool PolygonCollidesWith(Soldank::PMSPolygonType polygon_type, const RayCastCollisionPolicy& policy)
-{
-    using Soldank::PMSPolygonType;
-    switch (polygon_type) {
-        case PMSPolygonType::AlphaBullets:
-            return policy.bullet && policy.team_id == 1;
-        case PMSPolygonType::AlphaPlayers:
-            return policy.player && policy.team_id == 1;
-        case PMSPolygonType::BravoBullets:
-            return policy.bullet && policy.team_id == 2;
-        case PMSPolygonType::BravoPlayers:
-            return policy.player && policy.team_id == 2;
-        case PMSPolygonType::CharlieBullets:
-            return policy.bullet && policy.team_id == 3;
-        case PMSPolygonType::CharliePlayers:
-            return policy.player && policy.team_id == 3;
-        case PMSPolygonType::DeltaBullets:
-            return policy.bullet && policy.team_id == 4;
-        case PMSPolygonType::DeltaPlayers:
-            return policy.player && policy.team_id == 4;
-        case PMSPolygonType::FlaggerCollides:
-            return policy.player && policy.flag;
-        case PMSPolygonType::NonFlaggerCollides:
-            // Preserve the existing RayCast behavior. Its two legacy filters jointly reject this
-            // polygon type for every player/flag/bullet combination.
-            return false;
-        case PMSPolygonType::OnlyBulletsCollide:
-            return policy.bullet;
-        case PMSPolygonType::OnlyPlayersCollide:
-            return policy.player;
-        case PMSPolygonType::NoCollide:
-        case PMSPolygonType::Background:
-        case PMSPolygonType::BackgroundTransition:
-            return false;
-        default:
-            return true;
-    }
-}
-
-bool PolygonCollidesWithCollisionTest(Soldank::PMSPolygonType polygon_type, bool is_flag)
-{
-    using Soldank::PMSPolygonType;
-    constexpr std::array ALWAYS_EXCLUDED{
-        PMSPolygonType::OnlyBulletsCollide,
-        PMSPolygonType::OnlyPlayersCollide,
-        PMSPolygonType::NoCollide,
-        PMSPolygonType::AlphaPlayers,
-        PMSPolygonType::BravoPlayers,
-        PMSPolygonType::CharliePlayers,
-        PMSPolygonType::DeltaPlayers,
-        PMSPolygonType::Background,
-        PMSPolygonType::BackgroundTransition,
-    };
-    constexpr std::array NON_FLAG_EXCLUDED{
-        PMSPolygonType::FlaggerCollides,
-        PMSPolygonType::NonFlaggerCollides,
-    };
-
-    return !std::ranges::contains(ALWAYS_EXCLUDED, polygon_type) &&
-           (is_flag || !std::ranges::contains(NON_FLAG_EXCLUDED, polygon_type));
-}
-} // namespace
+import Shared.Core.Map.Polygons.PolygonCollisionPolicy;
 
 namespace Soldank
 {
+std::uint64_t Map::GetPolygonFingerprint() const
+{
+    if (polygon_fingerprint_) {
+        return *polygon_fingerprint_;
+    }
+    std::uint64_t hash = 14695981039346656037ULL;
+    const auto append = [&](std::uint32_t value) {
+        for (unsigned int byte = 0; byte < 4; ++byte) {
+            hash ^= (value >> (byte * 8U)) & 0xffU;
+            hash *= 1099511628211ULL;
+        }
+    };
+    for (const auto& polygon : GetPolygons()) {
+        append(static_cast<std::uint32_t>(polygon.polygon_type));
+        append(std::bit_cast<std::uint32_t>(
+          polygon.polygon_type == PMSPolygonType::Bouncy ? polygon.bounciness : 1.0F));
+        for (const auto& vertex : polygon.vertices) {
+            append(std::bit_cast<std::uint32_t>(vertex.x));
+            append(std::bit_cast<std::uint32_t>(vertex.y));
+        }
+    }
+    polygon_fingerprint_ = hash == 0 ? 1 : hash;
+    return *polygon_fingerprint_;
+}
+
 bool Map::BulletCollidesWithPolygon(PMSPolygonType polygon_type, std::uint8_t team_id)
 {
-    return PolygonCollidesWith(polygon_type, { false, false, true, team_id });
+    return AllowsPolygon(polygon_type, { .kind = PolygonQueryKind::Projectile, .team = team_id });
 }
 
 bool Map::PointInPoly(glm::vec2 p, PMSPolygon poly)
@@ -120,6 +74,13 @@ bool Map::PointInPoly(glm::vec2 p, PMSPolygon poly)
 bool Map::PointInPolyEdges(float x, float y, int i) const
 {
     const auto& polygon = map_data_.polygons.at(i);
+    const auto& a = polygon.vertices[0];
+    const auto& b = polygon.vertices[1];
+    const auto& c = polygon.vertices[2];
+    if (!std::isfinite(x) || !std::isfinite(y) ||
+        std::abs((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) <= 0.000001F) {
+        return false;
+    }
     for (std::size_t edge = 0; edge < polygon.vertices.size(); ++edge) {
         const float u_x = x - polygon.vertices.at(edge).x;
         const float u_y = y - polygon.vertices.at(edge).y;
@@ -224,11 +185,12 @@ bool Map::CollisionTest(glm::vec2 pos, glm::vec2& perp_vec, bool is_flag) const
     const glm::ivec2 sector_index = GetSectorIndex(pos);
     auto rx = sector_index.x;
     auto ry = sector_index.y;
-    if ((rx > 0) && (rx < GetSectorsCount() + 25) && (ry > 0) && (ry < GetSectorsCount() + 25)) {
+    if ((rx > 0) && (rx < 2 * GetSectorsCount()) && (ry > 0) && (ry < 2 * GetSectorsCount())) {
         for (unsigned short polygon_id : GetSector(rx, ry).polygons) {
             auto poly = GetPolygons().at(polygon_id - 1);
 
-            if (PolygonCollidesWithCollisionTest(poly.polygon_type, is_flag)) {
+            if (AllowsPolygon(poly.polygon_type,
+                              { .kind = PolygonQueryKind::Point, .flag = is_flag })) {
                 if (PointInPoly(pos, poly)) {
                     float d = NAN;
                     int b = 0;
@@ -253,38 +215,49 @@ bool Map::RayCast(glm::vec2 a,
                   bool check_collider,
                   std::uint8_t team_id) const
 {
+    distance = 0.0F;
+    if (map_data_.sectors_size <= 0 || !std::isfinite(a.x) || !std::isfinite(a.y) ||
+        !std::isfinite(b.x) || !std::isfinite(b.y) || !std::isfinite(max_dist)) {
+        return false;
+    }
     distance = Calc::Vec2Length(a - b);
     if (distance > max_dist) {
         distance = 9999999.0F;
         return true;
     }
 
-    int ax = ((int)std::round(std::min(a.x, b.x) / (float)map_data_.sectors_size)) + 25;
-    int ay = ((int)std::round(std::min(a.y, b.y) / (float)map_data_.sectors_size)) + 25;
-    int bx = ((int)std::round(std::max(a.x, b.x) / (float)map_data_.sectors_size)) + 25;
-    int by = ((int)std::round(std::max(a.y, b.y) / (float)map_data_.sectors_size)) + 25;
+    const auto first_sector = GetSectorIndex({ std::min(a.x, b.x), std::min(a.y, b.y) });
+    const auto last_sector = GetSectorIndex({ std::max(a.x, b.x), std::max(a.y, b.y) });
+    int ax = first_sector.x;
+    int ay = first_sector.y;
+    int bx = last_sector.x;
+    int by = last_sector.y;
 
-    if (ax > GetSectorsCount() + 25 || bx < 0 || ay > GetSectorsCount() + 25 || by < 0) {
+    if (ax > 2 * GetSectorsCount() || bx < 0 || ay > 2 * GetSectorsCount() || by < 0) {
         return false;
     }
 
     ax = std::max(0, ax);
     ay = std::max(0, ay);
-    bx = std::min(GetSectorsCount() + 25, bx);
-    by = std::min(GetSectorsCount() + 25, by);
+    bx = std::min(2 * GetSectorsCount(), bx);
+    by = std::min(2 * GetSectorsCount(), by);
 
-    const RayCastCollisionPolicy collision_policy{ player, flag, bullet, team_id };
+    const PolygonQuery collision_policy{ .kind = PolygonQueryKind::Ray,
+                                         .team = team_id,
+                                         .player = player,
+                                         .flag = flag,
+                                         .bullet = bullet };
     std::vector<bool> tested_polygons(map_data_.polygons.size());
 
-    for (int i = ax; i < bx; ++i) {
-        for (int j = ay; j < by; ++j) {
+    for (int i = ax; i <= bx; ++i) {
+        for (int j = ay; j <= by; ++j) {
             for (const auto& polygon_id : GetSector(i, j).polygons) {
                 if (tested_polygons.at(polygon_id - 1)) {
                     continue;
                 }
                 tested_polygons.at(polygon_id - 1) = true;
                 const PMSPolygon& polygon = map_data_.polygons.at(polygon_id - 1);
-                if (PolygonCollidesWith(polygon.polygon_type, collision_policy)) {
+                if (AllowsPolygon(polygon.polygon_type, collision_policy)) {
                     if (PointInPoly(a, polygon)) {
                         distance = 0;
                         return true;

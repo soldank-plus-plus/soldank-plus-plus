@@ -6,6 +6,8 @@ module;
 export module Shared.Networking.NetworkPackets;
 
 import Shared.Core.Entities.Weapon;
+import Shared.Core.Map.Polygons.PolygonBackgroundState;
+import Shared.Core.Physics.Polygons.PolygonContact;
 import Shared.Core.State.Control;
 import Shared.Core.Animations;
 import Shared.Core.Types.BulletType;
@@ -18,6 +20,12 @@ import Shared.Core.Physics.Bullets.BulletTypes;
 export namespace Soldank
 {
 #pragma pack(push, 1)
+struct PolygonEffectPacket
+{
+    PolygonEffectEvent event{};
+    std::uint64_t map_fingerprint{};
+};
+
 struct SoldierInputPacket
 {
     std::uint32_t input_sequence_id;
@@ -80,6 +88,11 @@ struct SoldierStatePacket
     std::uint16_t bonus_ticks{};
     std::uint8_t fired{};
     Control control{};
+    bool has_polygon_state{};
+    PolygonBackgroundState polygon_background{};
+    bool carrying_flag{};
+    std::uint32_t life_sequence{};
+    DeathSeverity death_severity{};
     float health{ 150.0F };
     float vest{};
     bool dead_meat{};
@@ -117,6 +130,8 @@ struct ItemStatePacket
     bool is_static{};
     std::int32_t heat{};
     std::int16_t mounted_soldier{ -1 };
+    std::int16_t holding_soldier_id{ -1 };
+    PolygonBackgroundState polygon_background{};
     std::uint8_t particle_count{};
     std::array<ItemParticlePacket, 4> particles{};
     bool operator==(const ItemStatePacket&) const = default;

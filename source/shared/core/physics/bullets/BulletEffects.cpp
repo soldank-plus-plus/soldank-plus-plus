@@ -51,6 +51,7 @@ void DropWeapon(StateManager& state, Soldier& soldier, const Bullet& bullet)
         return;
     }
     auto& dropped = state.CreateItem(soldier.skeleton->GetPos(16), soldier.id, *item);
+    dropped.polygon_background = soldier.polygon_background;
     dropped.ammo_count = soldier.GetActiveWeapon().GetAmmoCount();
     state.ChangeSoldierPrimaryWeapon(soldier.id, WeaponType::NoWeapon);
     auto event = MakeProjectileEvent(

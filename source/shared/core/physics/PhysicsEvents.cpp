@@ -3,6 +3,7 @@ module;
 export module Shared.Core.Physics.PhysicsEvents;
 
 import Extern.Glm;
+import Shared.Core.Physics.Polygons.PolygonContact;
 
 import Shared.Core.Map.PMSStructs;
 import Shared.Core.Utility.Observable;
@@ -16,6 +17,7 @@ export namespace Soldank
 {
 struct PhysicsEvents
 {
+    Observable<const PolygonEffectEvent&> polygon_event;
     Observable<const ProjectilePhysicsEvent&> projectile_event;
     Observable<const WeaponActionEvent&> weapon_action_event;
     Observable<Soldier&, float /* damage */> soldier_hit_by_bullet;

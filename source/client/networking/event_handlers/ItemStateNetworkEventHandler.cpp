@@ -10,6 +10,7 @@ module;
 export module Networking.ItemStateNetworkEventHandler;
 
 import Shared.Core.IWorld;
+import Shared.Core.Map.Polygons.PolygonBackgroundState;
 import Shared.Core.Types.ItemType;
 import Shared.Core.Utility.SerialNumber;
 import Shared.Networking.NetworkEvent;
@@ -37,6 +38,15 @@ protected:
                                !std::isfinite(packet.radius) || packet.radius < 0.0F ||
                                (packet.owner != 255 && packet.owner >= 32) ||
                                packet.mounted_soldier < -1 || packet.mounted_soldier >= 32))) {
+            return NetworkEventHandlerResult::Failure;
+        }
+        if (packet.active &&
+            (packet.holding_soldier_id < -1 || packet.holding_soldier_id >= 32 ||
+             !IsValidBackgroundState(packet.polygon_background,
+                                     world_->GetStateManager()->GetConstMap().GetPolygons()) ||
+             (packet.polygon_background.map_fingerprint != 0 &&
+              packet.polygon_background.map_fingerprint !=
+                world_->GetStateManager()->GetConstMap().GetPolygonFingerprint()))) {
             return NetworkEventHandlerResult::Failure;
         }
         if (packet.active && packet.particle_count != (IsItemTypeWeapon(packet.style) ? 2 : 4)) {
@@ -73,6 +83,8 @@ protected:
         item.static_type = packet.is_static;
         item.interest = packet.heat;
         item.mounted_soldier = packet.mounted_soldier;
+        item.holding_soldier_id = packet.holding_soldier_id;
+        item.polygon_background = packet.polygon_background;
         for (unsigned int i = 0; i < packet.particle_count; ++i) {
             const auto& particle = packet.particles.at(i);
             item.skeleton->SetPos(i + 1, { particle.x, particle.y });

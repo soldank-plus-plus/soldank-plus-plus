@@ -75,6 +75,7 @@ private:
     BulletSpriteData smoke_sprite_{};
     BulletSpriteData spark_sprite_{};
     BulletSpriteData flame_sprite_{};
+    BulletSpriteData blood_sprite_{};
 
     std::unordered_map<Sprites::WeaponSpriteType, BulletSpriteData> weapon_sprite_type_to_gl_data_;
 };
@@ -120,6 +121,8 @@ BulletRenderer::BulletRenderer(const Sprites::SpriteManager& sprite_manager)
                              Sprites::WeaponSpriteType::ColtShell }) {
         LoadSpriteData(sprite_manager, type, { 0.5F, 0.5F });
     }
+    blood_sprite_ = CreateSpriteData(
+      sprite_manager.GetEffectTexture(Sprites::SparkSpriteType::Splat), { 0.5F, 0.5F });
     flame_sprite_ = CreateSpriteData(
       sprite_manager.GetEffectTexture(Sprites::SparkSpriteType::Plomyk), { 0.5F, 0.5F });
     smoke_sprite_ = CreateSpriteData(
@@ -397,7 +400,9 @@ void BulletRenderer::RenderEffect(const glm::mat4& transform,
         data = weapon_sprite_type_to_gl_data_.at(type);
         scale = glm::vec2(1.0F / 4.5F);
     } else {
-        if (effect.kind == WeaponVisualEffectKind::Flame) {
+        if (effect.kind == WeaponVisualEffectKind::Blood) {
+            data = blood_sprite_;
+        } else if (effect.kind == WeaponVisualEffectKind::Flame) {
             data = flame_sprite_;
         } else if (effect.kind == WeaponVisualEffectKind::Spark) {
             data = spark_sprite_;

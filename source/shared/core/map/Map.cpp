@@ -1,11 +1,14 @@
 module;
 
 #include <array>
+#include <cstdint>
 #include <cmath>
 #include <filesystem>
 #include <memory>
+#include <limits>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,6 +25,7 @@ import Shared.Core.Data.FileWriter;
 import Shared.Core.Map.PMSConstants;
 import Shared.Core.Map.PMSEnums;
 import Shared.Core.Map.PMSStructs;
+import Shared.Core.Map.Polygons.PolygonValidation;
 
 import Shared.Core.Utility.Observable;
 
@@ -99,7 +103,15 @@ class Map
 public:
     Map() = default;
     Map(MapData map_data)
-        : map_data_(std::move(map_data)) {};
+        : map_data_(std::move(map_data))
+    {
+        if (map_data_.polygons.size() > MAX_POLYGONS_COUNT) {
+            throw std::length_error("PMS polygon limit exceeded");
+        }
+        for (const auto& polygon : map_data_.polygons) {
+            ValidatePolygon(polygon);
+        }
+    };
 
     void CreateEmptyMap();
 
@@ -109,6 +121,7 @@ public:
     void SaveMap(const std::filesystem::path& map_path,
                  std::shared_ptr<IFileWriter> file_writer = std::make_shared<FileWriter>()) const;
 
+    std::uint64_t GetPolygonFingerprint() const;
     static bool PointInPoly(glm::vec2 p, PMSPolygon poly);
 
     static bool BulletCollidesWithPolygon(PMSPolygonType polygon_type, std::uint8_t team_id);
@@ -305,6 +318,14 @@ public:
     glm::ivec2 GetSectorIndex(glm::vec2 position) const
     {
         const glm::vec2 center = GetCenter();
+        if (map_data_.sectors_size <= 0 || !std::isfinite(position.x) ||
+            !std::isfinite(position.y) ||
+            std::abs((position.x - center.x) / map_data_.sectors_size) >
+              static_cast<float>(std::numeric_limits<int>::max() / 2) ||
+            std::abs((position.y - center.y) / map_data_.sectors_size) >
+              static_cast<float>(std::numeric_limits<int>::max() / 2)) {
+            return { -1, -1 };
+        }
         return { static_cast<int>(std::round((position.x - center.x) / map_data_.sectors_size)) +
                    map_data_.sectors_count,
                  static_cast<int>(std::round((position.y - center.y) / map_data_.sectors_size)) +
@@ -339,6 +360,7 @@ private:
         Rebuild
     };
 
+    mutable std::optional<std::uint64_t> polygon_fingerprint_;
     MapData map_data_;
     MapChangeEvents map_change_events_;
 
