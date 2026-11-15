@@ -76,6 +76,7 @@ public:
                     player.has_cigar = client_state_->appearance.cigar != 0 ? 5 : 0;
                 }
                 player.appearance = client_state_->appearance;
+                player.ApplyTeamShirtColor();
             });
         }
         world_.UpdateWeaponChoices(soldier_id,

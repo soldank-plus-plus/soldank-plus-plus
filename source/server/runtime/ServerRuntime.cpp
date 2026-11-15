@@ -5,6 +5,9 @@ module;
 #include <thread>
 #include <utility>
 #include <vector>
+#include <optional>
+#include <string>
+#include <cstdint>
 
 export module Runtime.ServerRuntime;
 
@@ -16,6 +19,7 @@ import Runtime.ServerSimulationEventRouter;
 import Sessions.PlayerSessionManager;
 
 import Shared.Core.IWorld;
+import Shared.Core.GameModes.GameModeRuntime;
 import Shared.Core.Entities.Bullet;
 import Shared.Core.Loop.FixedTimestepRunner;
 import Shared.Core.Loop.NativeFixedTimestepLoop;
@@ -44,6 +48,7 @@ public:
         , replication_service_(network_host_, player_session_manager_)
     {
         simulation_event_router_.AddSink(replication_service_);
+        lobby_client_.SetGameMode(config_.game_mode, config_.survival);
     }
 
     void Run()
@@ -60,6 +65,7 @@ public:
             .should_tick = []() { return true; },
             .tick =
               [&](double /*delta_time*/) {
+                  AdvanceMatch();
                   network_host_.Update();
 
                   const std::uint32_t server_tick = world_->GetStateManager()->GetGameTick();
@@ -105,6 +111,36 @@ public:
     }
 
 private:
+    void AdvanceMatch()
+    {
+        auto state = world_->GetStateManager();
+        const auto* mode = state->GetGameMode();
+        if (!mode || mode->GetState().phase != MatchPhase::Finished) {
+            finished_tick_.reset();
+            return;
+        }
+        if (!finished_tick_) {
+            finished_tick_ = state->GetGameTick();
+        }
+        if (state->GetGameTick() - *finished_tick_ < 300U) {
+            return;
+        }
+        std::string map = config_.map_path;
+        if (!config_.map_rotation.empty()) {
+            map_index_ = (map_index_ + 1) % config_.map_rotation.size();
+            map = config_.map_rotation.at(map_index_);
+        }
+        state->LoadMapDocument(map);
+        command_queues_.ClearPendingCommands();
+        state->TransformSoldiers([&](auto& soldier) {
+            if (!soldier.IsSpectator()) {
+                world_->SpawnSoldier(soldier.id);
+            }
+        });
+        finished_tick_.reset();
+    }
+    std::optional<std::uint32_t> finished_tick_;
+    std::size_t map_index_{};
     ServerConfig config_;
     std::shared_ptr<IWorld> world_;
     IServerNetworkHost& network_host_;

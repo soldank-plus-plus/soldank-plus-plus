@@ -31,9 +31,11 @@ import Shared.Core.Physics.Particles;
 import Shared.Core.State.Control;
 import Shared.Core.State.State;
 import Shared.Core.Types.ItemType;
+import Shared.Core.Types.TeamType;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Animations;
 import Shared.Core.Utility.Observable;
+import Shared.Core.GameModes.GameModeRuntime;
 import Shared.Core.Physics.Polygons.PolygonContact;
 
 export namespace Soldank
@@ -41,6 +43,64 @@ export namespace Soldank
 class StateManager
 {
 public:
+    void ConfigureGameMode(GameModeDefinition definition)
+    {
+        const auto epoch = mode_ ? mode_->GetState().epoch + 1U : 1U;
+        mode_ = std::make_unique<GameModeRuntime>(std::move(definition), epoch);
+        if (!mode_->Settings().sandbox && HasAuthoritativeProjectiles()) {
+            TransformSoldiers([&](Soldier& soldier) { ReleaseSoldierFlags(soldier.id); });
+            TransformItems([](Item& item) {
+                if (IsItemTypeFlag(item.style) || item.style == ItemType::Bow) {
+                    item.active = false;
+                }
+            });
+            std::erase_if(map_item_spawns_, [](const auto& spawn) {
+                return IsItemTypeFlag(spawn.style) || spawn.style == ItemType::Bow;
+            });
+        }
+        SetFriendlyFire(mode_->Settings().friendly_fire);
+    }
+    GameModeRuntime* GetGameMode() { return mode_.get(); }
+    const GameModeRuntime* GetGameMode() const { return mode_.get(); }
+    const std::string& GetLoadedMapPath() const { return loaded_map_path_; }
+    const Item& GetItem(std::uint8_t id) const { return state_.items.at(id); }
+    std::uint32_t GetParticipantGeneration(std::uint8_t id) const
+    {
+        return participant_generations_.at(id);
+    }
+    void RecordLethalHit(std::uint8_t victim, KillFact fact)
+    {
+        if (!lethal_hits_.at(victim)) {
+            lethal_hits_.at(victim) = fact;
+        }
+    }
+    std::optional<KillFact> TakeLethalHit(std::uint8_t victim)
+    {
+        return std::exchange(lethal_hits_.at(victim), std::nullopt);
+    }
+    ObjectiveInteraction DecideFlagInteraction(const Soldier& soldier, const Item& item) const
+    {
+        if (!mode_ || mode_->Settings().sandbox) {
+            return ObjectiveInteraction::Carry;
+        }
+        if (mode_->GetState().phase != MatchPhase::Running ||
+            !mode_->IsRoundParticipant(soldier.id)) {
+            return ObjectiveInteraction::Ignore;
+        }
+        for (const auto& objective : mode_->Settings().objectives) {
+            if (objective.item_type != item.style) {
+                continue;
+            }
+            if (objective.fixed) {
+                return ObjectiveInteraction::Ignore;
+            }
+            if (objective.team != TeamType::None && objective.team == soldier.team) {
+                return item.in_base ? ObjectiveInteraction::Ignore : ObjectiveInteraction::Return;
+            }
+            return ObjectiveInteraction::Carry;
+        }
+        return ObjectiveInteraction::Ignore;
+    }
     Observable<bool> game_pause_changed;
     Observable<std::uint8_t> soldier_removed;
     using SoldierStates = std::array<Soldier, MAX_SOLDIERS_COUNT>;
@@ -69,7 +129,18 @@ public:
     {
         MapDocument map_document;
         map_document.LoadMap(map_path);
+        loaded_map_path_ = map_path.generic_string();
         ApplyMapDocument(map_document);
+        for (auto& bullet : state_.bullets) {
+            bullet.active = false;
+        }
+        for (auto& item : state_.items) {
+            item.active = false;
+        }
+        if (mode_ && HasAuthoritativeProjectiles()) {
+            const auto definition = mode_->GetDefinition();
+            ConfigureGameMode(definition);
+        }
         SpawnWeaponMapItems();
     }
     RuntimeMap BuildRuntimeMapFromDocument() const
@@ -162,6 +233,7 @@ public:
             ForEachSoldier([&](const Soldier& owner) {
                 if (!params.derived && owner.id == params.owner_id) {
                     params.owner_ping_ticks = owner.GetPingTicks();
+                    params.owner_generation = GetParticipantGeneration(owner.id);
                 }
             });
         }
@@ -265,6 +337,10 @@ private:
         std::optional<unsigned int> respawn_tick;
     };
     std::vector<MapItemSpawn> map_item_spawns_;
+    std::string loaded_map_path_;
+    std::unique_ptr<GameModeRuntime> mode_;
+    std::array<std::uint32_t, MODE_PLAYERS> participant_generations_{};
+    std::array<std::optional<KillFact>, MODE_PLAYERS> lethal_hits_{};
     State state_;
     std::vector<BulletParams> bullet_emitter_;
     std::vector<ProjectilePhysicsEvent> projectile_events_;
@@ -673,7 +749,20 @@ const Soldier& StateManager::CreateSoldier(std::optional<unsigned int> force_sol
     }
 
     spdlog::debug("new_soldier_id {}", new_soldier_id);
+    ++participant_generations_.at(new_soldier_id);
+    lethal_hits_.at(new_soldier_id).reset();
     state_.soldiers.at(new_soldier_id).SetDefaultValues();
+    if (mode_ && mode_->Settings().team_count > 0) {
+        std::array<unsigned int, MODE_TEAMS> counts{};
+        ForEachSoldier([&](const Soldier& player) { ++counts.at(TeamIndex(player.team)); });
+        std::size_t selected = 1;
+        for (std::size_t team = 2; team <= mode_->Settings().team_count; ++team) {
+            if (counts.at(team) < counts.at(selected)) {
+                selected = team;
+            }
+        }
+        state_.soldiers.at(new_soldier_id).SetTeam(static_cast<TeamType>(selected));
+    }
     state_.soldiers.at(new_soldier_id).active = true;
     state_.soldiers.at(new_soldier_id).id = new_soldier_id;
 
@@ -689,6 +778,18 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
     } else {
         std::vector<glm::vec2> possible_spawn_point_positions;
         for (const auto& spawn_point : state_.map.GetSpawnPoints()) {
+            const auto team = state_.soldiers.at(soldier_id).team;
+            if (!spawn_point.active) {
+                continue;
+            }
+            if (mode_ && !mode_->Settings().sandbox && mode_->Settings().team_count > 0) {
+                const auto expected =
+                  static_cast<PMSSpawnPointType>(static_cast<unsigned int>(team));
+                if (spawn_point.type == expected) {
+                    possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
+                }
+                continue;
+            }
             if (spawn_point.type == PMSSpawnPointType::General ||
                 spawn_point.type == PMSSpawnPointType::Alpha ||
                 spawn_point.type == PMSSpawnPointType::Bravo ||
@@ -699,6 +800,10 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
             }
         }
 
+        if (possible_spawn_point_positions.empty() && mode_ && !mode_->Settings().sandbox &&
+            mode_->Settings().team_count > 0) {
+            throw std::invalid_argument("Missing spawn for soldier's team");
+        }
         if (possible_spawn_point_positions.empty()) {
             for (const auto& spawn_point : state_.map.GetSpawnPoints()) {
                 possible_spawn_point_positions.emplace_back(spawn_point.x, spawn_point.y);
@@ -713,6 +818,7 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
         }
     }
 
+    lethal_hits_.at(soldier_id).reset();
     ReleaseSoldierFlags(static_cast<std::uint8_t>(soldier_id));
     auto& soldier = GetSoldierRef(soldier_id);
     soldier.particle.position = initial_player_position;
@@ -1178,6 +1284,15 @@ void StateManager::SpawnWeaponMapItems()
             continue;
         }
         const auto style = WeaponMapItemStyle(point.type);
+        if (style && mode_ && !mode_->Settings().sandbox) {
+            if (IsItemTypeFlag(*style) || *style == ItemType::Bow) {
+                continue; // Objective lifecycle is owned by the mode adapter.
+            }
+            if (mode_->Settings().rounds.enabled &&
+                (*style == ItemType::MedicalKit || *style == ItemType::GrenadeKit)) {
+                continue;
+            }
+        }
         if (style) {
             // One pickup per category until game modes provide a pickup budget.
             // Stationary guns are placed at every explicit map spawn.

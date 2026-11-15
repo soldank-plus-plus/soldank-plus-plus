@@ -14,6 +14,7 @@ import Extern.Glm;
 import Shared.Core.Types.WeaponType;
 
 import Shared.Core.State.StateManager;
+import Shared.Core.GameModes.GameModeRuntime;
 
 export namespace Soldank
 {
@@ -27,6 +28,9 @@ public:
 
     void Render(const StateManager& game_state_manager, const ClientState& client_state)
     {
+        if (const auto* mode = game_state_manager.GetGameMode()) {
+            RenderMatch(*mode, client_state);
+        }
         if (client_state.world_render_options.draw_minimap) {
             minimap_.Render(game_state_manager,
                             { client_state.input.window_width, client_state.input.window_height },
@@ -170,6 +174,56 @@ public:
     }
 
 private:
+    void RenderMatch(const GameModeRuntime& mode, const ClientState& client)
+    {
+        const auto& match = mode.GetState();
+        std::string status = mode.Settings().display_name;
+        switch (match.phase) {
+            case MatchPhase::Waiting:
+                status += " - waiting for opponents";
+                break;
+            case MatchPhase::Running:
+                status += " - round " + std::to_string(match.round_number);
+                break;
+            case MatchPhase::RoundEnding:
+                status += " - next round soon";
+                break;
+            case MatchPhase::Finished:
+                status += " - match finished";
+                break;
+        }
+        text_renderer_.Render(status,
+                              50.0F,
+                              300.0F,
+                              0.5F,
+                              { 1.0F, 1.0F, 1.0F },
+                              { client.input.window_width, client.input.window_height });
+        std::string scores;
+        if (mode.Settings().team_count > 0) {
+            for (std::size_t team = 1; team <= mode.Settings().team_count; ++team) {
+                scores += "Team " + std::to_string(team) + ": " +
+                          std::to_string(match.teams.at(team)) + "  ";
+                if (match.winning_teams.at(team)) {
+                    scores += "Winner  ";
+                }
+            }
+        } else if (client.client_soldier_id) {
+            const auto id = *client.client_soldier_id;
+            const auto& score = match.players.at(id);
+            scores = "Points: " + std::to_string(score.points) +
+                     " Kills: " + std::to_string(score.kills) +
+                     " Deaths: " + std::to_string(score.deaths);
+            if (match.winners.at(id)) {
+                scores += " Winner";
+            }
+        }
+        text_renderer_.Render(scores,
+                              50.0F,
+                              330.0F,
+                              0.5F,
+                              { 1.0F, 1.0F, 1.0F },
+                              { client.input.window_width, client.input.window_height });
+    }
     MinimapRenderer minimap_;
     HudSpriteRenderer sprites_;
     TextRenderer text_renderer_;

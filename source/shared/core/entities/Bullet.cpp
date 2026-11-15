@@ -27,6 +27,7 @@ struct BulletParams
     std::uint8_t owner_id;
     float push;
     std::uint16_t owner_ping_ticks{};
+    std::uint32_t owner_generation{};
     std::uint32_t id{};
     std::uint32_t seed{};
     unsigned int spawn_tick{};
@@ -69,6 +70,7 @@ struct Bullet
         , hit_multiply_prev(params.hit_multiply)
         , push(params.push)
         , owner_ping_ticks(params.owner_ping_ticks)
+        , owner_generation(params.owner_generation)
         , id(params.id)
         , seed(params.seed)
         , spawn_tick(params.spawn_tick)
@@ -94,6 +96,7 @@ struct Bullet
     std::uint32_t degrade_count = 0;
     float push{};
     std::uint16_t owner_ping_ticks{};
+    std::uint32_t owner_generation{};
     std::uint32_t id{};
     std::uint32_t seed{};
     unsigned int spawn_tick{};

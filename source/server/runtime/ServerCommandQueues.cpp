@@ -35,6 +35,13 @@ public:
 #endif
     }
 
+    void ClearPendingCommands()
+    {
+        simulation_commands_.clear();
+        for (auto& inputs : pending_player_inputs_) {
+            inputs.clear();
+        }
+    }
     void EnqueueSimulationCommand(SimulationCommand command)
     {
         simulation_commands_.push_back(std::move(command));

@@ -1,4 +1,11 @@
 set(soldank_core_modules
+    core/game_modes/RuleContracts.cpp
+    core/game_modes/GameModeDefinition.cpp
+    core/game_modes/GameModeBuilder.cpp
+    core/game_modes/Rules.cpp
+    core/game_modes/BuiltinGameModes.cpp
+    core/game_modes/GameModeRuntime.cpp
+    core/game_modes/WorldGameModeAdapter.cpp
     core/IWorld.cpp
     core/World.cpp
     core/WorldEvents.cpp
@@ -122,6 +129,8 @@ set(soldank_protocol_modules
     communication/NetworkPackets.cpp
     communication/PingTimer.cpp
     communication/ProtocolConversions.cpp
+    communication/GameModeProtocol.cpp
+    communication/ClientHello.cpp
 )
 
 function(configure_shared_module_library target_name)

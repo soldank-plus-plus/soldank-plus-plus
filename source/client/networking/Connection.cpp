@@ -9,6 +9,7 @@ module;
 export module Networking.Connection;
 
 import Networking.IConnection;
+import Shared.Networking.ClientHello;
 
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkMessage;
@@ -26,7 +27,7 @@ public:
         : interface_(interface)
         , connection_handle_(connection_handle)
     {
-        std::string message = "test name";
+        std::string message = MakeClientHello("test name");
         interface_->SendMessageToConnection(connection_handle_,
                                             message.c_str(),
                                             (std::uint32_t)message.length(),
@@ -68,8 +69,7 @@ public:
         interface_->CloseConnection(connection_handle_, 0, nullptr, false);
     }
 
-    void AssertConnectionInfo(
-      GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) const
+    void AssertConnectionInfo(GNS::SteamNetConnectionStatusChangedCallback_t* connection_info) const
     {
         assert(connection_info->m_hConn == connection_handle_ ||
                connection_handle_ == GNS::HSteamNetConnection_Enum::Invalid);

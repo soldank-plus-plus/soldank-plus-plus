@@ -36,6 +36,8 @@ struct ParsedLaunchParameters
     ApplicationMode application_mode = ApplicationMode::Local;
     std::optional<ServerEndpoint> server_endpoint;
     std::optional<std::string> map;
+    std::string game_mode{ "sandbox" };
+    bool survival{};
     WindowSizeMode window_size_mode = WindowBackendAdapter::GetDefaultWindowSizeMode();
     int fps_limit = Config::FPS_LIMIT;
     bool is_debug_ui_enabled = false;
@@ -91,6 +93,10 @@ ParsedLaunchParameters ParseLaunchParameters(const ParameterValues& parameter_va
         parsed_values.map = std::string{ *map };
     }
 
+    if (const auto mode = get("game-mode")) {
+        parsed_values.game_mode = std::string(*mode);
+    }
+    parsed_values.survival = has("survival");
     if (has("local") && !parsed_values.map) {
         return parsed_values;
     }

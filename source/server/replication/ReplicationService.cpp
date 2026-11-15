@@ -5,6 +5,7 @@ module;
 #include <span>
 #include <array>
 #include <algorithm>
+#include <optional>
 
 export module Replication.ReplicationService;
 
@@ -20,6 +21,8 @@ import Shared.Core.Utility.VisitHelper;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.NetworkPackets;
+import Shared.Networking.GameModeProtocol;
+import Shared.Core.GameModes.GameModeRuntime;
 import Shared.Networking.ProtocolConversions;
 
 export namespace Soldank
@@ -36,6 +39,16 @@ public:
 
     void BroadcastTick(const StateManager& state_manager)
     {
+        const auto* mode = state_manager.GetGameMode();
+        if (mode != nullptr &&
+            (!last_match_epoch_ || *last_match_epoch_ != mode->GetState().epoch ||
+             last_match_revision_ != mode->GetState().revision ||
+             state_manager.GetGameTick() % 60U == 0)) {
+            network_host_.SendNetworkMessageToAll(
+              { NetworkEvent::MatchState, MakeMatchStatePacket(state_manager) });
+            last_match_epoch_ = mode->GetState().epoch;
+            last_match_revision_ = mode->GetState().revision;
+        }
         state_manager.ForEachSoldier([&](const auto& soldier) {
             SoldierStatePacket packet{
                 .server_tick = state_manager.GetGameTick(),
@@ -158,6 +171,8 @@ public:
     }
 
 private:
+    std::optional<std::uint32_t> last_match_epoch_;
+    std::uint32_t last_match_revision_{};
     std::array<ItemStatePacket, 128> last_items_{};
     IServerNetworkHost& network_host_;
     const PlayerSessionManager& player_session_manager_;

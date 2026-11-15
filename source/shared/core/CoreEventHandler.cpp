@@ -11,6 +11,7 @@ export module Shared.CoreEventHandler;
 import Extern.Glm;
 
 import Shared.Core.IWorld;
+import Shared.Core.GameModes.GameModeRuntime;
 import Shared.Core.WorldEvents;
 import Shared.Core.Physics.SoldierPhysics;
 import Shared.Core.Physics.PhysicsEvents;
@@ -60,6 +61,12 @@ private:
         world->GetPhysicsEvents().soldier_collides_with_item.AddObserver([world](Soldier& soldier,
                                                                                  Item& item) {
             if (!world->GetStateManager()->HasAuthoritativeProjectiles()) {
+                return;
+            }
+            const auto* mode = world->GetStateManager()->GetGameMode();
+            if (mode && !mode->Settings().sandbox &&
+                (mode->GetState().phase != MatchPhase::Running ||
+                 !mode->IsRoundParticipant(soldier.id))) {
                 return;
             }
             if (IsItemTypeWeapon(item.style)) {

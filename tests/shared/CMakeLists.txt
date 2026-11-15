@@ -221,3 +221,15 @@ foreach(PolygonTest IN ITEMS PolygonCollisionPolicyTest PolygonBackgroundStateTe
     set_tests_properties(${PolygonTest} PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
     add_dependencies(${PolygonTest} WeaponSimulationTest)
 endforeach()
+
+add_executable(GameModesTest core/game_modes/GameModesTest.cpp)
+AddTestOptionsAndLibraries(GameModesTest)
+target_link_libraries(GameModesTest PRIVATE shared_lib)
+add_test(NAME GameModesTest COMMAND GameModesTest)
+
+add_executable(GameModeWorldTest core/game_modes/GameModeWorldTest.cpp)
+AddTestOptionsAndLibraries(GameModeWorldTest)
+target_link_libraries(GameModeWorldTest PRIVATE shared_lib shared_lib_testing_framework)
+add_dependencies(GameModeWorldTest WeaponSimulationTest)
+add_test(NAME GameModeWorldTest COMMAND GameModeWorldTest)
+set_tests_properties(GameModeWorldTest PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")

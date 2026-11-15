@@ -5,6 +5,7 @@ module;
 
 export module Shared.Networking.NetworkPackets;
 
+import Shared.Core.GameModes.RuleContracts;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Map.Polygons.PolygonBackgroundState;
@@ -20,6 +21,32 @@ import Shared.Core.Physics.Bullets.BulletTypes;
 
 export namespace Soldank
 {
+constexpr std::uint32_t GAME_MODE_PROTOCOL_VERSION = 1;
+struct MatchObjectivePacket
+{
+    std::uint8_t item_id{};
+    std::uint8_t item_type{};
+    std::int16_t carrier{ -1 };
+    bool home{};
+};
+struct MatchStatePacket
+{
+    std::uint32_t version{ GAME_MODE_PROTOCOL_VERSION };
+    std::uint32_t server_tick{};
+    std::array<char, 64> mode_id{};
+    std::array<char, 64> display_name{};
+    std::array<char, 256> map_path{};
+    std::uint32_t team_count{};
+    bool survival{};
+    bool friendly_fire{};
+    int score_limit{};
+    std::uint32_t time_limit{};
+    std::uint64_t definition_fingerprint{};
+    MatchState state{};
+    std::uint8_t objective_count{};
+    std::array<MatchObjectivePacket, 4> objectives{};
+};
+
 #pragma pack(push, 1)
 struct PolygonEffectPacket
 {

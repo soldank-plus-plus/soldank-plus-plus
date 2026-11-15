@@ -18,6 +18,7 @@ enum class NetworkEvent : unsigned int
     HitSoldier,
     ProjectilePhysics,
     ItemState,
+    MatchState,
     PolygonEffect
 };
 } // namespace Soldank

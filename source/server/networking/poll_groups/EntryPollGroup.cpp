@@ -15,6 +15,7 @@ import Networking.Transport.GnsServerTransport;
 import Networking.Transport.TransportTypes;
 
 import Shared.Networking.NetworkEvent;
+import Shared.Networking.ClientHello;
 
 import Extern.Spdlog;
 import Extern.GameNetworkingSockets;
@@ -42,15 +43,21 @@ public:
                 Spdlog::error("[EntryPollGroup] Error checking for messages");
             }
             assert(messages_count == 1 && incoming_message);
-            const auto connection_id =
-              GnsServerTransport::ToConnectionId(incoming_message->m_conn);
+            const auto connection_id = GnsServerTransport::ToConnectionId(incoming_message->m_conn);
             assert(IsConnectionAssigned(connection_id));
             auto it_client = FindConnection(connection_id);
 
             std::string message_from_client;
             message_from_client.assign(static_cast<char*>(incoming_message->m_pData),
                                        incoming_message->m_cbSize);
-            it_client->second.nick = message_from_client;
+            const auto nick = ParseClientHello(message_from_client);
+            if (!nick) {
+                const auto handle = incoming_message->m_conn;
+                incoming_message->Release();
+                GetInterface()->CloseConnection(handle, 0, "Incompatible protocol", false);
+                continue;
+            }
+            it_client->second.nick = *nick;
             SetClientNick(it_client->second.connection_id, it_client->second.nick);
             Spdlog::info("[EntryPollGroup] Name assigned to connection {}: {}",
                          it_client->second.connection_id,
@@ -70,8 +77,7 @@ public:
       GNS::SteamNetConnectionStatusChangedCallback_t* new_connection_info) override
     {
         // This must be a new connection
-        const auto connection_id =
-          GnsServerTransport::ToConnectionId(new_connection_info->m_hConn);
+        const auto connection_id = GnsServerTransport::ToConnectionId(new_connection_info->m_hConn);
         assert(!IsConnectionAssigned(connection_id));
 
         Spdlog::info("[EntryPollGroup] Connection request from {}",
@@ -86,8 +92,8 @@ public:
         Spdlog::info("[EntryPollGroup] Connection accepted: {}\n",
                      std::span{ new_connection_info->m_info.m_szConnectionDescription }.data());
 
-        if (!AssignConnection({ .connection_id = connection_id,
-                                .nick = "NEW CONNECTION PLACEHOLDER" })) {
+        if (!AssignConnection(
+              { .connection_id = connection_id, .nick = "NEW CONNECTION PLACEHOLDER" })) {
             return;
         }
 

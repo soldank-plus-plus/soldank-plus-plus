@@ -108,6 +108,7 @@ set(client_lib_modules
     networking/event_handlers/PlayerLeaveNetworkEventHandler.cpp
     networking/event_handlers/ProjectileSpawnNetworkEventHandler.cpp
     networking/event_handlers/ItemStateNetworkEventHandler.cpp
+    networking/event_handlers/MatchStateNetworkEventHandler.cpp
     networking/event_handlers/ProjectilePhysicsNetworkEventHandler.cpp
     networking/event_handlers/SoldierInfoNetworkEventHandler.cpp
     networking/event_handlers/SoldierStateNetworkEventHandler.cpp

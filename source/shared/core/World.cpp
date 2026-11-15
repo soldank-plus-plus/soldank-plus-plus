@@ -18,6 +18,8 @@ export module Shared.Core.World;
 import Extern.Glm;
 
 import Shared.Core.IWorld;
+import Shared.Core.GameModes.WorldGameModeAdapter;
+import Shared.Core.GameModes.GameModeRuntime;
 import Shared.Core.WorldEvents;
 import Shared.Core.Physics.BulletPhysics;
 import Shared.Core.Physics.Bullets.BulletEvents;
@@ -124,6 +126,9 @@ public:
     WorldTickResult Tick(const WorldTickInput& input) final
     {
         pending_simulation_events_.clear();
+        if (state_manager_->IsGamePaused()) {
+            return {};
+        }
         state_manager_->SetGameTick(input.tick);
 
         for (const auto& player_input : input.player_inputs) {
@@ -141,6 +146,13 @@ public:
 
     void Update(double /*delta_time*/) final
     {
+        mode_adapter_.BeginTick(*state_manager_);
+        if (const auto* mode = state_manager_->GetGameMode();
+            mode && state_manager_->HasAuthoritativeProjectiles() && !mode->Settings().sandbox &&
+            mode->GetState().phase != MatchPhase::Running) {
+            mode_adapter_.EndTick(*state_manager_);
+            return;
+        }
         // TODO: move this somewhere else
         static float gravity = 0.06F;
 
@@ -160,7 +172,8 @@ public:
                 should_update_current_soldier = pre_soldier_update_callback_(soldier);
             }
 
-            if (should_update_current_soldier) {
+            if (should_update_current_soldier &&
+                mode_adapter_.CanSimulate(*state_manager_, soldier.id)) {
                 soldier.ApplyProjectilePushes(state_manager_->GetGameTick());
                 SoldierPhysics::Update(*state_manager_,
                                        soldier,
@@ -170,7 +183,8 @@ public:
                                        gravity);
                 if (soldier.dead_meat) {
                     soldier.ticks_to_respawn--;
-                    if (soldier.ticks_to_respawn <= 0) {
+                    if (soldier.ticks_to_respawn <= 0 &&
+                        mode_adapter_.CanRespawn(*state_manager_, soldier.id)) {
                         SpawnSoldier(soldier.id);
                     }
                 }
@@ -206,6 +220,7 @@ public:
                 KillSoldier(soldier_id);
             }
         }
+        mode_adapter_.EndTick(*state_manager_);
         // Publish only after all authoritative actions (including queued spawns) are committed.
         const auto projectile_events = state_manager_->GetProjectileEvents();
         state_manager_->ClearProjectileEvents();
@@ -314,8 +329,21 @@ public:
                 soldier.health = 0;
             }
             soldier.dead_meat = true;
+            auto fact = state_manager_->TakeLethalHit(soldier.id)
+                          .value_or(KillFact{
+                            .victim = soldier.id,
+                            .killer = std::nullopt,
+                            .victim_team = soldier.team,
+                          });
+            if (auto* mode = state_manager_->GetGameMode();
+                mode && state_manager_->HasAuthoritativeProjectiles()) {
+                const auto view = mode_adapter_.View(*state_manager_);
+                mode->OnKill(fact, view);
+                soldier.ticks_to_respawn = static_cast<int>(mode->RespawnDelay(view));
+            } else {
+                soldier.ticks_to_respawn = 180;
+            }
             state_manager_->ReleaseSoldierFlags(soldier.id);
-            soldier.ticks_to_respawn = 180; // 3 seconds
             WeaponPhysics::ThrowWeapon(*state_manager_, soldier);
             world_events_->soldier_died.Notify(soldier);
             pending_simulation_events_.push_back(SoldierKilledEvent{
@@ -399,6 +427,7 @@ private:
           command);
     }
 
+    WorldGameModeAdapter mode_adapter_;
     std::shared_ptr<StateManager> state_manager_;
     std::unique_ptr<PhysicsEvents> physics_events_;
     std::unique_ptr<WorldEvents> world_events_;

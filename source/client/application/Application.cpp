@@ -54,11 +54,14 @@ import Gameplay.PolygonPresentationEventRouter;
 import Networking.SoldierInfoNetworkEventHandler;
 import Networking.SoldierStateNetworkEventHandler;
 import Networking.SpawnSoldierNetworkEventHandler;
+import Networking.MatchStateNetworkEventHandler;
 import Networking.KillSoldierNetworkEventHandler;
 import Networking.HitSoldierNetworkEventHandler;
 
 import Shared.Core.IWorld;
 import Shared.Core.World;
+import Shared.Core.GameModes.BuiltinGameModes;
+import Shared.Core.GameModes.GameModeRuntime;
 import Shared.CoreEventHandler;
 
 import Shared.Core.State.StateManager;
@@ -90,6 +93,33 @@ public:
     void Run();
 
 private:
+    void RestartLocalMatchIfDue()
+    {
+        if (application_mode_ != ApplicationMode::Local) {
+            return;
+        }
+        const auto state = world_->GetStateManager();
+        const auto* mode = state->GetGameMode();
+        if (mode == nullptr || mode->GetState().phase != MatchPhase::Finished) {
+            local_finished_tick_.reset();
+            return;
+        }
+        if (!local_finished_tick_) {
+            local_finished_tick_ = state->GetGameTick();
+        }
+        if (state->GetGameTick() - *local_finished_tick_ < 300U) {
+            return;
+        }
+        const auto map_path = state->GetLoadedMapPath();
+        state->LoadMapDocument(map_path);
+        state->TransformSoldiers([&](Soldier& soldier) {
+            if (!soldier.IsSpectator()) {
+                world_->SpawnSoldier(soldier.id);
+            }
+        });
+        local_finished_tick_.reset();
+    }
+    std::optional<std::uint32_t> local_finished_tick_;
     std::unique_ptr<Window> window_;
     std::shared_ptr<IWorld> world_;
     std::unique_ptr<INetworkingClient> networking_client_;
@@ -145,6 +175,13 @@ Application::Application(const std::vector<const char*>& cli_parameters)
 
     window_ = std::make_unique<Window>();
     world_ = std::make_shared<World>();
+    if (application_mode_ == ApplicationMode::Local) {
+        auto definition = MakeBuiltinGameModeRegistry().Create(parsed_launch_parameters.game_mode);
+        if (parsed_launch_parameters.survival) {
+            definition = WithSurvival(definition);
+        }
+        world_->GetStateManager()->ConfigureGameMode(std::move(definition));
+    }
     world_->GetStateManager()->SetAuthoritativeProjectiles(application_mode_ !=
                                                            ApplicationMode::Online);
     client_state_ = std::make_shared<ClientState>();
@@ -232,6 +269,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
             std::make_shared<SoldierInfoNetworkEventHandler>(world_, client_state_),
             std::make_shared<SoldierStateNetworkEventHandler>(world_, client_state_),
             std::make_shared<SpawnSoldierNetworkEventHandler>(world_),
+            std::make_shared<MatchStateNetworkEventHandler>(world_),
             std::make_shared<KillSoldierNetworkEventHandler>(world_),
             std::make_shared<HitSoldierNetworkEventHandler>(world_)
         };
@@ -396,6 +434,7 @@ void Application::Run()
         }
     });
     world_->SetPreWorldUpdateCallback([&]() {
+        RestartLocalMatchIfDue();
         client_state_->debug_render.colliding_polygon_ids.clear();
 
         if (application_mode_ == ApplicationMode::Online) {

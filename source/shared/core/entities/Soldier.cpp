@@ -159,7 +159,31 @@ struct Soldier
         bonus_ticks = 0;
     }
 
-    void SetTeam(TeamType new_team) { team = new_team; }
+    void ApplyTeamShirtColor()
+    {
+        // OpenSoldat TPlayer.ApplyShirtColorFromTeam (ARGB).
+        switch (team) {
+            case TeamType::Alpha:
+                appearance.shirt = { 210.0F / 255.0F, 15.0F / 255.0F, 5.0F / 255.0F, 1.0F };
+                break;
+            case TeamType::Bravo:
+                appearance.shirt = { 21.0F / 255.0F, 31.0F / 255.0F, 217.0F / 255.0F, 1.0F };
+                break;
+            case TeamType::Charlie:
+                appearance.shirt = { 210.0F / 255.0F, 210.0F / 255.0F, 5.0F / 255.0F, 1.0F };
+                break;
+            case TeamType::Delta:
+                appearance.shirt = { 5.0F / 255.0F, 210.0F / 255.0F, 5.0F / 255.0F, 1.0F };
+                break;
+            default:
+                break;
+        }
+    }
+    void SetTeam(TeamType new_team)
+    {
+        team = new_team;
+        ApplyTeamShirtColor();
+    }
     TeamType GetTeam() const { return team; }
     bool IsSpectator() const { return team == TeamType::Spectator; }
     bool IsInSameTeam(const Soldier& other) const

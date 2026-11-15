@@ -26,6 +26,7 @@ class ILobbyRegistrationClient
 public:
     virtual ~ILobbyRegistrationClient() = default;
 
+    virtual void SetGameMode(const std::string& /*id*/, bool /*survival*/) {}
     virtual void Register(const std::string& server_name, std::uint16_t server_port) = 0;
 };
 } // namespace Soldank

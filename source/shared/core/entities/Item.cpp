@@ -32,6 +32,7 @@ struct Item
     std::int32_t interest;
     bool collide_with_bullets;
     bool in_base;
+    bool return_requested{};
     std::uint8_t last_spawn;
     std::uint8_t team;
     bool flipped;

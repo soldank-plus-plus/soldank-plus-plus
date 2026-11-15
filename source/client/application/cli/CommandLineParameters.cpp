@@ -52,6 +52,8 @@ ParsedLaunchParameters CommandLineParameters::Parse() const
             ("ip", "IP of the server to join", cxxopts::value<std::string>())
             ("port", "Port of the server to join", cxxopts::value<std::string>())
             ("m,map", "Choose a map to load at the start of the game. Only in local", cxxopts::value<std::string>())
+            ("game-mode", "Local game mode ID (default: sandbox)", cxxopts::value<std::string>())
+            ("survival", "Enable Survival for local game")
             ("fullscreen", "Start the game in fullscreen")
             ("borderless", "Start the game in borderless (windowed) fullscreen")
             ("windowed", "Start the game in window of a fixed size")
@@ -87,6 +89,8 @@ ParsedLaunchParameters CommandLineParameters::Parse() const
         add_value("ip");
         add_value("port");
         add_value("map");
+        add_value("game-mode");
+        add_flag("survival");
         add_value("max-fps");
         return ParseLaunchParameters(parameter_values);
     } catch (const cxxopts::exceptions::exception& e) {

@@ -119,3 +119,5 @@ if (UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     )
   endif()
 endif()
+
+AddClientTestWithMapEditorData(GameModeProtocolTest networking/GameModeProtocolTest.cpp)

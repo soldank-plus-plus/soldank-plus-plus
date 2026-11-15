@@ -23,6 +23,7 @@ import Shared.Core.Physics.Bullets.BulletEffects;
 import Shared.Core.Physics.Bullets.BulletLagCompensation;
 import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.State.StateManager;
+import Shared.Core.GameModes.RuleContracts;
 import Shared.Core.Types.BulletType;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Types.TeamType;
@@ -100,7 +101,20 @@ void ApplyDamage(const PhysicsEvents& physics_events,
     }
     if (!target.dead_meat && target.health <= 0.0F) {
         target.dead_meat = true;
-        target.ticks_to_respawn = 180;
+        KillFact fact{
+            .victim = target.id,
+            .killer = std::nullopt,
+            .killer_generation = bullet.owner_generation,
+            .killer_team = bullet.team,
+            .victim_team = target.team,
+            .weapon = bullet.weapon,
+            .victim_bow = IsBow(target.GetActiveWeapon().GetWeaponParameters().kind),
+        };
+        if (bullet.owner_id < MODE_PLAYERS) {
+            fact.killer = bullet.owner_id;
+            fact.killer_flag = state.GetSoldier(bullet.owner_id).is_holding_flags;
+        }
+        state.RecordLethalHit(target.id, fact);
     }
     auto event = MakeProjectileEvent(explosion ? ProjectileEventKind::SoldierHitByExplosion
                                                : ProjectileEventKind::SoldierHitByProjectile,

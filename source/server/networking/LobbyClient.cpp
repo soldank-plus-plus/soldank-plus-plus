@@ -10,6 +10,7 @@ module;
 #include <algorithm>
 #include <chrono>
 #include <thread>
+#include <format>
 
 export module Networking.LobbyClient;
 
@@ -61,6 +62,11 @@ public:
         }
     }
 
+    void SetGameMode(const std::string& id, bool survival) override
+    {
+        game_mode_ = id;
+        survival_ = survival;
+    }
     void Register(const std::string& server_name, std::uint16_t server_port) override
     {
 #ifdef _WIN32
@@ -81,22 +87,22 @@ public:
         server_info += R"("advanced": false,)";
         server_info += R"("anti_cheat_on": false,)";
         server_info += R"("bonus_frequency": 0,)";
-        server_info += R"("country": PL,)";
+        server_info += R"("country": "PL",)";
         server_info += R"("current_map": "ctf_Ash",)";
-        server_info += R"("game_style": "CTF",)";
+        server_info += R"("game_style": ")" + game_mode_ + R"(",)";
         server_info += R"("info": "Test info",)";
         server_info += R"("max_players": 12,)";
-        server_info += R"("name": "server_name",)";
+        server_info += std::string(R"("name": )") + QuoteJson(server_name) + ",";
         server_info += R"("num_bots": 1,)";
         server_info += R"("os": ")" + operating_system + R"(",)";
         server_info += R"("players": [],)";
-        server_info += R"("port": ")" + std::to_string(server_port) + ",)";
+        server_info += std::string(R"("port": )") + std::to_string(server_port) + ",";
         server_info += R"("private": false,)";
         server_info += R"("realistic": false,)";
         server_info += R"("respawn": 180,)";
-        server_info += R"("survival": false,)";
+        server_info += std::string(R"("survival": )") + (survival_ ? "true," : "false,");
         server_info += R"("version": "1",)";
-        server_info += R"("wm": false")";
+        server_info += R"("wm": false)";
 
         server_info += "}";
 
@@ -120,6 +126,23 @@ public:
     }
 
 private:
+    static std::string QuoteJson(const std::string& value)
+    {
+        std::string result = "\"";
+        for (const unsigned char character : value) {
+            if (character == '"' || character == '\\') {
+                result += '\\';
+                result += static_cast<char>(character);
+            } else if (character < 32) {
+                result += std::format("\\u{:04x}", character);
+            } else {
+                result += static_cast<char>(character);
+            }
+        }
+        return result + "\"";
+    }
+    std::string game_mode_{ "capture_the_flag" };
+    bool survival_{};
     struct HTTPClient
     {
         Httplib::Client sender;

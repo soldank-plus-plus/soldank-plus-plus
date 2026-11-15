@@ -23,6 +23,7 @@ void ApplyPlayerInputCommand(StateManager& state_manager, const PlayerInputComma
                 soldier.has_cigar = command.appearance->cigar != 0 ? 5 : 0;
             }
             soldier.appearance = *command.appearance;
+            soldier.ApplyTeamShirtColor();
         });
     }
     if (command.weapon_choices && IsPrimaryWeaponChoice(command.weapon_choices->at(0)) &&

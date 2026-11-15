@@ -2,6 +2,9 @@ module;
 
 #include <memory>
 #include <vector>
+#include <optional>
+#include <cstdint>
+#include <utility>
 
 export module Application;
 
@@ -27,6 +30,7 @@ import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 
 import Shared.Core.IWorld;
 import Shared.Core.World;
+import Shared.Core.GameModes.BuiltinGameModes;
 import Shared.CoreEventHandler;
 
 import Shared.Networking.NetworkEventDispatcher;
@@ -37,7 +41,7 @@ export class Application
 {
 public:
     Application()
-        : config_(ServerConfigLoader().Load())
+        : config_(ServerConfigLoader::Load())
         , bootstrap_(std::make_unique<ServerBootstrap>())
         , world_(std::make_shared<World>())
         , server_state_(std::make_shared<ServerState>())
@@ -45,6 +49,20 @@ public:
         , player_session_manager_(std::make_unique<PlayerSessionManager>())
         , command_queues_(std::make_unique<ServerCommandQueues>())
     {
+        auto definition = MakeBuiltinGameModeRegistry().Create(config_.game_mode);
+        GameModeBuilder builder(definition);
+        builder.FriendlyFire(config_.friendly_fire);
+        if (config_.score_limit > 0) {
+            builder.ScoreLimit(config_.score_limit);
+        }
+        builder.TimeLimit(config_.time_limit == 0
+                            ? std::nullopt
+                            : std::optional<std::uint32_t>(config_.time_limit));
+        definition = builder.Build();
+        if (config_.survival) {
+            definition = WithSurvival(definition, config_.clear_weapons);
+        }
+        world_->GetStateManager()->ConfigureGameMode(std::move(definition));
         world_->GetStateManager()->SetRealistic(config_.realistic);
         world_->GetStateManager()->SetMaxGrenades(config_.max_grenades);
         world_->GetStateManager()->LoadMapDocument(config_.map_path);

@@ -19,6 +19,7 @@ import Shared.Core.IWorld;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
 import Shared.Networking.NetworkMessage;
+import Shared.Networking.GameModeProtocol;
 
 import Extern.Spdlog;
 import Extern.GameNetworkingSockets;
@@ -109,6 +110,11 @@ private:
         SendReliableNetworkMessageToAll(network_message, connection.connection_id);
 
         world_->SpawnSoldier(soldier_id);
+        if (world_->GetStateManager()->GetGameMode()) {
+            SendReliableNetworkMessage(
+              connection.connection_id,
+              { NetworkEvent::MatchState, MakeMatchStatePacket(*world_->GetStateManager()) });
+        }
     }
 
     std::shared_ptr<NetworkEventDispatcher> network_event_dispatcher_;

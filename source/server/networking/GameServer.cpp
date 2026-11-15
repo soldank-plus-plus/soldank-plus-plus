@@ -28,6 +28,8 @@ import Shared.Core.IWorld;
 import Shared.Networking.NetworkMessage;
 import Shared.Networking.NetworkEventDispatcher;
 import Shared.Networking.NetworkEvent;
+import Shared.Networking.ClientHello;
+import Shared.Networking.GameModeProtocol;
 
 import Extern.Spdlog;
 import Extern.GameNetworkingSockets;
@@ -105,7 +107,8 @@ public:
           event &&
           (*event == NetworkEvent::SpawnSoldier || *event == NetworkEvent::ProjectileSpawn ||
            *event == NetworkEvent::ProjectilePhysics || *event == NetworkEvent::HitSoldier ||
-           *event == NetworkEvent::KillSoldier || *event == NetworkEvent::ItemState);
+           *event == NetworkEvent::KillSoldier || *event == NetworkEvent::ItemState ||
+           *event == NetworkEvent::MatchState);
         if (reliable) {
             player_poll_group_->SendReliableNetworkMessageToAll(network_message);
         } else {
@@ -248,9 +251,12 @@ private:
     {
         std::string nick{ reinterpret_cast<const char*>(first_packet.payload.data()),
                           first_packet.payload.size() };
-        if (nick.empty()) {
-            nick = "Web player";
+        const auto parsed_nick = ParseClientHello(nick);
+        if (!parsed_nick) {
+            transport.Close(first_packet.connection_id);
+            return;
         }
+        nick = *parsed_nick;
 
         Spdlog::info(
           "[GameServer] WebRTC connection {} nick: {}", first_packet.connection_id, nick);
@@ -331,6 +337,12 @@ private:
           soldier_id,
           spawn_soldier_message.GetData().size());
         transport.Send(first_packet.connection_id, spawn_soldier_payload, DeliveryMode::Reliable);
+        if (world_->GetStateManager()->GetGameMode()) {
+            const NetworkMessage match_message{ NetworkEvent::MatchState,
+                                                MakeMatchStatePacket(*world_->GetStateManager()) };
+            transport.Send(
+              first_packet.connection_id, match_message.GetData(), DeliveryMode::Reliable);
+        }
     }
 #endif
 };
