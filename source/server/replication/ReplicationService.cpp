@@ -99,6 +99,7 @@ public:
             packet.has_polygon_state = true;
             packet.polygon_background = soldier.polygon_background;
             packet.carrying_flag = soldier.is_holding_flags;
+            packet.team = soldier.team;
             packet.appearance = soldier.appearance;
             packet.wear_helmet = soldier.wear_helmet;
             packet.has_cigar = soldier.has_cigar;

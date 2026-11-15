@@ -2,6 +2,8 @@ module;
 
 #include <string>
 #include <memory>
+#include <functional>
+#include <utility>
 #include <cstdint>
 
 export module Networking.NetworkingClient;
@@ -34,17 +36,18 @@ public:
         transport_->Update(network_event_dispatcher);
     }
 
-    void SendNetworkMessage(
-      const NetworkMessage& network_message,
-      DeliveryMode delivery_mode = DeliveryMode::Unreliable) final
+    void SendNetworkMessage(const NetworkMessage& network_message,
+                            DeliveryMode delivery_mode = DeliveryMode::Unreliable) final
     {
         transport_->SendNetworkMessage(network_message, delivery_mode);
     }
 
-    void SetLag(int lag_to_add_milliseconds) final
+    void SetDisconnectHandler(std::function<void()> handler)
     {
-        transport_->SetLag(lag_to_add_milliseconds);
+        transport_->SetDisconnectHandler(std::move(handler));
     }
+
+    void SetLag(int lag_to_add_milliseconds) final { transport_->SetLag(lag_to_add_milliseconds); }
 
 private:
     std::unique_ptr<ClientTransportAdapter> transport_;

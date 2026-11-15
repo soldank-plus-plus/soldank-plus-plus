@@ -1,8 +1,13 @@
 mergeInto(LibraryManager.library, {
+  soldank_webrtc_is_disconnected: function () {
+    return Module.soldankWebRtc && Module.soldankWebRtc.disconnected ? 1 : 0;
+  },
+
   soldank_webrtc_connect: function (serverIpPtr, serverPort) {
     const serverIp = UTF8ToString(serverIpPtr);
     const state = Module.soldankWebRtc = {
       incoming: [],
+      disconnected: false,
       reliableQueue: [],
       unreliableQueue: [],
       reliable: null,
@@ -44,6 +49,9 @@ mergeInto(LibraryManager.library, {
       state.peerConnection = pc;
       pc.onconnectionstatechange = function () {
         console.info("[soldank-webrtc] peer connection state", pc.connectionState);
+        if (pc.connectionState === "failed" || pc.connectionState === "closed" || pc.connectionState === "disconnected") {
+          state.disconnected = true;
+        }
       };
       pc.oniceconnectionstatechange = function () {
         console.info("[soldank-webrtc] ICE connection state", pc.iceConnectionState);

@@ -32,6 +32,7 @@ import Shared.Core.Map.Polygons.PolygonBackgroundState;
 import Shared.Core.Physics.Polygons.PolygonContact;
 import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Types.WeaponType;
+import Shared.Core.Types.TeamType;
 import Shared.Core.Simulation.PlayerInputApplication;
 import Shared.Core.Utility.SerialNumber;
 import Shared.Networking.ProtocolConversions;
@@ -55,7 +56,8 @@ private:
       unsigned int /*sender_connection_id*/,
       SoldierStatePacket soldier_state_packet) override
     {
-        if (!std::isfinite(soldier_state_packet.health) ||
+        if (soldier_state_packet.team > TeamType::Spectator ||
+            !std::isfinite(soldier_state_packet.health) ||
             !std::isfinite(soldier_state_packet.vest) || soldier_state_packet.active_weapon >= 2 ||
             (soldier_state_packet.weapon_count != 0 && soldier_state_packet.weapon_count != 3)) {
             return NetworkEventHandlerResult::Failure;
@@ -128,6 +130,7 @@ private:
         latest_server_tick = soldier_state_packet.server_tick;
         world_->GetStateManager()->TransformSoldier(soldier_id, [&](auto& soldier) {
             soldier.latest_authoritative_tick = soldier_state_packet.server_tick;
+            soldier.SetTeam(soldier_state_packet.team);
             soldier.appearance = soldier_state_packet.appearance;
             soldier.wear_helmet = soldier_state_packet.wear_helmet;
             soldier.has_cigar = soldier_state_packet.has_cigar;

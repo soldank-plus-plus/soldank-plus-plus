@@ -141,9 +141,9 @@ void Scene::RenderGame(const StateManager& game_state_manager,
                        int fps)
 {
     RenderWorld(game_state_manager, client_state, frame_percent);
-    RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
     game_hud_renderer_.Render(game_state_manager, client_state);
     RenderDebugMouseAim(game_state_manager, client_state);
+    RenderDebugOverlay(game_state_manager, client_state, frame_percent, fps);
 }
 
 void Scene::RenderEditor(const StateManager& game_state_manager,
@@ -361,7 +361,7 @@ void Scene::RenderDebugOverlay(const StateManager& game_state_manager,
                                int fps)
 {
     DebugUI::Render(game_state_manager, client_state, frame_percent, fps);
-    if (!DebugUI::GetWantCaptureMouse()) {
+    if (!client_state.chat.open && !DebugUI::GetWantCaptureMouse()) {
         cursor_renderer_.Render(
           { client_state.input.mouse_screen_position.x,
             client_state.input.mouse_screen_position.y },

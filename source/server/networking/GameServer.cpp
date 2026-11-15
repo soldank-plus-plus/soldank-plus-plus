@@ -6,19 +6,21 @@ module;
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
 export module Networking.GameServer;
 
 import Networking.IGameServer;
+import Networking.ChatSendRequestNetworkEventHandler;
 import Networking.Interface.NetworkingInterface;
 import Networking.PollGroups.EntryPollGroup;
 import Networking.PollGroups.PlayerPollGroup;
 import Networking.Transport.GnsServerTransport;
 import Networking.Transport.TransportTypes;
 import Sessions.PlayerSessionManager;
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
 import Networking.Transport.IServerTransport;
 import Networking.Transport.WebRtcServerTransport;
 #endif
@@ -59,8 +61,17 @@ public:
         entry_poll_group_->RegisterPlayerPollGroup(player_poll_group_);
         player_poll_group_->SetServerNetworkEventDispatcher(network_event_dispatcher);
         player_poll_group_->SetWorld(world);
+        chat_service_ = std::make_unique<ChatService>(
+          [this] { return GetChatPeers(); },
+          [this](unsigned int connection, const NetworkMessage& message) {
+              SendChatMessage(connection, message);
+          });
+        network_event_dispatcher_->AddNetworkEventHandler(
+          std::make_shared<ChatSendRequestNetworkEventHandler>(*chat_service_));
+        player_poll_group_->SetChatJoinHandler(
+          [this](unsigned int connection) { WelcomeChatPlayer(connection); });
 
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
         transports_.push_back(std::make_unique<WebRtcServerTransport>());
         transports_.back()->Init(port);
 #endif
@@ -76,7 +87,7 @@ public:
     {
         entry_poll_group_->PollIncomingMessages();
         player_poll_group_->PollIncomingMessages();
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
         for (auto& transport : transports_) {
             ProcessWebRtcIncomingPackets(*transport);
             transport->PollConnectionStateChanges();
@@ -94,7 +105,7 @@ public:
         if (player_poll_group_->IsConnectionAssigned(connection_id)) {
             player_poll_group_->SendNetworkMessage(connection_id, network_message);
         }
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
         if (web_rtc_connections_.contains(connection_id)) {
             SendWebRtcNetworkMessage(connection_id, network_message, DeliveryMode::Unreliable);
         }
@@ -114,7 +125,7 @@ public:
         } else {
             player_poll_group_->SendNetworkMessageToAll(network_message);
         }
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
         for (const auto& [connection_id, connection] : web_rtc_connections_) {
             if (connection.soldier_id.has_value()) {
                 SendWebRtcNetworkMessage(connection_id,
@@ -128,7 +139,7 @@ public:
 
     unsigned int GetSoldierIdFromConnectionId(unsigned int connection_id) override
     {
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
         const auto web_rtc_connection = web_rtc_connections_.find(connection_id);
         if (web_rtc_connection != web_rtc_connections_.end() &&
             web_rtc_connection->second.soldier_id.has_value()) {
@@ -138,10 +149,77 @@ public:
         return player_poll_group_->GetConnectionSoldierId(connection_id);
     }
 
+    std::vector<ChatPeer> GetChatPeers() const override
+    {
+        std::vector<ChatPeer> peers;
+        const auto add =
+          [&](unsigned int connection, unsigned int soldier, const std::string& name) {
+              const auto state = world_->GetStateManager();
+              const auto session = chat_sessions_.find(connection);
+              if (session == chat_sessions_.end()) {
+                  return;
+              }
+              const auto* mode = state->GetGameMode();
+              const auto team = mode != nullptr && mode->Settings().team_count > 0
+                                  ? state->GetSoldier(soldier).team
+                                  : TeamType::None;
+              peers.push_back({
+                .connection_id = connection,
+                .session = session->second,
+                .team = team,
+                .name = name,
+              });
+          };
+        for (const auto& connection : player_poll_group_->GetConnections()) {
+            add(connection.connection_id, connection.soldier_id, connection.nick);
+        }
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
+        for (const auto& [id, connection] : web_rtc_connections_) {
+            if (connection.soldier_id) {
+                add(id, *connection.soldier_id, connection.nick);
+            }
+        }
+#endif
+        return peers;
+    }
+    bool BroadcastSystemMessage(std::string_view text) override
+    {
+        return chat_service_->BroadcastSystemMessage(text);
+    }
+    bool SendSystemMessage(std::span<const ChatPeer> recipients, std::string_view text) override
+    {
+        return chat_service_->SendSystemMessage(recipients, text);
+    }
+
 private:
+    void SendChatMessage(unsigned int connection, const NetworkMessage& message)
+    {
+        if (player_poll_group_->IsConnectionAssigned(connection)) {
+            player_poll_group_->SendReliableNetworkMessage(connection, message);
+        }
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
+        if (web_rtc_connections_.contains(connection)) {
+            SendWebRtcNetworkMessage(connection, message, DeliveryMode::Reliable);
+        }
+#endif
+    }
+    void WelcomeChatPlayer(unsigned int connection)
+    {
+        chat_sessions_[connection] = next_chat_session_++;
+        for (const auto& peer : GetChatPeers()) {
+            if (peer.connection_id == connection) {
+                chat_service_->SendSystemMessage(std::span(&peer, 1),
+                                                 "Welcome to the server " + peer.name);
+                break;
+            }
+        }
+    }
+    std::unordered_map<unsigned int, std::uint64_t> chat_sessions_;
+    std::uint64_t next_chat_session_{ 1 };
+    std::unique_ptr<ChatService> chat_service_;
     std::unique_ptr<EntryPollGroup> entry_poll_group_;
     std::shared_ptr<PlayerPollGroup> player_poll_group_;
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
     std::vector<std::unique_ptr<IServerTransport>> transports_;
 
     struct WebRtcConnection
@@ -176,6 +254,7 @@ private:
                     NetworkMessage network_message(NetworkEvent::PlayerLeave, soldier_id);
                     player_poll_group_->SendReliableNetworkMessageToAll(network_message,
                                                                         connection_id);
+                    chat_sessions_.erase(connection_id);
                     player_poll_group_->CloseConnection(p_info);
 
                     Spdlog::info("CLOSING CONNECTION soldiers size before: {}",
@@ -210,7 +289,7 @@ private:
     PlayerSessionManager& player_session_manager_;
     std::shared_ptr<NetworkEventDispatcher> network_event_dispatcher_;
 
-#if defined(SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT)
+#ifdef SOLDANK_ENABLE_WEBRTC_SERVER_TRANSPORT
     void SendWebRtcNetworkMessage(ConnectionId connection_id,
                                   const NetworkMessage& network_message,
                                   DeliveryMode delivery_mode)
@@ -325,6 +404,7 @@ private:
 
         SendNetworkMessageToAll(soldier_info_message);
 
+        WelcomeChatPlayer(first_packet.connection_id);
         const auto spawn_position = world_->SpawnSoldier(soldier_id);
         NetworkMessage spawn_soldier_message{
             NetworkEvent::SpawnSoldier, soldier_id, spawn_position.x, spawn_position.y

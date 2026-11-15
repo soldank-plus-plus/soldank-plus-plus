@@ -4,6 +4,7 @@ module;
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <vector>
 
 export module Application.Input.PlatformInput;
@@ -26,6 +27,7 @@ public:
         key_changes_.push_back({ .key = key, .action = action, .modifiers = modifiers });
         if (action == GLFW_RELEASE) {
             keys_.at(key) = false;
+            suppressed_keys_.at(key) = false;
             keys_released_.at(key) = true;
         } else if (action != GLFW_REPEAT) {
             keys_.at(key) = true;
@@ -42,6 +44,7 @@ public:
         mouse_button_changes_.push_back({ .button = button, .action = action });
         if (action == GLFW_RELEASE) {
             mouse_buttons_.at(button) = false;
+            suppressed_buttons_.at(button) = false;
         } else if (action != GLFW_REPEAT) {
             mouse_buttons_.at(button) = true;
         }
@@ -83,7 +86,7 @@ public:
         if (!IsValidKey(key)) {
             return false;
         }
-        return keys_.at(key);
+        return keys_.at(key) && !suppressed_keys_.at(key);
     }
 
     bool KeyWentDown(int key) const
@@ -107,7 +110,7 @@ public:
         if (!IsValidMouseButton(button)) {
             return false;
         }
-        return mouse_buttons_.at(button);
+        return mouse_buttons_.at(button) && !suppressed_buttons_.at(button);
     }
 
     double GetX() const { return x_; }
@@ -136,6 +139,23 @@ public:
         };
     }
 
+    void ResetMouseDelta()
+    {
+        first_mouse_ = true;
+        dx_ = 0.0;
+        dy_ = 0.0;
+    }
+
+    void SuppressHeldActions()
+    {
+        for (std::size_t i = 0; i < keys_.size(); ++i) {
+            suppressed_keys_.at(i) = keys_.at(i);
+        }
+        for (std::size_t i = 0; i < mouse_buttons_.size(); ++i) {
+            suppressed_buttons_.at(i) = mouse_buttons_.at(i);
+        }
+    }
+
     void ResetFrame()
     {
         key_changes_.clear();
@@ -155,6 +175,8 @@ private:
     }
 
     std::array<bool, GLFW_KEY_LAST + 1> keys_{};
+    std::array<bool, GLFW_KEY_LAST + 1> suppressed_keys_{};
+    std::array<bool, GLFW_MOUSE_BUTTON_LAST + 1> suppressed_buttons_{};
     std::array<bool, GLFW_KEY_LAST + 1> keys_pressed_{};
     std::array<bool, GLFW_KEY_LAST + 1> keys_released_{};
     std::array<bool, GLFW_MOUSE_BUTTON_LAST + 1> mouse_buttons_{};

@@ -205,7 +205,7 @@ TEST(GameModeWorldTest, ProtocolValidatesFullSnapshotsAndHandshakeVersion)
     EXPECT_FALSE(IsValidMatchStatePacket(packet));
     EXPECT_EQ(ParseClientHello(MakeClientHello("Player")), "Player");
     EXPECT_FALSE(ParseClientHello("old client"));
-    EXPECT_FALSE(ParseClientHello("soldank-mode/2:Player"));
+    EXPECT_FALSE(ParseClientHello("soldank-mode/1:Player"));
 }
 
 TEST(GameModeWorldTest, CaptureRequiresOwnFlagHomeAndScoresOnce)

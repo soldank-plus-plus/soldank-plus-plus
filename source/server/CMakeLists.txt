@@ -4,6 +4,8 @@ set(soldank_server_scripting_modules
 )
 
 set(server_lib_modules
+    chat/ChatService.cpp
+    networking/event_handlers/ChatSendRequestNetworkEventHandler.cpp
     application/Application.cpp
     application/ServerBootstrap.cpp
     application/ServerConfig.cpp

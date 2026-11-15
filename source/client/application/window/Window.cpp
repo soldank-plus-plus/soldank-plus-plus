@@ -15,6 +15,8 @@ module;
 
 export module Application.Window;
 
+import Chat.Transcript;
+
 import Extern.Glm;
 
 export import Application.WindowBackendAdapter;
@@ -71,6 +73,7 @@ public:
         glfwSetInputMode(
           glfw_window_, GLFW_CURSOR, WindowBackendAdapter::ToGlfwCursorMode(cursor_mode));
         current_cursor_mode_ = cursor_mode;
+        platform_input_.ResetMouseDelta();
     }
 
     CursorMode GetCursorMode() const { return current_cursor_mode_; }
@@ -211,9 +214,11 @@ public:
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
+        io.ConfigWindowsMoveFromTitleBarOnly = true;
         (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
+        ChatFonts::Initialize();
         ImGui::StyleColorsDark();
         // ImGui::StyleColorsLight();
 

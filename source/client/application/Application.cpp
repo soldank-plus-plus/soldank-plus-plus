@@ -13,7 +13,7 @@ export module Application;
 
 import Extern.Glm;
 
-#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+#ifdef SOLDANK_WEBASM_CLIENT_TRANSPORT
 import Application.Platform.WebAssemblyStartupAdapter;
 #else
 import Application.CLI.CommandLineParameters;
@@ -45,6 +45,9 @@ import Networking.INetworkingClient;
 import Networking.NetworkClientSession;
 import Networking.AssignPlayerIdNetworkEventHandler;
 import Networking.PingCheckNetworkEventHandler;
+import Networking.ChatNetworkEventHandler;
+import Chat.Model;
+import Shared.Networking.DeliveryMode;
 import Networking.PlayerLeaveNetworkEventHandler;
 import Networking.ProjectileSpawnNetworkEventHandler;
 import Networking.ProjectilePhysicsNetworkEventHandler;
@@ -157,7 +160,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
     Spdlog::set_level(Spdlog::level::debug);
 
     std::unique_ptr<ILaunchParameters> launch_parameters;
-#if defined(SOLDANK_WEBASM_CLIENT_TRANSPORT)
+#ifdef SOLDANK_WEBASM_CLIENT_TRANSPORT
     launch_parameters = std::make_unique<WebAssemblyStartupAdapter>();
 #else
     launch_parameters = std::make_unique<CommandLineParameters>(cli_parameters);
@@ -261,6 +264,7 @@ Application::Application(const std::vector<const char*>& cli_parameters)
         std::vector<std::shared_ptr<INetworkEventHandler>> network_event_handlers{
             std::make_shared<AssignPlayerIdNetworkEventHandler>(world_, client_state_),
             std::make_shared<PingCheckNetworkEventHandler>(client_state_),
+            std::make_shared<ChatNetworkEventHandler>(client_state_),
             std::make_shared<PlayerLeaveNetworkEventHandler>(world_),
             std::make_shared<ProjectileSpawnNetworkEventHandler>(world_),
             std::make_shared<ProjectilePhysicsNetworkEventHandler>(world_, client_state_),
@@ -277,7 +281,13 @@ Application::Application(const std::vector<const char*>& cli_parameters)
           std::make_shared<NetworkEventDispatcher>(network_event_handlers);
 
         client_transport_startup_.Initialize();
-        networking_client_ = std::make_unique<NetworkingClient>(server_ip.c_str(), server_port);
+        auto networking_client = std::make_unique<NetworkingClient>(server_ip.c_str(), server_port);
+        networking_client->SetDisconnectHandler([this] { client_state_->chat.Disconnect(); });
+        networking_client_ = std::move(networking_client);
+        client_state_->chat.online = true;
+        client_state_->chat.send = [this](const NetworkMessage& message) {
+            networking_client_->SendNetworkMessage(message, DeliveryMode::Reliable);
+        };
         network_client_session_ = std::make_unique<NetworkClientSession>(
           *networking_client_, client_network_event_dispatcher_, *world_, *client_state_);
     } else {
@@ -403,6 +413,9 @@ void Application::Run()
 
     world_->SetShouldStopGameLoopCallback([&]() { return window_->ShouldClose(); });
     world_->SetPreGameLoopIterationCallback([&]() {
+        if (application_mode_ == ApplicationMode::Online) {
+            network_client_session_->UpdateBeforeWorldTick();
+        }
         input_controller_->UpdateContext();
         input_controller_->Route();
 
@@ -414,6 +427,7 @@ void Application::Run()
         bool is_gameplay_active = game_session_.IsGameplayActive(client_runtime_.GetClientMode(),
                                                                  client_runtime_.GetEditorMode());
         if (is_gameplay_active) {
+            client_state_->input.mouse_screen_position = { input.GetX(), input.GetY() };
             if (!input_controller_->IsUiCaptured() && input.KeyWentDown(GLFW_KEY_F10)) {
                 world_->GetStateManager()->TogglePauseGame();
             }
@@ -436,10 +450,6 @@ void Application::Run()
     world_->SetPreWorldUpdateCallback([&]() {
         RestartLocalMatchIfDue();
         client_state_->debug_render.colliding_polygon_ids.clear();
-
-        if (application_mode_ == ApplicationMode::Online) {
-            network_client_session_->UpdateBeforeWorldTick();
-        }
 
         if (client_state_->client_soldier_id.has_value()) {
             std::uint8_t client_soldier_id = *client_state_->client_soldier_id;

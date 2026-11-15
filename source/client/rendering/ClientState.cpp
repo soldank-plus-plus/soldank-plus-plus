@@ -11,6 +11,7 @@ export module ClientState;
 
 import Extern.Glm;
 
+import Chat.Model;
 import Camera;
 import WeaponVisualEffects;
 import MapEditorState;
@@ -112,6 +113,7 @@ struct ClientWorldRenderOptions
 
 struct ClientState
 {
+    ChatModel chat;
     WeaponVisualEffects visual_effects;
     SoldierAppearance appearance;
     std::vector<ProjectilePhysicsEvent> projectile_visual_events;

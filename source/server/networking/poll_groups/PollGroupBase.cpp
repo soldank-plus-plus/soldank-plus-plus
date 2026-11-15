@@ -5,6 +5,7 @@ module;
 #include <optional>
 #include <unordered_map>
 #include <format>
+#include <vector>
 
 export module Networking.PollGroups.PollGroupBase;
 
@@ -48,8 +49,7 @@ public:
         // Ignore if they were not previously connected. (If they disconnected
         // before we accepted the connection.)
         if (connection_info->m_eOldState == GNS::ESteamNetworkingConnectionState::Connected) {
-            const auto connection_id =
-              GnsServerTransport::ToConnectionId(connection_info->m_hConn);
+            const auto connection_id = GnsServerTransport::ToConnectionId(connection_info->m_hConn);
             auto it_client = connections_.find(connection_id);
             assert(it_client != connections_.end());
 
@@ -67,9 +67,6 @@ public:
                          connection_info->m_info.m_eEndReason,
                          connection_info->m_info.m_szEndDebug);
 
-            SendStringToAllClients(
-              std::format("{} {}", it_client->second.nick, "has left the server"),
-              it_client->first);
             connections_.erase(it_client);
         } else {
             assert(connection_info->m_eOldState ==
@@ -99,6 +96,15 @@ public:
         OnAssignConnection(connections_[connection.connection_id]);
 
         return true;
+    }
+
+    std::vector<Connection> GetConnections() const
+    {
+        std::vector<Connection> result;
+        for (const auto& [id, connection] : connections_) {
+            result.push_back(connection);
+        }
+        return result;
     }
 
     bool IsConnectionAssigned(ConnectionId connection_id) override

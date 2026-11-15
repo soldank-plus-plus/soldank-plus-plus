@@ -121,3 +121,16 @@ if (UNIX AND NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 endif()
 
 AddClientTestWithMapEditorData(GameModeProtocolTest networking/GameModeProtocolTest.cpp)
+
+AddClientTestWithMapEditorData(ChatTest chat/ChatTest.cpp)
+target_link_libraries(ChatTest PRIVATE imgui::imgui)
+add_custom_command(TARGET ChatTest POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_SOURCE_DIR}/assets/fonts" "${MAP_EDITOR_TEST_DATA_DIR}/fonts")
+
+if (BUILD_SERVER_ENABLED)
+    add_executable(ChatIntegrationTest chat/ChatIntegrationTest.cpp)
+    AddTestOptionsAndLibraries(ChatIntegrationTest)
+    target_link_libraries(ChatIntegrationTest PRIVATE client_lib server_lib shared_lib)
+    add_test(NAME ChatIntegrationTest COMMAND ChatIntegrationTest)
+endif()

@@ -22,6 +22,7 @@ import Extern.Spdlog;
 extern "C" {
 void soldank_webrtc_connect(const char* server_ip, int server_port);
 void soldank_webrtc_close();
+int soldank_webrtc_is_disconnected();
 int soldank_webrtc_poll_message(std::uint8_t* buffer, int buffer_size);
 void soldank_webrtc_send_unreliable(const std::uint8_t* data, int data_size);
 void soldank_webrtc_send_reliable(const std::uint8_t* data, int data_size);
@@ -70,6 +71,8 @@ public:
             }
         }
     }
+
+    bool HasDisconnected() const final { return soldank_webrtc_is_disconnected() != 0; }
 
     void CloseConnection() final { soldank_webrtc_close(); }
 

@@ -19,6 +19,7 @@ public:
       const std::shared_ptr<NetworkEventDispatcher>& network_event_dispatcher) = 0;
 
     virtual void CloseConnection() = 0;
+    virtual bool HasDisconnected() const { return false; }
 
     virtual void SendNetworkMessage(const NetworkMessage& network_message,
                                     DeliveryMode delivery_mode = DeliveryMode::Unreliable) = 0;

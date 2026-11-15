@@ -4,6 +4,7 @@ module;
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <array>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,6 +14,7 @@ export module DebugUI;
 import Extern.Glm;
 
 import ClientState;
+import Chat.Panel;
 
 import Shared.Core.State.StateManager;
 import Shared.Core.State.Control;
@@ -260,8 +262,14 @@ void AddControlActionTypes(const Control& soldier_control,
     }
 }
 
+std::uint8_t GetDebugSoldierId(const ClientState& client_state)
+{
+    return client_state.client_soldier_id.value_or(255);
+}
+
 void RenderFrameContents(const StateManager& game_state_manager, ClientState& client_state, int fps)
 {
+    const auto selected_soldier = GetDebugSoldierId(client_state);
     if (client_state.debug_render.is_game_debug_interface_enabled) {
         {
             ImGui::Begin("Appearance");
@@ -332,9 +340,9 @@ void RenderFrameContents(const StateManager& game_state_manager, ClientState& cl
             if (ImGui::Button("/kill")) {
                 client_state.kill_button_just_pressed = true;
             }
-            if (client_state.client_soldier_id.has_value()) {
+            if (selected_soldier != 255) {
                 game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                    if (*client_state.client_soldier_id == soldier.id) {
+                    if (selected_soldier == soldier.id) {
                         ImGui::Text("Player ID: %d", soldier.id);
                         ImGui::Text("Position: %.3f, %.3f",
                                     soldier.particle.position.x,
@@ -418,9 +426,9 @@ void RenderFrameContents(const StateManager& game_state_manager, ClientState& cl
                     recorded_actions.clear();
                     game_tick_when_started_recording = game_state_manager.GetGameTick();
 
-                    if (client_state.client_soldier_id.has_value()) {
+                    if (selected_soldier != 255) {
                         game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                            if (*client_state.client_soldier_id == soldier.id) {
+                            if (selected_soldier == soldier.id) {
                                 recorded_animations.push_back(
                                   { .is_legs = false,
                                     .game_tick = game_state_manager.GetGameTick(),
@@ -453,9 +461,9 @@ void RenderFrameContents(const StateManager& game_state_manager, ClientState& cl
             }
 
             if (recording_started) {
-                if (client_state.client_soldier_id.has_value()) {
+                if (selected_soldier != 255) {
                     game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                        if (*client_state.client_soldier_id == soldier.id) {
+                        if (selected_soldier == soldier.id) {
                             if (last_added_legs_animation.animation_type !=
                                 soldier.legs_animation->GetType()) {
                                 recorded_animations.push_back(
@@ -521,9 +529,9 @@ void RenderFrameContents(const StateManager& game_state_manager, ClientState& cl
             ImGui::End();
 
             if (recording_started) {
-                if (client_state.client_soldier_id.has_value()) {
+                if (selected_soldier != 255) {
                     game_state_manager.ForEachSoldier([&](const auto& soldier) {
-                        if (*client_state.client_soldier_id == soldier.id) {
+                        if (selected_soldier == soldier.id) {
                             last_control = soldier.control;
                         }
                     });
@@ -567,6 +575,8 @@ void Render(const StateManager& game_state_manager,
     ImGui::NewFrame();
 
     RenderFrameContents(game_state_manager, client_state, fps);
+    static ChatPanel chat_panel;
+    chat_panel.Render(client_state.chat);
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

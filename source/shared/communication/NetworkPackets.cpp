@@ -128,6 +128,7 @@ struct SoldierStatePacket
     bool dead_meat{};
     std::int32_t ticks_to_respawn{};
     std::uint32_t last_applied_input_id;
+    TeamType team{};
     SoldierAppearance appearance{};
     std::uint8_t wear_helmet{};
     std::uint8_t has_cigar{};

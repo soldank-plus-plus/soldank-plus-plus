@@ -4,6 +4,7 @@ module;
 
 #include <cmath>
 #include <cstdint>
+#include <optional>
 
 export module Application.Input.ApplicationInputController;
 
@@ -15,11 +16,14 @@ import Application.Input.InputSnapshot;
 import Application.Input.PlatformInput;
 import Application.Window;
 import ClientState;
+import Chat.Model;
 import DebugUI;
 import Gameplay.GameSession;
 import Runtime.ClientRuntime;
 
 import Shared.Core.IWorld;
+import Shared.Core.Types.TeamType;
+import Shared.Core.GameModes.GameModeRuntime;
 
 export namespace Soldank
 {
@@ -62,21 +66,8 @@ public:
             }
         });
 
-        input_router_.SetKeyHandler([this](int key, int action, int modifiers) {
-            if (action == GLFW_PRESS) {
-                client_state_.event_key_pressed.Notify(key, modifiers);
-                if (IsGameplayActive() && client_state_.client_soldier_id.has_value()) {
-                    if (key == GLFW_KEY_J) {
-                        MoveKeyboardAimCursor(*client_state_.client_soldier_id, -1.0F);
-                    } else if (key == GLFW_KEY_L) {
-                        MoveKeyboardAimCursor(*client_state_.client_soldier_id, 1.0F);
-                    }
-                }
-            }
-            if (action == GLFW_RELEASE) {
-                client_state_.event_key_released.Notify(key, modifiers);
-            }
-        });
+        input_router_.SetKeyHandler(
+          [this](int key, int action, int modifiers) { HandleKey(key, action, modifiers); });
         input_router_.SetGlobalKeyPredicate([this](int key) {
             return client_state_.map_editor_state.is_play_mode_shortcut_capture_active ||
                    client_state_.map_editor_state.tool_shortcut_capture_index >= 0 ||
@@ -120,23 +111,64 @@ public:
         input_router_.ResetMousePositions(GetMouseScreenPosition(), GetMouseMapPosition());
     }
 
+    static std::optional<ChatChannel> GetChatShortcut(int key, int action, int modifiers)
+    {
+        if (action != GLFW_PRESS || (key != GLFW_KEY_ENTER && key != GLFW_KEY_KP_ENTER)) {
+            return std::nullopt;
+        }
+        return (static_cast<unsigned int>(modifiers) & static_cast<unsigned int>(GLFW_MOD_SHIFT)) !=
+                   0
+                 ? ChatChannel::Team
+                 : ChatChannel::All;
+    }
+
     void Route()
     {
         const InputSnapshot input_snapshot = window_.GetPlatformInput().CreateSnapshot(
           GetMouseScreenPosition(), GetMouseMapPosition());
+        for (const auto& change : input_snapshot.key_changes) {
+            const auto channel = GetChatShortcut(change.key, change.action, change.modifiers);
+            if (!client_state_.chat.open && IsGameplayActive() && !DebugUI::GetWantTextInput() &&
+                !client_state_.map_editor_state.is_modal_or_popup_open && channel) {
+                client_state_.chat.Open(*channel);
+                UpdateContext();
+                break;
+            }
+        }
         input_router_.Route(input_snapshot);
     }
 
     void UpdateContext()
     {
-        const bool is_ui_captured = DebugUI::GetWantCaptureMouse() ||
+        if (client_state_.client_soldier_id) {
+            const auto& soldier = world_.GetSoldier(*client_state_.client_soldier_id);
+            const auto* mode = world_.GetStateManager()->GetGameMode();
+            client_state_.chat.local_team = soldier.team;
+            client_state_.chat.team_available =
+              mode != nullptr && mode->Settings().team_count > 0 && IsChatTeam(soldier.team);
+        } else {
+            client_state_.chat.team_available = false;
+        }
+        if (chat_was_open_ != client_state_.chat.open) {
+            if (client_state_.chat.open) {
+                const auto& input = window_.GetPlatformInput();
+                saved_chat_cursor_ = { input.GetX(), input.GetY() };
+            } else {
+                window_.SetCursorScreenPosition(saved_chat_cursor_);
+            }
+            window_.GetPlatformInput().SuppressHeldActions();
+            client_state_.kill_button_just_pressed = false;
+            chat_was_open_ = client_state_.chat.open;
+            ResetMousePositions();
+        }
+        const bool is_ui_captured = client_state_.chat.open || DebugUI::GetWantCaptureMouse() ||
                                     client_state_.map_editor_state.is_mouse_hovering_over_ui ||
                                     client_state_.map_editor_state.is_modal_or_popup_open;
         if (IsGameplayActive()) {
             UpdateCursorMode(is_ui_captured ? CursorMode::Normal : CursorMode::Locked);
         }
         input_router_.SetActiveContext(client_runtime_.GetInputContext(is_ui_captured));
-        input_router_.SetKeyboardCaptured(DebugUI::GetWantTextInput() ||
+        input_router_.SetKeyboardCaptured(client_state_.chat.open || DebugUI::GetWantTextInput() ||
                                           client_state_.map_editor_state.is_modal_or_popup_open);
     }
 
@@ -156,6 +188,9 @@ public:
 
     glm::vec2 GetMouseMapPosition() const
     {
+        if (client_state_.chat.open) {
+            return client_state_.input.mouse_map_position;
+        }
         glm::vec2 window_size = window_.GetWindowSize();
         glm::vec2 mouse_map_position;
         if (window_.GetCursorMode() == CursorMode::Locked) {
@@ -179,6 +214,30 @@ public:
     }
 
 private:
+    void HandleKey(int key, int action, int modifiers)
+    {
+        if (client_state_.chat.open) {
+            if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+                client_state_.chat.open = false;
+                UpdateContext();
+            }
+            return;
+        }
+        if (action == GLFW_PRESS) {
+            client_state_.event_key_pressed.Notify(key, modifiers);
+            if (IsGameplayActive() && client_state_.client_soldier_id.has_value()) {
+                if (key == GLFW_KEY_J) {
+                    MoveKeyboardAimCursor(*client_state_.client_soldier_id, -1.0F);
+                } else if (key == GLFW_KEY_L) {
+                    MoveKeyboardAimCursor(*client_state_.client_soldier_id, 1.0F);
+                }
+            }
+        }
+        if (action == GLFW_RELEASE) {
+            client_state_.event_key_released.Notify(key, modifiers);
+        }
+    }
+
     bool IsGameplayActive() const
     {
         return game_session_.IsGameplayActive(client_runtime_.GetClientMode(),
@@ -226,5 +285,7 @@ private:
     ClientRuntime& client_runtime_;
     const GameSession& game_session_;
     InputRouter input_router_;
+    bool chat_was_open_{};
+    glm::vec2 saved_chat_cursor_{};
 };
 } // namespace Soldank

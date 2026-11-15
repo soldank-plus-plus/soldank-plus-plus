@@ -1,5 +1,8 @@
 module;
 
+#include <functional>
+#include <utility>
+
 #include <cassert>
 #include <algorithm>
 #include <cstdint>
@@ -88,7 +91,12 @@ public:
     {
     }
 
-private:
+    void SetChatJoinHandler(std::function<void(unsigned int)> handler)
+    {
+        on_chat_join_ = std::move(handler);
+    }
+
+protected:
     void OnAssignConnection(Connection& connection) override
     {
         world_->GetStateManager()->ForEachSoldier([&](const auto& soldier) {
@@ -115,8 +123,13 @@ private:
               connection.connection_id,
               { NetworkEvent::MatchState, MakeMatchStatePacket(*world_->GetStateManager()) });
         }
+        if (on_chat_join_) {
+            on_chat_join_(connection.connection_id);
+        }
     }
 
+private:
+    std::function<void(unsigned int)> on_chat_join_;
     std::shared_ptr<NetworkEventDispatcher> network_event_dispatcher_;
     std::shared_ptr<IWorld> world_;
 };

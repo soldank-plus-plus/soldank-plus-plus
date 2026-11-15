@@ -46,6 +46,15 @@ public:
 
     void Update(std::uint8_t soldier_id)
     {
+        if (client_state_->chat.open || input_controller_.IsUiCaptured()) {
+            world_.GetStateManager()->SoldierControlApply(
+              soldier_id, [](const Soldier& /*soldier*/, Control& control) { control = {}; });
+            client_state_->player_was_holding_left = false;
+            client_state_->player_was_holding_right = false;
+            client_state_->player_was_running_left = false;
+            client_state_->player_was_jumping = false;
+            return;
+        }
         UpdateRecoil(world_.GetSoldier(soldier_id));
         const PlatformInput& input = window_.GetPlatformInput();
         glm::vec2 mouse_position = { input.GetX(), input.GetY() };

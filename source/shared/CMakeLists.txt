@@ -130,6 +130,7 @@ set(soldank_protocol_modules
     communication/PingTimer.cpp
     communication/ProtocolConversions.cpp
     communication/GameModeProtocol.cpp
+    communication/ChatProtocol.cpp
     communication/ClientHello.cpp
 )
 
