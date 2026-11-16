@@ -8,6 +8,10 @@ module;
 
 #include <cstdint>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
 export module Application.WindowBackendAdapter;
 
 import Extern.Spdlog;
@@ -31,6 +35,42 @@ enum class WindowSizeMode : std::uint8_t
 class WindowBackendAdapter
 {
 public:
+    static void BeginWindowCreationDiagnostics()
+    {
+#ifdef __EMSCRIPTEN__
+        Spdlog::info("Browser renderer requires WebGL 2 / OpenGL ES 3.0. "
+                     "Context creation diagnostics are in the browser developer console.");
+        EM_ASM({
+            console.info('Window creation browser:', navigator.userAgent);
+            const canvas = Module['canvas'];
+            if (!canvas) {
+                console.error('Window creation: Module.canvas is missing');
+                return;
+            }
+            const handler = function(event) {
+                console.error('WebGL 2 context creation failed:',
+                              event.statusMessage || 'Browser supplied no status message');
+            };
+            Module['soldankContextCreationErrorHandler'] = handler;
+            canvas.addEventListener('webglcontextcreationerror', handler);
+        });
+#endif
+    }
+
+    static void EndWindowCreationDiagnostics()
+    {
+#ifdef __EMSCRIPTEN__
+        EM_ASM({
+            const canvas = Module['canvas'];
+            const handler = Module['soldankContextCreationErrorHandler'];
+            if (canvas && handler) {
+                canvas.removeEventListener('webglcontextcreationerror', handler);
+            }
+            delete Module['soldankContextCreationErrorHandler'];
+        });
+#endif
+    }
+
     static void ApplyGlfwWindowHints()
     {
 #ifdef __APPLE__

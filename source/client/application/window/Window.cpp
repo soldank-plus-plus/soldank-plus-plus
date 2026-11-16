@@ -42,6 +42,7 @@ public:
         , glfw_window_(nullptr)
         , current_cursor_mode_(CursorMode::Locked)
     {
+        glfwSetErrorCallback(GLFWErrorCallback);
         if (glfwInit() == 0) {
             Spdlog::error("Error: Failed to initialize GLFW");
             throw "Error: Failed to initialize GLFW";
@@ -118,6 +119,9 @@ public:
     void Create(WindowSizeMode window_size_mode)
     {
         window_size_mode = WindowBackendAdapter::AdjustWindowSizeMode(window_size_mode);
+        Spdlog::info("Creating GLFW window: {}x{}, mode={}, GLFW={}",
+                     width_, height_, static_cast<int>(window_size_mode), glfwGetVersionString());
+        WindowBackendAdapter::BeginWindowCreationDiagnostics();
 
         switch (window_size_mode) {
             case WindowSizeMode::Fullscreen: {
@@ -168,8 +172,12 @@ public:
             }
         }
 
+        WindowBackendAdapter::EndWindowCreationDiagnostics();
+
         if (nullptr == glfw_window_) {
-            Spdlog::error("Error: Failed to create window.");
+            Spdlog::error("Error: Failed to create window ({}x{}, mode={}). "
+                          "See preceding GLFW errors for the cause.",
+                          width_, height_, static_cast<int>(window_size_mode));
             throw "Error: Failed to create window.";
         }
 
@@ -204,7 +212,6 @@ public:
               auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
               window->GetPlatformInput().OnMouseButton(button, action);
           });
-        glfwSetErrorCallback(GLFWErrorCallback);
         glfwSetWindowFocusCallback(glfw_window_, [](GLFWwindow* glfw_window, int focused) {
             auto* window = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
             window->OnFocusStateChange(glfw_window, focused);
@@ -259,7 +266,8 @@ public:
 
     static void GLFWErrorCallback(int error, const char* description)
     {
-        Spdlog::error("Error({}): {}", error, description);
+        Spdlog::error("GLFW error {} (0x{:X}): {}", error, error,
+                      description != nullptr ? description : "No description available");
     }
 
     void RegisterOnScreenResizedObserver(std::function<void(glm::vec2)> on_screen_resized_observer)
