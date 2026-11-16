@@ -1,5 +1,8 @@
 module;
 
+#include <cstdint>
+#include <vector>
+
 export module Shared.Core.Physics.Polygons.PolygonContacts;
 
 import Extern.Glm;

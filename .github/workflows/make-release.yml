@@ -140,7 +140,7 @@ jobs:
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp bin/* Soldank++
+          cp -a bin/. Soldank++/
           tar -czvf Soldank++-latest-linux-x64.tar.gz Soldank++
 
       - uses: actions/upload-artifact@v4
@@ -286,7 +286,7 @@ jobs:
       - name: Prepare Artifact
         run: |
           mkdir Soldank++
-          cp build/msvc-ninja-release-all/bin/* Soldank++
+          Copy-Item -Path build/msvc-ninja-release-all/bin/* -Destination Soldank++ -Recurse
           Compress-Archive -Path Soldank++ -Destination Soldank++-latest-win32-x64.zip
 
       - uses: actions/upload-artifact@v4

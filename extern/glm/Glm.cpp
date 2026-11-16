@@ -31,4 +31,6 @@ using ::glm::operator+;
 using ::glm::operator-;
 using ::glm::operator*;
 using ::glm::operator/;
+using ::glm::operator==;
+using ::glm::operator!=;
 } // namespace glm
