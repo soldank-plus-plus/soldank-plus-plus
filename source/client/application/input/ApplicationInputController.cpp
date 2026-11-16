@@ -5,6 +5,7 @@ module;
 #include <cmath>
 #include <cstdint>
 #include <optional>
+#include <span>
 
 export module Application.Input.ApplicationInputController;
 

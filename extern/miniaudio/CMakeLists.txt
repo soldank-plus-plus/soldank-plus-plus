@@ -6,6 +6,7 @@ target_sources(Miniaudio
         Miniaudio.cpp
     PRIVATE
         MiniaudioImpl.cpp
+        MiniaudioBackend.cpp
 )
 
 if(MSVC)

@@ -11,12 +11,15 @@ export using namespace glm;
 
 export namespace glm
 {
+using ::glm::abs;
+using ::glm::clamp;
 using ::glm::distance;
 using ::glm::dot;
 using ::glm::dvec2;
 using ::glm::ivec2;
 using ::glm::length;
 using ::glm::mat4;
+using ::glm::max;
 using ::glm::mix;
 using ::glm::ortho;
 using ::glm::rotate;

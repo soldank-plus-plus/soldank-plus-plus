@@ -1,6 +1,5 @@
 module;
 
-#define MINIAUDIO_IMPLEMENTATION
 #include <miniaudio.h>
 
 module Extern.Miniaudio;
