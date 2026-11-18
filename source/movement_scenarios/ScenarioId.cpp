@@ -29,6 +29,8 @@ enum class ScenarioId
     SlopeJumpRight,
     SlopeTapsLeft,
     SlopeTapsRight,
+    CannonballLeft,
+    CannonballRight,
     Count
 };
 } // namespace Soldank::MovementScenarios
@@ -59,7 +61,9 @@ constexpr std::array SCENARIO_NAMES{
     ScenarioName{ ScenarioId::SlopeJumpLeft, "slope_jump_left" },
     ScenarioName{ ScenarioId::SlopeJumpRight, "slope_jump_right" },
     ScenarioName{ ScenarioId::SlopeTapsLeft, "slope_taps_left" },
-    ScenarioName{ ScenarioId::SlopeTapsRight, "slope_taps_right" }
+    ScenarioName{ ScenarioId::SlopeTapsRight, "slope_taps_right" },
+    ScenarioName{ ScenarioId::CannonballLeft, "cannonball_left" },
+    ScenarioName{ ScenarioId::CannonballRight, "cannonball_right" }
 };
 static_assert(
   [] {

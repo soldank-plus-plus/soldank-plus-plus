@@ -438,6 +438,44 @@ ScenarioDefinition MakeSlopeTapsRight()
     return definition;
 }
 
+ScenarioDefinition MakeCannonballLeft()
+{
+    ScenarioBuilder builder(ScenarioId::CannonballLeft);
+    builder.AddPolygon({ -1600, 0 }, { 1600, -160 }, { 1600, 400 }, PMSPolygonType::Normal);
+    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
+    builder.SpawnSoldier({ -400, -94 });
+    builder.AimRelativeToSoldier({ 6400, 0 });
+    builder.SettleBeforePlayback(5, 5000);
+    builder.SetDurationTicks(180);
+    builder.ChangeAt(0, ControlActionType::MoveLeft, true);
+    builder.ChangeAt(15, ControlActionType::Jump, true);
+    builder.ChangeAt(25, ControlActionType::Jump, false);
+    builder.ChangeAt(25, ControlActionType::UseJets, true);
+    builder.ChangeAt(26, ControlActionType::UseJets, false);
+    auto definition = builder.Build();
+    definition.description = "Soldier doing cannonball to the left";
+    return definition;
+}
+
+ScenarioDefinition MakeCannonballRight()
+{
+    ScenarioBuilder builder(ScenarioId::CannonballRight);
+    builder.AddPolygon({ -1600, 0 }, { 1600, 160 }, { 1600, 400 }, PMSPolygonType::Normal);
+    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
+    builder.SpawnSoldier({ -400, -94 });
+    builder.AimRelativeToSoldier({ -6400, 0 });
+    builder.SettleBeforePlayback(5, 5000);
+    builder.SetDurationTicks(180);
+    builder.ChangeAt(0, ControlActionType::MoveRight, true);
+    builder.ChangeAt(15, ControlActionType::Jump, true);
+    builder.ChangeAt(25, ControlActionType::Jump, false);
+    builder.ChangeAt(25, ControlActionType::UseJets, true);
+    builder.ChangeAt(26, ControlActionType::UseJets, false);
+    auto definition = builder.Build();
+    definition.description = "Soldier doing cannonball to the left";
+    return definition;
+}
+
 struct Registration
 {
     ScenarioId id;
@@ -463,7 +501,9 @@ constexpr std::array REGISTRATIONS{
     Registration{ ScenarioId::SlopeJumpLeft, MakeSlopeJumpLeft },
     Registration{ ScenarioId::SlopeJumpRight, MakeSlopeJumpRight },
     Registration{ ScenarioId::SlopeTapsLeft, MakeSlopeTapsLeft },
-    Registration{ ScenarioId::SlopeTapsRight, MakeSlopeTapsRight }
+    Registration{ ScenarioId::SlopeTapsRight, MakeSlopeTapsRight },
+    Registration{ ScenarioId::CannonballLeft, MakeCannonballLeft },
+    Registration{ ScenarioId::CannonballRight, MakeCannonballRight }
 };
 static_assert(
   [] {
