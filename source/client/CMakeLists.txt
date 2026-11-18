@@ -402,8 +402,11 @@ add_custom_command(TARGET client POST_BUILD
         "${soldatbase_SOURCE_DIR}/shared/interface-gfx" "$<TARGET_FILE_DIR:client>/interface-gfx")
 
 add_custom_command(TARGET client POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${soldatbase_SOURCE_DIR}/play-regular.ttf" "$<TARGET_FILE_DIR:client>/play-regular.ttf"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_SOURCE_DIR}/assets/fonts" "$<TARGET_FILE_DIR:client>/fonts")
+install(FILES "${soldatbase_SOURCE_DIR}/play-regular.ttf" DESTINATION ${CMAKE_SOURCE_DIR}/bin)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/assets/fonts" DESTINATION ${CMAKE_SOURCE_DIR}/bin)
 if (BUILD_WEBASM_CLIENT_TRANSPORT AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     target_link_options(client PRIVATE "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/assets/fonts@/fonts")

@@ -50,6 +50,14 @@ public:
     Scene(const std::shared_ptr<StateManager>& game_state, ClientState& client_state);
     ~Scene();
 
+    // Tools supply their own interface without gameplay actions or HUD panels.
+    void RenderScenario(const StateManager& game_state_manager,
+                        ClientState& client_state,
+                        double frame_percent)
+    {
+        RenderWorld(game_state_manager, client_state, frame_percent);
+    }
+
     void Render(const StateManager& game_state_manager,
                 ClientState& client_state,
                 double frame_percent,

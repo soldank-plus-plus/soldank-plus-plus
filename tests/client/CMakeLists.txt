@@ -53,6 +53,8 @@ function(AddClientTestWithMapEditorData TestName SourceFile)
 endfunction()
 
 AddClientTestWithMapEditorData(MapEditorActionsTest map_editor/MapEditorActionsTest.cpp)
+AddClientTestWithMapEditorData(ImGuiThemeTest rendering/renderer/interface/ImGuiThemeTest.cpp)
+target_link_libraries(ImGuiThemeTest PRIVATE imgui::imgui)
 AddClientTestWithMapEditorData(MapEditorToolsTest map_editor/MapEditorToolsTest.cpp)
 AddClientTestWithMapEditorData(MapEditorControllersTest map_editor/MapEditorControllersTest.cpp)
 AddClientTestWithMapEditorData(WeaponAudioTest audio/WeaponAudioTest.cpp)

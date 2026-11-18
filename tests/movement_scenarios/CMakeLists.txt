@@ -1,0 +1,7 @@
+add_executable(MovementScenarioTest ScenarioTest.cpp)
+AddTestOptionsAndLibraries(MovementScenarioTest)
+target_link_libraries(MovementScenarioTest PRIVATE movement_scenarios_lib)
+stage_movement_assets(MovementScenarioTest)
+add_test(NAME MovementScenarioTest COMMAND MovementScenarioTest)
+set_tests_properties(MovementScenarioTest PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:MovementScenarioTest>")
+

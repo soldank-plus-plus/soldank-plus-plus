@@ -21,3 +21,7 @@ add_subdirectory(shared)
 if (BUILD_CLIENT_ENABLED)
   add_subdirectory(client)
 endif()
+
+if (BUILD_MOVEMENT_SCENARIO_TESTS)
+    add_subdirectory(movement_scenarios)
+endif()

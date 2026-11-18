@@ -17,7 +17,8 @@
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
-        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "ON"
       }
     },
     {
@@ -26,7 +27,8 @@
       "inherits": "clang-ninja-debug",
       "binaryDir": "${sourceDir}/build/clang-ninja-debug-no-tests",
       "cacheVariables": {
-        "BUILD_TESTS_ENABLED": "OFF"
+        "BUILD_TESTS_ENABLED": "OFF",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "OFF"
       }
     },
     {
@@ -88,7 +90,8 @@
       "binaryDir": "${sourceDir}/build/clang-ninja-client-debug",
       "cacheVariables": {
         "BUILD_SERVER_ENABLED": "OFF",
-        "BUILD_TESTS_ENABLED": "OFF"
+        "BUILD_TESTS_ENABLED": "OFF",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "OFF"
       }
     },
     {
@@ -125,7 +128,8 @@
       "binaryDir": "${sourceDir}/build/clang-ninja-server-debug",
       "cacheVariables": {
         "BUILD_CLIENT_ENABLED": "OFF",
-        "BUILD_TESTS_ENABLED": "OFF"
+        "BUILD_TESTS_ENABLED": "OFF",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "OFF"
       }
     },
     {
@@ -146,7 +150,8 @@
       "cacheVariables": {
         "BUILD_CLIENT_ENABLED": "OFF",
         "BUILD_SERVER_ENABLED": "OFF",
-        "BUILD_TESTS_ENABLED": "OFF"
+        "BUILD_TESTS_ENABLED": "OFF",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "OFF"
       }
     },
     {
@@ -161,7 +166,8 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_COMPILE_WITH_COVERAGE": "ON",
         "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
-        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "ON"
       }
     },
     {
@@ -186,7 +192,8 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_USE_ADDRESS_SANITIZER": "ON",
         "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
-        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "ON"
       }
     },
     {
@@ -201,7 +208,8 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_USE_UNDEFINED_BEHAVIOR_SANITIZER": "ON",
         "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
-        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "ON"
       }
     },
     {
@@ -213,7 +221,8 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "OFF"
       }
     },
     {
@@ -250,7 +259,8 @@
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
-        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "ON"
       }
     },
     {
@@ -293,7 +303,8 @@
       "architecture": "x64",
       "binaryDir": "${sourceDir}/build/msvc-vs-release",
       "cacheVariables": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "OFF"
       }
     },
     {
@@ -340,7 +351,8 @@
         "CMAKE_CXX_COMPILER": "cl",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "BUILD_IMGUI_TEST_ENGINE_ENABLED": "ON",
-        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine"
+        "VCPKG_MANIFEST_FEATURES": "imgui-test-engine",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "ON"
       }
     },
     {
@@ -385,7 +397,8 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_MOVEMENT_SCENARIO_TESTS": "OFF"
       }
     },
     {

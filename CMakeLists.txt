@@ -10,9 +10,16 @@ endif()
 
 project (Soldank++)
 
+option(BUILD_MOVEMENT_SCENARIO_PLAYER "Build the visual movement scenario player" OFF)
+option(BUILD_MOVEMENT_SCENARIO_TESTS "Build headless scenario framework tests" OFF)
+
 option(BUILD_SERVER_ENABLED "Build server" ON)
 option(BUILD_CLIENT_ENABLED "Build client" ON)
 option(BUILD_TESTS_ENABLED "Build all available tests" ON)
+if (BUILD_MOVEMENT_SCENARIO_TESTS AND NOT BUILD_TESTS_ENABLED)
+    message(FATAL_ERROR "Movement scenario tests require BUILD_TESTS_ENABLED=ON")
+endif()
+
 option(BUILD_IMGUI_TEST_ENGINE_ENABLED "Build Dear ImGui interaction tests" OFF)
 option(BUILD_COMPILE_WITH_COVERAGE "Build with gcov-compatible coverage instrumentation" OFF)
 option(BUILD_USE_COMPILER_CACHE "Use compiler cache when available" ON)

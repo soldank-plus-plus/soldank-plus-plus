@@ -16,6 +16,7 @@ module;
 export module Application.Window;
 
 import Chat.Transcript;
+import ImGuiThemes;
 
 import Extern.Glm;
 
@@ -225,6 +226,7 @@ public:
         (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
+        InitializeImGuiFonts();
         ChatFonts::Initialize();
         ImGui::StyleColorsDark();
         // ImGui::StyleColorsLight();

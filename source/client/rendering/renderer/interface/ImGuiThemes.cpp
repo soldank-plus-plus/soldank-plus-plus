@@ -1,23 +1,35 @@
 module;
 
 #include "imgui.h"
-// #include "backends/imgui_impl_glfw.h"
-// #include "backends/imgui_impl_opengl3.h"
+
+#include <filesystem>
+#include <stdexcept>
 
 export module ImGuiThemes;
 
 namespace Soldank
 {
+// Call once after creating the ImGui context, before backend initialization.
+export void InitializeImGuiFonts()
+{
+    if (!std::filesystem::is_regular_file("play-regular.ttf")) {
+        throw std::runtime_error("Missing ImGui font: play-regular.ttf");
+    }
+    ImGuiIO& io = ImGui::GetIO();
+    io.FontDefault = io.Fonts->AddFontFromFileTTF(
+      "play-regular.ttf", 14.0F, nullptr, io.Fonts->GetGlyphRangesDefault());
+    if (io.FontDefault == nullptr) {
+        throw std::runtime_error("Failed to load ImGui font: play-regular.ttf");
+    }
+}
+
 export void SetupImGuiTheme()
 {
     // Future Dark style from ImThemes
     ImGuiStyle& style = ImGui::GetStyle();
 
-    ImGuiIO& io = ImGui::GetIO();
-    ImFont* font_title = io.Fonts->AddFontFromFileTTF(
-      "play-regular.ttf", 14.0F, nullptr, io.Fonts->GetGlyphRangesDefault());
-    IM_ASSERT(font_title != nullptr);
-    // ImGui::PushFont(font_title);
+    // Scenes may be recreated between frames or during an active UI frame.
+    // Keep theme setup independent of the context-owned font atlas.
 
     ImVec4* colors = style.Colors;
 

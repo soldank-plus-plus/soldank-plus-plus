@@ -51,6 +51,11 @@ public:
 
     float GetZoom() const { return zoom_; }
 
+    void SetZoom(float zoom)
+    {
+        zoom_ = glm::clamp(zoom, ZOOM_MIN_VALUE, ZOOM_MAX_VALUE);
+    }
+
     void Move(float new_x, float new_y)
     {
         camera_position_.x = new_x;
