@@ -1,4 +1,4 @@
-add_executable(MovementScenarioTest ScenarioTest.cpp)
+add_executable(MovementScenarioTest ScenarioTest.cpp MovementCheckpointTest.cpp)
 AddTestOptionsAndLibraries(MovementScenarioTest)
 target_link_libraries(MovementScenarioTest PRIVATE movement_scenarios_lib)
 stage_movement_assets(MovementScenarioTest)

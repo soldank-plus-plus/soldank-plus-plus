@@ -16,8 +16,7 @@ ScenarioDefinition MakeIdleLeft()
     builder.SettleBeforePlayback(5, 5000);
     builder.SetDurationTicks(180);
     auto definition = builder.Build();
-    definition.description = "Authored idle_left input schedule. Inspect and calibrate before "
-                             "approving regression checkpoints.";
+    definition.description = "Soldier idling while looking left.";
     return definition;
 }
 
@@ -31,8 +30,7 @@ ScenarioDefinition MakeIdleRight()
     builder.SettleBeforePlayback(5, 5000);
     builder.SetDurationTicks(180);
     auto definition = builder.Build();
-    definition.description = "Authored idle_right input schedule. Inspect and calibrate before "
-                             "approving regression checkpoints.";
+    definition.description = "Soldier idling while looking right.";
     return definition;
 }
 
@@ -47,8 +45,7 @@ ScenarioDefinition MakeRunLeft()
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveLeft, true);
     auto definition = builder.Build();
-    definition.description = "Authored run_left input schedule. Inspect and calibrate before "
-                             "approving regression checkpoints.";
+    definition.description = "Soldier running left.";
     return definition;
 }
 
@@ -63,8 +60,7 @@ ScenarioDefinition MakeRunRight()
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveRight, true);
     auto definition = builder.Build();
-    definition.description = "Authored run_right input schedule. Inspect and calibrate before "
-                             "approving regression checkpoints.";
+    definition.description = "Soldier running right.";
     return definition;
 }
 
@@ -83,8 +79,7 @@ ScenarioDefinition MakeSideJumpLeft()
     builder.ChangeAt(35, ControlActionType::UseJets, false);
     builder.ChangeAt(35, ControlActionType::MoveLeft, false);
     auto definition = builder.Build();
-    definition.description = "Authored side_jump_left input schedule. Inspect and calibrate before "
-                             "approving regression checkpoints.";
+    definition.description = "Soldier jumping left and stopping.";
     return definition;
 }
 
@@ -103,8 +98,7 @@ ScenarioDefinition MakeSideJumpRight()
     builder.ChangeAt(35, ControlActionType::UseJets, false);
     builder.ChangeAt(35, ControlActionType::MoveRight, false);
     auto definition = builder.Build();
-    definition.description = "Authored side_jump_right input schedule. Inspect and calibrate "
-                             "before approving regression checkpoints.";
+    definition.description = "Soldier jumping right and stopping.";
     return definition;
 }
 
@@ -120,12 +114,11 @@ ScenarioDefinition MakeLateBackflipLeft()
     builder.ChangeAt(0, ControlActionType::MoveLeft, true);
     builder.ChangeAt(1, ControlActionType::Jump, true);
     builder.ChangeAt(32, ControlActionType::UseJets, true);
-    builder.ChangeAt(35, ControlActionType::Jump, false);
-    builder.ChangeAt(35, ControlActionType::UseJets, false);
-    builder.ChangeAt(35, ControlActionType::MoveLeft, false);
+    builder.ChangeAt(33, ControlActionType::UseJets, false);
+    builder.ChangeAt(40, ControlActionType::Jump, false);
+    builder.ChangeAt(120, ControlActionType::MoveLeft, false);
     auto definition = builder.Build();
-    definition.description = "Authored late_backflip_left input schedule. Inspect and calibrate "
-                             "before approving regression checkpoints.";
+    definition.description = "Late backflip to the left.";
     return definition;
 }
 
@@ -141,18 +134,17 @@ ScenarioDefinition MakeLateBackflipRight()
     builder.ChangeAt(0, ControlActionType::MoveRight, true);
     builder.ChangeAt(1, ControlActionType::Jump, true);
     builder.ChangeAt(32, ControlActionType::UseJets, true);
-    builder.ChangeAt(35, ControlActionType::Jump, false);
-    builder.ChangeAt(35, ControlActionType::UseJets, false);
-    builder.ChangeAt(35, ControlActionType::MoveRight, false);
+    builder.ChangeAt(33, ControlActionType::UseJets, false);
+    builder.ChangeAt(40, ControlActionType::Jump, false);
+    builder.ChangeAt(120, ControlActionType::MoveRight, false);
     auto definition = builder.Build();
-    definition.description = "Authored late_backflip_right input schedule. Inspect and calibrate "
-                             "before approving regression checkpoints.";
+    definition.description = "Late backflip to the right.";
     return definition;
 }
 
-ScenarioDefinition MakeStaggeredCannonballLeft()
+ScenarioDefinition MakeBackflipLeft()
 {
-    ScenarioBuilder builder(ScenarioId::StaggeredCannonballLeft);
+    ScenarioBuilder builder(ScenarioId::BackflipLeft);
     builder.AddPolygon({ -1600, 0 }, { 1600, 0 }, { 1600, 400 }, PMSPolygonType::Normal);
     builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
     builder.SpawnSoldier({ 400, -34 });
@@ -160,20 +152,19 @@ ScenarioDefinition MakeStaggeredCannonballLeft()
     builder.SettleBeforePlayback(5, 5000);
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveLeft, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(12, ControlActionType::UseJets, true);
-    builder.ChangeAt(14, ControlActionType::Jump, false);
-    builder.ChangeAt(19, ControlActionType::UseJets, false);
-    builder.ChangeAt(14, ControlActionType::MoveLeft, false);
+    builder.ChangeAt(0, ControlActionType::Jump, true);
+    builder.ChangeAt(9, ControlActionType::UseJets, true);
+    builder.ChangeAt(10, ControlActionType::UseJets, false);
+    builder.ChangeAt(17, ControlActionType::Jump, false);
+    builder.ChangeAt(36, ControlActionType::MoveLeft, false);
     auto definition = builder.Build();
-    definition.description = "Authored staggered_cannonball_left input schedule. Inspect and "
-                             "calibrate before approving regression checkpoints.";
+    definition.description = "Soldier performs a backflip to the left.";
     return definition;
 }
 
-ScenarioDefinition MakeStaggeredCannonballRight()
+ScenarioDefinition MakeBackflipRight()
 {
-    ScenarioBuilder builder(ScenarioId::StaggeredCannonballRight);
+    ScenarioBuilder builder(ScenarioId::BackflipRight);
     builder.AddPolygon({ -1600, 0 }, { 1600, 0 }, { 1600, 400 }, PMSPolygonType::Normal);
     builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
     builder.SpawnSoldier({ -400, -34 });
@@ -181,98 +172,13 @@ ScenarioDefinition MakeStaggeredCannonballRight()
     builder.SettleBeforePlayback(5, 5000);
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveRight, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(12, ControlActionType::UseJets, true);
-    builder.ChangeAt(14, ControlActionType::Jump, false);
-    builder.ChangeAt(19, ControlActionType::UseJets, false);
-    builder.ChangeAt(14, ControlActionType::MoveRight, false);
+    builder.ChangeAt(0, ControlActionType::Jump, true);
+    builder.ChangeAt(9, ControlActionType::UseJets, true);
+    builder.ChangeAt(10, ControlActionType::UseJets, false);
+    builder.ChangeAt(17, ControlActionType::Jump, false);
+    builder.ChangeAt(36, ControlActionType::MoveRight, false);
     auto definition = builder.Build();
-    definition.description = "Authored staggered_cannonball_right input schedule. Inspect and "
-                             "calibrate before approving regression checkpoints.";
-    return definition;
-}
-
-ScenarioDefinition MakeSimultaneousCannonballLeft()
-{
-    ScenarioBuilder builder(ScenarioId::SimultaneousCannonballLeft);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 0 }, { 1600, 400 }, PMSPolygonType::Normal);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
-    builder.SpawnSoldier({ 400, -34 });
-    builder.AimRelativeToSoldier({ 6400, 0 });
-    builder.SettleBeforePlayback(5, 5000);
-    builder.SetDurationTicks(180);
-    builder.ChangeAt(0, ControlActionType::MoveLeft, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(12, ControlActionType::UseJets, true);
-    builder.ChangeAt(12, ControlActionType::Jump, false);
-    builder.ChangeAt(19, ControlActionType::UseJets, false);
-    builder.ChangeAt(14, ControlActionType::MoveLeft, false);
-    auto definition = builder.Build();
-    definition.description = "Authored simultaneous_cannonball_left input schedule. Inspect and "
-                             "calibrate before approving regression checkpoints.";
-    return definition;
-}
-
-ScenarioDefinition MakeSimultaneousCannonballRight()
-{
-    ScenarioBuilder builder(ScenarioId::SimultaneousCannonballRight);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 0 }, { 1600, 400 }, PMSPolygonType::Normal);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
-    builder.SpawnSoldier({ -400, -34 });
-    builder.AimRelativeToSoldier({ -6400, 0 });
-    builder.SettleBeforePlayback(5, 5000);
-    builder.SetDurationTicks(180);
-    builder.ChangeAt(0, ControlActionType::MoveRight, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(12, ControlActionType::UseJets, true);
-    builder.ChangeAt(12, ControlActionType::Jump, false);
-    builder.ChangeAt(19, ControlActionType::UseJets, false);
-    builder.ChangeAt(14, ControlActionType::MoveRight, false);
-    auto definition = builder.Build();
-    definition.description = "Authored simultaneous_cannonball_right input schedule. Inspect and "
-                             "calibrate before approving regression checkpoints.";
-    return definition;
-}
-
-ScenarioDefinition MakeEarlyBackflipLeft()
-{
-    ScenarioBuilder builder(ScenarioId::EarlyBackflipLeft);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 0 }, { 1600, 400 }, PMSPolygonType::Normal);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
-    builder.SpawnSoldier({ 400, -34 });
-    builder.AimRelativeToSoldier({ 6400, 0 });
-    builder.SettleBeforePlayback(5, 5000);
-    builder.SetDurationTicks(180);
-    builder.ChangeAt(0, ControlActionType::MoveLeft, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(4, ControlActionType::UseJets, true);
-    builder.ChangeAt(7, ControlActionType::Jump, false);
-    builder.ChangeAt(7, ControlActionType::UseJets, false);
-    builder.ChangeAt(7, ControlActionType::MoveLeft, false);
-    auto definition = builder.Build();
-    definition.description = "Authored early_backflip_left input schedule. Inspect and calibrate "
-                             "before approving regression checkpoints.";
-    return definition;
-}
-
-ScenarioDefinition MakeEarlyBackflipRight()
-{
-    ScenarioBuilder builder(ScenarioId::EarlyBackflipRight);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 0 }, { 1600, 400 }, PMSPolygonType::Normal);
-    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
-    builder.SpawnSoldier({ -400, -34 });
-    builder.AimRelativeToSoldier({ -6400, 0 });
-    builder.SettleBeforePlayback(5, 5000);
-    builder.SetDurationTicks(180);
-    builder.ChangeAt(0, ControlActionType::MoveRight, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(4, ControlActionType::UseJets, true);
-    builder.ChangeAt(7, ControlActionType::Jump, false);
-    builder.ChangeAt(7, ControlActionType::UseJets, false);
-    builder.ChangeAt(7, ControlActionType::MoveRight, false);
-    auto definition = builder.Build();
-    definition.description = "Authored early_backflip_right input schedule. Inspect and calibrate "
-                             "before approving regression checkpoints.";
+    definition.description = "Soldier performs a backflip to the right.";
     return definition;
 }
 
@@ -287,13 +193,12 @@ ScenarioDefinition MakeMiniflipLeft()
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveLeft, true);
     builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(2, ControlActionType::UseJets, true);
-    builder.ChangeAt(3, ControlActionType::Jump, false);
-    builder.ChangeAt(3, ControlActionType::UseJets, false);
-    builder.ChangeAt(3, ControlActionType::MoveLeft, false);
+    builder.ChangeAt(1, ControlActionType::UseJets, true);
+    builder.ChangeAt(7, ControlActionType::Jump, false);
+    builder.ChangeAt(7, ControlActionType::UseJets, false);
+    builder.ChangeAt(9, ControlActionType::MoveLeft, false);
     auto definition = builder.Build();
-    definition.description = "Authored miniflip_left input schedule. Inspect and calibrate before "
-                             "approving regression checkpoints.";
+    definition.description = "Soldier performs miniflip left.";
     return definition;
 }
 
@@ -308,13 +213,12 @@ ScenarioDefinition MakeMiniflipRight()
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveRight, true);
     builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(2, ControlActionType::UseJets, true);
-    builder.ChangeAt(3, ControlActionType::Jump, false);
-    builder.ChangeAt(3, ControlActionType::UseJets, false);
-    builder.ChangeAt(3, ControlActionType::MoveRight, false);
+    builder.ChangeAt(1, ControlActionType::UseJets, true);
+    builder.ChangeAt(7, ControlActionType::Jump, false);
+    builder.ChangeAt(7, ControlActionType::UseJets, false);
+    builder.ChangeAt(9, ControlActionType::MoveRight, false);
     auto definition = builder.Build();
-    definition.description = "Authored miniflip_right input schedule. Inspect and calibrate before "
-                             "approving regression checkpoints.";
+    definition.description = "Soldier performs miniflip right.";
     return definition;
 }
 
@@ -368,33 +272,16 @@ ScenarioDefinition MakeSlopeTapsLeft()
     builder.SettleBeforePlayback(5, 5000);
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveLeft, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(2, ControlActionType::Jump, false);
-    builder.ChangeAt(9, ControlActionType::Jump, true);
-    builder.ChangeAt(10, ControlActionType::Jump, false);
-    builder.ChangeAt(17, ControlActionType::Jump, true);
+    builder.ChangeAt(10, ControlActionType::Jump, true);
     builder.ChangeAt(18, ControlActionType::Jump, false);
-    builder.ChangeAt(25, ControlActionType::Jump, true);
-    builder.ChangeAt(26, ControlActionType::Jump, false);
-    builder.ChangeAt(33, ControlActionType::Jump, true);
-    builder.ChangeAt(34, ControlActionType::Jump, false);
-    builder.ChangeAt(41, ControlActionType::Jump, true);
-    builder.ChangeAt(42, ControlActionType::Jump, false);
-    builder.ChangeAt(49, ControlActionType::Jump, true);
-    builder.ChangeAt(50, ControlActionType::Jump, false);
-    builder.ChangeAt(57, ControlActionType::Jump, true);
-    builder.ChangeAt(58, ControlActionType::Jump, false);
-    builder.ChangeAt(65, ControlActionType::Jump, true);
-    builder.ChangeAt(66, ControlActionType::Jump, false);
-    builder.ChangeAt(73, ControlActionType::Jump, true);
-    builder.ChangeAt(74, ControlActionType::Jump, false);
-    builder.ChangeAt(81, ControlActionType::Jump, true);
-    builder.ChangeAt(82, ControlActionType::Jump, false);
-    builder.ChangeAt(89, ControlActionType::Jump, true);
+    builder.ChangeAt(45, ControlActionType::Jump, true);
+    builder.ChangeAt(53, ControlActionType::Jump, false);
+    builder.ChangeAt(82, ControlActionType::Jump, true);
     builder.ChangeAt(90, ControlActionType::Jump, false);
+    builder.ChangeAt(119, ControlActionType::Jump, true);
+    builder.ChangeAt(127, ControlActionType::Jump, false);
     auto definition = builder.Build();
-    definition.description =
-      "Candidate repeated uphill jump taps; inspect before approving checkpoints.";
+    definition.description = "Soldier performs small tap jumps left.";
     return definition;
 }
 
@@ -408,30 +295,14 @@ ScenarioDefinition MakeSlopeTapsRight()
     builder.SettleBeforePlayback(5, 5000);
     builder.SetDurationTicks(180);
     builder.ChangeAt(0, ControlActionType::MoveRight, true);
-    builder.ChangeAt(1, ControlActionType::Jump, true);
-    builder.ChangeAt(2, ControlActionType::Jump, false);
-    builder.ChangeAt(9, ControlActionType::Jump, true);
-    builder.ChangeAt(10, ControlActionType::Jump, false);
-    builder.ChangeAt(17, ControlActionType::Jump, true);
+    builder.ChangeAt(10, ControlActionType::Jump, true);
     builder.ChangeAt(18, ControlActionType::Jump, false);
-    builder.ChangeAt(25, ControlActionType::Jump, true);
-    builder.ChangeAt(26, ControlActionType::Jump, false);
-    builder.ChangeAt(33, ControlActionType::Jump, true);
-    builder.ChangeAt(34, ControlActionType::Jump, false);
-    builder.ChangeAt(41, ControlActionType::Jump, true);
-    builder.ChangeAt(42, ControlActionType::Jump, false);
-    builder.ChangeAt(49, ControlActionType::Jump, true);
-    builder.ChangeAt(50, ControlActionType::Jump, false);
-    builder.ChangeAt(57, ControlActionType::Jump, true);
-    builder.ChangeAt(58, ControlActionType::Jump, false);
-    builder.ChangeAt(65, ControlActionType::Jump, true);
-    builder.ChangeAt(66, ControlActionType::Jump, false);
-    builder.ChangeAt(73, ControlActionType::Jump, true);
-    builder.ChangeAt(74, ControlActionType::Jump, false);
-    builder.ChangeAt(81, ControlActionType::Jump, true);
-    builder.ChangeAt(82, ControlActionType::Jump, false);
-    builder.ChangeAt(89, ControlActionType::Jump, true);
+    builder.ChangeAt(45, ControlActionType::Jump, true);
+    builder.ChangeAt(53, ControlActionType::Jump, false);
+    builder.ChangeAt(82, ControlActionType::Jump, true);
     builder.ChangeAt(90, ControlActionType::Jump, false);
+    builder.ChangeAt(119, ControlActionType::Jump, true);
+    builder.ChangeAt(127, ControlActionType::Jump, false);
     auto definition = builder.Build();
     definition.description =
       "Candidate repeated uphill jump taps; inspect before approving checkpoints.";
@@ -476,6 +347,48 @@ ScenarioDefinition MakeCannonballRight()
     return definition;
 }
 
+ScenarioDefinition MakeFakeCannonballLeft()
+{
+    ScenarioBuilder builder(ScenarioId::FakeCannonballLeft);
+    builder.AddPolygon({ -1600, 0 }, { 1600, -160 }, { 1600, 400 }, PMSPolygonType::Normal);
+    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
+    builder.SpawnSoldier({ -400, -94 });
+    builder.AimRelativeToSoldier({ 6400, 0 });
+    builder.SettleBeforePlayback(5, 5000);
+    builder.SetDurationTicks(180);
+    builder.ChangeAt(0, ControlActionType::MoveLeft, true);
+    builder.ChangeAt(15, ControlActionType::Jump, true);
+    builder.ChangeAt(20, ControlActionType::Crouch, true);
+    builder.ChangeAt(21, ControlActionType::Jump, false);
+    builder.ChangeAt(38, ControlActionType::UseJets, true);
+    builder.ChangeAt(39, ControlActionType::Crouch, false);
+    builder.ChangeAt(39, ControlActionType::UseJets, false);
+    auto definition = builder.Build();
+    definition.description = "Soldier doing fake cannonball to the left";
+    return definition;
+}
+
+ScenarioDefinition MakeFakeCannonballRight()
+{
+    ScenarioBuilder builder(ScenarioId::FakeCannonballRight);
+    builder.AddPolygon({ -1600, 0 }, { 1600, 160 }, { 1600, 400 }, PMSPolygonType::Normal);
+    builder.AddPolygon({ -1600, 0 }, { 1600, 400 }, { -1600, 400 }, PMSPolygonType::Normal);
+    builder.SpawnSoldier({ -400, -94 });
+    builder.AimRelativeToSoldier({ -6400, 0 });
+    builder.SettleBeforePlayback(5, 5000);
+    builder.SetDurationTicks(180);
+    builder.ChangeAt(0, ControlActionType::MoveRight, true);
+    builder.ChangeAt(15, ControlActionType::Jump, true);
+    builder.ChangeAt(20, ControlActionType::Crouch, true);
+    builder.ChangeAt(21, ControlActionType::Jump, false);
+    builder.ChangeAt(38, ControlActionType::UseJets, true);
+    builder.ChangeAt(39, ControlActionType::Crouch, false);
+    builder.ChangeAt(39, ControlActionType::UseJets, false);
+    auto definition = builder.Build();
+    definition.description = "Soldier doing fake cannonball to the left";
+    return definition;
+}
+
 struct Registration
 {
     ScenarioId id;
@@ -490,12 +403,8 @@ constexpr std::array REGISTRATIONS{
     Registration{ ScenarioId::SideJumpRight, MakeSideJumpRight },
     Registration{ ScenarioId::LateBackflipLeft, MakeLateBackflipLeft },
     Registration{ ScenarioId::LateBackflipRight, MakeLateBackflipRight },
-    Registration{ ScenarioId::StaggeredCannonballLeft, MakeStaggeredCannonballLeft },
-    Registration{ ScenarioId::StaggeredCannonballRight, MakeStaggeredCannonballRight },
-    Registration{ ScenarioId::SimultaneousCannonballLeft, MakeSimultaneousCannonballLeft },
-    Registration{ ScenarioId::SimultaneousCannonballRight, MakeSimultaneousCannonballRight },
-    Registration{ ScenarioId::EarlyBackflipLeft, MakeEarlyBackflipLeft },
-    Registration{ ScenarioId::EarlyBackflipRight, MakeEarlyBackflipRight },
+    Registration{ ScenarioId::BackflipLeft, MakeBackflipLeft },
+    Registration{ ScenarioId::BackflipRight, MakeBackflipRight },
     Registration{ ScenarioId::MiniflipLeft, MakeMiniflipLeft },
     Registration{ ScenarioId::MiniflipRight, MakeMiniflipRight },
     Registration{ ScenarioId::SlopeJumpLeft, MakeSlopeJumpLeft },
@@ -503,7 +412,9 @@ constexpr std::array REGISTRATIONS{
     Registration{ ScenarioId::SlopeTapsLeft, MakeSlopeTapsLeft },
     Registration{ ScenarioId::SlopeTapsRight, MakeSlopeTapsRight },
     Registration{ ScenarioId::CannonballLeft, MakeCannonballLeft },
-    Registration{ ScenarioId::CannonballRight, MakeCannonballRight }
+    Registration{ ScenarioId::CannonballRight, MakeCannonballRight },
+    Registration{ ScenarioId::FakeCannonballLeft, MakeFakeCannonballLeft },
+    Registration{ ScenarioId::FakeCannonballRight, MakeFakeCannonballRight }
 };
 static_assert(
   [] {

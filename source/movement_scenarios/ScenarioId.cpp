@@ -17,12 +17,8 @@ enum class ScenarioId
     SideJumpRight,
     LateBackflipLeft,
     LateBackflipRight,
-    StaggeredCannonballLeft,
-    StaggeredCannonballRight,
-    SimultaneousCannonballLeft,
-    SimultaneousCannonballRight,
-    EarlyBackflipLeft,
-    EarlyBackflipRight,
+    BackflipLeft,
+    BackflipRight,
     MiniflipLeft,
     MiniflipRight,
     SlopeJumpLeft,
@@ -31,6 +27,8 @@ enum class ScenarioId
     SlopeTapsRight,
     CannonballLeft,
     CannonballRight,
+    FakeCannonballLeft,
+    FakeCannonballRight,
     Count
 };
 } // namespace Soldank::MovementScenarios
@@ -50,12 +48,8 @@ constexpr std::array SCENARIO_NAMES{
     ScenarioName{ ScenarioId::SideJumpRight, "side_jump_right" },
     ScenarioName{ ScenarioId::LateBackflipLeft, "late_backflip_left" },
     ScenarioName{ ScenarioId::LateBackflipRight, "late_backflip_right" },
-    ScenarioName{ ScenarioId::StaggeredCannonballLeft, "staggered_cannonball_left" },
-    ScenarioName{ ScenarioId::StaggeredCannonballRight, "staggered_cannonball_right" },
-    ScenarioName{ ScenarioId::SimultaneousCannonballLeft, "simultaneous_cannonball_left" },
-    ScenarioName{ ScenarioId::SimultaneousCannonballRight, "simultaneous_cannonball_right" },
-    ScenarioName{ ScenarioId::EarlyBackflipLeft, "early_backflip_left" },
-    ScenarioName{ ScenarioId::EarlyBackflipRight, "early_backflip_right" },
+    ScenarioName{ ScenarioId::BackflipLeft, "backflip_left" },
+    ScenarioName{ ScenarioId::BackflipRight, "backflip_right" },
     ScenarioName{ ScenarioId::MiniflipLeft, "miniflip_left" },
     ScenarioName{ ScenarioId::MiniflipRight, "miniflip_right" },
     ScenarioName{ ScenarioId::SlopeJumpLeft, "slope_jump_left" },
@@ -63,7 +57,9 @@ constexpr std::array SCENARIO_NAMES{
     ScenarioName{ ScenarioId::SlopeTapsLeft, "slope_taps_left" },
     ScenarioName{ ScenarioId::SlopeTapsRight, "slope_taps_right" },
     ScenarioName{ ScenarioId::CannonballLeft, "cannonball_left" },
-    ScenarioName{ ScenarioId::CannonballRight, "cannonball_right" }
+    ScenarioName{ ScenarioId::CannonballRight, "cannonball_right" },
+    ScenarioName{ ScenarioId::FakeCannonballLeft, "fake_cannonball_left" },
+    ScenarioName{ ScenarioId::FakeCannonballRight, "fake_cannonball_right" }
 };
 static_assert(
   [] {
