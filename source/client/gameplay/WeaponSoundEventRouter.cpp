@@ -25,7 +25,7 @@ import Shared.Core.Physics.PhysicsEvents;
 import Shared.Core.Physics.Bullets.BulletEvents;
 import Shared.Core.WorldEvents;
 
-namespace Soldank
+export namespace Soldank
 {
 struct WeaponSounds
 {

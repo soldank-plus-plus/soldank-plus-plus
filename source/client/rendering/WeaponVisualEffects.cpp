@@ -13,6 +13,7 @@ export module WeaponVisualEffects;
 
 import Extern.Glm;
 import Shared.Core.Entities.Soldier;
+import Shared.Core.Animations;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.State.StateManager;
 import Shared.Core.Types.WeaponType;
@@ -57,6 +58,39 @@ public:
                     35);
             }
         }
+    }
+
+    void ObserveEmote(const Soldier& soldier, std::uint32_t cues)
+    {
+        current_owner_ = OwnerContext{ soldier.id,
+                                       static_cast<std::uint8_t>(soldier.GetTeam()),
+                                       soldier.is_holding_flags, soldier.life_sequence };
+        const auto has = [&](EmoteCue cue) {
+            return (cues & static_cast<std::uint32_t>(cue)) != 0;
+        };
+        const float direction = static_cast<float>(soldier.direction);
+        const auto head = soldier.skeleton->GetPos(12);
+        const auto hand = soldier.skeleton->GetPos(15);
+        if (has(EmoteCue::Spit)) {
+            auto aim = glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y) - head;
+            const float length = glm::length(aim);
+            Add(WeaponVisualEffectKind::Spit, head,
+                length > 0.001F ? aim * (2.0F / length) : glm::vec2(direction * 2, 0), 1, 245);
+        }
+        if (has(EmoteCue::Light)) {
+            Add(WeaponVisualEffectKind::Match, hand, { direction / 2, 0.15F }, 1, 245);
+            effects_.back().tint = { 187.0F / 255, 170.0F / 255, 169.0F / 255, 1 };
+        }
+        for (auto cue : { EmoteCue::Light, EmoteCue::PuffFirst, EmoteCue::PuffSecond }) {
+            if (has(cue)) {
+                Add(WeaponVisualEffectKind::Smoke, head + glm::vec2(direction * 4, 0),
+                    { 0, -0.7F }, 1, 65);
+            }
+        }
+        if (has(EmoteCue::Discard)) {
+            Add(WeaponVisualEffectKind::Cigar, hand, { direction / 1.5F, 0.1F }, 1, 245);
+        }
+        current_owner_.reset();
     }
 
     void ObserveSpawn(const Soldier& soldier)
@@ -434,6 +468,20 @@ private:
                 1.0F,
                 60);
         }
+        if (soldier.body_animation->GetType() == AnimationType::Piss) {
+            const auto frame = soldier.body_animation->GetFrame();
+            const int chance = frame < 22 ? 2 : frame < 34 ? 3 : 4;
+            if (frame > 8 && frame < 35 && Chance(chance)) {
+                const auto origin = soldier.skeleton->GetPos(20);
+                auto aim = glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y) - origin;
+                const float length = glm::length(aim);
+                const float speed = frame >= 22 && frame < 34 ? 1.9F : 1.3F;
+                Add(WeaponVisualEffectKind::Urine, origin,
+                    length > 0.001F ? aim * (speed / length) : glm::vec2(speed * soldier.direction, 0),
+                    1, frame < 22 ? 165 : 120);
+                effects_.back().tint = { 1, 0.9F, 0.2F, 1 };
+            }
+        }
         if ((soldier.has_cigar == 5 || soldier.has_cigar == 10) && Chance(20)) {
             Add(WeaponVisualEffectKind::Smoke,
                 soldier.skeleton->GetPos(12),
@@ -517,7 +565,10 @@ private:
                                 effect.kind == WeaponVisualEffectKind::Debris ||
                                 effect.kind == WeaponVisualEffectKind::Cloth ||
                                 effect.kind == WeaponVisualEffectKind::Headgear ||
-                                effect.kind == WeaponVisualEffectKind::Cigar;
+                                effect.kind == WeaponVisualEffectKind::Cigar ||
+                                effect.kind == WeaponVisualEffectKind::Match ||
+                                effect.kind == WeaponVisualEffectKind::Spit ||
+                                effect.kind == WeaponVisualEffectKind::Urine;
             const bool blood = effect.kind == WeaponVisualEffectKind::Blood ||
                                effect.kind == WeaponVisualEffectKind::SmallBlood;
             if (debris || blood || effect.kind == WeaponVisualEffectKind::Ember ||
@@ -557,6 +608,14 @@ private:
                         splat.velocity = {};
                         splat.lifetime = splat.initial_lifetime = 30;
                         children.push_back(splat);
+                    }
+                    if (effect.kind == WeaponVisualEffectKind::Urine && effect.collisions == 0) {
+                        auto splash = effect;
+                        splash.velocity = { RandomVelocity() * 0.5F, -0.5F };
+                        splash.lifetime = splash.initial_lifetime = 50;
+                        splash.collisions = 4;
+                        children.push_back(splash);
+                        effect.lifetime = 0;
                     }
                     ++effect.collisions;
                     if (effect.collisions > (blood ? 1 : 4)) {

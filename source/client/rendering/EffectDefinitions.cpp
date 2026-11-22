@@ -45,6 +45,9 @@ enum class WeaponVisualEffectKind
     Rain,
     Sand,
     Snow,
+    Spit,
+    Match,
+    Urine,
 };
 
 struct WeaponVisualEffect
@@ -136,6 +139,15 @@ EffectAppearance GetEffectAppearance(const WeaponVisualEffect& effect, float fra
             break;
         case WeaponVisualEffectKind::Spark:
             alpha = life * 3.0F + (effect.variant == 1 ? 154.0F : 10.0F);
+            break;
+        case WeaponVisualEffectKind::Spit:
+            alpha = life + 10.0F;
+            break;
+        case WeaponVisualEffectKind::Urine:
+            alpha = life * 2.0F + 10.0F;
+            break;
+        case WeaponVisualEffectKind::Match:
+            alpha = 255.0F;
             break;
         case WeaponVisualEffectKind::Puff:
             alpha = life + 5.0F;

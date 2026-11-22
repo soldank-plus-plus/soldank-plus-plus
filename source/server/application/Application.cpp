@@ -25,6 +25,7 @@ import Networking.CoreEventsConnectionNotifier;
 import Networking.LobbyClient;
 import Networking.ServerNetworkHost;
 import Networking.EventHandlers.KillCommandNetworkEventHandler;
+import Networking.EventHandlers.EmoteRequestNetworkEventHandler;
 import Networking.EventHandlers.PingCheckNetworkEventHandler;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
 
@@ -81,6 +82,8 @@ public:
           std::make_shared<PingCheckNetworkEventHandler>(game_server_));
         server_network_event_dispatcher_->AddNetworkEventHandler(
           std::make_shared<KillCommandNetworkEventHandler>(game_server_, *command_queues_));
+        server_network_event_dispatcher_->AddNetworkEventHandler(
+          std::make_shared<EmoteRequestNetworkEventHandler>(game_server_, *command_queues_));
         server_network_event_dispatcher_->AddNetworkEventHandler(
           std::make_shared<SoldierInputNetworkEventHandler>(
             game_server_, *player_session_manager_, *command_queues_));

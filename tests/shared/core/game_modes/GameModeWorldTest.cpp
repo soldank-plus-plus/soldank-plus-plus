@@ -9,6 +9,7 @@
 #include <vector>
 
 import Shared.Core.World;
+import Shared.Core.Animations;
 import Shared.Core.State.StateManager;
 import Shared.Core.GameModes.BuiltinGameModes;
 import Shared.Core.GameModes.WorldGameModeAdapter;
@@ -163,7 +164,9 @@ TEST(GameModeWorldTest, SurvivalRestartsWithoutManufacturingDeathStatistics)
     world->KillSoldier(1);
     world->Tick({ .tick = 2 });
     EXPECT_EQ(state->GetGameMode()->GetState().phase, MatchPhase::RoundEnding);
+    EXPECT_EQ(state->GetSoldier(0).idle_random, static_cast<std::int8_t>(Emote::Victory));
     world->Tick({ .tick = 301 });
+    EXPECT_EQ(state->GetSoldier(0).body_animation->GetType(), AnimationType::Victory);
     EXPECT_TRUE(state->GetSoldier(1).dead_meat);
     world->Tick({ .tick = 302 });
     EXPECT_FALSE(state->GetSoldier(1).dead_meat);

@@ -136,3 +136,6 @@ if (BUILD_SERVER_ENABLED)
     target_link_libraries(ChatIntegrationTest PRIVATE client_lib server_lib shared_lib)
     add_test(NAME ChatIntegrationTest COMMAND ChatIntegrationTest)
 endif()
+
+AddClientTestWithMapEditorData(EmoteTest gameplay/EmoteTest.cpp)
+target_link_libraries(EmoteTest PRIVATE shared_lib_testing_framework)

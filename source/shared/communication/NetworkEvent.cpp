@@ -21,6 +21,7 @@ enum class NetworkEvent : unsigned int
     MatchState,
     PolygonEffect,
     ChatSendRequest,
-    ChatSendResult
+    ChatSendResult,
+    EmoteRequest
 };
 } // namespace Soldank

@@ -10,6 +10,7 @@ import Extern.Glm;
 
 import ClientState;
 import Networking.EventHandlers.SoldierInputNetworkEventHandler;
+import Networking.EventHandlers.EmoteRequestNetworkEventHandler;
 import Networking.IGameServer;
 import Networking.CoreEventsConnectionNotifier;
 import Networking.ProjectilePhysicsNetworkEventHandler;
@@ -1430,4 +1431,77 @@ TEST(FullClientServerReconciliationTest, BackgroundAndFlagCarryConvergeUnderChan
           << " server=" << server_world->GetSoldier(PLAYER_ID).particle.position.x << ","
           << server_world->GetSoldier(PLAYER_ID).particle.position.y;
     }
+}
+
+TEST(EmoteNetworkingTest, RequestsUseConnectionIdentityAndRejectDuplicatesAndInvalidStyles)
+{
+    auto server = std::make_shared<DeterministicNetworkBridge>(std::vector<LatencyPhase>{{0, 0}});
+    auto endpoint = server->CreateClientEndpoint(3);
+    ServerCommandQueues queues;
+    auto handler = std::make_shared<EmoteRequestNetworkEventHandler>(server, queues);
+    NetworkEventDispatcher dispatcher({handler});
+    const ConnectionMetadata connection{
+        .connection_id = 3, .send_message_to_connection = [](const NetworkMessage&) {}
+    };
+    const NetworkMessage request{NetworkEvent::EmoteRequest,
+                                  EmoteRequestPacket{Emote::Victory, 1}};
+    EXPECT_EQ(dispatcher.ProcessNetworkMessage(connection, request).first,
+              NetworkEventDispatchResult::Success);
+    EXPECT_EQ(dispatcher.ProcessNetworkMessage(connection, request).first,
+              NetworkEventDispatchResult::Success);
+    auto commands = queues.DrainSimulationCommands();
+    ASSERT_EQ(commands.size(), 1);
+    const auto& command = std::get<EmoteCommand>(commands.front());
+    EXPECT_EQ(command.soldier_id, 3);
+    EXPECT_EQ(command.emote, Emote::Victory);
+    dispatcher.ProcessNetworkMessage(connection,
+      {NetworkEvent::EmoteRequest, EmoteRequestPacket{static_cast<Emote>(9), 2}});
+    EXPECT_TRUE(queues.DrainSimulationCommands().empty());
+}
+
+TEST(EmoteNetworkingTest, SnapshotRestoresMultiStageProgressAndIgnoresOlderDelivery)
+{
+    auto world = std::make_shared<World>();
+    world->GetStateManager()->OverrideMap(*SoldankTesting::MapBuilder::Empty()->Build());
+    world->GetStateManager()->SetAuthoritativeProjectiles(false);
+    world->CreateSoldier(1);
+    world->SpawnSoldier(1, glm::vec2{});
+    auto client = std::make_shared<ClientState>();
+    client->network.client_side_prediction = false;
+    auto handler = std::make_shared<SoldierStateNetworkEventHandler>(world, client);
+    NetworkEventDispatcher dispatcher({handler});
+    const ConnectionMetadata connection{
+        .connection_id = 1, .send_message_to_connection = [](const NetworkMessage&) {}
+    };
+    SoldierStatePacket packet{};
+    packet.server_tick = 10;
+    packet.player_id = 1;
+    packet.body_animation_type = AnimationType::Cigar;
+    packet.body_animation_frame = 30;
+    packet.body_animation_speed = 3;
+    packet.legs_animation_type = AnimationType::Stand;
+    packet.legs_animation_frame = 1;
+    packet.legs_animation_speed = 3;
+    packet.idle_random = static_cast<std::int8_t>(Emote::Smoke);
+    packet.emote = { .instance = 4, .cues = static_cast<std::uint32_t>(EmoteCue::Light),
+                     .phase = 3 };
+    packet.idle_time = 1750;
+    packet.has_cigar = 10;
+    packet.wear_helmet = 2;
+    EXPECT_EQ(dispatcher.ProcessNetworkMessage(connection, {NetworkEvent::SoldierState, packet}).first,
+              NetworkEventDispatchResult::Success);
+    EXPECT_EQ(world->GetSoldier(1).emote, packet.emote);
+    EXPECT_EQ(world->GetSoldier(1).idle_time, 1750);
+    EXPECT_EQ(world->GetSoldier(1).has_cigar, 10);
+    EXPECT_EQ(world->GetSoldier(1).body_animation->GetFrame(), 30);
+    packet.server_tick = 9;
+    packet.emote.phase = 1;
+    packet.idle_time = 10;
+    dispatcher.ProcessNetworkMessage(connection, {NetworkEvent::SoldierState, packet});
+    EXPECT_EQ(world->GetSoldier(1).emote.phase, 3);
+    EXPECT_EQ(world->GetSoldier(1).idle_time, 1750);
+    packet.server_tick = 11;
+    packet.idle_random = 100;
+    EXPECT_NE(dispatcher.ProcessNetworkMessage(connection, {NetworkEvent::SoldierState, packet}).first,
+              NetworkEventDispatchResult::Success);
 }

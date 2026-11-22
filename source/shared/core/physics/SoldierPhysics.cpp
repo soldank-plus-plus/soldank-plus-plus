@@ -12,6 +12,7 @@ export module Shared.Core.Physics.SoldierPhysics;
 import Extern.Glm;
 
 import Shared.Core.Animations;
+import Shared.Core.Animations.SoldierEmotes;
 import Shared.Core.Animations.States;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Physics.Weapons.WeaponPhysics;
@@ -101,6 +102,9 @@ std::shared_ptr<AnimationState> CreateBodyAnimationState(
   AnimationType animation_type,
   const AnimationDataManager& animation_data_manager)
 {
+    if (SoldierEmotes::IsEmoteAnimation(animation_type)) {
+        return std::make_shared<EmoteAnimationState>(animation_data_manager, animation_type);
+    }
     switch (animation_type) {
         case AnimationType::Melee:
         case AnimationType::Recoil:
@@ -150,6 +154,10 @@ std::shared_ptr<AnimationState> CreateLegsAnimationState(
   AnimationType animation_type,
   const AnimationDataManager& animation_data_manager)
 {
+    if (animation_type == AnimationType::Mercy || animation_type == AnimationType::Mercy2 ||
+        animation_type == AnimationType::Own) {
+        return std::make_shared<EmoteAnimationState>(animation_data_manager, animation_type);
+    }
     switch (animation_type) {
         case AnimationType::Stand:
             return std::make_shared<LegsStandAnimationState>(animation_data_manager);
@@ -475,6 +483,11 @@ void Update(StateManager& state_manager,
       (int)((float)soldier.control.mouse_aim_x + soldier.particle.GetVelocity().x);
     soldier.control.mouse_aim_y =
       (int)((float)soldier.control.mouse_aim_y + soldier.particle.GetVelocity().y);
+
+    const bool authoritative = state_manager.HasAuthoritativeProjectiles();
+    const auto idle_style = authoritative && soldier.idle_random < 0 && soldier.idle_time <= 1
+                              ? state_manager.GetRandomInt(0, 3) : 0;
+    SoldierEmotes::Update(soldier, animation_data_manager, authoritative, idle_style);
 
     AnimationState::HandleInputParams legs_handle_input_params{
         soldier.control,          soldier.weapons,    soldier.stance,

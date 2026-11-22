@@ -11,6 +11,7 @@ module;
 
 export module Chat.Model;
 export import Shared.Networking.ChatProtocol;
+import Shared.Core.Animations.EmoteTypes;
 
 export namespace Soldank
 {
@@ -40,6 +41,7 @@ struct ChatModel
     std::deque<ChatHistoryEntry> history;
     std::unordered_map<std::uint32_t, ChatHistoryEntry> pending;
     std::function<void(const NetworkMessage&)> send;
+    std::function<void(Emote)> request_emote;
     std::size_t revision{};
     std::size_t evictions{};
     std::optional<std::size_t> history_cursor;
@@ -111,6 +113,22 @@ struct ChatModel
             if (character == '\r' || character == '\n' || character == '\t') {
                 character = ' ';
             }
+        }
+        if (const auto emote = ParseEmoteCommand(draft); emote && request_emote) {
+            if (!connected) {
+                error = "Emotes are unavailable while disconnected.";
+                return false;
+            }
+            request_emote(*emote);
+            history.push_back({ .channel = channel, .text = draft });
+            if (history.size() > 100) history.pop_front();
+            draft.clear();
+            history_cursor.reset();
+            saved_draft = {};
+            error.clear();
+            open = false;
+            focus_input = false;
+            return true;
         }
         if (!IsValidChatText(draft)) {
             error = "Enter a message of at most 512 UTF-8 bytes, without control characters.";

@@ -559,7 +559,8 @@ void BulletRenderer::RenderEffect(const glm::mat4& transform,
         return;
     }
     if (effect.kind != WeaponVisualEffectKind::Casing &&
-        effect.kind != WeaponVisualEffectKind::Magazine) {
+        effect.kind != WeaponVisualEffectKind::Magazine &&
+        effect.kind != WeaponVisualEffectKind::Match) {
         auto type = Sprites::SparkSpriteType::Lilsmoke;
         switch (effect.kind) {
             case WeaponVisualEffectKind::Blood:
@@ -585,6 +586,12 @@ void BulletRenderer::RenderEffect(const glm::mat4& transform,
                 break;
             case WeaponVisualEffectKind::Ember:
                 type = Sprites::SparkSpriteType::Lilfire;
+                break;
+            case WeaponVisualEffectKind::Spit:
+                type = Sprites::SparkSpriteType::Stuff;
+                break;
+            case WeaponVisualEffectKind::Urine:
+                type = Sprites::SparkSpriteType::Odprysk;
                 break;
             case WeaponVisualEffectKind::Cigar:
                 type = Sprites::SparkSpriteType::Cygaro;
@@ -632,7 +639,10 @@ void BulletRenderer::RenderEffect(const glm::mat4& transform,
     }
     BulletSpriteData data = smoke_sprite_;
     glm::vec2 scale{};
-    if (effect.kind == WeaponVisualEffectKind::Casing) {
+    if (effect.kind == WeaponVisualEffectKind::Match) {
+        data = weapon_sprite_type_to_gl_data_.at(Sprites::WeaponSpriteType::Shell);
+        scale = glm::vec2(1.0F / 4.5F);
+    } else if (effect.kind == WeaponVisualEffectKind::Casing) {
         static const std::unordered_map<WeaponType, Sprites::WeaponSpriteType> shells{
             { WeaponType::DesertEagles, Sprites::WeaponSpriteType::DeaglesShell },
             { WeaponType::MP5, Sprites::WeaponSpriteType::Mp5Shell },

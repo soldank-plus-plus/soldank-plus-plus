@@ -54,6 +54,12 @@ struct PolygonEffectPacket
     std::uint64_t map_fingerprint{};
 };
 
+struct EmoteRequestPacket
+{
+    Emote emote{ Emote::None };
+    std::uint32_t request_id{};
+};
+
 struct SoldierInputPacket
 {
     std::uint32_t input_sequence_id;
@@ -132,6 +138,9 @@ struct SoldierStatePacket
     SoldierAppearance appearance{};
     std::uint8_t wear_helmet{};
     std::uint8_t has_cigar{};
+    std::int32_t idle_time{ DEFAULT_IDLE_TICKS };
+    std::int8_t idle_random{ -1 };
+    EmoteProgress emote{};
     std::uint8_t on_fire{};
     std::uint8_t visual_alpha{ 255 };
     std::uint8_t visual_visible{ 1 };

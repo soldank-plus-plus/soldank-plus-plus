@@ -17,6 +17,9 @@ set(soldank_core_modules
     core/animations/AnimationData.cpp
     core/animations/AnimationState.cpp
     core/animations/Animations.cpp
+    core/animations/EmoteTypes.cpp
+    core/animations/SoldierEmotes.cpp
+    core/animations/states/EmoteAnimationState.cpp
     core/animations/AnimationsStates.cpp
     core/animations/states/BodyAimAnimationState.cpp
     core/animations/states/BodyChangeAnimationState.cpp

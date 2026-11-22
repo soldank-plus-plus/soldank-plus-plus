@@ -29,6 +29,7 @@ set(server_lib_modules
     networking/CoreEventsConnectionNotifier.cpp
     networking/LobbyClient.cpp
     networking/event_handlers/KillCommandNetworkEventHandler.cpp
+    networking/event_handlers/EmoteRequestNetworkEventHandler.cpp
     networking/event_handlers/PingCheckNetworkEventHandler.cpp
     networking/event_handlers/SoldierInputNetworkEventHandler.cpp
     networking/interface/NetworkingInterface.cpp

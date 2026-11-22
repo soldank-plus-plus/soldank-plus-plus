@@ -38,6 +38,12 @@ struct KillSoldierCommand
     std::uint8_t soldier_id;
 };
 
+struct EmoteCommand
+{
+    std::uint8_t soldier_id;
+    Emote emote;
+};
+
 struct RemoveSoldierCommand
 {
     std::uint8_t soldier_id;
@@ -51,5 +57,6 @@ struct SetWeaponChoiceCommand
 };
 
 using SimulationCommand = std::
-  variant<SpawnSoldierCommand, KillSoldierCommand, RemoveSoldierCommand, SetWeaponChoiceCommand>;
+  variant<SpawnSoldierCommand, KillSoldierCommand, RemoveSoldierCommand, SetWeaponChoiceCommand,
+          EmoteCommand>;
 } // namespace Soldank

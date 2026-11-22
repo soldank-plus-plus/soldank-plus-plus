@@ -163,6 +163,9 @@ TEST_F(VisualEffectsRenderingTest, EveryNewEffectFamilyHasADrawableTexture)
                              WeaponVisualEffectKind::Sand,
                              WeaponVisualEffectKind::Snow,
                              WeaponVisualEffectKind::Cigar,
+                             WeaponVisualEffectKind::Spit,
+                             WeaponVisualEffectKind::Match,
+                             WeaponVisualEffectKind::Urine,
                              WeaponVisualEffectKind::Headgear,
                              WeaponVisualEffectKind::Ember }) {
         SCOPED_TRACE(static_cast<int>(kind));

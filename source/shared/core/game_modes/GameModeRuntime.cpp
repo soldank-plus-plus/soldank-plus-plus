@@ -62,6 +62,14 @@ public:
     {
         return !Settings().rounds.enabled || round_roster_.at(player);
     }
+    void PenalizeAnimatedSuicide(std::uint8_t player)
+    {
+        auto& score = state_.players.at(player);
+        if (score.kills > 0) {
+            --score.kills;
+            ++state_.revision;
+        }
+    }
     void OnKill(const KillFact& fact, const ModeWorldView& view)
     {
         if (state_.phase != MatchPhase::Running || fact.victim >= MODE_PLAYERS) {

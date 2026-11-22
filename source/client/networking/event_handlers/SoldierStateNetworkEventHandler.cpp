@@ -26,6 +26,7 @@ import Shared.Networking.NetworkEvent;
 
 import Shared.Core.Physics.SoldierSkeletonPhysics;
 import Shared.Core.Animations;
+import Shared.Core.Animations.SoldierEmotes;
 import Shared.Core.Entities.Soldier;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Map.Polygons.PolygonBackgroundState;
@@ -56,7 +57,10 @@ private:
       unsigned int /*sender_connection_id*/,
       SoldierStatePacket soldier_state_packet) override
     {
-        if (soldier_state_packet.team > TeamType::Spectator ||
+        if (soldier_state_packet.idle_random < -1 || soldier_state_packet.idle_random > 8 ||
+            soldier_state_packet.idle_time < 0 || soldier_state_packet.idle_time > LONGER_IDLE_TICKS ||
+            soldier_state_packet.emote.phase > 5 ||
+            soldier_state_packet.team > TeamType::Spectator ||
             !std::isfinite(soldier_state_packet.health) ||
             !std::isfinite(soldier_state_packet.vest) || soldier_state_packet.active_weapon >= 2 ||
             (soldier_state_packet.weapon_count != 0 && soldier_state_packet.weapon_count != 3)) {
@@ -243,6 +247,9 @@ private:
                                      static_cast<std::int64_t>(soldier_state_packet.server_tick) -
                                        client_state_->network.server_tick_offset.value_or(0)));
             soldier.RestoreProjectilePushesAfterTick(snapshot_local_tick);
+            soldier.emote = soldier_state_packet.emote;
+            soldier.idle_time = soldier_state_packet.idle_time;
+            soldier.idle_random = soldier_state_packet.idle_random;
             soldier.particle.old_position = soldier_old_position;
             soldier.particle.position = soldier_position;
             soldier.particle.SetVelocity(soldier_velocity);
@@ -370,6 +377,13 @@ private:
         }
 
         const auto& polygon_prediction = snapshot->soldier_snapshot;
+        if (polygon_prediction.GetEmote() != packet.emote ||
+            polygon_prediction.GetIdleRandom() != packet.idle_random ||
+            polygon_prediction.GetIdleTime() != packet.idle_time ||
+            polygon_prediction.GetCigar() != packet.has_cigar ||
+            polygon_prediction.GetHelmet() != packet.wear_helmet) {
+            return false;
+        }
         if (packet.has_polygon_state &&
             (polygon_prediction.GetPolygonBackground() != packet.polygon_background ||
              polygon_prediction.IsCarryingFlag() != packet.carrying_flag ||
@@ -387,7 +401,7 @@ private:
             }
             const auto animation = packet.body_animation_type;
             const bool action_animation =
-              animation == AnimationType::Throw || animation == AnimationType::ThrowWeapon ||
+              SoldierEmotes::IsEmoteAnimation(animation) || animation == AnimationType::Throw || animation == AnimationType::ThrowWeapon ||
               animation == AnimationType::Change || animation == AnimationType::Punch ||
               animation == AnimationType::Melee || animation == AnimationType::Reload ||
               animation == AnimationType::ReloadBow || animation == AnimationType::ClipOut ||

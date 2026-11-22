@@ -36,6 +36,7 @@ set(client_lib_modules
     audio/AudioEvents.cpp
     audio/WeaponAudio.cpp
     gameplay/WeaponSoundEventRouter.cpp
+    gameplay/EmotePresentation.cpp
     gameplay/PolygonPresentationEventRouter.cpp
     networking/event_handlers/PolygonEffectNetworkEventHandler.cpp
     stb.cpp

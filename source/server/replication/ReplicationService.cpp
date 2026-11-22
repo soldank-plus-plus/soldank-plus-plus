@@ -103,6 +103,9 @@ public:
             packet.appearance = soldier.appearance;
             packet.wear_helmet = soldier.wear_helmet;
             packet.has_cigar = soldier.has_cigar;
+            packet.idle_time = soldier.idle_time;
+            packet.idle_random = soldier.idle_random;
+            packet.emote = soldier.emote;
             packet.on_fire = soldier.on_fire;
             packet.visual_alpha = soldier.alpha;
             packet.visual_visible = soldier.visible;

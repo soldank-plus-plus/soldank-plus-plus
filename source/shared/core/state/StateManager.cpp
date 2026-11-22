@@ -828,6 +828,9 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
     soldier.health = GetMaximumHealth();
     soldier.wear_helmet = soldier.appearance.headgear != 0 ? 1 : 0;
     soldier.has_cigar = soldier.appearance.cigar != 0 ? 5 : 0;
+    soldier.idle_time = DEFAULT_IDLE_TICKS;
+    soldier.idle_random = -1;
+    soldier.emote = {};
     soldier.polygon_background = {};
     soldier.background_touched = false;
     soldier.polygon_contacts.clear();

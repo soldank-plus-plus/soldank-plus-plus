@@ -29,6 +29,8 @@ import Runtime.ClientRuntime;
 import Gameplay.GameSession;
 import Gameplay.PlayerController;
 import Audio.WeaponAudio;
+import Gameplay.EmotePresentation;
+import Shared.Core.Animations.SoldierEmotes;
 import Audio.AudioEvents;
 import Gameplay.WeaponSoundEventRouter;
 import Shared.Core.Physics.Bullets.BulletEvents;
@@ -137,6 +139,8 @@ private:
     std::shared_ptr<AudioEvents> audio_events_;
     std::unique_ptr<WeaponAudio> weapon_audio_;
     std::shared_ptr<WeaponSoundEventRouter> weapon_sound_event_router_;
+    std::shared_ptr<EmotePresentation> emote_presentation_;
+    std::uint32_t next_emote_request_{ 1 };
     std::shared_ptr<PolygonPresentationEventRouter> polygon_presentation_router_;
 
     ApplicationMode application_mode_;
@@ -473,6 +477,19 @@ void Application::Run()
             client_state_->camera.position = { 0.0F, 0.0F };
         }
     });
+    client_state_->chat.request_emote = [this](Emote emote) {
+        if (!client_state_->client_soldier_id) return;
+        if (application_mode_ == ApplicationMode::Online) {
+            networking_client_->SendNetworkMessage(
+              { NetworkEvent::EmoteRequest, EmoteRequestPacket{ emote, next_emote_request_++ } },
+              DeliveryMode::Reliable);
+        } else {
+            world_->GetStateManager()->TransformSoldier(
+              *client_state_->client_soldier_id, [&](Soldier& soldier) {
+                  SoldierEmotes::Request(soldier, emote);
+              });
+        }
+    };
     audio_events_ = std::make_shared<AudioEvents>();
     weapon_audio_ = std::make_unique<WeaponAudio>(*audio_events_);
     polygon_presentation_router_ = PolygonPresentationEventRouter::Create(
@@ -482,6 +499,12 @@ void Application::Run()
       world_->GetWorldEvents(),
       *world_->GetStateManager(),
       audio_events_,
+      [client = client_state_]() { return !client->network.replaying_prediction; });
+    emote_presentation_ = EmotePresentation::Create(
+      *world_->GetStateManager(), world_->GetWorldEvents(), audio_events_,
+      [client = client_state_](const Soldier& soldier, std::uint32_t cues) {
+          client->visual_effects.ObserveEmote(soldier, cues);
+      },
       [client = client_state_]() { return !client->network.replaying_prediction; });
     world_->SetPostWorldUpdateCallback([&](const StateManager& state_manager) {
         const auto& camera = client_state_->camera;

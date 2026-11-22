@@ -21,6 +21,7 @@ import Shared.Core.Entities.WeaponParametersFactory;
 import Shared.Core.Types.WeaponType;
 import Shared.Core.Animations.States;
 import Shared.Core.Animations;
+export import Shared.Core.Animations.EmoteTypes;
 import Shared.Core.State.Control;
 import Shared.Core.Entities.Weapon;
 import Shared.Core.Entities.Bullet;
@@ -139,8 +140,9 @@ struct Soldier
         wear_helmet = 0;
         has_cigar = 1;
         vest = 0.0;
-        idle_time = 0;
-        idle_random = 0;
+        idle_time = DEFAULT_IDLE_TICKS;
+        idle_random = -1;
+        emote = {};
         stance = 0;
         on_fire = 0;
         polygon_background = {};
@@ -322,8 +324,9 @@ struct Soldier
     std::uint8_t wear_helmet{};
     std::uint8_t has_cigar{};
     float vest{};
-    std::int32_t idle_time{};
-    std::int8_t idle_random{};
+    std::int32_t idle_time{ DEFAULT_IDLE_TICKS };
+    std::int8_t idle_random{ -1 };
+    EmoteProgress emote{};
     std::uint8_t stance{};
     std::uint8_t on_fire{};
     std::uint8_t collider_distance{};
@@ -355,7 +358,12 @@ class SoldierSnapshot
 {
 public:
     SoldierSnapshot(const Soldier& soldier)
-        : polygon_background_(soldier.polygon_background)
+        : emote_(soldier.emote)
+        , idle_time_(soldier.idle_time)
+        , idle_random_(soldier.idle_random)
+        , has_cigar_(soldier.has_cigar)
+        , wear_helmet_(soldier.wear_helmet)
+        , polygon_background_(soldier.polygon_background)
         , carrying_flag_(soldier.is_holding_flags)
         , life_sequence_(soldier.life_sequence)
         , body_animation_type_(soldier.body_animation->GetType())
@@ -393,6 +401,11 @@ public:
         }
     }
 
+    const EmoteProgress& GetEmote() const { return emote_; }
+    std::int32_t GetIdleTime() const { return idle_time_; }
+    std::int8_t GetIdleRandom() const { return idle_random_; }
+    std::uint8_t GetCigar() const { return has_cigar_; }
+    std::uint8_t GetHelmet() const { return wear_helmet_; }
     const PolygonBackgroundState& GetPolygonBackground() const { return polygon_background_; }
     bool IsCarryingFlag() const { return carrying_flag_; }
     std::uint32_t GetLifeSequence() const { return life_sequence_; }
@@ -552,6 +565,11 @@ public:
     }
 
 private:
+    EmoteProgress emote_;
+    std::int32_t idle_time_;
+    std::int8_t idle_random_;
+    std::uint8_t has_cigar_;
+    std::uint8_t wear_helmet_;
     PolygonBackgroundState polygon_background_{};
     bool carrying_flag_{};
     std::uint32_t life_sequence_{};

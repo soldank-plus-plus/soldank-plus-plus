@@ -28,3 +28,5 @@ export import :LegsRollBackAnimationState;
 export import :LegsRunAnimationState;
 export import :LegsRunBackAnimationState;
 export import :LegsStandAnimationState;
+
+export import :EmoteAnimationState;

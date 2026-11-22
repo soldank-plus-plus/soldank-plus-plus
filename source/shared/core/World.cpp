@@ -41,6 +41,7 @@ import Shared.Core.Simulation.SimulationEvents;
 import Shared.Core.Simulation.WorldTick;
 
 import Shared.Core.Animations;
+import Shared.Core.Animations.SoldierEmotes;
 import Shared.Core.Animations.States;
 
 import Shared.Core.Map.PMSEnums;
@@ -150,6 +151,19 @@ public:
         if (const auto* mode = state_manager_->GetGameMode();
             mode && state_manager_->HasAuthoritativeProjectiles() && !mode->Settings().sandbox &&
             mode->GetState().phase != MatchPhase::Running) {
+            // Survival winners celebrate while gameplay remains frozen between rounds.
+            state_manager_->TransformSoldiers([&](Soldier& soldier) {
+                if (soldier.IsAlive() && soldier.idle_random == static_cast<std::int8_t>(Emote::Victory)) {
+                    if (soldier.body_animation->GetFrame() == soldier.body_animation->GetFramesCount()) {
+                        SoldierEmotes::Finish(soldier, animation_data_manager_);
+                    } else {
+                        soldier.body_animation->DoAnimation();
+                        soldier.legs_animation->DoAnimation();
+                    }
+                    RepositionSoldierSkeletonParts(soldier);
+                }
+                world_events_->after_soldier_updates.Notify(soldier, state_manager_->GetGameTick());
+            });
             mode_adapter_.EndTick(*state_manager_);
             return;
         }
@@ -221,6 +235,15 @@ public:
             }
         }
         mode_adapter_.EndTick(*state_manager_);
+        if (const auto* mode = state_manager_->GetGameMode();
+            mode && state_manager_->HasAuthoritativeProjectiles() && mode->Settings().rounds.enabled &&
+            mode->GetState().phase == MatchPhase::RoundEnding) {
+            state_manager_->TransformSoldiers([&](Soldier& soldier) {
+                if (soldier.IsAlive() && !soldier.IsSpectator()) {
+                    SoldierEmotes::CelebrateRound(soldier, animation_data_manager_);
+                }
+            });
+        }
         // Publish only after all authoritative actions (including queued spawns) are committed.
         const auto projectile_events = state_manager_->GetProjectileEvents();
         state_manager_->ClearProjectileEvents();
@@ -339,6 +362,9 @@ public:
                 mode && state_manager_->HasAuthoritativeProjectiles()) {
                 const auto view = mode_adapter_.View(*state_manager_);
                 mode->OnKill(fact, view);
+                if ((soldier.emote.cues & static_cast<std::uint32_t>(EmoteCue::MercyFire)) != 0) {
+                    mode->PenalizeAnimatedSuicide(soldier.id);
+                }
                 soldier.ticks_to_respawn = static_cast<int>(mode->RespawnDelay(view));
             } else {
                 soldier.ticks_to_respawn = 180;
@@ -415,6 +441,11 @@ private:
                 SpawnSoldier(spawn_command.soldier_id, spawn_command.spawn_position);
             },
             [&](const KillSoldierCommand& kill_command) { KillSoldier(kill_command.soldier_id); },
+            [&](const EmoteCommand& command) {
+                state_manager_->TransformSoldier(command.soldier_id, [&](Soldier& soldier) {
+                    SoldierEmotes::Request(soldier, command.emote);
+                });
+            },
             [&](const RemoveSoldierCommand& remove_command) {
                 state_manager_->RemoveSoldier(remove_command.soldier_id);
             },
