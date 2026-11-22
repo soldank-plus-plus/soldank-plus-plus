@@ -10,7 +10,7 @@ import Shared.Networking.ChatProtocol;
 
 export namespace Soldank
 {
-constexpr std::string_view CLIENT_HELLO_PREFIX = "soldank-mode/3:";
+constexpr std::string_view CLIENT_HELLO_PREFIX = "soldank-mode/4:";
 std::string MakeClientHello(std::string_view nick)
 {
     return std::string(CLIENT_HELLO_PREFIX) + std::string(nick);

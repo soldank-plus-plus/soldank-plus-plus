@@ -372,6 +372,8 @@ public:
             state_manager_->ReleaseSoldierFlags(soldier.id);
             WeaponPhysics::ThrowWeapon(*state_manager_, soldier);
             world_events_->soldier_died.Notify(soldier);
+            if (soldier.has_cigar == 10)
+                soldier.has_cigar = 0;
             pending_simulation_events_.push_back(SoldierKilledEvent{
               .soldier_id = static_cast<std::uint8_t>(soldier_id),
             });

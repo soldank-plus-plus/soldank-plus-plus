@@ -48,6 +48,7 @@ enum class WeaponVisualEffectKind
     Spit,
     Match,
     Urine,
+    CigarSmoke,
 };
 
 struct WeaponVisualEffect
@@ -147,6 +148,8 @@ EffectAppearance GetEffectAppearance(const WeaponVisualEffect& effect, float fra
             alpha = life * 2.0F + 10.0F;
             break;
         case WeaponVisualEffectKind::Match:
+        case WeaponVisualEffectKind::Cigar:
+            result.rotation = life * 4.0F * 0.0174532925F;
             alpha = 255.0F;
             break;
         case WeaponVisualEffectKind::Puff:
@@ -169,7 +172,6 @@ EffectAppearance GetEffectAppearance(const WeaponVisualEffect& effect, float fra
         case WeaponVisualEffectKind::Magazine:
         case WeaponVisualEffectKind::Pin:
         case WeaponVisualEffectKind::Headgear:
-        case WeaponVisualEffectKind::Cigar:
             alpha = 255.0F;
             break;
         default:

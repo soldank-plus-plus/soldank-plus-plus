@@ -99,6 +99,7 @@ TEST(ChatProtocolTest, EnforcesSizeAndHandshakeCompatibility)
     EXPECT_FALSE(IsValidChatText(std::string(513, 'x')));
     EXPECT_FALSE(ParseClientHello("soldank-mode/1:Player"));
     EXPECT_FALSE(ParseClientHello("soldank-mode/2:Player"));
+    EXPECT_FALSE(ParseClientHello("soldank-mode/3:Player"));
     EXPECT_FALSE(ParseClientHello(MakeClientHello("bad\nname")));
     EXPECT_EQ(ParseClientHello(MakeClientHello("Player")), "Player");
 }

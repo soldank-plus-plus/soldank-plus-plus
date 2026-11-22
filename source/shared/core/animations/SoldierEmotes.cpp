@@ -1,9 +1,11 @@
 module;
 #include <cstdint>
+#include <bit>
 #include <memory>
 
 export module Shared.Core.Animations.SoldierEmotes;
 import Shared.Core.Animations;
+import Extern.Glm;
 import Shared.Core.Animations.States;
 import Shared.Core.Animations.EmoteTypes;
 import Shared.Core.Entities.Soldier;
@@ -48,7 +50,19 @@ bool Request(Soldier& soldier, Emote emote)
 }
 void Cue(Soldier& soldier, EmoteCue cue)
 {
-    soldier.emote.cues |= static_cast<std::uint32_t>(cue);
+    const auto bit = static_cast<std::uint32_t>(cue);
+    if ((soldier.emote.cues & bit) == 0 && cue >= EmoteCue::Light && cue <= EmoteCue::Discard) {
+        const auto index = static_cast<unsigned int>(std::countr_zero(bit)) - 3U;
+        auto& origins = soldier.emote.cigar_origins;
+        origins.valid_mask |= static_cast<std::uint8_t>(1U << index);
+        origins.directions[index] = soldier.direction;
+        origins.positions[index] = cue == EmoteCue::Discard ? soldier.skeleton->GetPos(15)
+                                                            : soldier.skeleton->GetPos(12) +
+                                                                glm::vec2(soldier.direction * 4, 0);
+        if (cue == EmoteCue::Light)
+            origins.match_position = soldier.skeleton->GetPos(15);
+    }
+    soldier.emote.cues |= bit;
 }
 void Finish(Soldier& soldier, const AnimationDataManager& manager)
 {
@@ -86,6 +100,8 @@ void CelebrateRound(Soldier& soldier, const AnimationDataManager& manager)
     ++soldier.emote.instance;
     soldier.emote.phase = 1;
     soldier.emote.cues = static_cast<std::uint32_t>(EmoteCue::Roar);
+    soldier.emote.cue_ages = {};
+    soldier.emote.cigar_origins = {};
     soldier.emote.weapon = soldier.GetActiveWeapon().GetWeaponParameters().kind;
 }
 
@@ -95,6 +111,12 @@ void Update(Soldier& soldier,
             bool authoritative,
             unsigned int automatic_style)
 {
+    for (unsigned int index = 0; index < EMOTE_CUE_COUNT; ++index) {
+        if ((soldier.emote.cues & (1U << index)) != 0 &&
+            soldier.emote.cue_ages[index] < MAX_EMOTE_CUE_AGE) {
+            ++soldier.emote.cue_ages[index];
+        }
+    }
     if (!soldier.IsAlive() || soldier.IsSpectator()) {
         soldier.idle_random = -1;
         soldier.idle_time = DEFAULT_IDLE_TICKS;
@@ -126,6 +148,8 @@ void Update(Soldier& soldier,
         }
         ++soldier.emote.instance;
         soldier.emote.cues = 0;
+        soldier.emote.cue_ages = {};
+        soldier.emote.cigar_origins = {};
         soldier.emote.weapon = soldier.GetActiveWeapon().GetWeaponParameters().kind;
         phase = 1;
         switch (style) {
@@ -201,17 +225,22 @@ void Update(Soldier& soldier,
             Finish(soldier, manager);
         }
     } else if (style == Emote::Smoke) {
-        if (phase == 1 && frame >= 26)
+        if (phase == 1 && frame == 26) {
             soldier.has_cigar = 5;
+            soldier.body_animation->SetNextFrame();
+        }
         if (phase == 1 && frame >= 37) {
             Play(soldier, manager, AnimationType::Cigar);
             phase = 2;
         } else if (phase == 2) {
-            if (frame >= 9)
+            if (frame == 9) {
                 Cue(soldier, EmoteCue::Match);
+                soldier.body_animation->SetNextFrame();
+            }
             if (frame >= 26) {
                 soldier.has_cigar = 10;
                 Cue(soldier, EmoteCue::Light);
+                soldier.body_animation->SetNextFrame();
                 soldier.idle_time = LONGER_IDLE_TICKS;
                 phase = 3;
             }
@@ -225,11 +254,15 @@ void Update(Soldier& soldier,
             Play(soldier, manager, AnimationType::Smoke);
             phase = 5;
         } else if (phase == 5) {
-            if (frame >= 17)
+            if (frame == 17) {
                 Cue(soldier, EmoteCue::PuffFirst);
-            if (frame >= 37)
+                soldier.body_animation->SetNextFrame();
+            }
+            if (frame == 37) {
                 Cue(soldier, EmoteCue::PuffSecond);
-            if (frame >= 38) {
+                soldier.body_animation->SetNextFrame();
+            }
+            if (soldier.body_animation->GetFrame() >= 38) {
                 soldier.has_cigar = 0;
                 Cue(soldier, EmoteCue::Discard);
                 Finish(soldier, manager);

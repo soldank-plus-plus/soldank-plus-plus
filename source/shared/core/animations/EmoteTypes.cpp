@@ -1,10 +1,12 @@
 module;
 #include <cstdint>
+#include <array>
 #include <optional>
 #include <string_view>
 
 export module Shared.Core.Animations.EmoteTypes;
 import Shared.Core.Types.WeaponType;
+import Extern.Glm;
 
 export namespace Soldank
 {
@@ -39,12 +41,27 @@ enum class EmoteCue : std::uint32_t
     Mercy = 1U << 9,
     MercyFire = 1U << 10,
 };
+constexpr unsigned int EMOTE_CUE_COUNT = 11;
+constexpr std::uint16_t MAX_EMOTE_CUE_AGE = 600;
+
+// Light, first puff, second puff, and discard use positions from the simulation
+// frame that emitted the cue, including when a snapshot arrives after the pose changed.
+struct CigarVisualOrigins
+{
+    std::array<glm::vec2, 4> positions{};
+    glm::vec2 match_position{};
+    std::array<std::int8_t, 4> directions{};
+    std::uint8_t valid_mask{};
+    bool operator==(const CigarVisualOrigins&) const = default;
+};
 struct EmoteProgress
 {
     std::uint32_t instance{};
     std::uint32_t cues{};
     std::uint8_t phase{};
     WeaponType weapon{ WeaponType::NoWeapon };
+    std::array<std::uint16_t, EMOTE_CUE_COUNT> cue_ages{};
+    CigarVisualOrigins cigar_origins{};
     bool operator==(const EmoteProgress&) const = default;
 };
 constexpr bool IsValidEmote(Emote emote)

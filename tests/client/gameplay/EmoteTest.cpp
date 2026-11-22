@@ -113,13 +113,16 @@ TEST_F(EmoteTest, CigarHasSeparateRetrievalLightingAndSmokingStages)
     Begin(Emote::Smoke);
     At(26);
     EXPECT_EQ(soldier_->has_cigar, 5);
+    EXPECT_EQ(soldier_->body_animation->GetFrame(), 27);
     At(37);
     EXPECT_EQ(soldier_->emote.phase, 2);
     At(9);
     EXPECT_TRUE(Has(EmoteCue::Match));
+    EXPECT_EQ(soldier_->body_animation->GetFrame(), 10);
     At(26);
     EXPECT_EQ(soldier_->has_cigar, 10);
     EXPECT_TRUE(Has(EmoteCue::Light));
+    EXPECT_EQ(soldier_->body_animation->GetFrame(), 27);
     EXPECT_EQ(soldier_->idle_time, LONGER_IDLE_TICKS);
     At(soldier_->body_animation->GetFramesCount());
     while (soldier_->emote.phase != 5)
@@ -127,9 +130,9 @@ TEST_F(EmoteTest, CigarHasSeparateRetrievalLightingAndSmokingStages)
     EXPECT_EQ(soldier_->body_animation->GetType(), AnimationType::Smoke);
     At(17);
     EXPECT_TRUE(Has(EmoteCue::PuffFirst));
+    EXPECT_EQ(soldier_->body_animation->GetFrame(), 18);
     At(37);
     EXPECT_TRUE(Has(EmoteCue::PuffSecond));
-    At(38);
     EXPECT_TRUE(Has(EmoteCue::Discard));
     EXPECT_EQ(soldier_->has_cigar, 0);
     EXPECT_EQ(soldier_->idle_random, -1);
@@ -328,4 +331,131 @@ TEST_F(EmoteTest, RoundVictoryStartsDespiteHeldActions)
     EXPECT_EQ(soldier_->idle_random, static_cast<std::int8_t>(Emote::Victory));
     EXPECT_TRUE(Has(EmoteCue::Roar));
     EXPECT_TRUE(soldier_->control.fire);
+}
+
+TEST_F(EmoteTest, CigarCuesAgeEvenAfterTheSequenceFinishes)
+{
+    soldier_->emote.cues = static_cast<std::uint32_t>(EmoteCue::Discard);
+    for (unsigned int tick = 0; tick < MAX_EMOTE_CUE_AGE + 10U; ++tick)
+        Tick(false);
+    EXPECT_EQ(soldier_->emote.cue_ages[6], MAX_EMOTE_CUE_AGE);
+    EXPECT_EQ(soldier_->idle_random, -1);
+}
+
+TEST_F(EmoteTest, LateCigarObserverRecoversRemainingEffectsWithoutExpiredSmokeOrOldAudio)
+{
+    soldier_->emote.instance = 5;
+    soldier_->emote.cues = static_cast<std::uint32_t>(EmoteCue::Light) |
+                           static_cast<std::uint32_t>(EmoteCue::PuffFirst) |
+                           static_cast<std::uint32_t>(EmoteCue::Discard);
+    soldier_->emote.cue_ages[3] = 100;
+    soldier_->emote.cue_ages[4] = 10;
+    soldier_->emote.cue_ages[6] = 2;
+    WeaponVisualEffects visuals;
+    auto audio = std::make_shared<AudioEvents>();
+    unsigned int sounds = 0;
+    unsigned int emissions = 0;
+    audio->sound_requested.AddObserver([&](const AudioEvent&) { ++sounds; });
+    auto router = EmotePresentation::Create(*world_->GetStateManager(),
+                                            world_->GetWorldEvents(),
+                                            audio,
+                                            [&](const Soldier& soldier, std::uint32_t cues) {
+                                                ++emissions;
+                                                visuals.ObserveEmote(soldier, cues);
+                                            });
+    ASSERT_EQ(visuals.GetEffects().size(), 3);
+    EXPECT_EQ(sounds, 1);
+    for (const auto& effect : visuals.GetEffects()) {
+        if (effect.kind == WeaponVisualEffectKind::Match)
+            EXPECT_EQ(effect.lifetime, 145);
+        if (effect.kind == WeaponVisualEffectKind::CigarSmoke)
+            EXPECT_EQ(effect.lifetime, 55);
+        if (effect.kind == WeaponVisualEffectKind::Cigar)
+            EXPECT_EQ(effect.lifetime, 243);
+    }
+    router->Observe(*soldier_);
+    soldier_->emote.cue_ages = {}; // A correction must not make old cues fresh again.
+    router->Observe(*soldier_);
+    EXPECT_EQ(emissions, 1);
+    EXPECT_EQ(sounds, 1);
+}
+
+TEST_F(EmoteTest, SkippedInstancesRecoverLatestCigarMilestonesOnce)
+{
+    auto audio = std::make_shared<AudioEvents>();
+    std::vector<std::uint32_t> emissions;
+    auto router = EmotePresentation::Create(
+      *world_->GetStateManager(),
+      world_->GetWorldEvents(),
+      audio,
+      [&](const Soldier&, std::uint32_t cues) { emissions.push_back(cues); });
+    soldier_->emote.instance = 7;
+    soldier_->emote.cues = static_cast<std::uint32_t>(EmoteCue::Light);
+    soldier_->emote.cue_ages[3] = 5;
+    router->Observe(*soldier_);
+    router->Observe(*soldier_);
+    ASSERT_EQ(emissions.size(), 1);
+    EXPECT_EQ(emissions.front(), static_cast<std::uint32_t>(EmoteCue::Light));
+    soldier_->emote.instance = 6;
+    router->Observe(*soldier_);
+    EXPECT_EQ(emissions.size(), 1);
+}
+
+TEST_F(EmoteTest, JoiningAfterCigarParticlesExpireDoesNotRecreateThem)
+{
+    soldier_->emote.instance = 7;
+    soldier_->emote.cues = static_cast<std::uint32_t>(EmoteCue::Light) |
+                           static_cast<std::uint32_t>(EmoteCue::PuffFirst) |
+                           static_cast<std::uint32_t>(EmoteCue::Discard);
+    soldier_->emote.cue_ages.fill(MAX_EMOTE_CUE_AGE);
+    auto audio = std::make_shared<AudioEvents>();
+    unsigned int emissions = 0;
+    auto router = EmotePresentation::Create(*world_->GetStateManager(),
+                                            world_->GetWorldEvents(),
+                                            audio,
+                                            [&](const Soldier&, std::uint32_t) { ++emissions; });
+    EXPECT_EQ(emissions, 0);
+}
+
+TEST_F(EmoteTest, CigarMilestonesRetainPositionsWhenAnimationOrFacingChanges)
+{
+    soldier_->direction = -1;
+    soldier_->skeleton->SetPos(12, { 10, 20 });
+    soldier_->skeleton->SetPos(15, { 30, 40 });
+    Begin(Emote::Smoke);
+    At(26);
+    At(37);
+    At(26);
+    soldier_->skeleton->SetPos(12, { 100, 200 });
+    soldier_->skeleton->SetPos(15, { 300, 400 });
+    soldier_->direction = 1;
+    WeaponVisualEffects visuals;
+    visuals.ObserveEmote(*soldier_, static_cast<std::uint32_t>(EmoteCue::Light));
+    ASSERT_EQ(visuals.GetEffects().size(), 2);
+    for (const auto& effect : visuals.GetEffects()) {
+        if (effect.kind == WeaponVisualEffectKind::Match) {
+            EXPECT_EQ(effect.position, glm::vec2(30, 40));
+            EXPECT_FLOAT_EQ(effect.velocity.x, -0.5F);
+        }
+        if (effect.kind == WeaponVisualEffectKind::CigarSmoke) {
+            EXPECT_EQ(effect.position, glm::vec2(6, 20));
+        }
+    }
+}
+
+TEST_F(EmoteTest, PausedLateObserverDoesNotPlayCigarCatchUp)
+{
+    soldier_->emote.instance = 5;
+    soldier_->emote.cues = static_cast<std::uint32_t>(EmoteCue::Light);
+    world_->GetStateManager()->PauseGame();
+    auto audio = std::make_shared<AudioEvents>();
+    unsigned int emissions = 0;
+    auto router = EmotePresentation::Create(*world_->GetStateManager(),
+                                            world_->GetWorldEvents(),
+                                            audio,
+                                            [&](const Soldier&, std::uint32_t) { ++emissions; });
+    EXPECT_EQ(emissions, 0);
+    world_->GetStateManager()->UnPauseGame();
+    router->Observe(*soldier_);
+    EXPECT_EQ(emissions, 0);
 }

@@ -1485,6 +1485,11 @@ TEST(EmoteNetworkingTest, SnapshotRestoresMultiStageProgressAndIgnoresOlderDeliv
     packet.idle_random = static_cast<std::int8_t>(Emote::Smoke);
     packet.emote = { .instance = 4, .cues = static_cast<std::uint32_t>(EmoteCue::Light),
                      .phase = 3 };
+    packet.emote.cue_ages[3] = 50;
+    packet.emote.cigar_origins.valid_mask = 1;
+    packet.emote.cigar_origins.positions[0] = { 12, 34 };
+    packet.emote.cigar_origins.match_position = { 56, 78 };
+    packet.emote.cigar_origins.directions[0] = -1;
     packet.idle_time = 1750;
     packet.has_cigar = 10;
     packet.wear_helmet = 2;

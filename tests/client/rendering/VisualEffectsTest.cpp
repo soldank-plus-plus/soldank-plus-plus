@@ -320,3 +320,175 @@ TEST(VisualEffectsTest, RespawnRestoresSelectedHeadgearAndSlotReuseClearsAppeara
     EXPECT_EQ(soldier.appearance.hair_style, HairStyle::Normal);
     EXPECT_EQ(soldier.appearance.headgear, 0);
 }
+
+TEST(VisualEffectsTest, OnlyLitCigarsProducePeriodicMouthSmoke)
+{
+    World world;
+    world.CreateSoldier(1);
+    world.SpawnSoldier(1, glm::vec2{});
+    auto state = world.GetStateManager();
+    state->OverrideMap(*SoldankTesting::MapBuilder::Empty()->Build());
+    auto& soldier = state->GetSoldier(1);
+    soldier.skeleton->SetPos(9, { 20, 30 });
+    soldier.skeleton->SetPos(12, { 90, 90 });
+    soldier.has_cigar = 5;
+    WeaponVisualEffects visuals;
+    state->SetGameTick(160);
+    visuals.Update(*state, {});
+    EXPECT_EQ(Count(visuals, WeaponVisualEffectKind::CigarSmoke), 0);
+    soldier.has_cigar = 10;
+    state->SetGameTick(161);
+    visuals.Update(*state, {});
+    EXPECT_EQ(Count(visuals, WeaponVisualEffectKind::CigarSmoke), 0);
+    state->SetGameTick(320);
+    visuals.Update(*state, {});
+    const auto count = Count(visuals, WeaponVisualEffectKind::CigarSmoke);
+    ASSERT_GE(count, 1);
+    ASSERT_LE(count, 3);
+    for (const auto& effect : visuals.GetEffects()) {
+        if (effect.kind != WeaponVisualEffectKind::CigarSmoke)
+            continue;
+        EXPECT_NEAR(effect.position.x, 24, 0.11F);
+        EXPECT_FLOAT_EQ(effect.position.y, 28);
+        EXPECT_EQ(effect.lifetime, 55);
+        EXPECT_GE(effect.velocity.y, -0.81F);
+        EXPECT_LE(effect.velocity.y, -0.69F);
+    }
+    EXPECT_EQ(visuals.GetCigarSmokeSoundCount(), count > 1 ? 1 : 0);
+    visuals.Update(*state, {});
+    EXPECT_EQ(visuals.GetCigarSmokeSoundCount(), 0);
+    EXPECT_EQ(Count(visuals, WeaponVisualEffectKind::CigarSmoke), count);
+    bool saw_multiple = count > 1;
+    for (unsigned int tick = 480; tick <= 3200; tick += 160) {
+        state->SetGameTick(tick);
+        visuals.Update(*state, {});
+        if (visuals.GetCigarSmokeSoundCount() > 0)
+            saw_multiple = true;
+    }
+    EXPECT_TRUE(saw_multiple);
+}
+
+TEST(VisualEffectsTest, CigarSmokeSkipsEulerAndDebrisUsesReferenceGravityDampingAndSpin)
+{
+    World world;
+    world.CreateSoldier(1);
+    world.SpawnSoldier(1, glm::vec2{});
+    auto state = world.GetStateManager();
+    state->OverrideMap(*SoldankTesting::MapBuilder::Empty()->Build());
+    const auto& soldier = state->GetSoldier(1);
+    WeaponVisualEffects visuals;
+    visuals.ObserveEmote(soldier,
+                         static_cast<std::uint32_t>(EmoteCue::Light) |
+                           static_cast<std::uint32_t>(EmoteCue::Discard));
+    ASSERT_EQ(visuals.GetEffects().size(), 3);
+    const auto original = visuals.GetEffects();
+    state->SetGameTick(1);
+    visuals.Update(*state, {});
+    state->SetGameTick(2);
+    visuals.Update(*state, {});
+    for (std::size_t index = 0; index < original.size(); ++index) {
+        const auto& before = original[index];
+        const auto& after = visuals.GetEffects()[index];
+        if (before.kind == WeaponVisualEffectKind::CigarSmoke) {
+            EXPECT_EQ(after.position, before.position);
+            EXPECT_EQ(after.velocity, before.velocity);
+            EXPECT_NEAR(GetEffectAppearance(after, 1).color.a, 74.0F / 255, 0.00001F);
+        } else {
+            const auto velocity = before.velocity + glm::vec2(0, 0.06F / 1.4F);
+            EXPECT_EQ(after.position, before.position + velocity);
+            EXPECT_EQ(after.velocity, velocity * 0.998F);
+            EXPECT_NEAR(
+              GetEffectAppearance(after, 1).rotation, 244.0F * 4.0F * 0.0174532925F, 0.00001F);
+        }
+    }
+}
+
+TEST(VisualEffectsTest, LitCigarDropsOnDeathOnceAndUnlitCigarDoesNotDrop)
+{
+    for (const auto cigar : { 5, 10 }) {
+        World world;
+        world.CreateSoldier(1);
+        world.SpawnSoldier(1, glm::vec2{});
+        auto state = world.GetStateManager();
+        state->OverrideMap(*SoldankTesting::MapBuilder::Empty()->Build());
+        auto& soldier = state->GetSoldier(1);
+        soldier.has_cigar = cigar;
+        WeaponVisualEffects visuals;
+        state->SetGameTick(1);
+        visuals.Update(*state, {});
+        world.HitSoldier(1, 1);
+        state->SetGameTick(2);
+        visuals.Update(*state, {});
+        EXPECT_EQ(soldier.has_cigar, cigar);
+        EXPECT_EQ(Count(visuals, WeaponVisualEffectKind::Cigar), 0);
+        world.KillSoldier(1);
+        state->SetGameTick(3);
+        visuals.Update(*state, {});
+        EXPECT_EQ(Count(visuals, WeaponVisualEffectKind::Cigar), cigar == 10 ? 1 : 0);
+        EXPECT_EQ(soldier.has_cigar, cigar == 10 ? 0 : 5);
+        state->SetGameTick(4);
+        visuals.Update(*state, {});
+        EXPECT_EQ(Count(visuals, WeaponVisualEffectKind::Cigar), cigar == 10 ? 1 : 0);
+    }
+}
+
+TEST(VisualEffectsTest, MatchAndCigarCollisionsEmitReferenceSparks)
+{
+    World world;
+    world.CreateSoldier(1);
+    world.SpawnSoldier(1, glm::vec2{});
+    auto state = world.GetStateManager();
+    state->OverrideMap(*SoldankTesting::MapBuilder::Empty()
+                          ->AddPolygon({ -30, 0 }, { 30, 0 }, { 0, 40 }, PMSPolygonType::Normal)
+                          ->Build());
+    auto& soldier = state->GetSoldier(1);
+    const auto& polygon = state->GetConstMap().GetPolygons().front();
+    const auto& vertices = polygon.vertices;
+    const glm::vec2 center((vertices[0].x + vertices[1].x + vertices[2].x) / 3,
+                           (vertices[0].y + vertices[1].y + vertices[2].y) / 3);
+    soldier.skeleton->SetPos(15, center);
+    WeaponVisualEffects visuals;
+    visuals.ObserveEmote(soldier,
+                         static_cast<std::uint32_t>(EmoteCue::Light) |
+                           static_cast<std::uint32_t>(EmoteCue::Discard));
+    state->SetGameTick(1);
+    visuals.Update(*state, {});
+    state->SetGameTick(2);
+    visuals.Update(*state, {});
+    ASSERT_EQ(Count(visuals, WeaponVisualEffectKind::Spark), 2);
+    for (const auto& effect : visuals.GetEffects()) {
+        if (effect.kind == WeaponVisualEffectKind::Spark) {
+            EXPECT_EQ(effect.lifetime, 35);
+            EXPECT_EQ(effect.owner, 1);
+            EXPECT_EQ(effect.owner_life, soldier.life_sequence);
+            EXPECT_EQ(effect.variant, 1);
+            EXPECT_TRUE(effect.tint == glm::vec4(1, 254.0F / 255, 53.0F / 255, 1) ||
+                        effect.tint == glm::vec4(170.0F / 255, 170.0F / 255, 170.0F / 255, 1));
+            EXPECT_FLOAT_EQ(GetEffectAppearance(effect, 1).color.a, 1);
+            auto faded = effect;
+            faded.lifetime = 10;
+            EXPECT_NEAR(GetEffectAppearance(faded, 1).color.a, 184.0F / 255, 0.00001F);
+        }
+    }
+}
+
+TEST(VisualEffectsTest, DiscardAndDeathInTheSameTickDoNotCreateTwoCigars)
+{
+    World world;
+    world.CreateSoldier(1);
+    world.SpawnSoldier(1, glm::vec2{});
+    auto state = world.GetStateManager();
+    state->OverrideMap(*SoldankTesting::MapBuilder::Empty()->Build());
+    auto& soldier = state->GetSoldier(1);
+    soldier.has_cigar = 10;
+    WeaponVisualEffects visuals;
+    state->SetGameTick(1);
+    visuals.Update(*state, {});
+    soldier.emote.cues = static_cast<std::uint32_t>(EmoteCue::Discard);
+    soldier.has_cigar = 0;
+    visuals.ObserveEmote(soldier, soldier.emote.cues);
+    world.KillSoldier(1);
+    state->SetGameTick(2);
+    visuals.Update(*state, {});
+    EXPECT_EQ(Count(visuals, WeaponVisualEffectKind::Cigar), 1);
+}

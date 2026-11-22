@@ -36,6 +36,7 @@ class WeaponVisualEffects
 {
 public:
     const std::vector<WeaponVisualEffect>& GetEffects() const { return effects_; }
+    unsigned int GetCigarSmokeSoundCount() const { return cigar_smoke_sound_count_; }
     void ObservePolygon(const PolygonEffectEvent& event)
     {
         current_owner_.reset();
@@ -64,9 +65,35 @@ public:
     {
         current_owner_ = OwnerContext{ soldier.id,
                                        static_cast<std::uint8_t>(soldier.GetTeam()),
-                                       soldier.is_holding_flags, soldier.life_sequence };
+                                       soldier.is_holding_flags,
+                                       soldier.life_sequence };
         const auto has = [&](EmoteCue cue) {
             return (cues & static_cast<std::uint32_t>(cue)) != 0;
+        };
+        const auto emit = [&](EmoteCue cue,
+                              WeaponVisualEffectKind kind,
+                              glm::vec2 position,
+                              glm::vec2 velocity,
+                              int lifetime) {
+            unsigned int index = 0;
+            while ((1U << index) != static_cast<std::uint32_t>(cue))
+                ++index;
+            const int age = soldier.emote.cue_ages[index];
+            if (!has(cue) || age >= lifetime)
+                return false;
+            const auto& origins = soldier.emote.cigar_origins;
+            const auto slot = index - 3U;
+            if ((origins.valid_mask & (1U << slot)) != 0) {
+                position = kind == WeaponVisualEffectKind::Match ? origins.match_position
+                                                                 : origins.positions[slot];
+                if (kind == WeaponVisualEffectKind::Match)
+                    velocity.x = origins.directions[slot] / 2.0F;
+                if (kind == WeaponVisualEffectKind::Cigar)
+                    velocity.x = origins.directions[slot] / 1.5F;
+            }
+            Add(kind, position, velocity, 1, lifetime - age);
+            effects_.back().initial_lifetime = lifetime;
+            return true;
         };
         const float direction = static_cast<float>(soldier.direction);
         const auto head = soldier.skeleton->GetPos(12);
@@ -74,22 +101,28 @@ public:
         if (has(EmoteCue::Spit)) {
             auto aim = glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y) - head;
             const float length = glm::length(aim);
-            Add(WeaponVisualEffectKind::Spit, head,
-                length > 0.001F ? aim * (2.0F / length) : glm::vec2(direction * 2, 0), 1, 245);
+            Add(WeaponVisualEffectKind::Spit,
+                head,
+                length > 0.001F ? aim * (2.0F / length) : glm::vec2(direction * 2, 0),
+                1,
+                245);
         }
-        if (has(EmoteCue::Light)) {
-            Add(WeaponVisualEffectKind::Match, hand, { direction / 2, 0.15F }, 1, 245);
+        if (emit(EmoteCue::Light,
+                 WeaponVisualEffectKind::Match,
+                 hand,
+                 { direction / 2, 0.15F },
+                 245)) {
             effects_.back().tint = { 187.0F / 255, 170.0F / 255, 169.0F / 255, 1 };
         }
         for (auto cue : { EmoteCue::Light, EmoteCue::PuffFirst, EmoteCue::PuffSecond }) {
-            if (has(cue)) {
-                Add(WeaponVisualEffectKind::Smoke, head + glm::vec2(direction * 4, 0),
-                    { 0, -0.7F }, 1, 65);
-            }
+            emit(cue,
+                 WeaponVisualEffectKind::CigarSmoke,
+                 head + glm::vec2(direction * 4, 0),
+                 { 0, -0.7F },
+                 65);
         }
-        if (has(EmoteCue::Discard)) {
-            Add(WeaponVisualEffectKind::Cigar, hand, { direction / 1.5F, 0.1F }, 1, 245);
-        }
+        emit(
+          EmoteCue::Discard, WeaponVisualEffectKind::Cigar, hand, { direction / 1.5F, 0.1F }, 245);
         current_owner_.reset();
     }
 
@@ -112,6 +145,7 @@ public:
     void Reset()
     {
         effects_.clear();
+        cigar_smoke_sound_count_ = 0;
         seen_events_.clear();
         shooters_ = {};
         spawned_lives_ = {};
@@ -143,6 +177,7 @@ public:
                 glm::vec2 viewport = { 800.0F, 600.0F },
                 bool weather = true)
     {
+        cigar_smoke_sound_count_ = 0;
         if (state.IsGamePaused()) {
             return;
         }
@@ -155,6 +190,7 @@ public:
             for (unsigned int step = 0; step < steps; ++step) {
                 Advance(state);
             }
+            last_observed_tick_ = tick;
             std::array<bool, 32> seen{};
             state.ForEachSoldier([&](const Soldier& soldier) {
                 if (soldier.id < seen.size()) {
@@ -294,6 +330,7 @@ private:
         bool alive{};
         bool on_ground{};
         bool holding_flag{};
+        std::uint8_t has_cigar{};
     };
     struct EventKey
     {
@@ -312,6 +349,11 @@ private:
         random_ ^= random_ >> 17;
         random_ ^= random_ << 5;
         return random_ % denominator == 0;
+    }
+    unsigned int RandomStep(unsigned int range)
+    {
+        Chance(1);
+        return random_ % range;
     }
     float RandomVelocity()
     {
@@ -422,7 +464,11 @@ private:
                 effects_.back().variant = soldier.appearance.headgear;
                 effects_.back().tint = soldier.appearance.shirt;
             }
-            if (soldier.has_cigar == 5 || soldier.has_cigar == 10) {
+            const bool already_discarded =
+              (soldier.emote.cues & static_cast<std::uint32_t>(EmoteCue::Discard)) != 0;
+            if (soldier.has_cigar == 10 ||
+                (!already_discarded && shooter.life_sequence == soldier.life_sequence &&
+                 shooter.has_cigar == 10)) {
                 Add(WeaponVisualEffectKind::Cigar,
                     soldier.skeleton->GetPos(12),
                     soldier.particle.GetVelocity(),
@@ -433,6 +479,7 @@ private:
         shooter.life_sequence = soldier.life_sequence;
         shooter.alive = alive;
         shooter.on_ground = soldier.on_ground;
+        shooter.has_cigar = soldier.has_cigar;
         if (!alive) {
             shooter.initialized = true;
             return;
@@ -476,18 +523,38 @@ private:
                 auto aim = glm::vec2(soldier.control.mouse_aim_x, soldier.control.mouse_aim_y) - origin;
                 const float length = glm::length(aim);
                 const float speed = frame >= 22 && frame < 34 ? 1.9F : 1.3F;
-                Add(WeaponVisualEffectKind::Urine, origin,
-                    length > 0.001F ? aim * (speed / length) : glm::vec2(speed * soldier.direction, 0),
-                    1, frame < 22 ? 165 : 120);
+                Add(WeaponVisualEffectKind::Urine,
+                    origin,
+                    length > 0.001F ? aim * (speed / length)
+                                    : glm::vec2(speed * soldier.direction, 0),
+                    1,
+                    frame < 22 ? 165 : 120);
                 effects_.back().tint = { 1, 0.9F, 0.2F, 1 };
             }
         }
-        if ((soldier.has_cigar == 5 || soldier.has_cigar == 10) && Chance(20)) {
-            Add(WeaponVisualEffectKind::Smoke,
-                soldier.skeleton->GetPos(12),
-                { 0.0F, -0.3F },
-                1.0F,
-                35);
+        if (soldier.has_cigar == 10 && last_observed_tick_ % 160U == 0) {
+            const float direction = static_cast<float>(soldier.direction);
+            const auto mouth = soldier.skeleton->GetPos(9) - glm::vec2(0, 2);
+            Add(WeaponVisualEffectKind::CigarSmoke,
+                mouth + glm::vec2(direction * 4, 0),
+                { 0, -0.75F },
+                1,
+                55);
+            if (Chance(2)) {
+                Add(WeaponVisualEffectKind::CigarSmoke,
+                    mouth + glm::vec2(direction * 4.1F, 0),
+                    { 0, -0.69F },
+                    1,
+                    55);
+                ++cigar_smoke_sound_count_;
+                if (Chance(2)) {
+                    Add(WeaponVisualEffectKind::CigarSmoke,
+                        mouth + glm::vec2(direction * 3.9F, 0),
+                        { 0, -0.81F },
+                        1,
+                        55);
+                }
+            }
         }
         if (soldier.on_fire > 0) {
             if (Chance(2)) {
@@ -559,6 +626,9 @@ private:
         for (auto& effect : effects_) {
             effect.old_position = effect.position;
             effect.old_rotation = effect.rotation;
+            const bool cigar_debris = effect.kind == WeaponVisualEffectKind::Match ||
+                                      effect.kind == WeaponVisualEffectKind::Cigar;
+            const bool cigar_smoke = effect.kind == WeaponVisualEffectKind::CigarSmoke;
             const bool debris = effect.kind == WeaponVisualEffectKind::Casing ||
                                 effect.kind == WeaponVisualEffectKind::Pin ||
                                 effect.kind == WeaponVisualEffectKind::Magazine ||
@@ -573,10 +643,15 @@ private:
                                effect.kind == WeaponVisualEffectKind::SmallBlood;
             if (debris || blood || effect.kind == WeaponVisualEffectKind::Ember ||
                 effect.kind == WeaponVisualEffectKind::Spark) {
-                effect.velocity.y += 0.06F;
-                effect.rotation += 0.2F;
+                effect.velocity.y += cigar_debris ? 0.06F / 1.4F : 0.06F;
+                if (!cigar_debris)
+                    effect.rotation += 0.2F;
             }
-            effect.position += effect.velocity;
+            // Reference smoke style 31 skips Euler integration entirely.
+            if (!cigar_smoke)
+                effect.position += effect.velocity;
+            if (cigar_debris)
+                effect.velocity *= 0.998F;
             if ((debris || blood || effect.kind == WeaponVisualEffectKind::JetFire) &&
                 effect.has_owner) {
                 const PolygonQuery query{ .kind = PolygonQueryKind::Cosmetic,
@@ -597,11 +672,30 @@ private:
                     const float length = glm::length(normal);
                     if (length > 0.001F) {
                         normal /= length;
-                        effect.velocity =
-                          (effect.velocity - normal * 2.0F * glm::dot(effect.velocity, normal)) *
-                          0.5F;
+                        if (cigar_debris) {
+                            const auto perpendicular = normal * distance;
+                            effect.velocity = (effect.velocity - perpendicular) * 0.7F;
+                            auto spark = effect;
+                            spark.kind = WeaponVisualEffectKind::Spark;
+                            spark.velocity = perpendicular * 2.5F;
+                            spark.velocity.x += -0.5F + static_cast<float>(RandomStep(11)) / 10.0F;
+                            spark.velocity.y = -spark.velocity.y;
+                            spark.lifetime = spark.initial_lifetime = 35;
+                            spark.collisions = 0;
+                            const bool yellow = Chance(7);
+                            spark.variant = 1;
+                            spark.tint = yellow
+                                           ? glm::vec4(1, 254.0F / 255, 53.0F / 255, 1)
+                                           : glm::vec4(170.0F / 255, 170.0F / 255, 170.0F / 255, 1);
+                            children.push_back(spark);
+                        } else {
+                            effect.velocity = (effect.velocity -
+                                               normal * 2.0F * glm::dot(effect.velocity, normal)) *
+                                              0.5F;
+                        }
                     }
-                    effect.position = effect.old_position;
+                    if (!cigar_debris)
+                        effect.position = effect.old_position;
                     if (effect.kind == WeaponVisualEffectKind::Blood) {
                         auto splat = effect;
                         splat.kind = WeaponVisualEffectKind::Splat;
@@ -618,7 +712,7 @@ private:
                         effect.lifetime = 0;
                     }
                     ++effect.collisions;
-                    if (effect.collisions > (blood ? 1 : 4)) {
+                    if (effect.collisions > (cigar_debris ? 5 : blood ? 1 : 4)) {
                         effect.lifetime = 0;
                     }
                     return true;
@@ -633,7 +727,7 @@ private:
                     }
                 }
             }
-            if (effect.kind != WeaponVisualEffectKind::Rain &&
+            if (!cigar_smoke && !cigar_debris && effect.kind != WeaponVisualEffectKind::Rain &&
                 effect.kind != WeaponVisualEffectKind::Sand &&
                 effect.kind != WeaponVisualEffectKind::Snow) {
                 effect.velocity *= 0.99F;
@@ -795,6 +889,8 @@ private:
     }
     std::array<std::optional<std::uint32_t>, 32> spawned_lives_{};
     std::uint32_t random_{ 0xA341316CU };
+    unsigned int last_observed_tick_{};
+    unsigned int cigar_smoke_sound_count_{};
     std::array<int, 128> m2_heat_{};
     std::optional<unsigned int> last_tick_;
     std::array<Shooter, 32> shooters_{};

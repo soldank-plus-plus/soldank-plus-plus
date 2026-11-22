@@ -514,6 +514,11 @@ void Application::Run()
                                              { camera.view.GetWidth(), camera.view.GetHeight() },
                                              client_state_->world_render_options.draw_weather);
         client_state_->projectile_visual_events.clear();
+        for (unsigned int sound = 0;
+             sound < client_state_->visual_effects.GetCigarSmokeSoundCount();
+             ++sound) {
+            audio_events_->sound_requested.Notify({ AudioCommand::Play, "smoke" });
+        }
         if (!state_manager.IsGamePaused()) {
             for (const auto& event : client_state_->polygon_visual_events) {
                 client_state_->visual_effects.ObservePolygon(event);

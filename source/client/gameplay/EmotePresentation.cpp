@@ -16,8 +16,8 @@ import Shared.Core.Types.WeaponType;
 
 export namespace Soldank
 {
-// Remembers presented milestones across prediction rewinds. New observers seed from the
-// current snapshot so joining a running emote never replays its earlier sounds/effects.
+// Remembers presented milestones across prediction rewinds. Recent cigar milestones can
+// be recovered after missing snapshots without replaying expired effects or other emotes.
 class EmotePresentation
 {
 public:
@@ -31,7 +31,8 @@ public:
     {
         auto self = std::shared_ptr<EmotePresentation>(
           new EmotePresentation(std::move(audio), std::move(effect), std::move(should_present)));
-        state.ForEachSoldier([&](const Soldier& soldier) { self->Seed(soldier); });
+        self->paused_ = state.IsGamePaused();
+        state.ForEachSoldier([&](const Soldier& soldier) { self->Observe(soldier); });
         const std::weak_ptr<EmotePresentation> weak = self;
         world.after_soldier_updates.AddObserver([weak](const Soldier& soldier, unsigned int) {
             if (auto router = weak.lock(); router && router->should_present_()) {
@@ -54,25 +55,34 @@ public:
         if (soldier.id >= entries_.size())
             return;
         auto& seen = entries_.at(soldier.id);
+        std::uint32_t fresh{};
         if (!seen.initialized || seen.life != soldier.life_sequence) {
             Seed(soldier);
-            return;
-        }
-        if (soldier.emote.instance != seen.instance) {
+            fresh = RecentCigarCues(soldier);
+        } else if (soldier.emote.instance != seen.instance) {
             if (!IsSerialNumberNewer(soldier.emote.instance, seen.instance))
                 return;
             const auto distance =
               SerialNumberForwardDistance(seen.instance, soldier.emote.instance);
             seen.instance = soldier.emote.instance;
             seen.cues = distance == 1 ? 0 : soldier.emote.cues;
+            if (distance != 1)
+                fresh = RecentCigarCues(soldier);
         }
-        const auto fresh = soldier.emote.cues & ~seen.cues;
+        fresh |= soldier.emote.cues & ~seen.cues;
+        // A delayed snapshot can contain milestones whose particles have already expired.
+        fresh &= ~CIGAR_CUES | RecentCigarCues(soldier);
         seen.cues |= soldier.emote.cues;
         if (paused_ || fresh == 0)
             return;
         effect_(soldier, fresh);
         const auto play = [&](EmoteCue cue, std::string_view sound) {
-            if ((fresh & static_cast<std::uint32_t>(cue)) != 0) {
+            const auto bit = static_cast<std::uint32_t>(cue);
+            unsigned int index = 0;
+            while ((1U << index) != bit)
+                ++index;
+            if ((fresh & bit) != 0 &&
+                ((CIGAR_CUES & bit) == 0 || soldier.emote.cue_ages[index] <= 12)) {
                 audio_->sound_requested.Notify({ AudioCommand::Play, sound });
             }
         };
@@ -100,6 +110,27 @@ public:
     }
 
 private:
+    static constexpr std::uint32_t CIGAR_CUES = static_cast<std::uint32_t>(EmoteCue::Match) |
+                                                static_cast<std::uint32_t>(EmoteCue::Light) |
+                                                static_cast<std::uint32_t>(EmoteCue::PuffFirst) |
+                                                static_cast<std::uint32_t>(EmoteCue::PuffSecond) |
+                                                static_cast<std::uint32_t>(EmoteCue::Discard);
+
+    static std::uint32_t RecentCigarCues(const Soldier& soldier)
+    {
+        std::uint32_t result{};
+        for (unsigned int index = 0; index < EMOTE_CUE_COUNT; ++index) {
+            const auto bit = 1U << index;
+            const unsigned int lifetime = bit == static_cast<std::uint32_t>(EmoteCue::Discard) ? 245
+                                          : bit == static_cast<std::uint32_t>(EmoteCue::Light) ? 245
+                                          : bit == static_cast<std::uint32_t>(EmoteCue::Match) ? 13
+                                                                                               : 65;
+            if ((soldier.emote.cues & CIGAR_CUES & bit) != 0 &&
+                soldier.emote.cue_ages[index] < lifetime)
+                result |= bit;
+        }
+        return result;
+    }
     EmotePresentation(std::shared_ptr<AudioEvents> audio,
                       EffectCallback effect,
                       std::function<bool()> should_present)

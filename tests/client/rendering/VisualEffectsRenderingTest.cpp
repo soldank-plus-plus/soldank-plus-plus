@@ -163,6 +163,7 @@ TEST_F(VisualEffectsRenderingTest, EveryNewEffectFamilyHasADrawableTexture)
                              WeaponVisualEffectKind::Sand,
                              WeaponVisualEffectKind::Snow,
                              WeaponVisualEffectKind::Cigar,
+                             WeaponVisualEffectKind::CigarSmoke,
                              WeaponVisualEffectKind::Spit,
                              WeaponVisualEffectKind::Match,
                              WeaponVisualEffectKind::Urine,
