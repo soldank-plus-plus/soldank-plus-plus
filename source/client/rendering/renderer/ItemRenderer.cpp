@@ -42,7 +42,8 @@ public:
     void Render(glm::mat4 transform,
                 const Item& item,
                 double frame_percent,
-                unsigned int game_tick);
+                unsigned int game_tick,
+                glm::vec4 parachute_color);
 
 private:
     struct ItemSpriteData
@@ -62,7 +63,10 @@ private:
                            const Item& item,
                            double frame_percent,
                            unsigned int game_tick);
-    void RenderParachute(glm::mat4 transform, const Item& item, double frame_percent);
+    void RenderParachute(glm::mat4 transform,
+                         const Item& item,
+                         double frame_percent,
+                         glm::vec4 color);
     void RenderSprite(glm::mat4 transform,
                       const Texture::TextureData& item_sprite_data,
                       glm::vec2 position,
@@ -170,7 +174,8 @@ void ItemRenderer::LoadObjectSpriteData(const Sprites::SpriteManager& sprite_man
 void ItemRenderer::Render(glm::mat4 transform,
                           const Item& item,
                           double frame_percent,
-                          unsigned int game_tick)
+                          unsigned int game_tick,
+                          glm::vec4 parachute_color)
 {
     if (!item.active) {
         return;
@@ -196,7 +201,7 @@ void ItemRenderer::Render(glm::mat4 transform,
     }
 
     if (item.style == ItemType::Parachute) {
-        RenderParachute(transform, item, frame_percent);
+        RenderParachute(transform, item, frame_percent, parachute_color);
     }
 }
 
@@ -329,7 +334,10 @@ void ItemRenderer::RenderFlagSprites(glm::mat4 transform,
     }
 }
 
-void ItemRenderer::RenderParachute(glm::mat4 transform, const Item& item, double frame_percent)
+void ItemRenderer::RenderParachute(glm::mat4 transform,
+                                  const Item& item,
+                                  double frame_percent,
+                                  glm::vec4 color)
 {
     const Texture::TextureData& parachute1_texture =
       object_sprite_type_to_gl_data_.at(Sprites::ObjectSpriteType::Para);
@@ -386,7 +394,7 @@ void ItemRenderer::RenderParachute(glm::mat4 transform, const Item& item, double
                  skeleton_position_3,
                  Calc::Vec2Angle(skeleton_position_1 - skeleton_position_3),
                  scale,
-                 { 1.0F, 1.0F, 1.0F, 1.0F },
+                 color,
                  { 0.0F, 1.0F });
 
     RenderSprite(transform,
@@ -394,7 +402,7 @@ void ItemRenderer::RenderParachute(glm::mat4 transform, const Item& item, double
                  skeleton_position_1,
                  Calc::Vec2Angle(skeleton_position_2 - skeleton_position_1),
                  scale,
-                 { 1.0F, 1.0F, 1.0F, 1.0F },
+                 color,
                  { 0.0F, 1.0F });
 }
 

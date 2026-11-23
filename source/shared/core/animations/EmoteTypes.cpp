@@ -1,4 +1,5 @@
 module;
+#include <algorithm>
 #include <cstdint>
 #include <array>
 #include <optional>
@@ -52,7 +53,13 @@ struct CigarVisualOrigins
     glm::vec2 match_position{};
     std::array<std::int8_t, 4> directions{};
     std::uint8_t valid_mask{};
-    bool operator==(const CigarVisualOrigins&) const = default;
+    bool operator==(const CigarVisualOrigins& other) const
+    {
+        return std::equal(positions.begin(), positions.end(), other.positions.begin()) &&
+               match_position == other.match_position &&
+               std::equal(directions.begin(), directions.end(), other.directions.begin()) &&
+               valid_mask == other.valid_mask;
+    }
 };
 struct EmoteProgress
 {
@@ -62,7 +69,13 @@ struct EmoteProgress
     WeaponType weapon{ WeaponType::NoWeapon };
     std::array<std::uint16_t, EMOTE_CUE_COUNT> cue_ages{};
     CigarVisualOrigins cigar_origins{};
-    bool operator==(const EmoteProgress&) const = default;
+    bool operator==(const EmoteProgress& other) const
+    {
+        return instance == other.instance && cues == other.cues && phase == other.phase &&
+               weapon == other.weapon &&
+               std::equal(cue_ages.begin(), cue_ages.end(), other.cue_ages.begin()) &&
+               cigar_origins == other.cigar_origins;
+    }
 };
 constexpr bool IsValidEmote(Emote emote)
 {

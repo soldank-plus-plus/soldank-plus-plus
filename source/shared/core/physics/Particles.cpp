@@ -232,7 +232,7 @@ public:
                   parachute_particle_system_by_scale;
                 if (!parachute_particle_system_by_scale.contains(scale)) {
                     parachute_particle_system_by_scale[scale] = LoadFromFile(
-                      "para.po", scale, 1.0F, 1.06F * grav, 0.0F, 0.9945F, file_reader);
+                      "para.po", scale, 1.0F, 1.15F * grav, 0.0F, 0.993F, file_reader);
                 }
                 return std::make_shared<ParticleSystem>(
                   *parachute_particle_system_by_scale.at(scale));
@@ -290,6 +290,8 @@ public:
     const std::vector<Particle>& GetParticles() const { return particles_; }
 
     const std::vector<Constraint>& GetConstraints() const { return constraints_; }
+
+    void SetLastConstraintActive(bool active) { constraints_.back().active = active; }
 
 private:
     static void ScaleParticles(ParticleSystem* particle_system, float scale);

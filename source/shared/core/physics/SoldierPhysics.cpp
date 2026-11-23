@@ -640,10 +640,15 @@ void Update(StateManager& state_manager,
 
     RepositionSoldierSkeletonParts(soldier);
 
-    for (int i = 1; i <= 20; i++) {
-        if ((soldier.dead_meat || soldier.half_dead) && (i < 17) && (i != 7) && (i != 8)) {
-            auto xy = soldier.particle.position;
-            soldier.on_ground = CheckSkeletonMapCollision(soldier, map, i, xy.x, xy.y);
+    if (soldier.dead_meat || soldier.half_dead) {
+        soldier.on_ground = false;
+        for (unsigned int i = 1; i <= 16; ++i) {
+            if (i != 7 && i != 8) {
+                const auto position = soldier.skeleton->GetPos(i);
+                if (CheckSkeletonMapCollision(soldier, map, i, position.x, position.y)) {
+                    soldier.on_ground = true;
+                }
+            }
         }
     }
 
@@ -732,18 +737,10 @@ void Update(StateManager& state_manager,
                 glm::vec2 force = soldier.particle.GetForce();
                 soldier.particle.SetForce(
                   { force.x, PhysicsConstants::SOLDIER_SPEED_WITH_PARACHUTE });
-                // {$IFDEF SERVER}
-                // if CeaseFireCounter < 1 then
-                // {$ELSE}
-                // if ((sv_survivalmode.Value) and (CeaseFireCounter < CeaseFireTime * 3 - 30)) or
-                //    (CeaseFireCounter < CeaseFireTime - 30) then
-                // {$ENDIF}
-                if (soldier.on_ground || soldier.control.jets) {
+                if (authoritative && soldier.GetCeaseFireCounter() < 1 &&
+                    (soldier.on_ground || soldier.control.jets)) {
                     item.holding_soldier_id = -1;
-                    // TODO
-                    // Dec(Thing[HoldedThing].Skeleton.ConstraintCount);
                     item.time_out = 3 * 60;
-                    // HoldedThing := 0;
                 }
             }
         });
@@ -762,10 +759,8 @@ void Update(StateManager& state_manager,
                 glm::vec2 force = soldier.skeleton->GetForce(12);
                 soldier.skeleton->SetForce(
                   12, { force.x, 25 * PhysicsConstants::SOLDIER_SPEED_WITH_PARACHUTE });
-                if (soldier.on_ground) {
+                if (authoritative && soldier.on_ground) {
                     item.holding_soldier_id = -1;
-                    // TODO
-                    // Dec(Thing[HoldedThing].Skeleton.ConstraintCount);
                     item.time_out = 3 * 60;
                 }
             }

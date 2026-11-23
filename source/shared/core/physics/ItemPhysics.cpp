@@ -49,6 +49,19 @@ void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physic
         }
     });
 
+    if (item.style == ItemType::Parachute) {
+        // The last constraint in para.po tensions the center rope while attached.
+        item.skeleton->SetLastConstraintActive(item.holding_soldier_id >= 0);
+        state_manager.ForEachSoldier([&](const auto& soldier) {
+            if (soldier.id == item.holding_soldier_id && !soldier.dead_meat &&
+                soldier.control.left != soldier.control.right) {
+                const float bend = soldier.control.right ? 0.5F : -0.5F;
+                item.skeleton->SetForce(2, item.skeleton->GetForce(2) + glm::vec2{ 0.0F, bend });
+                item.skeleton->SetForce(3, item.skeleton->GetForce(3) - glm::vec2{ 0.0F, bend });
+            }
+        });
+    }
+
     if (!item.static_type) {
         bool collided = false;
         bool collided2 = false;
@@ -193,14 +206,13 @@ void Update(StateManager& state_manager, Item& item, const PhysicsEvents& physic
         }
     }
 
-    // Parachute
     if (item.style == ItemType::Parachute) {
         if (item.holding_soldier_id >= 0) {
             state_manager.TransformSoldiers([&](auto& soldier) {
                 if (soldier.id == item.holding_soldier_id) {
                     item.skeleton->SetPos(4, soldier.skeleton->GetPos(12));
-                    glm::vec2 force = soldier.particle.GetVelocity();
-                    force.y = -force.y;
+                    auto force = item.skeleton->GetForce(1);
+                    force.y = -soldier.particle.GetVelocity().y;
                     item.skeleton->SetForce(1, force);
 
                     if (item.skeleton->GetPos(3).x < item.skeleton->GetPos(4).x) {
@@ -340,12 +352,12 @@ bool CheckMapCollision(Item& item,
                         case ItemType::PredatorKit:
                         case ItemType::VestKit:
                         case ItemType::BerserkKit:
-                        case ItemType::ClusterKit: {
+                        case ItemType::ClusterKit:
+                        case ItemType::Parachute: {
                             item.skeleton->SetPos(i, item.skeleton->GetOldPos(i));
                             item.skeleton->SetPos(i, item.skeleton->GetPos(i) - perp);
                             break;
                         }
-                        case ItemType::Parachute:
                         case ItemType::M2:
                             break;
                     }

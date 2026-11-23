@@ -328,6 +328,9 @@ private:
     }
     Soldier& GetSoldierRef(std::uint8_t soldier_id);
     Item& GetItemRef(std::uint8_t item_id);
+    std::optional<std::uint8_t> FindFreeItemSlot() const;
+    void RemoveSoldierParachutes(std::uint8_t soldier_id);
+    void DeployParachute(const Soldier& soldier);
 
     struct MapItemSpawn
     {
@@ -862,6 +865,10 @@ glm::vec2 StateManager::SpawnSoldier(unsigned int soldier_id,
     soldier.bonus_ticks = 0;
     soldier.active_weapon = 0;
     RepositionSoldierSkeletonParts(soldier);
+    if (HasAuthoritativeProjectiles()) {
+        RemoveSoldierParachutes(soldier.id);
+        DeployParachute(soldier);
+    }
 
     return initial_player_position;
 }
@@ -914,6 +921,7 @@ void StateManager::RemoveSoldier(std::uint8_t soldier_id)
     }
 
     ReleaseSoldierFlags(soldier_id);
+    RemoveSoldierParachutes(soldier_id);
     state_.soldiers.at(soldier_id).active = false;
     soldier_removed.Notify(soldier_id);
 }
@@ -999,29 +1007,69 @@ void StateManager::TransformBullets(
     }
 }
 
+std::optional<std::uint8_t> StateManager::FindFreeItemSlot() const
+{
+    for (std::size_t id = 0; id < state_.items.size(); ++id) {
+        const bool reserved = std::ranges::any_of(
+          map_item_spawns_, [id](const auto& spawn) { return spawn.id == id; });
+        if (!state_.items.at(id).active && !reserved) {
+            return static_cast<std::uint8_t>(id);
+        }
+    }
+    return std::nullopt;
+}
+
+void StateManager::RemoveSoldierParachutes(std::uint8_t soldier_id)
+{
+    TransformItems([&](Item& item) {
+        if (item.style == ItemType::Parachute && item.holding_soldier_id == soldier_id) {
+            item.active = false;
+        }
+    });
+}
+
+void StateManager::DeployParachute(const Soldier& soldier)
+{
+    if (soldier.IsSpectator()) {
+        return;
+    }
+
+    constexpr float CLEARANCE = 500.0F;
+    const glm::vec2 position = soldier.particle.position;
+    float distance = 0.0F;
+    if (state_.map.RayCast(position,
+                           position + glm::vec2{ 0.0F, CLEARANCE },
+                           distance,
+                           CLEARANCE + 50.0F,
+                           true,
+                           false,
+                           false,
+                           false,
+                           static_cast<std::uint8_t>(soldier.GetTeam())) ||
+        distance <= CLEARANCE - 10.0F) {
+        return;
+    }
+
+    if (const auto slot = FindFreeItemSlot()) {
+        auto& item = CreateItem(
+          position + glm::vec2{ 0.0F, 70.0F }, soldier.id, ItemType::Parachute, nullptr, *slot);
+        item.holding_soldier_id = soldier.id;
+    }
+}
+
 Item& StateManager::CreateItem(glm::vec2 position,
                                std::uint8_t owner_id,
                                ItemType style,
                                std::shared_ptr<ParticleSystem> skeleton,
                                std::optional<std::uint8_t> force_id)
 {
-    std::uint8_t new_id = 0;
-    for (const auto& item : state_.items) {
-        const bool reserved = std::ranges::any_of(
-          map_item_spawns_, [new_id](const auto& spawn) { return spawn.id == new_id; });
-        if (!item.active && !reserved) {
-            break;
-        }
-
-        ++new_id;
+    const auto slot = force_id ? force_id : FindFreeItemSlot();
+    if (!slot || *slot >= state_.items.size()) {
+        spdlog::critical("Cannot create item: no valid item slot");
+        throw std::runtime_error("Cannot create item: no valid item slot");
     }
 
-    new_id = force_id.value_or(new_id);
-    if (new_id >= state_.items.size()) {
-        spdlog::critical("Trying to create a new item but array is full, id: {}", new_id);
-        throw std::runtime_error("Cannot create item: item array is full");
-    }
-
+    const auto new_id = *slot;
     Item new_item{};
     new_item.active = true;
     new_item.style = style;

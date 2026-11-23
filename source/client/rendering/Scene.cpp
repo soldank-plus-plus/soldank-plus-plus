@@ -222,8 +222,16 @@ void Scene::RenderWorld(const StateManager& game_state_manager,
     bullet_renderer_.EndBatch();
     RenderSoldiers(game_state_manager, client_state, frame_percent);
     game_state_manager.ForEachItem([&](const auto& item) {
+        glm::vec4 parachute_color{ 1.0F };
+        if (item.style == ItemType::Parachute) {
+            const auto* owner = game_state_manager.FindSoldier(
+              [&](const auto& soldier) { return soldier.id == item.owner; });
+            if (owner != nullptr) {
+                parachute_color = owner->appearance.shirt;
+            }
+        }
         item_renderer_.Render(
-          camera.GetView(), item, frame_percent, game_state_manager.GetGameTick());
+          camera.GetView(), item, frame_percent, game_state_manager.GetGameTick(), parachute_color);
     });
     // GameRendering.pas draws sparks after soldiers and items, before foreground scenery.
     bullet_renderer_.BeginBatch(camera.GetView());
