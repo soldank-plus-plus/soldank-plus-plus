@@ -516,6 +516,9 @@ TEST(PolygonSimulationTest, ProjectileDeathWeaponDropInheritsBackground)
     BulletEffects::DropWeapon(*state, soldier, bullet);
     unsigned int drops = 0;
     state->ForEachItem([&](const Item& item) {
+        if (!IsItemTypeWeapon(item.style)) {
+            return;
+        }
         ++drops;
         EXPECT_EQ(item.polygon_background, soldier.polygon_background);
     });
