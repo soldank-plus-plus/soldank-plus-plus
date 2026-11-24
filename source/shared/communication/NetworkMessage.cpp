@@ -4,7 +4,9 @@ module;
 #include <vector>
 #include <string>
 #include <tuple>
-#include <cmath>
+#include <optional>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 #include <cstring>
 #include <cstdint>
@@ -17,144 +19,14 @@ import Shared.Networking.NetworkEvent;
 
 namespace Soldank
 {
-export enum class ParseError : unsigned short {
+export enum class ParseError : unsigned short
+{
     InvalidStringSize = 0,
     BufferTooSmall,
     BufferTooBig,
     InvalidString,
     InvalidNetworkEvent,
 };
-
-namespace
-{
-template<unsigned int N>
-struct NetworkMessageData
-{
-    template<typename Arg>
-    static typename std::enable_if<!std::is_same<std::string, Arg>::value,
-                                   std::expected<Arg, ParseError>>::type
-    ParseDataParameter(std::span<const char> data)
-    {
-        if (data.size() < sizeof(Arg)) {
-            return std::unexpected(ParseError::BufferTooSmall);
-        }
-
-        Arg converted_data{};
-        std::memcpy(&converted_data, data.subspan(0, sizeof(Arg)).data(), sizeof(Arg));
-        return converted_data;
-    }
-
-    template<typename Arg>
-    static typename std::enable_if<std::is_same<std::string, Arg>::value,
-                                   std::expected<std::string, ParseError>>::type
-    ParseDataParameter(std::span<const char> data)
-    {
-        auto text_size_or_error =
-          ParseDataParameter<std::uint16_t>(data.subspan(0, sizeof(std::uint16_t)));
-        if (!text_size_or_error.has_value()) {
-            return std::unexpected(text_size_or_error.error());
-        }
-
-        std::uint16_t text_size = *text_size_or_error;
-        if (text_size == 0 || text_size > data.size() - sizeof(std::uint16_t)) {
-            return std::unexpected(ParseError::InvalidStringSize);
-        }
-
-        for (char character : data.subspan(sizeof(std::uint16_t), text_size)) {
-            if (character == 0) {
-                return std::unexpected(ParseError::InvalidString);
-            }
-        }
-
-        auto text_data = data.subspan(sizeof(std::uint16_t), text_size);
-        std::string text{ text_data.begin(), text_data.end() };
-        return text;
-    }
-
-    template<typename Arg>
-    static typename std::enable_if<!std::is_same<std::string, Arg>::value,
-                                   std::expected<unsigned int, ParseError>>::type
-    ParseDataParameterSize(std::span<const char> data)
-    {
-        if (data.size() < sizeof(Arg)) {
-            return std::unexpected(ParseError::BufferTooSmall);
-        }
-
-        return sizeof(Arg);
-    }
-
-    template<typename Arg>
-    static typename std::enable_if<std::is_same<std::string, Arg>::value,
-                                   std::expected<unsigned int, ParseError>>::type
-    ParseDataParameterSize(std::span<const char> data)
-    {
-        auto text_size_or_error =
-          ParseDataParameter<std::uint16_t>(data.subspan(0, sizeof(std::uint16_t)));
-        if (!text_size_or_error.has_value()) {
-            return std::unexpected(text_size_or_error.error());
-        }
-        std::uint16_t text_size = *text_size_or_error;
-        if ((text_size == 0) || text_size > data.size() - sizeof(std::uint16_t)) {
-            return std::unexpected(ParseError::InvalidStringSize);
-        }
-
-        return sizeof(std::uint16_t) + text_size;
-    }
-
-    template<typename Head, typename... Tail>
-    static
-      typename std::enable_if<N != 1, std::expected<std::tuple<Head, Tail...>, ParseError>>::type
-      ParseData(std::span<const char> data)
-    {
-        if (data.empty()) {
-            return std::unexpected(ParseError::BufferTooSmall);
-        }
-
-        auto head_or_error = ParseDataParameter<Head>(data);
-        if (!head_or_error.has_value()) {
-            return std::unexpected(head_or_error.error());
-        }
-
-        auto tail_offset_or_error = ParseDataParameterSize<Head>(data);
-        if (!tail_offset_or_error.has_value()) {
-            return std::unexpected(tail_offset_or_error.error());
-        }
-
-        auto tail_or_error = NetworkMessageData<N - 1>::template ParseData<Tail...>(
-          data.subspan(*tail_offset_or_error));
-        if (!tail_or_error.has_value()) {
-            return std::unexpected(tail_or_error.error());
-        }
-        std::tuple<Head> head_in_tuple{ *head_or_error };
-        return std::tuple_cat(head_in_tuple, *tail_or_error);
-    }
-
-    template<typename Arg>
-    static typename std::enable_if<N == 1, std::expected<std::tuple<Arg>, ParseError>>::type
-    ParseData(std::span<const char> data)
-    {
-        if (data.empty()) {
-            return std::unexpected(ParseError::BufferTooSmall);
-        }
-
-        auto last_parameter_size_or_error = ParseDataParameterSize<Arg>(data);
-        if (!last_parameter_size_or_error.has_value()) {
-            return std::unexpected(last_parameter_size_or_error.error());
-        }
-        auto last_parameter_size = *last_parameter_size_or_error;
-        if (data.size() > last_parameter_size) {
-            return std::unexpected(ParseError::BufferTooBig);
-        }
-
-        auto parsed_or_error = ParseDataParameter<Arg>(data);
-        if (!parsed_or_error.has_value()) {
-            return std::unexpected(parsed_or_error.error());
-        }
-
-        return { *parsed_or_error };
-    }
-};
-} // namespace
 
 export class NetworkMessage
 {
@@ -164,70 +36,38 @@ public:
     {
     }
 
-    NetworkMessage(NetworkEvent event)
-    {
-        auto event_value = std::to_underlying(event);
-        AppendBytes(event_value);
-    }
+    NetworkMessage(NetworkEvent event) { AppendBytes(std::to_underlying(event)); }
 
     template<class Arg>
     NetworkMessage(NetworkEvent event, Arg one_arg, unsigned int size)
+        : NetworkMessage(event)
     {
-        auto event_value = std::to_underlying(event);
-        AppendBytes(event_value);
         AppendBytes(one_arg, size);
     }
 
     template<class... Args>
     NetworkMessage(NetworkEvent event, Args... args)
+        : NetworkMessage(event)
     {
-        auto event_value = std::to_underlying(event);
-        AppendBytes(event_value);
-        AppendBytes(args...);
+        (AppendBytes(args), ...);
     }
 
     template<class Head, class... Tail>
     void AppendBytes(Head head, Tail... tail)
     {
         AppendBytes(head);
-        AppendBytes(tail...);
+        (AppendBytes(tail), ...);
     }
 
-    void AppendBytes(const std::string& text)
-    {
-        std::uint16_t text_length = static_cast<std::uint16_t>(text.length());
-        auto text_length_bytes_to_append =
-          std::span{ static_cast<const char*>(static_cast<void*>(&text_length)),
-                     sizeof(text_length) };
-        data_.insert(
-          data_.end(), text_length_bytes_to_append.begin(), text_length_bytes_to_append.end());
-        auto text_bytes_to_append =
-          std::span{ static_cast<const char*>(static_cast<const void*>(text.c_str())),
-                     text_length };
-        data_.insert(data_.end(), text_bytes_to_append.begin(), text_bytes_to_append.end());
-    }
+    void AppendBytes(const std::string& text) { AppendString(text); }
 
-    void AppendBytes(const char* head)
-    {
-        std::string text = head;
-        std::uint16_t text_length = static_cast<std::uint16_t>(text.length());
-        auto text_length_bytes_to_append =
-          std::span{ static_cast<const char*>(static_cast<void*>(&text_length)),
-                     sizeof(text_length) };
-        data_.insert(
-          data_.end(), text_length_bytes_to_append.begin(), text_length_bytes_to_append.end());
-        auto text_bytes_to_append =
-          std::span{ static_cast<const char*>(static_cast<const void*>(text.c_str())),
-                     text_length };
-        data_.insert(data_.end(), text_bytes_to_append.begin(), text_bytes_to_append.end());
-    }
+    void AppendBytes(const char* text) { AppendString(text); }
 
     template<typename Head>
     void AppendBytes(Head head)
     {
-        auto head_bytes_to_append =
-          std::span{ static_cast<const char*>(static_cast<void*>(&head)), sizeof(Head) };
-        data_.insert(data_.end(), head_bytes_to_append.begin(), head_bytes_to_append.end());
+        const auto* bytes = reinterpret_cast<const char*>(&head);
+        data_.insert(data_.end(), bytes, bytes + sizeof(Head));
     }
 
     std::span<const char> GetData() const { return { data_ }; }
@@ -235,32 +75,96 @@ public:
     template<typename... Args>
     static std::expected<std::tuple<Args...>, ParseError> ParseData(std::span<const char> data)
     {
-        return NetworkMessageData<sizeof...(Args)>::template ParseData<Args...>(data);
+        static_assert(sizeof...(Args) > 0);
+        std::tuple<std::optional<Args>...> fields;
+        std::optional<ParseError> error;
+        auto remaining_fields = sizeof...(Args);
+        auto read = [&]<typename Arg>(std::optional<Arg>& field) {
+            auto value = ReadParameter<Arg>(data, --remaining_fields == 0);
+            if (!value) {
+                error = value.error();
+                return false;
+            }
+            field.emplace(*std::move(value));
+            return true;
+        };
+
+        if (!std::apply([&](auto&... field) { return (read(field) && ...); }, fields)) {
+            return std::unexpected(*error);
+        }
+
+        return std::apply(
+          [](auto&... field) { return std::tuple<Args...>{ *std::move(field)... }; }, fields);
     }
 
     template<typename... Args>
     std::expected<std::tuple<Args...>, ParseError> Parse() const
     {
-        return NetworkMessageData<sizeof...(Args)>::template ParseData<Args...>(data_);
+        return ParseData<Args...>(data_);
     }
 
     std::expected<NetworkEvent, ParseError> GetNetworkEvent() const
     {
-        if (data_.empty()) {
-            return std::unexpected(ParseError::BufferTooSmall);
-        }
-
-        std::span<const char> data{ data_ };
-        auto parsed = NetworkMessageData<1>::template ParseData<NetworkEvent>(
-          data.subspan(0, std::min(sizeof(NetworkEvent), data.size())));
-        if (!parsed.has_value()) {
-            return std::unexpected(parsed.error());
-        }
-        auto [network_event] = *parsed;
-        return network_event;
+        auto data = GetData();
+        return ReadValue<NetworkEvent>(data);
     }
 
 private:
+    template<typename Arg>
+    static std::expected<Arg, ParseError> ReadValue(std::span<const char>& data, bool last = false)
+    {
+        if (data.size() < sizeof(Arg)) {
+            return std::unexpected(ParseError::BufferTooSmall);
+        }
+        if (last && data.size() > sizeof(Arg)) {
+            return std::unexpected(ParseError::BufferTooBig);
+        }
+
+        Arg value{};
+        std::memcpy(&value, data.data(), sizeof(Arg));
+        data = data.subspan(sizeof(Arg));
+        return value;
+    }
+
+    static std::expected<std::string, ParseError> ReadString(std::span<const char>& data, bool last)
+    {
+        auto size = ReadValue<std::uint16_t>(data);
+        if (!size) {
+            return std::unexpected(size.error());
+        }
+        if (*size == 0 || *size > data.size()) {
+            return std::unexpected(ParseError::InvalidStringSize);
+        }
+        // For the final field, report trailing bytes before validating the string contents.
+        if (last && data.size() > *size) {
+            return std::unexpected(ParseError::BufferTooBig);
+        }
+
+        std::string_view text{ data.data(), *size };
+        if (text.contains('\0')) {
+            return std::unexpected(ParseError::InvalidString);
+        }
+        data = data.subspan(*size);
+        return std::string{ text };
+    }
+
+    template<typename Arg>
+    static std::expected<Arg, ParseError> ReadParameter(std::span<const char>& data, bool last)
+    {
+        if constexpr (std::is_same_v<Arg, std::string>) {
+            return ReadString(data, last);
+        } else {
+            return ReadValue<Arg>(data, last);
+        }
+    }
+
+    void AppendString(std::string_view text)
+    {
+        auto length = static_cast<std::uint16_t>(text.size());
+        AppendBytes(length);
+        data_.insert(data_.end(), text.begin(), text.begin() + length);
+    }
+
     std::vector<char> data_;
 };
-}; // namespace Soldank
+} // namespace Soldank

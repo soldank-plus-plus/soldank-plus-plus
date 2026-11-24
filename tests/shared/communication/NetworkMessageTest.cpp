@@ -181,6 +181,22 @@ void CheckParseError(std::span<const char> data, ParseError expected_parse_error
     ASSERT_EQ(parsed.error(), expected_parse_error);
 }
 
+TEST(NetworkMessageTests, TestNetworkMessageGetNetworkEventTruncated)
+{
+    const std::array<char, 1> data{ 1 };
+    NetworkMessage network_message(data);
+
+    auto network_event = network_message.GetNetworkEvent();
+    ASSERT_FALSE(network_event.has_value());
+    EXPECT_EQ(network_event.error(), ParseError::BufferTooSmall);
+}
+
+TEST(NetworkMessageTests, TestNetworkMessageParseDataTruncatedStringLength)
+{
+    const std::array<char, 5> data{ 1, 0, 0, 0, 4 };
+    CheckParseError<NetworkEvent, std::string>(data, ParseError::BufferTooSmall);
+}
+
 TEST(NetworkMessageTests, TestNetworkMessageParseDataLastArgumentDoesNotExist)
 {
     std::array<char, 8> expected_bytes{ 5, 0, 0, 0, 0, 0, 0, 0 };
@@ -265,6 +281,12 @@ TEST(NetworkMessageTests, TestNetworkMessageParseDataStringHasZeroInTheMiddle)
 {
     std::vector<char> data{ 1, 0, 0, 0, 4, 0, 'T', 'e', 0, 't' };
     CheckParseError<NetworkEvent, std::string>(data, ParseError::InvalidString);
+}
+
+TEST(NetworkMessageTests, TestNetworkMessageParseDataInvalidFinalStringWithTrailingBytes)
+{
+    const std::array<char, 11> data{ 1, 0, 0, 0, 4, 0, 'T', 'e', 0, 't', 1 };
+    CheckParseError<NetworkEvent, std::string>(data, ParseError::BufferTooBig);
 }
 
 int main(int argc, char** argv)
